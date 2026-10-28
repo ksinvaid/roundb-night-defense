@@ -123,6 +123,20 @@ h1,h2,h3,p{margin:0}
 .sk>span{position:relative}
 .sk[aria-disabled="true"]{cursor:not-allowed}
 
+/* multi: 동료 현황 */
+.party{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 8px}
+.pt{flex:1 1 128px;min-width:112px;display:grid;gap:3px;background:var(--card);border:2px solid var(--line);border-radius:12px;padding:6px 10px}
+.pt.me{border-color:var(--gold)}
+.pt.out{opacity:.5;filter:grayscale(.8)}
+.pt.boss{border-color:var(--red);animation:ptb .7s ease-in-out infinite}
+@keyframes ptb{50%{box-shadow:0 0 0 4px rgba(232,85,58,.45)}}
+.pt b{font-size:13px;display:flex;justify-content:space-between;gap:6px}
+.pt .pt-s{color:var(--red);font-size:12px}
+.pt small{font-size:11px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pt .bar{height:8px}
+@media (max-width:600px){.party{gap:6px}.pt{flex:1 1 30%;min-width:0;padding:4px 8px}.pt small{display:none}.pt b{font-size:12px}}
+.feed{min-height:20px;margin:0 0 8px;font-size:13px;font-weight:600;color:var(--gold);text-align:center}
+
 /* result, shop, overlays */
 .res{display:grid;place-items:center;min-height:100vh;min-height:100dvh;padding:16px;box-sizing:border-box}
 .res-card{width:min(560px,100%);background:var(--card);border:3px solid var(--ink);border-radius:20px;padding:24px;display:grid;gap:14px;text-align:center;box-shadow:0 10px 0 var(--ink)}
@@ -142,6 +156,7 @@ input{font:inherit;font-size:15px;color:var(--cream);background:var(--bg2);borde
 .seg button:last-child{border-right:0}
 .seg button[aria-checked="true"]{background:var(--gold);color:#2a1a00}
 .pick-l{display:grid;gap:2px;min-width:0}
+@media (max-width:600px){#diff-desc{display:none}.pick-bar{padding:10px 12px}}
 .rk{display:grid;gap:6px}
 .rk-row{display:grid;grid-template-columns:46px minmax(0,1fr) auto;gap:10px;align-items:center;background:var(--card);border:2px solid var(--line);border-radius:12px;padding:9px 12px}
 .rk-row.me{border-color:var(--gold);background:var(--card2)}
@@ -169,7 +184,7 @@ input{font:inherit;font-size:15px;color:var(--cream);background:var(--bg2);borde
         </div>
         <div class="row" style="justify-content:center"><button class="btn btn-sm" data-act="to-rank">랭킹</button><button class="btn btn-sm" data-act="to-save">저장·불러오기</button></div>
         <p class="small faint" id="t-best"></p>
-        <p class="small faint">PROTOTYPE v0.2 · 클릭·터치로 플레이 · 단축키는 게임 중 패널에 표시돼요</p>
+        <p class="small faint">PROTOTYPE v0.3 · 혼자 또는 AI 동료와 · 클릭·터치로 플레이 · 단축키는 게임 중 패널에 표시돼요</p>
       </div>
     </div>
   </section>
@@ -177,13 +192,13 @@ input{font:inherit;font-size:15px;color:var(--cream);background:var(--bg2);borde
   <section class="scr" id="scr-select" hidden>
     <div class="wrap">
       <div class="sel-head">
-        <div><h2 class="disp" style="font-size:30px">어느 방에 숨을까요?</h2><p class="dim small">배치도에서 문이 있는 방을 고르세요. 방마다 설치 칸, 문 내구도, 특기가 달라요.</p></div>
+        <div><h2 class="disp" style="font-size:30px">어느 방에 숨을까요?</h2><p class="dim small">배치도에서 방을 고르세요. 방마다 설치 칸, 문 내구도, 특기가 달라요. 문이 없던 호리존 스튜디오와 휴게공간도 열렸어요.</p></div>
         <div class="row"><button class="btn btn-sm btn-ghost" data-act="to-title">처음으로</button><button class="btn btn-sm" data-act="to-shop">사원증 상점 <span class="chip num" id="s-rp"></span></button></div>
       </div>
       <div class="plan" id="plan"><img src="img/plan.jpg" alt="라운드비 3층 라운지와 4층 공유오피스 배치도"></div>
       <div class="cards" id="cards"></div>
-      <div class="pick-bar"><div class="pick-l"><div id="pick-info" class="dim">방을 하나 골라 주세요.</div><div id="diff-desc" class="small faint"></div></div>
-        <div class="row"><div class="seg" id="diff-seg" role="radiogroup" aria-label="난이도"></div><button class="btn btn-red" id="go" data-act="go" disabled>이 방으로 들어가기</button></div></div>
+      <div class="pick-bar"><div class="pick-l"><div id="pick-info" class="dim">방을 하나 골라 주세요.</div><div id="diff-desc" class="small faint"></div><div id="mode-desc" class="small faint"></div></div>
+        <div class="row"><div class="seg" id="mode-seg" role="radiogroup" aria-label="모드"></div><div class="seg" id="bots-seg" role="radiogroup" aria-label="AI 동료 수" hidden></div><div class="seg" id="diff-seg" role="radiogroup" aria-label="난이도"></div><button class="btn btn-red" id="go" data-act="go" disabled>이 방으로 들어가기</button></div></div>
     </div>
   </section>
 
@@ -223,6 +238,7 @@ input{font:inherit;font-size:15px;color:var(--cream);background:var(--bg2);borde
           <button class="btn btn-sm btn-ghost" data-act="pause" aria-label="일시정지">정지</button>
         </div>
       </div>
+      <div class="party" id="party" hidden></div><div class="feed" id="feed" hidden role="status"></div>
       <div class="hint" id="hint" hidden></div>
       <div class="play">
         <div class="stage" id="stage">
@@ -279,6 +295,8 @@ const SLOTSET = {
   storage:{base:5, pts:[[300,330],[600,330],[190,330],[710,330],[450,255],[260,250]]},
   toilet: {base:3, pts:[[320,325],[580,325],[450,245],[340,230]]},
   ac:     {base:2, pts:[[390,320],[510,320]]},
+  studio: {base:6, pts:[[300,335],[600,335],[190,335],[710,335],[330,250],[570,250],[450,255],[130,250]]},
+  lounge: {base:6, pts:[[300,335],[600,335],[190,335],[710,335],[330,250],[570,250],[450,255],[130,250]]},
 };
 const R_BASE = {
   conf:   {type:"conf",   L:60,  R:840, desk:[450,96], doorMult:.95, contact:6, gold:90,  income:1.15, eSpeed:1,   spawn:1.05, stun:0,   cooler:1,   star:2, perk:"설치 칸이 넓고 수당이 15% 많아요. 대신 귀신 6마리가 동시에 문을 공격해요"},
@@ -286,6 +304,8 @@ const R_BASE = {
   men:    {type:"toilet", L:250, R:650, desk:[450,100],doorMult:1.45, contact:3, gold:80,  income:1, eSpeed:1,   spawn:.9,   stun:0,   cooler:.75, star:1, perk:"좁은 문이라 3마리씩만 공격해요. 수압이 좋아 정수기가 25% 싸요"},
   women:  {type:"toilet", L:250, R:650, desk:[450,100],doorMult:1.45, contact:3, gold:80,  income:1, eSpeed:1,   spawn:.9,   stun:.08, cooler:1,   star:1, perk:"좁은 문 + 거울: 공격이 8% 확률로 귀신을 기절시켜요"},
   ac:     {type:"ac",     L:330, R:570, desk:[450,100],doorMult:1.25, contact:2, gold:50,  income:1, eSpeed:.75, spawn:.9,   stun:0,   cooler:1,   star:3, perk:"실외기 소음에 귀신이 느려져요. 설치 칸은 2개뿐이에요"},
+  studio: {type:"studio", L:70,  R:830, desk:[450,96], doorMult:1.1, contact:6, gold:110, income:1, eSpeed:1,   spawn:1.1,  stun:0,   cooler:1,   star:3, open:true, doorW:260, spread:1.7, lightCd:.8, free:["light"], perk:"문이 없는 개방형이라 넓은 바리케이드로 막아요. 귀신 6마리가 몰리지만 호리존 조명이 하나 공짜예요"},
+  lounge: {type:"lounge", L:70,  R:830, desk:[450,96], doorMult:1.1, contact:6, gold:100, income:1, eSpeed:1,   spawn:1.05, stun:0,   cooler:.7,  star:3, open:true, doorW:260, spread:1.7, fridgeCost:.7, fridge:1.5, perk:"문이 없는 개방형이에요. 정수기·냉장고가 30% 싸고 냉장고 수리가 1.5배예요"},
 };
 const ROOMS = [
   {id:"4f-conf",  floor:"4F", name:"회의실",     ...R_BASE.conf,    hot:[1632,290,1895,680]},
@@ -296,11 +316,10 @@ const ROOMS = [
   {id:"3f-men",   floor:"3F", name:"남자화장실", ...R_BASE.men,     hot:[528,1305,790,1435]},
   {id:"3f-women", floor:"3F", name:"여자화장실", ...R_BASE.women,   hot:[790,1145,948,1435]},
   {id:"3f-ac",    floor:"3F", name:"실외기실",   ...R_BASE.ac,      hot:[108,690,232,820]},
+  {id:"3f-studio",floor:"3F", name:"호리존 스튜디오", ...R_BASE.studio, hot:[684,290,948,680]},
+  {id:"4f-lounge",floor:"4F", name:"휴게공간",   ...R_BASE.lounge,  hot:[1055,290,1402,497]},
 ];
-const OPEN_AREAS = [
-  {name:"호리존 스튜디오", why:"개방형이라 문이 없어요", hot:[684,290,948,680]},
-  {name:"휴게공간",        why:"오른쪽이 개방돼 있어 문이 없어요", hot:[1055,290,1402,497]},
-];
+const OPEN_AREAS = [];
 for (const r of ROOMS) { const s = SLOTSET[r.type]; r.slots = s.pts.map(p => ({x:p[0], y:p[1]})); r.base = s.base; }
 const SHOP = [
   {k:"startGold", n:"비상금",        d:"시작 수당 +20",         max:5, cost:[15,30,50,80,120]},
@@ -334,8 +353,10 @@ function newRun(room, meta, rng, diff) {
     en:[], proj:[], crates:[], nid:1, budget:0, next:null, blackout:0, flags:{},
     skill:{cd:0, max:Math.max(14, 40 - meta.skillCd)},
     stats:{kills:0, dragon:false, earned:0, hpLost:0, peak:0},
-    spots: SPOT_POS.slice(0, room.contact).map(p => ({x:FRONT.x + p[0], y:p[1]}))};
+    doorW: room.doorW || DOOR.w, pressure: 1,
+    spots: SPOT_POS.slice(0, room.contact).map(p => ({x:FRONT.x + p[0] * (room.spread || 1), y:p[1]}))};
   G.door.max = G.door.hp = doorMax(G, 0);
+  for (const t of (room.free || [])) { const i = autoSlot(G); if (i != null) G.slots[i].it = {type:t, lv:1, cd:.3, ang:-Math.PI / 2, inv:0}; }
   return G;
 }
 function income(G) {
@@ -358,7 +379,7 @@ function pickType(G) {
 }
 function director(G, dt) {
   const f = G.t / DURATION, b = 0.40 + 4.3 * Math.pow(f, 1.2);
-  G.budget += b * dt * G.room.spawn * G.D.spawn;
+  G.budget += b * dt * G.room.spawn * G.D.spawn * G.pressure;
   for (let g = 0; g < 8; g++) {
     if (!G.next) G.next = pickType(G);
     const c = ENEMY[G.next].cost; if (G.budget < c) break;
@@ -367,10 +388,12 @@ function director(G, dt) {
 }
 function timeline(G) {
   const F = G.flags, t = G.t;
-  if (t >= 140 && !F.m1) { F.m1 = 1; spawn(G, "mini"); emit(G, {k:"mini"}); }
-  if (t >= 280 && !F.m2) { F.m2 = 1; spawn(G, "mini"); emit(G, {k:"mini"}); }
-  if (t >= 352 && !F.w) { F.w = 1; emit(G, {k:"warn"}); }
-  if (t >= 368 && !F.d) { F.d = 1; spawn(G, "dragon"); }
+  if (!G.multi) {
+    if (t >= 140 && !F.m1) { F.m1 = 1; spawn(G, "mini"); emit(G, {k:"mini"}); }
+    if (t >= 280 && !F.m2) { F.m2 = 1; spawn(G, "mini"); emit(G, {k:"mini"}); }
+    if (t >= 352 && !F.w) { F.w = 1; emit(G, {k:"warn"}); }
+    if (t >= 368 && !F.d) { F.d = 1; spawn(G, "dragon"); }
+  }
   if (t >= 205 && !F.b) { F.b = 1; G.blackout = 18; emit(G, {k:"blackout"}); }
   [[60,60],[150,80],[250,100],[330,120]].forEach(([at, val], i) => {
     if (t >= at && !F["c" + i]) { F["c" + i] = 1; const rm = G.room; G.crates.push({id:G.nid++, x: rm.L + 70 + G.rng() * (rm.R - rm.L - 140), y: 165 + G.rng() * 40, ttl:12, val}); emit(G, {k:"crate"}); }
@@ -448,7 +471,7 @@ function turrets(G, dt) {
   G.slots.forEach((s, i) => {
     const it = s.it; if (!it) return;
     const b = BUILD[it.type], L = it.lv - 1;
-    if (it.type === "fridge") { if (G.door.hp > 0) G.door.hp = Math.min(G.door.max, G.door.hp + b.rep[L] * dt); return; }
+    if (it.type === "fridge") { if (G.door.hp > 0) G.door.hp = Math.min(G.door.max, G.door.hp + b.rep[L] * (G.room.fridge || 1) * dt); return; }
     if (it.type === "desk") return;
     it.cd -= dt; if (it.cd > 0) return;
     if (it.type === "micro") {
@@ -464,7 +487,7 @@ function turrets(G, dt) {
     } else if (it.type === "light") {
       if (!G.en.some(e => !e.dead && dist(e, FRONT) < b.radius)) { it.cd = .3; return; }
       for (const e of G.en) if (!e.dead && dist(e, FRONT) < b.radius) { hit(G, e, b.dmg[L], true); e.stun = Math.max(e.stun, b.stun[L]); }
-      it.cd = b.cd[L]; emit(G, {k:"flash", i, x:s.x, y:s.y});
+      it.cd = b.cd[L] * (G.room.lightCd || 1); emit(G, {k:"flash", i, x:s.x, y:s.y});
     }
   });
 }
@@ -498,8 +521,9 @@ function step(G, dt) {
 }
 const freeSlots = G => G.slots.map((s, i) => i).filter(i => !G.slots[i].locked && !G.slots[i].it);
 function autoSlot(G) { const f = freeSlots(G); f.sort((a, b) => dist(G.slots[a], FRONT) - dist(G.slots[b], FRONT)); return f[0]; }
-function buildCost(G, type) { const c = BUILD[type].cost[0]; return Math.round(c * (type === "cooler" ? G.room.cooler : 1)); }
-function upCost(G, s) { const c = BUILD[s.it.type].cost[s.it.lv]; return Math.round(c * (s.it.type === "cooler" ? G.room.cooler : 1)); }
+const costMult = (G, type) => type === "cooler" ? G.room.cooler : type === "fridge" ? (G.room.fridgeCost || 1) : 1;
+function buildCost(G, type) { return Math.round(BUILD[type].cost[0] * costMult(G, type)); }
+function upCost(G, s) { return Math.round(BUILD[s.it.type].cost[s.it.lv] * costMult(G, s.it.type)); }
 function build(G, type, idx) {
   if (G.over) return {ok:false, why:"over"};
   if (idx == null) idx = autoSlot(G); if (idx == null) return {ok:false, why:"full"};
@@ -542,6 +566,94 @@ function useSkill(G) {
   emit(G, {k:"foam"}); return true;
 }
 function collectCrate(G, id) { const c = G.crates.find(c => c.id === id); if (!c) return false; G.gold += c.val; G.crates = G.crates.filter(x => x !== c); emit(G, {k:"coin", x:c.x, y:c.y, val:c.val}); return true; }
+/* ===== AI 봇과 멀티(다 같이) ===== */
+const BOT_NAMES = ["AI 김대리", "AI 박과장", "AI 이사원", "AI 최팀장", "AI 정인턴", "AI 한부장"];
+// 방어력 어림값: 문 체력 + 설비 화력. 약한 방일수록 귀신이 더 몰린다
+function strengthOf(G) {
+  let s = G.door.hp * 0.6;
+  for (const sl of G.slots) {
+    const it = sl.it; if (!it) continue; const b = BUILD[it.type], L = it.lv - 1;
+    if (it.type === "micro") s += b.dmg[L] / b.cd[L] * 6;
+    else if (it.type === "cooler" || it.type === "light") s += b.dmg[L] / b.cd[L] * 10;
+    else if (it.type === "fridge") s += b.rep[L] * 8;
+  }
+  return s;
+}
+// 봇이 한 번에 하는 행동. skill(0~1)이 낮을수록 실수하고 늦다
+function botAct(G, skill) {
+  const R = G.rng, cnt = t => G.slots.filter(s => s.it && s.it.type === t).length, att = G.en.filter(e => e.atk).length;
+  if (G.skill.cd <= 0 && (att >= 3 || G.en.some(e => e.type === "dragon" && e.atk)) && R() < 0.4 + 0.6 * skill) useSkill(G);
+  if (G.door.hp < G.door.max * (0.3 + 0.15 * skill) && repairCost(G) <= G.gold && R() < 0.4 + 0.6 * skill) { repairDoor(G); return; }
+  if (R() > 0.5 + 0.5 * skill) return;
+  const free = freeSlots(G).length;
+  const cheapestUp = () => { let best = -1, bc = 1e9; G.slots.forEach((s, i) => { if (s.it && s.it.type !== "desk" && s.it.lv < 3) { const c = upCost(G, s); if (c < bc) { bc = c; best = i; } } }); return best; };
+  const want = [
+    [() => cnt("micro") >= 1, () => build(G, "micro").ok],
+    [() => G.deskLv >= 2, () => upgradeDesk(G).ok],
+    [() => G.door.lv >= 1, () => upgradeDoor(G).ok],
+    [() => cnt("micro") >= 2, () => build(G, "micro").ok],
+    [() => cnt("cooler") >= 1 || free < 1, () => build(G, "cooler").ok],
+    [() => G.deskLv >= 3, () => upgradeDesk(G).ok],
+    [() => G.door.lv >= 2, () => upgradeDoor(G).ok],
+    [() => cnt("micro") >= 3 || free < 1, () => build(G, "micro").ok],
+    [() => cnt("fridge") >= 1 || free < 1, () => build(G, "fridge").ok],
+    [() => G.door.lv >= 3, () => upgradeDoor(G).ok],
+    [() => cnt("cooler") >= 2 || free < 1, () => build(G, "cooler").ok],
+    [() => G.deskLv >= 4, () => upgradeDesk(G).ok],
+    [() => cnt("light") >= 1 || free < 1 || G.t < 140, () => build(G, "light").ok],
+    [() => G.door.lv >= 4, () => upgradeDoor(G).ok],
+  ];
+  for (const [done, act] of want) { if (done()) continue; act(); return; }
+  const u = cheapestUp(); if (u >= 0 && upgradeSlot(G, u).ok) return;
+  if (free > 0 && build(G, cnt("cooler") < cnt("micro") ? "cooler" : "micro").ok) return;
+  if (G.deskLv < 5 && upgradeDesk(G).ok) return;
+  if (G.door.lv < 5) upgradeDoor(G);
+}
+// 약한 방일수록 보스가 잘 붙는다(제비뽑기). skip 은 직전 대상
+function pickWeak(M, alive, skip) {
+  const c = alive.filter(p => p.id !== skip), pool = c.length ? c : alive;
+  let sum = 0; for (const p of pool) sum += p.w * p.w;
+  let r = M.rng() * sum; for (const p of pool) { r -= p.w * p.w; if (r <= 0) return p; }
+  return pool[pool.length - 1];
+}
+// opts.youSkill 이 있으면 "나"도 봇이 대신 플레이한다(시뮬레이션용)
+function newMulti(room, bots, meta, diff, seed, opts) {
+  opts = opts || {}; const sd = seed || 1, auto = opts.youSkill != null;
+  const M = {t:0, parts:[], n0:bots.length + 1, over:null, feed:[], diff, boss:{}, rng:mkRng(sd * 2654435761), k:opts.k || 300, scale:opts.scale || ({easy:1.35})[diff] || 1};
+  const add = (r, m, rng, name, you, skill) => { const G = newRun(r, m, rng, diff); G.multi = true; if (!you) G.emit = false; M.parts.push({id:M.parts.length, name, you, skill, G, alive:true, deadAt:0, share:1, w:1, botT:1 + M.rng()}); };
+  add(room, meta, auto ? mkRng(sd * 7919) : null, "나", !auto, auto ? opts.youSkill : 0);
+  bots.forEach((b, i) => add(b.room, b.meta || metaOf({}), mkRng(sd * 131 + i * 977), b.name, false, b.skill));
+  return M;
+}
+function stepMulti(M, dt) {
+  if (M.over) return;
+  M.t += dt;
+  const alive = M.parts.filter(p => p.alive), total = M.scale * (0.5 * M.n0 + 0.5 * alive.length);
+  let sum = 0; for (const p of alive) { p.w = 1 / (strengthOf(p.G) + M.k); sum += p.w; }
+  for (const p of alive) { p.share = total * p.w / sum; p.G.pressure = p.share; }
+  const B = M.boss, mark = (p, k) => { M.feed.push({k, id:p.id, name:p.name, you:p.you}); };
+  if (M.t >= 140 && !B.m1) { B.m1 = 1; const p = pickWeak(M, alive, -1); B.last = p.id; spawn(p.G, "mini"); emit(p.G, {k:"mini"}); mark(p, "mini"); }
+  if (M.t >= 280 && !B.m2) { B.m2 = 1; const p = pickWeak(M, alive, B.last); spawn(p.G, "mini"); emit(p.G, {k:"mini"}); mark(p, "mini"); }
+  if (M.t >= 352 && !B.w) { B.w = 1; const p = pickWeak(M, alive, -1); B.dragonId = p.id; emit(p.G, {k:"warn"}); mark(p, "dragon"); }
+  if (M.t >= 368 && !B.d) { B.d = 1; let p = M.parts[B.dragonId]; if (!p.alive) p = pickWeak(M, alive, -1); spawn(p.G, "dragon"); }
+  for (const p of alive) {
+    if (!p.you) { p.botT -= dt; if (p.botT <= 0) { botAct(p.G, p.skill); p.botT = (2.2 - 1.5 * p.skill) * (0.7 + 0.6 * p.G.rng()); } }
+    step(p.G, dt);
+    if (p.G.over === "lose") { p.alive = false; p.deadAt = M.t; mark(p, "out"); }
+  }
+  const left = M.parts.filter(p => p.alive);
+  if (!M.parts[0].alive) M.over = "out";
+  else if (M.n0 > 1 && left.length === 1) { M.over = "last"; M.parts[0].G.over = "win"; }
+  else if (M.t >= DURATION) M.over = "end";
+}
+// 순위: 살아 있는 쪽이 먼저(점수순), 탈락자는 늦게 탈락한 순서
+function standings(M) {
+  const won = p => p.alive && (M.over === "end" || M.over === "last");
+  const row = p => ({p, t:Math.floor(p.G.t), kills:p.G.stats.kills, alive:p.alive, deadAt:p.deadAt, score:scoreOf({t:p.G.t, kills:p.G.stats.kills, win:won(p), dragon:p.G.stats.dragon}, p.G.room.id, M.diff)});
+  const rows = M.parts.map(row), live = rows.filter(r => r.alive), dead = rows.filter(r => !r.alive);
+  live.sort((x, y) => y.score - x.score); dead.sort((x, y) => y.deadAt - x.deadAt);
+  const all = [...live, ...dead]; all.forEach((r, i) => { r.place = i + 1; }); return all;
+}
 /* ===ENGINE_END=== */
 
 /* ===== helpers / save / audio ===== */
@@ -553,7 +665,7 @@ const pad = n => String(n).padStart(2, "0");
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const reduced = () => { try { return matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return false; } };
 const KEY = "roundb.night.v1";
-let SAVE = {rp:0, ups:{}, best:{}, cleared:{}, runs:0, wins:0, mute:false, diff:"easy", nick:"", code:"", syncAt:0};
+let SAVE = {rp:0, ups:{}, best:{}, cleared:{}, runs:0, wins:0, mute:false, diff:"easy", nick:"", code:"", syncAt:0, mode:"solo", bots:3};
 try { const j = JSON.parse(localStorage.getItem(KEY) || "null"); if (j && typeof j === "object") SAVE = {...SAVE, ...j, ups:{...(j.ups || {})}, best:{...(j.best || {})}, cleared:{...(j.cleared || {})}}; } catch (e) {}
 const persist = noSync => { try { localStorage.setItem(KEY, JSON.stringify(SAVE)); } catch (e) {} if (!noSync) syncSoon(); };
 
@@ -630,7 +742,7 @@ async function cloudPull(code) {
 
 /* ===== art palette & drawing helpers ===== */
 const INK = "#14141c", OAK = "#e4cba3", OAKD = "#b8955f", WHITE = "#f5f7f8", TILE = "#c9cfd4", MESH = "#bfc5c9", BLACKCH = "#2a2d36", ORANGE = "#ff9a3d", PURI = "#bbd6ee";
-const FLOOR = {conf:"#cdd3d8", storage:"#cfc8bc", men:"#cfe0f0", women:"#f2d4d8", ac:"#d3d8df"};
+const FLOOR = {conf:"#cdd3d8", storage:"#cfc8bc", men:"#cfe0f0", women:"#f2d4d8", ac:"#d3d8df", studio:"#e4e8ec", lounge:"#e6d8bf"};
 function rr(g, x, y, w, h, r) { r = Math.min(r, w / 2, h / 2); g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
 function ell(g, x, y, rx, ry) { g.beginPath(); g.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2); }
 function stk(g, fill, lw = 3) { if (fill) { g.fillStyle = fill; g.fill(); } g.lineWidth = lw; g.strokeStyle = INK; g.lineJoin = "round"; g.stroke(); }
@@ -662,7 +774,8 @@ function makeBG(room) {
   decor(g, room);
   // 벽
   g.strokeStyle = INK; g.lineWidth = 14; g.lineJoin = "round"; g.strokeRect(room.L, 30, rw, 370);
-  g.fillStyle = fl; g.fillRect(DOOR.x - DOOR.w / 2, 392, DOOR.w, 16);
+  const dw = room.doorW || DOOR.w; g.fillStyle = fl; g.fillRect(DOOR.x - dw / 2, 392, dw, 16);
+  if (room.open) { g.fillStyle = "rgba(255,154,61,.85)"; for (let x = DOOR.x - dw / 2 + 4; x < DOOR.x + dw / 2 - 8; x += 22) g.fillRect(x, 396, 12, 5); }
   return c;
 }
 function decor(g, room) {
@@ -681,6 +794,23 @@ function decor(g, room) {
   } else if (t === "ac") {
     for (const sx of [345, 455]) { rr(g, sx, 48, 105, 70, 6); stk(g, "#e6e9ee", 3); ell(g, sx + 52, 83, 26, 26); stk(g, "#9aa3ab", 2.5); for (let k = 0; k < 4; k++) { g.beginPath(); g.moveTo(sx + 52, 83); g.lineTo(sx + 52 + Math.cos(k * 1.57 + .5) * 24, 83 + Math.sin(k * 1.57 + .5) * 24); g.stroke(); } }
     g.fillStyle = "#f4c542"; for (let i = 0; i < 12; i++) { g.save(); g.translate(345 + i * 19, 372); g.rotate(-.5); g.fillRect(-6, -4, 12, 8); g.restore(); }
+  } else if (t === "studio") {
+    rr(g, 96, 44, 230, 150, 26); stk(g, "#fbfcfd", 3); g.fillStyle = "#e6eaee"; g.fillRect(104, 150, 214, 38);   // 흰 곡면 호리존 배경
+    g.fillStyle = ORANGE; g.fillRect(104, 50, 214, 6);                                                         // 주황 LED 띠
+    for (const sx of [640, 740]) {                                                                            // 소프트박스 + 삼각대
+      g.strokeStyle = "#c9ced3"; g.lineWidth = 3; g.beginPath(); g.moveTo(sx, 150); g.lineTo(sx, 112); g.moveTo(sx, 150); g.lineTo(sx - 14, 170); g.moveTo(sx, 150); g.lineTo(sx + 14, 170); g.stroke();
+      rr(g, sx - 22, 62, 44, 52, 5); stk(g, "#1b1d26", 3); rr(g, sx - 15, 69, 30, 38, 3); stk(g, "#fff6d8", 2);
+    }
+    g.strokeStyle = "#555"; g.lineWidth = 3; g.beginPath(); g.moveTo(560, 120); g.lineTo(546, 178); g.moveTo(560, 120); g.lineTo(574, 178); g.moveTo(560, 120); g.lineTo(560, 172); g.stroke();
+    rr(g, 546, 98, 28, 20, 4); stk(g, "#2a2d36", 2.5); ell(g, 560, 108, 6, 6); stk(g, "#8fb5d9", 2);           // 카메라
+    g.fillStyle = "rgba(255,154,61,.5)"; g.fillRect(96, 198, 230, 4);
+  } else if (t === "lounge") {
+    for (const sx of [96, 214]) { rr(g, sx, 62, 100, 46, 12); stk(g, "#8e9aa8", 3); rr(g, sx + 6, 80, 88, 26, 8); stk(g, "#a9b5c2", 2.5); }   // 소파
+    for (const [tx, ty] of [[190, 170], [330, 185]]) { ell(g, tx, ty, 34, 20); stk(g, OAK, 3); g.fillStyle = "#fff"; g.fillRect(tx - 6, ty - 12, 8, 8); g.strokeStyle = INK; g.lineWidth = 1.5; g.strokeRect(tx - 6, ty - 12, 8, 8); }   // 둥근 테이블과 컵
+    rr(g, 600, 54, 200, 40, 6); stk(g, WHITE, 3); g.strokeStyle = OAKD; g.lineWidth = 3; g.strokeRect(604, 58, 192, 8);   // 카운터
+    rr(g, 628, 36, 40, 26, 4); stk(g, "#2a2d36", 2.5); rr(g, 740, 38, 40, 24, 4); stk(g, "#cfd3d6", 2.5);              // 커피머신, 전자렌지
+    rr(g, 676, 110, 56, 80, 5); stk(g, "#d94a3a", 3); rr(g, 684, 120, 40, 40, 3); stk(g, "#fff6d8", 2);                // 자판기
+    for (const px of [100, 800]) { ell(g, px, 350, 18, 11); stk(g, "#c9a46a", 2); ell(g, px, 332, 16, 22); stk(g, "#6bbf7a", 2.5); }   // 화분
   }
 }
 function drawGhostBody(g, r, w, fill) {
@@ -730,12 +860,12 @@ function drawEnemy(g, e, time, alpha) {
   g.restore();
 }
 function drawDoor(g, G, time) {
-  const lv = G.door.lv, x = DOOR.x, y = DOOR.y, w = DOOR.w, ratio = G.door.hp / G.door.max;
+  const lv = G.door.lv, x = DOOR.x, y = DOOR.y, w = G.doorW, ratio = G.door.hp / G.door.max;
   g.save(); g.translate(x, y);
   if (G.door.flash > 0) g.translate((Math.random() - .5) * 3, 0);
-  if (lv === 0) { for (let i = 0; i < 3; i++) { rr(g, -w / 2 + i * 38, -20, 34, 28, 4); stk(g, "#f2f4f5", 3); rr(g, -w / 2 + i * 38 + 4, -20, 26, 5, 2); stk(g, OAK, 1.5); } rr(g, -16, -34, 32, 18, 5); stk(g, BLACKCH, 2.5); }
-  else if (lv === 1) { rr(g, -w / 2, -18, w, 30, 3); stk(g, "#d9b27c", 3); for (let i = 0; i < 4; i++) { g.beginPath(); g.moveTo(-w / 2 + i * 28, -18); g.lineTo(-w / 2 + i * 28, 12); g.lineWidth = 2; g.strokeStyle = OAKD; g.stroke(); } g.fillStyle = "#555"; for (const px of [-w / 2 + 8, w / 2 - 8]) for (const py of [-12, 6]) { g.beginPath(); g.arc(px, py, 2.5, 0, 7); g.fill(); } }
-  else if (lv === 2) { rr(g, -w / 2, -18, w, 30, 3); stk(g, "#9aa3ab", 3); g.fillStyle = "#6d757c"; for (let i = 0; i < 7; i++) for (const py of [-12, 6]) { g.beginPath(); g.arc(-w / 2 + 8 + i * 16, py, 2.5, 0, 7); g.fill(); } g.fillStyle = "#e8e8e8"; g.fillRect(-w / 2 + 4, -3, w - 8, 3); }
+  if (lv === 0) { const n = Math.round(w / 37), st = w / n; for (let i = 0; i < n; i++) { rr(g, -w / 2 + i * st, -20, st - 4, 28, 4); stk(g, "#f2f4f5", 3); rr(g, -w / 2 + i * st + 4, -20, st - 12, 5, 2); stk(g, OAK, 1.5); } rr(g, -16, -34, 32, 18, 5); stk(g, BLACKCH, 2.5); }
+  else if (lv === 1) { rr(g, -w / 2, -18, w, 30, 3); stk(g, "#d9b27c", 3); { const n = Math.round(w / 27.5); for (let i = 0; i < n; i++) { const bx = -w / 2 + i * (w / n); g.beginPath(); g.moveTo(bx, -18); g.lineTo(bx, 12); g.lineWidth = 2; g.strokeStyle = OAKD; g.stroke(); } } g.fillStyle = "#555"; for (const px of [-w / 2 + 8, w / 2 - 8]) for (const py of [-12, 6]) { g.beginPath(); g.arc(px, py, 2.5, 0, 7); g.fill(); } }
+  else if (lv === 2) { rr(g, -w / 2, -18, w, 30, 3); stk(g, "#9aa3ab", 3); g.fillStyle = "#6d757c"; { const n = Math.max(2, Math.round((w - 16) / 15.7) + 1); for (let i = 0; i < n; i++) for (const py of [-12, 6]) { g.beginPath(); g.arc(-w / 2 + 8 + i * ((w - 16) / (n - 1)), py, 2.5, 0, 7); g.fill(); } } g.fillStyle = "#e8e8e8"; g.fillRect(-w / 2 + 4, -3, w - 8, 3); }
   else if (lv === 3) { rr(g, -w / 2, -20, w, 32, 3); stk(g, "#e8553a", 3.5); rr(g, -w / 2 + 8, -13, w - 16, 18, 2); stk(g, "#c53f27", 2); rr(g, -26, -4, 52, 6, 3); stk(g, "#cfd3d6", 2); }
   else if (lv === 4) { rr(g, -w / 2, -22, w, 34, 4); stk(g, "#4a5058", 3.5); ell(g, 0, -5, 15, 15); stk(g, "#8b939b", 3); for (let k = 0; k < 6; k++) { g.beginPath(); g.moveTo(0, -5); g.lineTo(Math.cos(k * 1.047) * 18, -5 + Math.sin(k * 1.047) * 18); g.lineWidth = 3; g.strokeStyle = "#cfd3d6"; g.stroke(); } }
   else { rr(g, -w / 2, -24, w, 36, 5); stk(g, "#101018", 4); ell(g, 0, -6, 20, 20); stk(g, "#000", 3); g.strokeStyle = "#fff"; g.lineWidth = 2; g.stroke(); g.fillStyle = "#fff"; g.font = "italic 700 9px sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("ROUNDB", 0, -6); g.shadowColor = "#6aa8ff"; g.shadowBlur = 14; g.strokeStyle = "#6aa8ff"; g.lineWidth = 2; g.strokeRect(-w / 2 + 3, -21, w - 6, 30); g.shadowBlur = 0; }
@@ -790,7 +920,7 @@ function drawItem(g, s, it, time, flashT) {
 }
 
 /* ===== UI state ===== */
-const UI = {screen:"title", G:null, room:null, pickId:null, sel:null, speed:1, paused:false, last:0, raf:0, fx:{p:[], f:[], b:[], r:[]}, shake:0, flash:0, itemFlash:{}, hints:{}, endT:0, ended:false, hudT:0, panelT:0, selHtml:"", heartT:0, doorSnd:0, warnT:0, back:"title"};
+const UI = {screen:"title", G:null, M:null, multi:false, feedI:0, feedT:0, room:null, pickId:null, sel:null, speed:1, paused:false, last:0, raf:0, fx:{p:[], f:[], b:[], r:[]}, shake:0, flash:0, itemFlash:{}, hints:{}, endT:0, ended:false, hudT:0, panelT:0, selHtml:"", heartT:0, doorSnd:0, warnT:0, back:"title"};
 
 function show(name) {
   UI.screen = name;
@@ -822,14 +952,24 @@ function buildSelect() {
     return `<button class="rcard" data-act="pick-room" data-room="${r.id}" aria-pressed="${UI.pickId === r.id}">
       <div class="row" style="justify-content:space-between"><h3 class="disp">${r.floor} ${esc(r.name)}</h3><span class="stars" aria-label="난이도 ${r.star}">${stars(r.star)}</span></div>
       <p class="dim small">${esc(r.perk)}</p>
-      <div class="rc-stats"><span class="chip">설치 칸 ${r.base + meta.slots}</span><span class="chip">문 x${r.doorMult}</span><span class="chip">동시 공격 ${r.contact}</span><span class="chip">시작 ₩${r.gold + meta.startGold}</span>${r.rec ? `<span class="chip tag-rec">처음이라면 추천</span>` : ""}${clear ? `<span class="chip" style="color:var(--mint)">클리어</span>` : best ? `<span class="chip">최고 ${fmtTime(best)}</span>` : ""}</div>
+      <div class="rc-stats"><span class="chip">설치 칸 ${r.base + meta.slots}</span><span class="chip">문 x${r.doorMult}</span><span class="chip">동시 공격 ${r.contact}</span><span class="chip">시작 ₩${r.gold + meta.startGold}</span>${r.open ? `<span class="chip" style="color:var(--blue)">문 없는 개방형</span>` : ""}${r.rec ? `<span class="chip tag-rec">처음이라면 추천</span>` : ""}${clear ? `<span class="chip" style="color:var(--mint)">클리어</span>` : best ? `<span class="chip">최고 ${fmtTime(best)}</span>` : ""}</div>
     </button>`; }).join("");
-  $("#s-rp").textContent = fmt(SAVE.rp) + " RP"; buildDiff(); updatePick();
+  $("#s-rp").textContent = fmt(SAVE.rp) + " RP"; buildDiff(); buildMode(); updatePick();
 }
 function buildDiff() {
   const d = DIFFS[SAVE.diff] ? SAVE.diff : "easy"; SAVE.diff = d;
   $("#diff-seg").innerHTML = Object.keys(DIFFS).map(k => `<button role="radio" aria-checked="${k === d}" data-act="diff" data-d="${k}">${DIFFS[k].n}</button>`).join("");
   $("#diff-desc").textContent = "난이도 " + DIFFS[d].n + " · " + DIFFS[d].d;
+}
+function buildMode() {
+  const m = SAVE.mode === "multi" ? "multi" : "solo", n = [2, 3, 5].includes(SAVE.bots) ? SAVE.bots : 3;
+  $("#mode-seg").innerHTML = [["solo", "혼자"], ["multi", "다 같이"]].map(([k, l]) => `<button role="radio" aria-checked="${k === m}" data-act="mode" data-m="${k}">${l}</button>`).join("");
+  const bs = $("#bots-seg"); bs.hidden = m !== "multi";
+  bs.innerHTML = [2, 3, 5].map(k => `<button role="radio" aria-checked="${k === n}" data-act="bots" data-n="${k}">AI ${k}명</button>`).join("");
+  $("#mode-desc").textContent = m === "multi"
+    ? `AI 동료 ${n}명과 같은 밤을 버텨요. 귀신은 문이 약한 방으로 몰리고, 문이 부서지면 탈락해요. (랭킹은 혼자 모드만)`
+    : "혼자서 한 방을 지켜 랭킹에 도전해요.";
+  $("#go").textContent = m === "multi" ? "다 같이 시작" : "이 방으로 들어가기";
 }
 function updatePick() {
   const r = ROOMS.find(x => x.id === UI.pickId);
@@ -845,18 +985,48 @@ function buildShop() {
 }
 
 /* ===== game start / panel ===== */
-function startRun(id) {
+function makeParty(room, meta) {
+  const n = [2, 3, 5].includes(SAVE.bots) ? SAVE.bots : 3, d = SAVE.diff, base = d === "easy" ? .45 : d === "hard" ? .8 : .6;
+  const names = BOT_NAMES.slice().sort(() => Math.random() - .5), pool = ROOMS.filter(r => r.id !== room.id).sort(() => Math.random() - .5);
+  const bots = Array.from({length:n}, (_, i) => ({room:pool[i % pool.length], name:names[i], skill:clamp(base + (Math.random() - .5) * .3, .25, .95)}));
+  return newMulti(room, bots, meta, d, 1 + Math.floor(Math.random() * 1e9), {});
+}
+function buildParty() {
+  const M = UI.M, el = $("#party"); el.hidden = $("#feed").hidden = !M; $("#feed").textContent = "";
+  if (!M) { el.innerHTML = ""; return; }
+  el.innerHTML = M.parts.map(p => `<div class="pt${p.you ? " me" : ""}" data-p="${p.id}"><b><span>${esc(p.you ? "나" : p.name)}</span><span class="pt-s"></span></b><div class="bar"><i></i></div><small>${esc(p.G.room.floor + " " + p.G.room.name)}</small></div>`).join("");
+}
+function updateParty() {
+  const M = UI.M; if (!M) return;
+  for (const p of M.parts) {
+    const el = $(`.pt[data-p="${p.id}"]`); if (!el) continue;
+    const r = p.G.door.hp / p.G.door.max, bar = $(".bar", el);
+    el.classList.toggle("out", !p.alive); el.classList.toggle("boss", p.alive && p.G.en.some(e => e.boss && !e.dead));
+    bar.classList.toggle("low", r < .3); bar.firstElementChild.style.width = clamp(r * 100, 0, 100) + "%";
+    $(".pt-s", el).textContent = p.alive ? "" : "탈락";
+  }
+  while (UI.feedI < M.feed.length) {
+    const f = M.feed[UI.feedI++]; let msg = "";
+    if (f.you) continue;
+    if (f.k === "out") { msg = `${f.name} 탈락! 문이 부서졌어요`; sfx("lose", 300); }
+    else if (f.k === "mini") msg = `${f.name} 방에 야근 대마왕이 나타났어요`;
+    else if (f.k === "dragon") { msg = `공실 드래곤이 ${f.name} 방으로 향해요`; sfx("warn", 300); }
+    if (msg) { $("#feed").textContent = msg; UI.feedT = 4.5; }
+  }
+}
+function startRun(id, multi) {
   const room = ROOMS.find(r => r.id === id); if (!room) return;
   DPR = Math.min(2, window.devicePixelRatio || 1);
-  const meta = metaOf(SAVE.ups), G = newRun(room, meta, null, SAVE.diff);
-  Object.assign(UI, {G, room, sel:null, speed:1, paused:false, fx:{p:[], f:[], b:[], r:[]}, shake:0, flash:0, itemFlash:{}, hints:{}, endT:0, ended:false, selHtml:"", heartT:0, warnT:0});
+  const meta = metaOf(SAVE.ups), M = multi ? makeParty(room, meta) : null, G = M ? M.parts[0].G : newRun(room, meta, null, SAVE.diff);
+  Object.assign(UI, {G, M, multi:!!multi, feedI:0, feedT:0, room, sel:null, speed:1, paused:false, fx:{p:[], f:[], b:[], r:[]}, shake:0, flash:0, itemFlash:{}, hints:{}, endT:0, ended:false, selHtml:"", heartT:0, warnT:0});
   $("#h-speed").textContent = "x1"; $("#h-mute").textContent = SAVE.mute ? "소리 꺼짐" : "소리";
   const cv = $("#cv"); cv.width = W * DPR; cv.height = H * DPR;
   bgCv = makeBG(room); lightCv = document.createElement("canvas"); lightCv.width = W * DPR; lightCv.height = H * DPR;
   $("#slots").innerHTML = G.slots.map((s, i) => `<button class="sl" data-act="sel-slot" data-i="${i}" style="left:${s.x / W * 100}%;top:${s.y / H * 100}%" aria-label="${i + 1}번 설치 칸"></button>`).join("");
+  $("#dr").style.width = room.doorW ? (room.doorW + 24) / W * 100 + "%" : "";
   const dk = $("#dk"); dk.style.left = room.desk[0] / W * 100 + "%"; dk.style.top = (room.desk[1] + 22) / H * 100 + "%";
   $("#crates").innerHTML = ""; $("#hint").hidden = true; $("#warn").hidden = true;
-  UI.runId = null; if (apiOn()) api("start").then(j => { if (UI.G === G) UI.runId = j.runId; }).catch(() => {});
+  UI.runId = null; buildParty(); if (apiOn() && !M) api("start").then(j => { if (UI.G === G) UI.runId = j.runId; }).catch(() => {});
   buildPanel(); updateSlots(); updatePanel(true); updateHUD(true);
   show("game"); sfx("click");
   setTimeout(() => { if (UI.G === G && !UI.paused) { $("#bn").textContent = "퇴근 시간이 지났다"; restart($("#bn"), "go"); } }, 300);
@@ -934,7 +1104,7 @@ function consume() {
     case "lob": UI.itemFlash[e.i] = .1; sfx("lob", 90); break;
     case "splash": ring(e.x, e.y, 80, "#8fd3ff", .45); burstP(e.x, e.y, 10, {sp:200, g:300, up:60, life:.45, size:3, color:"#9fdcff"}); sfx("splash", 90); break;
     case "kill": burstP(e.x, e.y, e.type === "dragon" ? 60 : e.type === "mini" ? 36 : 12, {sp:e.type === "dragon" ? 420 : 220, life:.55, size:3.5, color:e.type === "zombie" ? "#a9cf93" : e.type === "blob" ? "#b79ae6" : e.type === "ghost" ? "#eaf3ff" : "#ff9a6a"}); floater(e.x, e.y - 18, "+" + e.gold); sfx("kill", 60); if (e.type === "dragon" || e.type === "mini") addShake(14); break;
-    case "doorhit": { const k = Math.min(1, e.dmg / 12); UI.doorSnd += e.dmg; if (UI.doorSnd > 9) { UI.doorSnd = 0; sfx("door", 120); } if (Math.random() < .35) burstP(DOOR.x + (Math.random() - .5) * 90, DOOR.y + 6, 2, {sp:140, g:260, up:50, life:.4, size:2.5, color:"#d8c8a0"}); if (e.dmg > 40) addShake(8); break; }
+    case "doorhit": { const k = Math.min(1, e.dmg / 12); UI.doorSnd += e.dmg; if (UI.doorSnd > 9) { UI.doorSnd = 0; sfx("door", 120); } if (Math.random() < .35) burstP(DOOR.x + (Math.random() - .5) * Math.max(90, UI.G.doorW * .8), DOOR.y + 6, 2, {sp:140, g:260, up:50, life:.4, size:2.5, color:"#d8c8a0"}); if (e.dmg > 40) addShake(8); break; }
     case "build": burstP(e.x, e.y, 14, {sp:240, g:200, up:90, life:.5, size:3, color:"#f6c453"}); ring(e.x, e.y, 46, "#f6c453", .35); sfx("build"); break;
     case "up": burstP(e.x, e.y, 18, {sp:260, up:120, life:.6, size:3, color:"#9bffd0"}); ring(e.x, e.y, 54, "#9bffd0", .4); sfx("up"); break;
     case "sell": floater(e.x, e.y - 20, "철거"); sfx("click"); break;
@@ -1026,7 +1196,9 @@ function frame(ts) {
   if (UI.screen !== "game") { UI.raf = 0; return; }
   const G = UI.G, dt = Math.min(.1, (ts - UI.last) / 1000); UI.last = ts;
   if (!UI.paused) {
-    if (!G.over) for (let n = 0; n < UI.speed; n++) { let r = dt; while (r > 0 && !G.over) { const d = Math.min(r, 1 / 30); step(G, d); r -= d; } }
+    const M = UI.M;
+    if (M) { if (!M.over) for (let n = 0; n < UI.speed; n++) { let r = dt; while (r > 0 && !M.over) { const d = Math.min(r, 1 / 30); stepMulti(M, d); r -= d; } } }
+    else if (!G.over) for (let n = 0; n < UI.speed; n++) { let r = dt; while (r > 0 && !G.over) { const d = Math.min(r, 1 / 30); step(G, d); r -= d; } }
     consume();
     const fdt = dt * (G.over ? 1 : UI.speed);
     for (const p of UI.fx.p) { p.life -= fdt; p.x += p.vx * fdt; p.y += p.vy * fdt; p.vy += p.g * fdt; }
@@ -1037,10 +1209,11 @@ function frame(ts) {
     for (const k in UI.itemFlash) UI.itemFlash[k] = Math.max(0, UI.itemFlash[k] - fdt);
     UI.shake *= Math.pow(.0008, dt); UI.flash = Math.max(0, UI.flash - dt * 1.6);
     if (UI.warnT > 0) { UI.warnT -= dt; if (UI.warnT <= 0) $("#warn").hidden = true; }
+    if (UI.feedT > 0) { UI.feedT -= dt; if (UI.feedT <= 0) $("#feed").textContent = ""; }
     if (G.door.hp / G.door.max < .3 && !G.over) { UI.heartT -= dt; if (UI.heartT <= 0) { UI.heartT = .85; sfx("heart"); } }
     if (G.over && !UI.ended) beginEnd(); if (UI.ended) UI.endT += dt;
     if (UI.ended && UI.endT > (G.over === "win" ? 2.1 : 1.8) && UI.screen === "game") showResult();
-    UI.hudT -= dt; if (UI.hudT <= 0) { UI.hudT = .1; updateHUD(); updateCrates(); }
+    UI.hudT -= dt; if (UI.hudT <= 0) { UI.hudT = .1; updateHUD(); updateCrates(); updateParty(); }
     UI.panelT -= dt; if (UI.panelT <= 0) { UI.panelT = .2; updatePanel(); updateSlots(); hints(); }
   }
   render(ts / 1000);
@@ -1053,7 +1226,7 @@ function updateCrates() {
 }
 function beginEnd() {
   const G = UI.G; UI.ended = true; UI.endT = 0;
-  if (G.over === "win") { sfx("win"); banner("새벽 6시 — 첫 출근!", ""); UI.flash = .9; burstP(450, 300, 80, {sp:600, life:1, size:4, color:"#ffd27a"}); }
+  if (G.over === "win") { sfx("win"); banner(UI.M && UI.M.over === "last" ? "마지막 생존자!" : "새벽 6시 — 첫 출근!", ""); UI.flash = .9; burstP(450, 300, 80, {sp:600, life:1, size:4, color:"#ffd27a"}); }
   else { sfx("lose"); banner("문이 부서졌다…", "red"); addShake(30); UI.flash = .5; for (const e of G.en) e.spot = -1; }
 }
 function rankBoxHTML() {
@@ -1102,7 +1275,25 @@ function buildSave(msg) {
 }
 function saveMsg(t, good) { const m = $("#save-msg"); if (m) { m.textContent = t; m.style.color = good ? "var(--mint)" : "var(--cream)"; } }
 let loadArm = "";
+function showMultiResult() {
+  const M = UI.M, G = UI.G, room = UI.room, st = standings(M), me = st.find(r => r.p.you), n = st.length, win = G.over === "win", t = G.t;
+  const bonus = n >= 3 ? [20, 10, 5][me.place - 1] || 0 : me.place === 1 ? 10 : 0;
+  const rp = Math.floor(t / 12) + Math.floor(G.stats.kills / 15) + (win ? 25 : 0) + (G.stats.dragon ? 15 : 0) + bonus;
+  SAVE.runs++; if (win) { SAVE.wins++; SAVE.cleared[room.id] = true; } SAVE.best[room.id] = Math.max(SAVE.best[room.id] || 0, Math.floor(t)); SAVE.rp += rp; persist();
+  const left = st.filter(r => r.alive).length;
+  const head = me.place === 1 ? "1등! 오늘 밤은 내가 지킨다" : win ? `${me.place}등 — 새벽 6시 출근 완료` : `${me.place}등 — 문이 부서졌다…`;
+  const sub = M.over === "last" ? "동료가 모두 탈락했어요. 마지막 생존자!" : M.over === "end" ? `새벽 6시까지 ${left}명이 버텼어요.` : `${fmtTime(t)}에 탈락했어요. 그때 동료 ${Math.max(0, left)}명이 버티고 있었어요.`;
+  const rows = st.map(r => `<div class="rk-row ${r.p.you ? "me" : ""}"><div class="rk-n ${r.place <= 3 ? "rk-" + r.place : ""}">${r.place}</div><div style="min-width:0;text-align:left"><div class="rk-nick">${esc(r.p.you ? "나" : r.p.name)}</div><div class="rk-sub">${esc(r.p.G.room.floor + " " + r.p.G.room.name)} · ${r.alive ? (M.over === "out" ? "생존 중" : "새벽까지 생존") : fmtTime(r.t) + " 탈락"} · 처치 ${fmt(r.kills)}</div></div><div class="rk-sc num">${r.alive && M.over === "out" ? `<span class="small dim">진행 중</span>` : fmt(r.score)}</div></div>`).join("");
+  $("#res").innerHTML = `<h2 class="disp" style="color:${me.place === 1 || win ? "var(--gold)" : "var(--red)"}">${esc(head)}</h2>
+    <p class="dim">${esc(room.floor)} ${esc(room.name)} · 다 같이 ${n}명 · ${DIFFS[G.diffKey].n}<br>${esc(sub)}</p>
+    <div class="rk" style="text-align:left">${rows}</div>
+    <div class="row" style="justify-content:center"><span class="chip" style="color:var(--gold)">+${rp} RP${bonus ? ` (순위 보너스 ${bonus})` : ""}</span><span class="chip">보유 ${fmt(SAVE.rp)} RP</span></div>
+    <p class="small faint">다 같이 모드는 랭킹에 올라가지 않아요. 랭킹은 혼자 모드 기록이에요.</p>
+    <div class="row" style="justify-content:center"><button class="btn btn-red" data-act="retry">같은 방 다시</button><button class="btn" data-act="to-select">방 고르기</button><button class="btn btn-gold" data-act="to-shop">상점 (${fmt(SAVE.rp)} RP)</button></div>`;
+  show("result"); UI.screen = "result";
+}
 function showResult() {
+  if (UI.M) { showMultiResult(); return; }
   const G = UI.G, room = UI.room, win = G.over === "win", t = G.t;
   const rp = Math.floor(t / 12) + Math.floor(G.stats.kills / 15) + (win ? 25 : 0) + (G.stats.dragon ? 15 : 0);
   const runSt = {room:room.id, diff:G.diffKey, t:Math.floor(t), kills:G.stats.kills, win, dragon:!!G.stats.dragon};
@@ -1142,8 +1333,10 @@ const A = {
   back: () => { if (UI.back === "select") { buildSelect(); show("select"); } else { buildTitle(); show("title"); } },
   "pick-room": b => { UI.pickId = b.dataset.room; updatePick(); sfx("click"); },
   locked: b => toast(b.dataset.why),
-  go: () => { if (UI.pickId) startRun(UI.pickId); },
-  retry: () => startRun(UI.room.id),
+  go: () => { if (UI.pickId) startRun(UI.pickId, SAVE.mode === "multi"); },
+  retry: () => startRun(UI.room.id, UI.multi),
+  mode: b => { SAVE.mode = b.dataset.m === "multi" ? "multi" : "solo"; persist(true); buildMode(); sfx("click"); },
+  bots: b => { SAVE.bots = Number(b.dataset.n) || 3; persist(true); buildMode(); sfx("click"); },
   buy: b => { const s = SHOP.find(x => x.k === b.dataset.k), lv = SAVE.ups[s.k] || 0; if (lv >= s.max) return; const c = s.cost[lv]; if (SAVE.rp < c) { toast("RP가 부족해요"); return; } SAVE.rp -= c; SAVE.ups[s.k] = lv + 1; persist(); buildShop(); sfx("up"); },
   speed: () => { UI.speed = UI.speed === 1 ? 2 : 1; $("#h-speed").textContent = "x" + UI.speed; },
   mute: () => { SAVE.mute = !SAVE.mute; persist(); $("#h-mute").textContent = SAVE.mute ? "소리 꺼짐" : "소리"; sfx("click"); },
@@ -1160,7 +1353,7 @@ const A = {
   "slot-sell": () => { if (typeof UI.sel !== "number") return; const r = sellSlot(UI.G, UI.sel); if (r.ok) UI.sel = null; updatePanel(); updateSlots(); },
   skill: () => { if (!useSkill(UI.G)) { toast("소화기를 재충전하는 중이에요"); sfx("click"); } updatePanel(); },
   resume: () => setPause(false),
-  quit: () => { setPause(false); UI.G.over = "quit"; UI.ended = true; buildSelect(); show("select"); },
+  quit: () => { setPause(false); UI.G.over = "quit"; UI.M = null; UI.ended = true; buildSelect(); show("select"); },
 };
 function doBuild(type) {
   const G = UI.G; let idx = typeof UI.sel === "number" && !G.slots[UI.sel].it && !G.slots[UI.sel].locked ? UI.sel : null;
