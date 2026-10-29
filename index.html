@@ -58,7 +58,7 @@ h1,h2,h3,p{margin:0}
 .hot:hover,.hot[aria-pressed="true"]{background:rgba(246,196,83,.42);border-color:#b8841f;animation:none}
 .hot.fl{border-color:#2f9d73;background:rgba(111,224,176,.1);animation:none}
 .hot.fl[aria-pressed="true"]{background:rgba(246,196,83,.3);border-color:#b8841f}
-.hot.fl .tip{opacity:1;top:10px;transform:translate(-50%,0)}
+.hot.fl .tip{opacity:1}
 .hot.lock{border-style:dashed;border-color:#6a7090;background:rgba(40,46,80,.28);cursor:not-allowed;animation:none}
 .hot .tip{position:absolute;left:50%;top:-8px;transform:translate(-50%,-100%);background:#14141c;color:#fff;font:600 12px var(--f-body);padding:3px 8px;border-radius:6px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .12s}
 .hot:hover .tip,.hot:focus-visible .tip{opacity:1}
@@ -1389,7 +1389,7 @@ function buildPlan() {
   const pos = h => `left:${h[0] / 20}%;top:${h[1] / 15.8}%;width:${(h[2] - h[0]) / 20}%;height:${(h[3] - h[1]) / 15.8}%`;
   if (SAVE.mode === "multi") {   // 다 같이: 배치도에서 층을 고른다
     const fl = FLOORS[SAVE.floor] ? SAVE.floor : "4f";
-    for (const [k, box] of [["3f", [90, 230, 965, 1450]], ["4f", [1040, 230, 1910, 1450]]]) { const b = document.createElement("button"); b.className = "hot fl"; b.style.cssText = pos(box); b.dataset.act = "wf"; b.dataset.f = k; b.setAttribute("aria-pressed", String(k === fl)); b.setAttribute("aria-label", FLOORS[k].name + " 고르기"); b.innerHTML = `<span class="tip">${FLOORS[k].name}${k === fl ? " · 선택됨" : " · 눌러서 고르기"}</span>`; plan.appendChild(b); }
+    for (const [k, box] of [["3f", [80, 172, 975, 1468]], ["4f", [1030, 172, 1925, 1468]]]) { const b = document.createElement("button"); b.className = "hot fl"; b.style.cssText = pos(box); b.dataset.act = "wf"; b.dataset.f = k; b.setAttribute("aria-pressed", String(k === fl)); b.setAttribute("aria-label", FLOORS[k].name + " 고르기"); b.innerHTML = `<span class="tip">${FLOORS[k].name}${k === fl ? " · 선택됨" : " · 눌러서 고르기"}</span>`; plan.appendChild(b); }
     return;
   }
   for (const r of ROOMS) { const b = document.createElement("button"); b.className = "hot"; b.style.cssText = pos(r.hot); b.dataset.room = r.id; b.dataset.act = "pick-room"; b.setAttribute("aria-label", `${r.floor} ${r.name} 선택`); b.setAttribute("aria-pressed", String(UI.pickId === r.id)); b.innerHTML = `<span class="tip">${r.floor} ${esc(r.name)}</span>`; plan.appendChild(b); }
