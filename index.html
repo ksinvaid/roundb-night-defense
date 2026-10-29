@@ -201,6 +201,9 @@ input,textarea{font:inherit;font-size:15px;color:var(--cream);background:var(--b
 .rk-1{color:#ffd24a}.rk-2{color:#d5dbe6}.rk-3{color:#e0935a}
 .rk-nick{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rk-sub{font-size:12px;color:var(--dim)}
+.sel-set{margin-bottom:12px;gap:8px}
+.sel-row{gap:10px 22px;align-items:center}
+.sel-grp{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .rk-bd{font-size:11px;color:var(--faint);line-height:1.5;margin-top:2px}
 .rk-row.w{grid-template-columns:40px minmax(0,1fr) auto}
 .biw{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;align-items:center}
@@ -231,7 +234,7 @@ input,textarea{font:inherit;font-size:15px;color:var(--cream);background:var(--b
         <div class="row" style="justify-content:center"><button class="btn btn-sm" data-act="to-rank">랭킹</button><button class="btn btn-sm" data-act="to-save">저장·불러오기</button><button class="btn btn-sm" data-act="to-gallery">공간 둘러보기</button></div>
         <p class="small faint" id="t-best"></p>
         <div id="t-links"></div>
-        <p class="small faint">PROTOTYPE v0.6 · 혼자 또는 같이(사람·AI) · 클릭·터치로 플레이 · 단축키는 게임 중 패널에 표시돼요</p>
+        <p class="small faint">PROTOTYPE v0.7 · 혼자 또는 같이(사람·AI) · 클릭·터치로 플레이 · 단축키는 게임 중 패널에 표시돼요</p>
       </div>
     </div>
   </section>
@@ -242,6 +245,7 @@ input,textarea{font:inherit;font-size:15px;color:var(--cream);background:var(--b
         <div><h2 class="disp" style="font-size:30px" id="sel-title">어느 방에 숨을까요?</h2><p class="dim small" id="sel-sub">배치도에서 방을 고르세요. 방마다 설치 칸, 문 내구도, 특기가 달라요. 문이 없던 호리존 스튜디오와 휴게공간도 열렸어요.</p></div>
         <div class="row"><button class="btn btn-sm btn-ghost" data-act="to-title">처음으로</button><button class="btn btn-sm" data-act="to-shop">사원증 상점 <span class="chip num" id="s-rp"></span></button></div>
       </div>
+      <div class="box sel-set" id="sel-set"><div class="row sel-row"><div class="sel-grp"><span class="small dim">모드</span><div class="seg" id="mode-seg" role="radiogroup" aria-label="모드"></div></div><div class="sel-grp"><span class="small dim">난이도</span><div class="seg" id="diff-seg" role="radiogroup" aria-label="난이도"></div></div></div><div class="small faint" id="diff-desc"></div><div class="small faint" id="mode-desc"></div></div>
       <div id="world-intro" hidden><div class="box" style="gap:12px">
         <h3>다 같이 · 한 층 전체를 지켜요</h3>
         <p class="dim small">실제 배치도처럼 한 층에 방 5개가 둘러 있어요. 위 배치도에서 층을 고르세요. 시작하면 직접 걸어가서 책상에 앉으면 그 방의 문이 닫혀요. 문이 뚫려도 바로 끝나지 않아요 — 방 안 설비가 버티는 동안 최후의 항전을 하고, 문을 다시 막을 수도 있어요. 다른 사람 방의 보조석에 앉아 같이 싸우거나 달려가 문을 고쳐 줄 수 있고, 복도에서 귀신에게 맞아 쓰러져도 22초 뒤 입구에서 다시 일어나요(쓰러진 동안엔 유령 소화기로 도와요). 보스가 오는 길은 한눈에 보이고, 층 지도를 눌러 다른 사람(또는 AI)이 뭘 하는지 구경할 수 있어요.</p>
@@ -252,8 +256,8 @@ input,textarea{font:inherit;font-size:15px;color:var(--cream);background:var(--b
       </div></div>
       <div class="plan" id="plan"><img src="img/plan.jpg" alt="라운드비 3층 라운지와 4층 공유오피스 배치도"></div>
       <div class="cards" id="cards"></div>
-      <div class="pick-bar"><div class="pick-l"><div id="pick-info" class="dim">방을 하나 골라 주세요.</div><div id="diff-desc" class="small faint"></div><div id="mode-desc" class="small faint"></div></div>
-        <div class="row"><div class="seg" id="mode-seg" role="radiogroup" aria-label="모드"></div><div class="seg" id="diff-seg" role="radiogroup" aria-label="난이도"></div><button class="btn btn-red" id="go" data-act="go" disabled>이 방으로 들어가기</button></div></div>
+      <div class="pick-bar" id="pick-bar"><div class="pick-l"><div id="pick-info" class="dim">방을 하나 골라 주세요.</div></div>
+        <div class="row"><button class="btn btn-red" id="go" data-act="go" disabled>이 방으로 들어가기</button></div></div>
     </div>
   </section>
 
@@ -1140,7 +1144,7 @@ async function api(action, body) {
   } catch (e) { if (e && e.code) throw e; throw {code: e && e.name === "AbortError" ? "timeout" : "net"}; }
   finally { clearTimeout(tm); }
 }
-const ERR = {off:"랭킹 서버가 아직 연결되지 않았어요", net:"인터넷 연결을 확인해 주세요", timeout:"서버가 느려요. 잠시 뒤 다시 눌러 주세요", nick:"닉네임은 2~10자로 적어 주세요", nick_bad:"사용할 수 없는 닉네임이에요", run:"이번 판은 시작 기록이 없어 등록할 수 없어요", fast:"플레이 시간이 기록과 맞지 않아 등록할 수 없어요", busy:"요청이 몰렸어요. 잠시 뒤 다시 눌러 주세요", nocode:"저장 코드를 찾을 수 없어요. 다시 확인해 주세요", full:"저장 공간이 가득 찼어요", bad:"등록할 수 없는 기록이에요", server:"서버에 문제가 있어요. 잠시 뒤 다시 시도해 주세요"};
+const ERR = {off:"랭킹 서버가 아직 연결되지 않았어요", net:"인터넷 연결을 확인해 주세요", timeout:"서버가 느려요. 잠시 뒤 다시 눌러 주세요", nick:"닉네임은 2~10자로 적어 주세요", nick_bad:"사용할 수 없는 닉네임이에요", run:"이번 판은 시작 기록이 없어 등록할 수 없어요", fast:"플레이 시간이 기록과 맞지 않아 등록할 수 없어요", busy:"요청이 몰렸어요. 잠시 뒤 다시 눌러 주세요", nocode:"저장 코드를 찾을 수 없어요. 다시 확인해 주세요", full:"저장 공간이 가득 찼어요", bad:"등록할 수 없는 기록이에요", server:"서버에 문제가 있어요. 잠시 뒤 다시 시도해 주세요", nick_taken:"이미 다른 사람이 쓰는 닉네임이에요. 다른 닉네임을 써 주세요", code:"저장 코드를 만들지 못했어요. 잠시 뒤 다시 눌러 주세요"};
 const errText = e => ERR[e && e.code] || "잠시 뒤 다시 시도해 주세요";
 const cleanNick = s => String(s == null ? "" : s).replace(/[^0-9A-Za-z\uAC00-\uD7A3\u3131-\u3163 _.\-]/g, "").replace(/\s+/g, " ").trim().slice(0, 10);
 const normCode = s => { const t = String(s == null ? "" : s).toUpperCase().replace(/[^A-Z0-9]/g, ""); return t.length === 10 && t.startsWith("RB") ? "RB-" + t.slice(2, 6) + "-" + t.slice(6) : t; };
@@ -1416,7 +1420,7 @@ function buildMode() {
   $("#mode-seg").innerHTML = [["solo", "혼자"], ["multi", "다 같이"]].map(([k, l]) => `<button role="radio" aria-checked="${k === m}" data-act="mode" data-m="${k}">${l}</button>`).join("");
   $("#wn-seg").innerHTML = [2, 3, 4, 5].map(k => `<button role="radio" aria-checked="${k === n}" data-act="wn" data-n="${k}">${k}명</button>`).join("");
   $("#wf-seg").innerHTML = Object.keys(FLOORS).reverse().map(k => `<button role="radio" aria-checked="${k === fl}" data-act="wf" data-f="${k}">${FLOORS[k].name}</button>`).join("");
-  buildPlan(); $("#world-intro").hidden = m !== "multi"; $("#plan").hidden = false; $("#cards").hidden = m === "multi"; $("#go").hidden = $("#pick-info").hidden = m === "multi";
+  buildPlan(); $("#world-intro").hidden = m !== "multi"; $("#plan").hidden = false; $("#cards").hidden = m === "multi"; $("#go").hidden = $("#pick-info").hidden = $("#pick-bar").hidden = m === "multi";
   $("#mode-desc").textContent = m === "multi" ? "복도 한 층을 걸어 다니며 자리를 잡고, 서로 도와 새벽까지 버텨요. 점수는 다 같이 랭킹에 올라가요." : "혼자서 한 방을 지켜 랭킹에 도전해요. (다 같이도 랭킹이 있어요)";
   $("#go").textContent = "이 방으로 들어가기";
   $("#sel-title").textContent = m === "multi" ? "같이 버틸까요?" : "어느 방에 숨을까요?";
@@ -1659,7 +1663,7 @@ function rankBoxHTML() {
   const L = UI.last;
   if (!apiOn()) return `<p class="small faint">랭킹 서버가 아직 연결되지 않았어요.</p>`;
   if (!L.runId) return `<p class="small faint">이번 판은 시작 기록이 없어 랭킹에 등록할 수 없어요.</p>`;
-  if (L.done) return `<p class="small" style="color:var(--mint)">${esc(L.msg)}</p><button class="btn btn-sm" data-act="to-rank" data-m="${L.kind === "w" ? "w" : "s"}">랭킹 보기</button>`;
+  if (L.done) return `<p class="small" style="color:var(--mint)">${esc(L.msg)}</p>${L.ticket ? `<p class="small">기록 확인번호 <b class="num" style="color:var(--gold);font-size:18px;letter-spacing:.05em">${esc(L.ticket)}</b><br><span class="faint">이벤트 당첨 확인에 써요. 캡처해 두세요.</span></p>` : ""}<button class="btn btn-sm" data-act="to-rank" data-m="${L.kind === "w" ? "w" : "s"}">랭킹 보기</button>`;
   return `<div class="row" style="justify-content:center"><input id="nick" maxlength="10" placeholder="닉네임 (2~10자)" value="${esc(SAVE.nick || "")}" aria-label="닉네임"><button class="btn btn-gold btn-sm" data-act="rank-submit">${L.kind === "w" ? "다 같이 랭킹 등록" : "랭킹 등록"}</button></div><p class="small dim" id="rank-msg">${esc(L.msg || "점수 " + fmt(L.score) + "점을 닉네임과 함께 등록해요.")}</p>`;
 }
 async function submitRank() {
@@ -1668,8 +1672,9 @@ async function submitRank() {
   if (nick.length < 2) { if (msg) msg.textContent = ERR.nick; return; }
   L.busy = true; if (msg) msg.textContent = "등록하는 중…";
   try {
-    const j = await api(L.kind === "w" ? "submitw" : "submit", {runId:L.runId, nick, run:L.run});
-    SAVE.nick = nick; persist(); L.done = true; L.msg = `${L.kind === "w" ? "다 같이 랭킹 " : "랭킹 "}현재 ${j.rank}위 (전체 ${j.total}명) · 내 최고 점수 ${fmt(j.best)}`; sfx("win");
+    if (!SAVE.code) await cloudPush(true);   // 닉네임 잠금용 저장 코드: 없으면 자동으로 만들어요
+    const j = await api(L.kind === "w" ? "submitw" : "submit", {runId:L.runId, nick, code:SAVE.code, run:L.run});
+    SAVE.nick = nick; SAVE.tk = {t:j.ticket, nick, score:j.score, w:L.kind === "w", at:Date.now()}; persist(); L.done = true; L.ticket = j.ticket; L.msg = `${L.kind === "w" ? "다 같이 랭킹 " : "랭킹 "}현재 ${j.rank}위 (전체 ${j.total}명) · 내 최고 점수 ${fmt(j.best)}`; sfx("win");
   } catch (e) { L.msg = errText(e); if (["run", "fast", "bad"].includes(e && e.code)) L.runId = null; }
   L.busy = false;
   const box = $("#rankbox"); if (box && UI.screen === "result") box.innerHTML = rankBoxHTML();
@@ -1678,16 +1683,17 @@ const roomLabel = id => { const r = ROOMS.find(x => x.id === id); return r ? `${
 async function buildRank() {
   const el = $("#rank-body"), mode = UI.rk === "w" ? "w" : "s";
   const tabs = `<div class="row" style="margin-bottom:10px"><div class="seg" role="radiogroup" aria-label="랭킹 종류">${[["s", "혼자"], ["w", "다 같이"]].map(([k, l]) => `<button role="radio" aria-checked="${k === mode}" data-act="rk-tab" data-m="${k}">${l}</button>`).join("")}</div></div>`;
+  const tkl = SAVE.tk && SAVE.tk.t ? `<p class="small dim" style="margin:0 0 10px">내 마지막 기록 확인번호 <b class="num" style="color:var(--gold)">${esc(SAVE.tk.t)}</b> · ${esc(SAVE.tk.nick)} · ${fmt(SAVE.tk.score)}점 <span class="faint">(이벤트 당첨 확인용)</span></p>` : "";
   if (!apiOn()) { el.innerHTML = tabs + `<p class="dim">랭킹 서버가 아직 연결되지 않았어요.</p>`; return; }
-  el.innerHTML = tabs + `<p class="dim">불러오는 중…</p>`;
+  el.innerHTML = tabs + tkl + `<p class="dim">불러오는 중…</p>`;
   const sub = r => { if (String(r.room).startsWith("world-")) { const fl = FLOORS[String(r.room).slice(6)]; return `${fl ? fl.name : "한 층"} · ${r.n || "?"}명 · ${(DIFFS[r.diff] || {}).n || r.diff} · 방 ${fmt(r.t)}초 버팀${r.win ? " · 새벽까지" : ""}${r.dragon ? " · 드래곤 처치" : ""}`; } return `${roomLabel(r.room)} · ${(DIFFS[r.diff] || {}).n || r.diff} · ${fmtTime(r.t)}${r.win ? " · 클리어" : ""}${r.dragon ? " · 드래곤 처치" : ""}`; };
   try {
     const j = await api("top", {limit:30, mode}); if (UI.screen !== "rank" || (UI.rk === "w" ? "w" : "s") !== mode) return;
-    if (!j.list.length) { el.innerHTML = tabs + `<p class="dim">아직 기록이 없어요. 첫 기록의 주인공이 되어 보세요!</p>`; return; }
-    el.innerHTML = tabs + `<div class="rk">${j.list.map(r => `<div class="rk-row ${SAVE.nick && r.nick.toLowerCase() === SAVE.nick.toLowerCase() ? "me" : ""}"><div class="rk-n ${r.rank <= 3 ? "rk-" + r.rank : ""}">${r.rank}</div>
+    if (!j.list.length) { el.innerHTML = tabs + tkl + `<p class="dim">아직 기록이 없어요. 첫 기록의 주인공이 되어 보세요!</p>`; return; }
+    el.innerHTML = tabs + tkl + `<div class="rk">${j.list.map(r => `<div class="rk-row ${SAVE.nick && r.nick.toLowerCase() === SAVE.nick.toLowerCase() ? "me" : ""}"><div class="rk-n ${r.rank <= 3 ? "rk-" + r.rank : ""}">${r.rank}</div>
       <div style="min-width:0"><div class="rk-nick">${esc(r.nick)}</div><div class="rk-sub">${esc(sub(r))}</div></div>
-      <div class="rk-sc num">${fmt(r.score)}</div></div>`).join("")}</div><p class="small faint" style="margin-top:10px">전체 ${fmt(j.total)}명 참가</p>`;
-  } catch (e) { if (UI.screen === "rank") el.innerHTML = tabs + `<p>${esc(errText(e))}</p>`; }
+      <div class="rk-sc num">${fmt(r.score)}</div></div>`).join("")}</div><p class="small faint" style="margin-top:10px">전체 ${fmt(j.total)}명 참가 · 닉네임은 처음 쓴 사람의 저장 코드에 묶여 있어요</p>`;
+  } catch (e) { if (UI.screen === "rank") el.innerHTML = tabs + tkl + `<p>${esc(errText(e))}</p>`; }
 }
 function buildSave(msg) {
   const el = $("#save-body"), at = SAVE.syncAt ? new Date(SAVE.syncAt).toLocaleString("ko-KR") : "";
@@ -1702,7 +1708,7 @@ function buildSave(msg) {
     ${SAVE.code ? `<div class="row"><b class="disp" style="font-size:26px;letter-spacing:.06em">${esc(SAVE.code)}</b><button class="btn btn-sm" data-act="copy-code">복사</button></div>
       <p class="small dim">마지막 저장 ${esc(at)} · 판이 끝날 때마다 알아서 저장돼요.</p><div class="row"><button class="btn btn-sm btn-gold" data-act="cloud-save">지금 저장</button></div>`
     : `<p class="dim">저장 코드를 만들면 다른 폰이나 PC에서도 사원증 포인트와 강화를 이어 갈 수 있어요.</p><div class="row"><button class="btn btn-gold" data-act="cloud-new">저장 코드 만들기</button></div>`}
-    <p class="small faint">코드를 아는 사람은 누구나 불러올 수 있어요. 남에게 알려 주지 마세요.</p></div>
+    <p class="small faint">코드를 아는 사람은 누구나 불러올 수 있어요. 남에게 알려 주지 마세요. 랭킹 닉네임도 이 코드에 묶여요(다른 기기에서도 같은 코드로 불러오면 같은 닉네임을 계속 써요).</p></div>
     <div class="box"><h3>코드로 불러오기</h3><div class="row"><input id="load-code" placeholder="RB-XXXX-XXXX" maxlength="14" aria-label="저장 코드" value="${esc(keep)}"><button class="btn" data-act="cloud-load" id="load-btn">불러오기</button></div></div>
     ${packBox}
     <p class="small" id="save-msg" role="status" style="min-height:20px">${esc(msg || "")}</p>`;
