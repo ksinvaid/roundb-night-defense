@@ -649,7 +649,7 @@ function layoutWorld() {
   return {rooms, W:cur + 164};
 }
 const seatPoint = r => ({x:r.def.desk[0] + r.ox, y:r.def.desk[1] + 66});
-const zoneOf = (Wd, x, y) => { if (y >= 405) return -1; for (const r of Wd.rooms) if (x >= r.L && x <= r.R) return r.i; return -1; };
+const zoneOf = (Wd, x, y) => { if (y >= CORR_TOP) return -1; for (const r of Wd.rooms) if (x >= r.L && x <= r.R) return r.i; return -1; };
 function legalPos(Wd, x, y) {
   if (x < 20 || x > Wd.W - 20) return false;
   if (y >= CORR_TOP) return y <= CORR_BOT;
@@ -729,13 +729,14 @@ function helpRepair(Wd, a) {
   const z = zoneOf(Wd, a.x, a.y), r = z >= 0 ? Wd.rooms[z] : null;
   if (!r || !r.G || r.fallen) return {ok:false, why:"room"};
   const w = a.home >= 0 ? Wd.rooms[a.home].G : null, c = repairCost(r.G);
-  if (!c) return {ok:false, why:"full"}; if (!w || w.gold < c) return {ok:false, why:"gold"};
+  if (!c || r.G.door.hp > r.G.door.max * .85) return {ok:false, why:"full"}; if (!w || w.gold < c) return {ok:false, why:"gold"};
+  if ((a.helpT || 0) > Wd.t) return {ok:false, why:"cd"}; a.helpT = Wd.t + 4;
   w.gold -= c; r.G.door.hp = r.G.door.max; emit(r.G, {k:"repair"}); a.helps++; return {ok:true};
 }
 function helpSkill(Wd, a) {
   const z = zoneOf(Wd, a.x, a.y), r = z >= 0 ? Wd.rooms[z] : null;
   if (!r || !r.G || r.fallen) return {ok:false, why:"room"};
-  if (!useSkill(r.G)) return {ok:false, why:"cd"}; a.helps++; return {ok:true};
+  if (siege(r.G) < 2) return {ok:false, why:"calm"}; if (!useSkill(r.G)) return {ok:false, why:"cd"}; a.helps++; return {ok:true};
 }
 function applyCmd(Wd, id, c, p) {
   const a = Wd.av[id]; if (!a || a.dead || Wd.over) return {ok:false};
@@ -751,7 +752,7 @@ function applyCmd(Wd, id, c, p) {
   if (c === "skill" && !G) return helpSkill(Wd, a);
   if (!G) return {ok:false};
   switch (c) {
-    case "build": return build(G, p.t, p.i);
+    case "build": if (!Object.prototype.hasOwnProperty.call(BUILD, p.t) || (p.i != null && !G.slots[p.i])) return {ok:false}; return build(G, p.t, p.i);
     case "up": return upgradeSlot(G, p.i);
     case "sell": return sellSlot(G, p.i);
     case "doorUp": return upgradeDoor(G);
@@ -770,16 +771,17 @@ function fall(Wd, r) {
   r.fallen = true; const G = r.G;
   for (const a of Wd.av) if (a.seat === r.i) { a.seat = -1; const p = seatPoint(r); a.x = p.x; a.y = p.y; }
   for (const e of G.en) { e.spot = -1; e.atk = false; }
+  G.proj = []; G.crates = [];
   emit(G, {k:"fall"}); Wd.feed.push({k:"fall", room:r.i, owner:r.owner});
 }
 function fallenStep(Wd, r, dt) {
   const G = r.G, alive = Wd.rooms.filter(x => x.G && !x.fallen), keep = [];
   for (const e of G.en) {
     if (e.dead) continue;
-    if (e.xfer == null && !e.chase && alive.length) e.xfer = pickWeak(Wd, alive, -1).i;
+    if (e.xfer == null && e.chase == null && alive.length) e.xfer = pickWeak(Wd, alive, -1).i;
     const T = e.xfer != null ? Wd.rooms[e.xfer] : null;
     if (T && (!T.G || T.fallen)) e.xfer = null;
-    else if (T && !e.chase && dist(e, T.G.front) < 230) { e.xfer = null; e.goal = null; e.spot = -1; T.G.en.push(e); continue; }
+    else if (T && e.chase == null && dist(e, T.G.front) < 230) { e.xfer = null; e.goal = null; e.spot = -1; T.G.en.push(e); continue; }
     keep.push(e);
   }
   G.en = keep; moveEnemies(G, dt);
@@ -898,7 +900,7 @@ function standingsW(Wd) {
   const rows = Wd.av.map(a => {
     const G = a.home >= 0 ? Wd.rooms[a.home].G : null, t = a.dead ? a.deadAt : Math.max(0, Math.min(DURATION, Wd.t)), win = !a.dead && Wd.over === "win";
     const kills = G ? G.stats.kills : 0;
-    return {a, t:Math.floor(t), kills, helps:a.helps, alive:!a.dead, deadAt:a.deadAt, room:G ? G.room.id : null, score:scoreOf({t, kills, win, dragon:G ? G.stats.dragon : false}, G ? G.room.id : "4f-men", Wd.diffKey) + a.helps * 40};
+    return {a, t:Math.floor(t), kills, helps:a.helps, alive:!a.dead, deadAt:a.deadAt, room:G ? G.room.id : null, score:scoreOf({t, kills, win, dragon:G ? G.stats.dragon : false}, G ? G.room.id : "4f-men", Wd.diffKey) + Math.min(a.helps, 10) * 40};
   });
   const live = rows.filter(r => r.alive).sort((x, y) => y.score - x.score), dead = rows.filter(r => !r.alive).sort((x, y) => y.deadAt - x.deadAt);
   const all = [...live, ...dead]; all.forEach((r, i) => { r.place = i + 1; }); return all;
@@ -1560,7 +1562,7 @@ const A = {
   buy: b => { const s = SHOP.find(x => x.k === b.dataset.k), lv = SAVE.ups[s.k] || 0; if (lv >= s.max) return; const c = s.cost[lv]; if (SAVE.rp < c) { toast("RP가 부족해요"); return; } SAVE.rp -= c; SAVE.ups[s.k] = lv + 1; persist(); buildShop(); sfx("up"); },
   speed: () => { if (UI.W && UI.W.net) { toast("온라인에서는 속도를 바꿀 수 없어요"); return; } UI.speed = UI.speed === 1 ? 2 : 1; $("#h-speed").textContent = "x" + UI.speed; },
   mute: () => { SAVE.mute = !SAVE.mute; persist(); $("#h-mute").textContent = SAVE.mute ? "소리 꺼짐" : "소리"; sfx("click"); },
-  pause: () => setPause(!UI.paused),
+  pause: () => setPause(UI.W && UI.W.net ? !$("#modal-slot").firstElementChild : !UI.paused),
   "sel-slot": b => { const i = Number(b.dataset.i), s = UI.G.slots[i]; UI.sel = UI.sel === i ? null : i; updateSlots(); renderSel(); sfx("click"); },
   "sel-door": () => { UI.sel = UI.sel === "door" ? null : "door"; updateSlots(); renderSel(); },
   "sel-desk": () => { const r = X("deskUp", null, () => upgradeDesk(UI.G)); flashSel(r.ok, r.why); updatePanel(); },
@@ -1581,7 +1583,11 @@ function doBuild(type) {
   if (r.ok) { UI.sel = null; } updatePanel(); updateSlots();
 }
 function setPause(on) {
-  if (UI.screen !== "game") return; if (UI.W) { if (UI.W.net || UI.W.V.o) return; UI.W.paused = on; UI.W.last = performance.now(); } else if (UI.G.over) return; UI.paused = on; UI.last = performance.now();
+  if (UI.screen !== "game") return; if (UI.W) {
+    if (UI.W.V && UI.W.V.o) return;
+    if (UI.W.net) { $("#modal-slot").innerHTML = on ? `<div class="modal" role="dialog" aria-modal="true" aria-label="나가기"><div><h2 class="disp" style="font-size:28px">나갈까요?</h2><p class="dim small">온라인에서는 시간이 멈추지 않아요. 나가면 AI가 내 자리를 이어받아요.</p><div class="row" style="justify-content:center"><button class="btn btn-red" data-act="resume" id="rs">계속하기</button><button class="btn btn-ghost" data-act="quit">나가기</button></div></div></div>` : ""; if (on) { const b = $("#rs"); if (b) b.focus(); } return; }
+    UI.W.paused = on; UI.W.last = performance.now();
+  } else if (UI.G.over) return; UI.paused = on; UI.last = performance.now();
   $("#modal-slot").innerHTML = on ? `<div class="modal" role="dialog" aria-modal="true" aria-label="일시정지"><div><h2 class="disp" style="font-size:30px">일시정지</h2><p class="dim small">시간이 멈춰 있어요. 이 상태에서는 건설할 수 없어요.</p><div class="row" style="justify-content:center"><button class="btn btn-red" data-act="resume" id="rs">계속하기</button><button class="btn btn-ghost" data-act="quit">그만두기</button></div></div></div>` : "";
   if (on) { const b = $("#rs"); if (b) b.focus(); }
 }
@@ -1594,7 +1600,7 @@ document.addEventListener("click", e => {
 document.addEventListener("keydown", e => {
   if (UI.screen !== "game" || e.ctrlKey || e.metaKey || e.altKey) return;
   if (UI.W) { wKey(e, true); return; }
-  const k = e.key.toLowerCase(), G = UI.G;
+  const k = keyOf(e), G = UI.G;
   if (k === "escape" || k === "p") { setPause(!UI.paused); return; }
   if (UI.paused || G.over) return;
   const t = ({"1":"micro","2":"cooler","3":"fridge","4":"light","5":"desk"})[k]; if (t) { doBuild(t); return; }
@@ -1721,16 +1727,17 @@ function wInput(dt) {
   if (px) { C.mode = "free"; C.x += px * 700 * dt / C.s; }
 }
 function sendMv() {
-  const W = UI.W; if (!W) return; const K = W.keys, a = avRow(W.V, W.me);
+  const W = UI.W; if (!W || !W.V) return; const K = W.keys, a = avRow(W.V, W.me);
   let x = (K.has("d") ? 1 : 0) - (K.has("a") ? 1 : 0), y = (K.has("s") ? 1 : 0) - (K.has("w") ? 1 : 0);
   if (!a || a.seat >= 0 || a.dead) { x = 0; y = 0; }
   const key = x + "," + y; if (key === W.mvSent) return; W.mvSent = key;
   worldAct("mv", {x, y}); if (x || y) W.cam.mode = "follow";
 }
+function keyOf(e) { const c = e.code || ""; if (c.startsWith("Key")) return c.slice(3).toLowerCase(); if (c.startsWith("Digit")) return c.slice(5); if (c === "Space") return " "; if (c === "Escape") return "escape"; if (c.startsWith("Arrow")) return c.toLowerCase(); return String(e.key || "").toLowerCase(); }
 function wKey(e, down) {
-  const W = UI.W, k = e.key.toLowerCase(), a = avRow(W.V, W.me);
+  const W = UI.W, k = keyOf(e); if (!W.V) return; const a = avRow(W.V, W.me);
   if (!down) { W.keys.delete(k); if ("wasd".includes(k) && k.length === 1) sendMv(); return; }
-  if (k === "escape" || k === "p") { if (!W.net) setPause(!UI.paused); return; }
+  if (k === "escape" || k === "p") { setPause(W.net ? !$("#modal-slot").firstElementChild : !UI.paused); return; }
   if (UI.paused) return;
   if (k.startsWith("arrow")) { e.preventDefault(); W.keys.add(k); return; }
   const seated = a && a.seat >= 0;
@@ -1752,7 +1759,7 @@ function wPoint(e) {
   return {x:C.x + (e.clientX - rc.left) / rc.width * 900 / C.s, y:C.y + (e.clientY - rc.top) / rc.height * 620 / C.s, nx:(e.clientX - rc.left) / rc.width};
 }
 function wClick(e) {
-  const W = UI.W, V = W.V, a = avRow(V, W.me), p = wPoint(e); if (!a) return;
+  const W = UI.W, V = W.V; if (!V) return; const a = avRow(V, W.me), p = wPoint(e); if (!a) return;
   const G = UI.G, seated = a.seat >= 0 && G;
   if (seated) {
     const r = W.lay.rooms[a.seat];
@@ -1965,7 +1972,7 @@ function buildPanelWorld() {
 }
 function updatePanelWorld() {
   const W = UI.W, V = W.V, a = avRow(V, W.me); if (!a) return;
-  const seated = a.seat >= 0, G = UI.G, z = a.y < 405 ? W.lay.rooms.findIndex(r => a.x >= r.L && a.x <= r.R) : -1, zst = z >= 0 ? V.rooms[z] : null;
+  const seated = a.seat >= 0, G = UI.G, z = a.y < 414 ? W.lay.rooms.findIndex(r => a.x >= r.L && a.x <= r.R) : -1, zst = z >= 0 ? V.rooms[z] : null;
   $("#panel").classList.toggle("standing", !seated);
   $("#me-st").textContent = a.dead ? "쓰러졌어요 (관전 중)" : seated ? `${roomName(W, a.seat)} 근무 중` : zst && !zst.f ? `${roomName(W, z)} 안` : "복도·이동 중";
   $("#me-hp").textContent = Math.round(a.hp) + " / " + AV_HP; const bar = $("#me-bar"); bar.classList.toggle("low", a.hp < 35); bar.firstElementChild.style.width = clamp(a.hp, 0, 100) + "%";
@@ -2007,6 +2014,7 @@ function updateHUDW() {
 function wframe(ts) {
   if (UI.screen !== "game" || !UI.W) { UI.raf = 0; return; }
   const W = UI.W, dt = Math.min(.1, (ts - UI.last) / 1000); UI.last = ts;
+  if (!W.Wd && W.net && performance.now() - (W.snapAt || W.startAt || 0) > 8000 && !(W.V && W.V.o)) { toast("방장과 연결이 끊어졌어요"); endWorld(); buildSelect(); show("select"); UI.raf = 0; return; }
   if (W.V) {
     wInput(dt); camUpdate(dt);
     const V = W.V;
@@ -2039,7 +2047,7 @@ function wframe(ts) {
 function showWorldResult() {
   const W = UI.W, V = W.V, res = V.res || [], me = res.find(r => r.id === W.me) || {p:res.length, t:0, k:0, h:0, s:0, al:0}, n = res.length, win = V.o === "win" && me.al;
   const bonus = n >= 3 ? [20, 10, 5][me.p - 1] || 0 : me.p === 1 ? 10 : 0;
-  const rp = Math.floor(me.t / 12) + Math.floor(me.k / 15) + (win ? 25 : 0) + me.h * 3 + bonus;
+  const rp = Math.floor(me.t / 12) + Math.floor(me.k / 15) + (win ? 25 : 0) + Math.min(me.h, 10) * 3 + bonus;
   SAVE.runs++; if (win) SAVE.wins++;
   const a = avRow(V, W.me), rid = a && a.home >= 0 ? W.lay.rooms[a.home].def.id : null;
   if (rid) { SAVE.best[rid] = Math.max(SAVE.best[rid] || 0, Math.floor(me.t)); if (win) SAVE.cleared[rid] = true; }
@@ -2080,7 +2088,7 @@ const NET_PREFIX = "rbnd-nd1-L", NET_SLOTS = 4, NET_MAX = 6;
 const NET_CMDS = new Set(["mv", "go", "goSeat", "sit", "stand", "build", "up", "sell", "doorUp", "deskUp", "repair", "skill", "crate"]);
 let LB = null;   // 열려 있는 로비(없으면 null)
 const cleanUps = u => { const o = {}; for (const [k, m] of Object.entries({startGold:5, doorHp:5, income:5, skillCd:5, slots:2})) o[k] = clamp(Math.floor(Number(u && u[k])) || 0, 0, m); return o; };
-const cleanCmd = p => { const o = {}; if (!p || typeof p !== "object") return o; for (const k of ["x", "y", "i", "id"]) if (Number.isFinite(Number(p[k])) && p[k] !== null) o[k] = Number(p[k]); if (p.i === null) o.i = null; if (typeof p.t === "string" && BUILD[p.t]) o.t = p.t; return o; };
+const cleanCmd = p => { const o = {}; if (!p || typeof p !== "object") return o; for (const k of ["x", "y", "i", "id"]) if (Number.isFinite(Number(p[k])) && p[k] !== null) o[k] = Number(p[k]); if (p.i === null) o.i = null; if (typeof p.t === "string" && Object.prototype.hasOwnProperty.call(BUILD, p.t)) o.t = p.t; if (typeof o.i === "number") o.i = clamp(Math.floor(o.i), 0, 11); return o; };
 
 function loadPeerJS() {
   if (window.Peer) return Promise.resolve();
@@ -2131,7 +2139,7 @@ function lobbyClaim(L, slot) {
   });
 }
 function lobbyHost(L, peer) {
-  L.phase = "host"; L.role = "host"; L.humans = [{name:SAVE.nick || "나", meta:metaOf(SAVE.ups), conn:null}];
+  clearInterval(L.timer); L.phase = "host"; L.role = "host"; L.humans = [{name:SAVE.nick || "나", meta:metaOf(SAVE.ups), conn:null}];
   const now = performance.now(); L.deadline = now + LOBBY_SEC * 1000; L.tmax = now + 10500; L.left = LOBBY_SEC; L.beacon = 0;
   peer.on("connection", conn => {
     conn.on("data", msg => hostMsg(L, conn, msg));
@@ -2153,7 +2161,7 @@ function hostMsg(L, conn, msg) {
     if (msg.t === "hello") {
       if (conn._h) return;
       if (L.humans.length >= NET_MAX) { try { conn.send({t:"full"}); } catch (e) {} setTimeout(() => { try { conn.close(); } catch (e) {} }, 300); return; }
-      let name = cleanNick(msg.name) || "손님"; while (L.humans.some(h => h.name === name)) name = (name + "2").slice(0, 10);
+      let name = cleanNick(msg.name) || "손님", dup = 2; const base = name.slice(0, 8); while (L.humans.some(h => h.name === name)) name = base + dup++;
       const h = {name, meta:metaOf(cleanUps(msg.ups)), conn}; conn._h = h; L.humans.push(h);
       L.deadline = Math.min(L.tmax, Math.max(L.deadline, performance.now() + 4000)); hostBeacon(L); renderLobby(true); sfx("click");
     } else if (msg.t === "bye") hostDrop(L, conn);
@@ -2174,9 +2182,9 @@ function hostDrop(L, conn) {
 }
 function lobbyBegin(L) {
   if (L.started) return; L.started = true; clearInterval(L.timer);
-  const humans = L.humans.slice(), total = Math.max(SAVE.players, humans.length);
-  lobbyClose(true);
-  startWorld({total, humans:humans.map(h => ({name:h.name, meta:h.meta})), diff:SAVE.diff, net:L});
+  const humans = L.humans.slice(), total = Math.max(SAVE.players, humans.length), online = humans.length > 1;
+  lobbyClose(online);
+  startWorld({total, humans:humans.map(h => ({name:h.name, meta:h.meta})), diff:SAVE.diff, net:online ? L : null});
   const W = UI.W; L.humans = humans;
   humans.forEach((h, i) => { if (h.conn) { try { h.conn.send({t:"start", you:i, names:W.names, diff:W.diff}); } catch (e) {} } });
 }
@@ -2186,6 +2194,13 @@ function lobbyJoin(L, slot) {
   if (LB !== L || L.canceled) return;
   L.phase = "join"; L.msg = "같이 할 사람 방에 들어가는 중…"; renderLobby(true);
   const peer = new Peer({debug:0}); L.peer = peer; let done = false;
+  clearInterval(L.timer);
+  L.timer = setInterval(() => {
+    if (LB !== L) { clearInterval(L.timer); return; }
+    if (L.phase !== "joined") return;
+    if (performance.now() - (L.beaconAt || 0) > 6500) { lobbyClose(); toast("방장과 연결이 끊어졌어요. 다시 시도해 주세요"); return; }
+    L.left = Math.max(0, (L.leftBase || 0) - (performance.now() - L.beaconAt) / 1000); renderLobby();
+  }, 500);
   const next = () => { if (done) return; done = true; try { peer.destroy(); } catch (e) {} if (LB !== L || L.started) return; if (slot + 1 < NET_SLOTS) lobbyClaim(L, slot + 1); else lobbyFallback("같이 할 사람 방이 가득 찼어요. AI와 시작해요"); };
   peer.on("error", err => {
     if (done || LB !== L) return;
@@ -2197,7 +2212,7 @@ function lobbyJoin(L, slot) {
     const tmo = setTimeout(next, 6000);
     conn.on("open", () => { clearTimeout(tmo); if (done || LB !== L) return; L.conn = conn; conn.send({t:"hello", name:SAVE.nick || "손님", ups:SAVE.ups}); });
     conn.on("data", msg => clientMsg(L, conn, msg, next));
-    conn.on("close", () => { clearTimeout(tmo); clientGone(L); });
+    conn.on("close", () => { clearTimeout(tmo); if (done && !L.started) return; clientGone(L); });
     conn.on("error", () => { clearTimeout(tmo); if (!L.started && !done) next(); });
   });
 }
@@ -2209,7 +2224,7 @@ function clientGone(L) {
 }
 function clientMsg(L, conn, msg, next) {
   if (!msg || typeof msg !== "object") return;
-  if (msg.t === "lobby" && LB === L) { L.phase = "joined"; L.role = "client"; L.names = Array.isArray(msg.names) ? msg.names.map(n => String(n)) : []; L.left = Number(msg.left) || 0; renderLobby(L.key !== "joined|" + L.names.join(",")); }
+  if (msg.t === "lobby" && LB === L) { L.phase = "joined"; L.role = "client"; L.names = Array.isArray(msg.names) ? msg.names.map(n => String(n)) : []; L.left = L.leftBase = Number(msg.left) || 0; L.beaconAt = performance.now(); renderLobby(L.key !== "joined|" + L.names.join(",")); }
   else if (msg.t === "full") next();
   else if (msg.t === "start" && LB === L && !L.started) { L.started = true; L.role = "client"; lobbyClose(true); startWorldClient(L, conn, msg); }
   else if (msg.t === "s") { const W = UI.W; if (W && W.net === L && !W.Wd) onSnapshot(W, msg.V); }
@@ -2218,7 +2233,7 @@ function clientMsg(L, conn, msg, next) {
 function startWorldClient(L, conn, msg) {
   DPR = Math.min(2, window.devicePixelRatio || 1); UI.lastWorld = {net:true}; UI.lastKind = "world";
   const lay = layoutWorld(), names = Array.isArray(msg.names) ? msg.names.map(n => String(n)) : [];
-  const W = {Wd:null, lay, V:null, me:Number(msg.you) || 0, names, net:L, last:performance.now(), paused:false, evq:[], fi:0, cam:{x:lay.W / 2 - 450, y:0, s:1, mode:"follow"}, camCx:0, home:-1, seated:false, keys:new Set(), mvSent:"", bg:null, shadow:null, hudT:0, panelT:0, partyKey:"", roomsKey:"", feedT:0, pos:{}, moving:{}, diff:DIFFS[msg.diff] ? msg.diff : "normal", snapAt:0, snapGap:70, pEn:new Map(), pAv:new Map()};
+  const W = {Wd:null, lay, V:null, me:Number(msg.you) || 0, names, net:L, last:performance.now(), paused:false, evq:[], fi:0, cam:{x:lay.W / 2 - 450, y:0, s:1, mode:"follow"}, camCx:0, home:-1, seated:false, keys:new Set(), mvSent:"", bg:null, shadow:null, hudT:0, panelT:0, partyKey:"", roomsKey:"", feedT:0, pos:{}, moving:{}, diff:DIFFS[msg.diff] ? msg.diff : "normal", snapAt:0, startAt:performance.now(), snapGap:70, pEn:new Map(), pAv:new Map()};
   beginWorldUI(W);
 }
 function onSnapshot(W, V) {
