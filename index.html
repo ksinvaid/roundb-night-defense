@@ -211,7 +211,7 @@ input{font:inherit;font-size:15px;color:var(--cream);background:var(--bg2);borde
         </div>
         <div class="row" style="justify-content:center"><button class="btn btn-sm" data-act="to-rank">랭킹</button><button class="btn btn-sm" data-act="to-save">저장·불러오기</button><button class="btn btn-sm" data-act="to-gallery">공간 둘러보기</button></div>
         <p class="small faint" id="t-best"></p>
-        <p class="small faint">PROTOTYPE v0.4 · 혼자 또는 같이(사람·AI) · 클릭·터치로 플레이 · 단축키는 게임 중 패널에 표시돼요</p>
+        <p class="small faint">PROTOTYPE v0.5 · 혼자 또는 같이(사람·AI) · 클릭·터치로 플레이 · 단축키는 게임 중 패널에 표시돼요</p>
       </div>
     </div>
   </section>
@@ -1009,7 +1009,7 @@ function toast(msg) {
 }
 
 /* ===== 서버: 랭킹·저장 (구글 앱스스크립트) ===== */
-let API_URL = "";   // 서버를 배포한 뒤 웹 앱 주소를 여기에 넣어요. 비어 있으면 랭킹·저장은 꺼진 채로 게임만 돼요
+let API_URL = "https://script.google.com/macros/s/AKfycbyD_Py0YU6uKczivkdgNAkHy1SxYZizCu1DhbwOlOAnMxhjT2jjwB_6X7BcN3S4a0Ks9w/exec";   // 서버를 배포한 뒤 웹 앱 주소를 여기에 넣어요. 비어 있으면 랭킹·저장은 꺼진 채로 게임만 돼요
 const apiOn = () => !!API_URL;
 async function api(action, body) {
   if (!API_URL) throw {code:"off"};
