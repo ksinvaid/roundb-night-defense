@@ -56,6 +56,9 @@ h1,h2,h3,p{margin:0}
 .plan>img{position:absolute;inset:0;width:100%;height:100%;display:block}
 .hot{position:absolute;appearance:none;padding:0;border:3px solid var(--red);background:rgba(232,85,58,.16);border-radius:10px;cursor:pointer;animation:hotp 1.8s ease-in-out infinite}
 .hot:hover,.hot[aria-pressed="true"]{background:rgba(246,196,83,.42);border-color:#b8841f;animation:none}
+.hot.fl{border-color:#2f9d73;background:rgba(111,224,176,.1);animation:none}
+.hot.fl[aria-pressed="true"]{background:rgba(246,196,83,.3);border-color:#b8841f}
+.hot.fl .tip{opacity:1;top:10px;transform:translate(-50%,0)}
 .hot.lock{border-style:dashed;border-color:#6a7090;background:rgba(40,46,80,.28);cursor:not-allowed;animation:none}
 .hot .tip{position:absolute;left:50%;top:-8px;transform:translate(-50%,-100%);background:#14141c;color:#fff;font:600 12px var(--f-body);padding:3px 8px;border-radius:6px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .12s}
 .hot:hover .tip,.hot:focus-visible .tip{opacity:1}
@@ -134,6 +137,9 @@ h1,h2,h3,p{margin:0}
 .pt .pt-s{color:var(--red);font-size:12px}
 .pt small{font-size:11px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pt .bar{height:8px}
+.pt .bar.door{height:6px}
+.pt .bar.door>i{background:linear-gradient(90deg,#b58a2e,#f6c453)}
+.pt .bar.door.low>i{background:linear-gradient(90deg,var(--red2),var(--red))}
 @media (max-width:600px){.party{gap:6px}.pt{flex:1 1 30%;min-width:0;padding:4px 8px}.pt small{display:none}.pt b{font-size:12px}}
 .feed{min-height:20px;margin:0 0 8px;font-size:13px;font-weight:600;color:var(--gold);text-align:center}
 
@@ -155,7 +161,11 @@ h1,h2,h3,p{margin:0}
 /* world */
 .stage.world #slots,.stage.world #dr,.stage.world #dk,.stage.world #crates{display:none}
 .stage.world #cv{touch-action:none;cursor:crosshair}
-.mmwrap{position:absolute;left:8px;bottom:8px;width:34%;min-width:120px;max-width:300px;border:2px solid var(--ink);border-radius:10px;overflow:hidden;background:rgba(11,14,29,.88);box-shadow:0 3px 0 rgba(0,0,0,.5);z-index:5}
+.pcol{min-width:0}
+.mmwrap{margin-top:10px;max-width:640px;border:2px solid var(--ink);border-radius:12px;overflow:hidden;background:rgba(11,14,29,.92);box-shadow:0 3px 0 rgba(0,0,0,.5)}
+.mmwrap[hidden]{display:none}
+.mm-h{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:5px 10px;font-size:12px;color:var(--dim);border-bottom:2px solid var(--ink)}
+.mm-h b{color:var(--cream)}
 .mmwrap canvas{display:block;width:100%;height:auto;cursor:pointer;touch-action:none}
 .panel.standing .own{display:none}
 .panel:not(.standing) .standing-only{display:none}
@@ -191,6 +201,15 @@ input,textarea{font:inherit;font-size:15px;color:var(--cream);background:var(--b
 .rk-1{color:#ffd24a}.rk-2{color:#d5dbe6}.rk-3{color:#e0935a}
 .rk-nick{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rk-sub{font-size:12px;color:var(--dim)}
+.rk-bd{font-size:11px;color:var(--faint);line-height:1.5;margin-top:2px}
+.rk-row.w{grid-template-columns:40px minmax(0,1fr) auto}
+.biw{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;align-items:center}
+.lk{justify-content:center;flex-wrap:wrap;gap:8px}
+.lk a{text-decoration:none;color:var(--cream)}
+.ph-crop{width:100%;height:120px;border-radius:10px;border:2px solid var(--ink);background-color:#faf6ee;background-repeat:no-repeat}
+.rc-tag{position:absolute;right:8px;top:8px;font:700 11px var(--f-body);background:rgba(20,20,28,.82);color:#ffe27a;padding:2px 8px;border-radius:99px}
+.rc-wrap{position:relative}
+.rc-wrap .rc-tag+.rc-img{display:block}
 .rk-sc{font:700 18px var(--f-body);color:var(--gold);text-align:right}
 .rankbox{display:grid;gap:8px;justify-items:center;padding:12px;border-radius:14px;background:var(--bg2)}
 .rankbox input{width:min(220px,100%)}
@@ -211,7 +230,8 @@ input,textarea{font:inherit;font-size:15px;color:var(--cream);background:var(--b
         </div>
         <div class="row" style="justify-content:center"><button class="btn btn-sm" data-act="to-rank">랭킹</button><button class="btn btn-sm" data-act="to-save">저장·불러오기</button><button class="btn btn-sm" data-act="to-gallery">공간 둘러보기</button></div>
         <p class="small faint" id="t-best"></p>
-        <p class="small faint">PROTOTYPE v0.5 · 혼자 또는 같이(사람·AI) · 클릭·터치로 플레이 · 단축키는 게임 중 패널에 표시돼요</p>
+        <div id="t-links"></div>
+        <p class="small faint">PROTOTYPE v0.6 · 혼자 또는 같이(사람·AI) · 클릭·터치로 플레이 · 단축키는 게임 중 패널에 표시돼요</p>
       </div>
     </div>
   </section>
@@ -224,7 +244,7 @@ input,textarea{font:inherit;font-size:15px;color:var(--cream);background:var(--b
       </div>
       <div id="world-intro" hidden><div class="box" style="gap:12px">
         <h3>다 같이 · 한 층 전체를 지켜요</h3>
-        <p class="dim small">실제 배치도처럼 한 층에 방 5개가 둘러 있어요. 시작하면 직접 걸어가서 책상에 앉으면 그 방의 문이 닫혀요. 문이 뚫려도 바로 쓰러지지는 않아요. 체력이 남아 있는 동안 다른 사람 방으로 달려가 도울 수 있고, 복도에서 귀신에게 맞으면 쓰러져요. 보스가 오는 길도 한눈에 보이고, 지도를 눌러 다른 사람(또는 AI)이 뭘 하는지 구경할 수 있어요.</p>
+        <p class="dim small">실제 배치도처럼 한 층에 방 5개가 둘러 있어요. 위 배치도에서 층을 고르세요. 시작하면 직접 걸어가서 책상에 앉으면 그 방의 문이 닫혀요. 문이 뚫려도 바로 끝나지 않아요 — 방 안 설비가 버티는 동안 최후의 항전을 하고, 문을 다시 막을 수도 있어요. 다른 사람 방의 보조석에 앉아 같이 싸우거나 달려가 문을 고쳐 줄 수 있고, 복도에서 귀신에게 맞아 쓰러져도 22초 뒤 입구에서 다시 일어나요(쓰러진 동안엔 유령 소화기로 도와요). 보스가 오는 길은 한눈에 보이고, 층 지도를 눌러 다른 사람(또는 AI)이 뭘 하는지 구경할 수 있어요.</p>
         <div class="row"><span class="small dim">층</span><div class="seg" id="wf-seg" role="radiogroup" aria-label="층"></div></div>
         <div class="row"><span class="small dim">참가 인원 (사람이 모자라면 AI가 채워요)</span><div class="seg" id="wn-seg" role="radiogroup" aria-label="참가 인원"></div></div>
         <div class="row"><button class="btn btn-red btn-lg" data-act="w-lobby">사람 찾아서 같이 하기</button><button class="btn btn-lg" data-act="w-ai">AI와 바로 시작</button></div>
@@ -267,7 +287,9 @@ input,textarea{font:inherit;font-size:15px;color:var(--cream);background:var(--b
         <div class="row"><button class="btn btn-sm btn-ghost" data-act="to-title">처음으로</button></div></div>
       <div class="seg" id="gal-filter" role="radiogroup" aria-label="공간 종류" style="margin-bottom:12px;flex-wrap:wrap"></div>
       <div class="gal" id="gal"></div>
-      <p class="small faint" style="margin-top:12px">라운드비 공유오피스 · 3F 라운지 / 4F 공유오피스</p>
+      <p class="small faint" id="gal-note" style="margin-top:12px"></p>
+      <p class="small faint">라운드비 공유오피스 · 3F 라운지 / 4F 공유오피스</p>
+      <div id="g-links" style="margin-top:8px"></div>
     </div>
   </section>
 
@@ -287,6 +309,7 @@ input,textarea{font:inherit;font-size:15px;color:var(--cream);background:var(--b
       <div class="party" id="party" hidden></div><div class="feed" id="feed" hidden role="status"></div>
       <div class="hint" id="hint" hidden></div>
       <div class="play">
+        <div class="pcol">
         <div class="stage" id="stage">
           <canvas id="cv" aria-hidden="true"></canvas>
           <div id="slots"></div>
@@ -294,8 +317,9 @@ input,textarea{font:inherit;font-size:15px;color:var(--cream);background:var(--b
           <button class="dk" id="dk" data-act="sel-desk" aria-label="내 책상 선택"></button>
           <div id="crates"></div>
           <div class="bn" id="bn" aria-live="polite"></div>
-          <div id="mmwrap" class="mmwrap" hidden><canvas id="mm" aria-label="층 전체 지도"></canvas></div>
           <div class="warn" id="warn" hidden><div><img src="img/boss.jpg" alt="공실 드래곤"><b class="disp" style="font-size:34px;color:#fff;text-shadow:0 3px 0 #000">공실 드래곤 접근 중</b></div></div>
+        </div>
+        <div id="mmwrap" class="mmwrap" hidden><div class="mm-h"><b>층 지도</b><span>눌러서 화면 이동 · 흰 네모 = 지금 보는 곳</span></div><canvas id="mm" aria-label="층 전체 지도"></canvas></div>
         </div>
         <aside class="panel" id="panel"></aside>
       </div>
@@ -391,6 +415,8 @@ function mkRng(seed) { let s = seed >>> 0; return () => { s = (s + 0x6D2B79F5) >
 function metaOf(u) { u = u || {}; return {startGold:(u.startGold||0)*20, doorHp:1+(u.doorHp||0)*0.08, income:u.income||0, skillCd:(u.skillCd||0)*3, slots:u.slots||0}; }
 const emit = (G, e) => { if (G.emit) { e.ox = G.ox; e.ri = G.ri || 0; e.fy = G.front.y; e.dy = G.dl; e.dr = G.dir; G.ev.push(e); } };
 const doorMax = (G, lv) => Math.round(DOOR_LV[lv].hp * G.room.doorMult * G.meta.doorHp);
+const itemMax = (G, it) => Math.round(TURRET_HP[it.type] * (1 + .7 * (it.lv - 1)) * G.meta.doorHp);
+function ensureHp(G, it) { if (it.mhp == null) { it.mhp = itemMax(G, it); it.hp = it.mhp; } return it.mhp; }
 
 function newRun(room, meta, rng, diff, ox, dir, dl) {
   ox = ox || 0; dir = dir || 1; dl = dl == null ? 400 : dl; const ty = y => dl + dir * (y - 400);
@@ -429,7 +455,9 @@ function pickType(G) {
 function director(G, dt) {
   const f = G.t / DURATION, b = 0.40 + 4.3 * Math.pow(f, 1.2);
   G.budget += b * dt * G.room.spawn * G.D.spawn * G.pressure;
+  if (G.enCap && G.en.length >= G.enCap) G.budget = Math.min(G.budget, 8);   // 월드: 한 방 몫의 귀신 수 상한(문을 때리는 건 어차피 몇 마리뿐이라 압력은 그대로예요)
   for (let g = 0; g < 8; g++) {
+    if (G.enCap && G.en.length >= G.enCap) break;
     if (!G.next) G.next = pickType(G);
     const c = ENEMY[G.next].cost; if (G.budget < c) break;
     G.budget -= c; spawn(G, G.next, G.spawnSx ? G.spawnSx(G) : undefined); G.next = null;
@@ -496,6 +524,7 @@ function moveEnemies(G, dt) {
   for (const e of en) { if (e.goal && e.goal.inRoom) continue; const lo = G.hall ? G.hall.t + e.r * .4 : 425 + e.r * .4, hi = G.hall ? G.hall.b : H - 8; e.y = Math.max(lo, Math.min(hi, e.y)); }
 }
 function doorDamage(G, dt) {
+  if (G.breach) { if (G.door.hp > 0) G.breach = null; else return; }   // 이미 뚫린 방: 귀신은 문 대신 설비를 때려요(lastStandStep)
   let dmg = 0;
   for (const e of G.en) {
     if (e.dead) continue;
@@ -506,7 +535,25 @@ function doorDamage(G, dt) {
     if (e.atk && e.stun <= 0) dmg += e.dps * (1 + 0.8 * G.t / DURATION) * G.D.dps * dt;
   }
   if (dmg > 0) { G.door.hp -= dmg; G.door.flash = .12; G.stats.hpLost += dmg; emit(G, {k:"doorhit", dmg, dw:G.doorW}); }
-  if (G.door.hp <= 0) { G.door.hp = 0; G.over = "lose"; }
+  if (G.door.hp <= 0) { G.door.hp = 0; if (G.lastStand) { G.breach = {t:0}; emit(G, {k:"breach"}); } else G.over = "lose"; }
+}
+// 최후의 항전: 문이 뚫려도 설비가 버티는 동안은 싸울 수 있다. 설비가 모두 부서지면 방이 함락된다
+function lastStandStep(G, dt) {
+  const B = G.breach; B.t += dt;
+  const k = (1 + 0.8 * G.t / DURATION) * G.D.dps * .8 * dt;
+  for (const e of G.en) {
+    if (e.dead || e.tgs == null) { e.atk = false; continue; }
+    const s = G.slots[e.tgs];
+    if (!s || !s.it) { e.tgs = null; e.atk = false; continue; }
+    ensureHp(G, s.it);
+    if (dist(e, s) < e.r + 28) { e.atk = true; s.it.hp -= e.dps * k; if (s.it.hp <= 0) { emit(G, {k:"tdead", i:e.tgs, x:s.x, y:s.y}); s.it = null; } } else e.atk = false;
+  }
+  let n = 0; for (const s of G.slots) if (s.it) n++;
+  if (!n && B.t > 1.2) G.over = "lose";
+}
+function fixDoor(G) {
+  if (G.breach) { G.breach = null; G.door.hp = Math.max(1, Math.round(G.door.max * .5)); } else G.door.hp = G.door.max;   // 뚫린 문을 다시 막으면 반만 고쳐져요
+  emit(G, {k:"repair"});
 }
 const FOREIGN_R = 330;   // 월드: 옆 방 귀신은 내 문 앞 이만큼 안으로 와야 도와 쏜다
 const pool = G => G.pool ? G.pool() : G.en;
@@ -564,7 +611,7 @@ function step(G, dt) {
   if (G.skill.cd > 0) G.skill.cd = Math.max(0, G.skill.cd - dt);
   if (G.door.flash > 0) G.door.flash -= dt;
   timeline(G); director(G, dt);
-  moveEnemies(G, dt); doorDamage(G, dt); if (G.over) return;
+  moveEnemies(G, dt); doorDamage(G, dt); if (G.breach && !G.over) lastStandStep(G, dt); if (G.over) return;
   turrets(G, dt); projectiles(G, dt);
   for (const c of G.crates) c.ttl -= dt;
   G.crates = G.crates.filter(c => c.ttl > 0);
@@ -587,7 +634,7 @@ function build(G, type, idx) {
 function upgradeSlot(G, idx) {
   const s = G.slots[idx]; if (G.over || !s || !s.it) return {ok:false}; if (s.it.lv >= 3) return {ok:false, why:"max"};
   const c = upCost(G, s); if (G.gold < c) return {ok:false, why:"gold"};
-  G.gold -= c; s.it.lv++; s.it.inv += c; emit(G, {k:"up", i:idx, x:s.x, y:s.y}); return {ok:true};
+  G.gold -= c; s.it.lv++; s.it.inv += c; if (s.it.mhp != null) { const nm = itemMax(G, s.it); s.it.hp += nm - s.it.mhp; s.it.mhp = nm; } emit(G, {k:"up", i:idx, x:s.x, y:s.y}); return {ok:true};
 }
 function sellSlot(G, idx) { const s = G.slots[idx]; if (G.over || !s || !s.it) return {ok:false}; const r = Math.floor(s.it.inv * .6); G.gold += r; s.it = null; emit(G, {k:"sell", i:idx, x:s.x, y:s.y}); return {ok:true, r}; }
 function upgradeDoor(G) {
@@ -598,7 +645,7 @@ function upgradeDoor(G) {
 const repairCost = G => G.door.hp >= G.door.max - 0.5 ? 0 : Math.max(5, Math.ceil((G.door.max - G.door.hp) * .3));
 function repairDoor(G) {
   if (G.over) return {ok:false}; const c = repairCost(G); if (!c) return {ok:false, why:"full"}; if (G.gold < c) return {ok:false, why:"gold"};
-  G.gold -= c; G.door.hp = G.door.max; emit(G, {k:"repair"}); return {ok:true};
+  G.gold -= c; fixDoor(G); return {ok:true};
 }
 function upgradeDesk(G) {
   if (G.over) return {ok:false}; const lv = G.deskLv; if (lv >= 5) return {ok:false, why:"max"};
@@ -665,8 +712,12 @@ function botAct(G, skill) {
 /* ===== 월드: 한 층을 같이 지킨다 (아바타·구역·체력) ===== */
 const WORLD_ROOMS = ["3f-storage", "4f-men", "4f-women", "4f-ac", "4f-conf", "3f-studio", "4f-lounge"];
 const SETUP = 25, AV_HP = 100, AV_SPD = 205, AV_R = 14, CORR_TOP = 414, CORR_BOT = 596, LOBBY_SEC = 60;
-const WP = {easy:1.5, normal:1.1, hard:1.2};   // 월드 모드 귀신 압력 배율(난이도별)
-const WH = {easy:{hp:1, dps:1}, normal:{hp:1.12, dps:1.05}, hard:{hp:1.25, dps:1.1}};   // 월드 모드 귀신 체력·공격력 배율
+const RESPAWN = 22, GHOST_CD = 35, ASSIST_CAP = 150, HELP_CAP = 15;   // 쓰러진 뒤 부활까지(초) · 유령 소화기 쿨다운 · 점수에 쳐 주는 보조 시간·도움 횟수 상한
+const TURRET_HP = {micro:90, cooler:100, fridge:130, light:110, desk:100};   // 설비 체력(1단계). 문이 뚫린 뒤 귀신이 설비를 때려요
+const WSC = {kill:10, hold:4, help:60, assist:3, winRoom:800, winLive:300, dragon:600};   // 다 같이 점수표: 처치 · 방 버틴 초 · 도움 · 보조 초 · 보너스
+const ENCAP = {easy:30, normal:36, hard:42};   // 월드 모드: 한 방이 상대하는 귀신 수 상한
+const WP = {easy:1.5, normal:1.1, hard:.85};   // 월드 모드 귀신 압력 배율(난이도별)
+const WH = {easy:{hp:1, dps:1}, normal:{hp:1.12, dps:1.05}, hard:{hp:1.12, dps:1.0}};   // 월드 모드 귀신 체력·공격력 배율
 const ETYPES = ["ghost", "zombie", "blob", "mini", "dragon"], ITYPES = ["micro", "cooler", "fridge", "light", "desk"];
 const cl = (v, a, b) => Math.min(b, Math.max(a, v));
 const FLOORS = {
@@ -681,7 +732,7 @@ function layoutWorld(floor) {
   const put = (id, X, dl, dir) => {
     const def = ROOMS.find(r => r.id === id), w = def.R - def.L, cx = X + w / 2, ox = cx - 450, ty = y => dl + dir * (y - 400), yA = ty(30), yB = ty(400);
     rooms.push({i:rooms.length, def, ox, dl, dir, ty, L:X, R:X + w, doorX:cx, gap:Math.max(34, (def.doorW || DOOR.w) / 2 - 8), deskX:def.desk[0] + ox, deskY:ty(def.desk[1]),
-      slotsW:def.slots.map(q => ({x:q.x + ox, y:ty(q.y)})), yMin:Math.min(yA, yB), yMax:Math.max(yA, yB), G:null, owner:-1, fallen:false, w:1});
+      slotsW:def.slots.map(q => ({x:q.x + ox, y:ty(q.y)})), yMin:Math.min(yA, yB), yMax:Math.max(yA, yB), G:null, owner:-1, fallen:false, w:1, assist:-1, since:-1, fellAt:-1, ax:def.desk[0] + ox + 88, ay:ty(def.desk[1] + 46)});
   };
   let x = 140; for (const id of F.top) { put(id, x, 400, 1); x += wd(id) + GAP; }
   put(F.bot[0], 140, dlBot, -1);
@@ -714,7 +765,7 @@ function nextWaypoint(Wd, p, d) {
 function isExposed(Wd, a) {
   if (a.seat >= 0) return false;
   const z = zoneOf(Wd, a.x, a.y); if (z < 0) return true;
-  const r = Wd.rooms[z]; return !(r.G && !r.fallen);
+  const r = Wd.rooms[z]; return !(r.G && !r.fallen && !r.G.breach);
 }
 const ratioOf = G => G.door.hp / G.door.max;
 // 두 지점 사이 복도에 떠도는(문에 안 붙은) 귀신 수: AI가 위험한 길을 가릴 때 쓴다
@@ -725,7 +776,8 @@ function newWorld(spec, diff, seed, emitOn, floor) {
   const L = layoutWorld(floor), D = DIFFS[diff] || DIFFS.normal;
   const Wd = {t:-SETUP, W:L.W, H:L.H, hall:L.hall, floor:L.floor, rooms:L.rooms, av:[], D, diffKey:DIFFS[diff] ? diff : "normal", rng:mkRng((seed || 1) * 2246822519), over:null, feed:[], ev:[], boss:{}, allEn:[], emitOn:!!emitOn};
   spec.forEach((s, i) => Wd.av.push({id:i, name:s.name, ai:!!s.ai, skill:s.skill || .6, meta:s.meta || metaOf({}), x:(L.hall.L + L.hall.R) / 2 + (i - (spec.length - 1) / 2) * 38, y:(L.hall.T + L.hall.B) / 2 + (i % 2) * 26 - 10,
-    hp:AV_HP, home:-1, seat:-1, dead:false, deadAt:0, dest:null, destSeat:-1, mv:null, mission:null, botT:.6 + Wd.rng() * 1.6, acc:0, actT:0, helps:0, face:1, hurt:0, slow:false}));
+    hp:AV_HP, home:-1, seat:-1, dead:false, deadAt:0, dest:null, destSeat:-1, mv:null, mission:null, botT:.6 + Wd.rng() * 1.6, acc:0, actT:0, helps:0, face:1, hurt:0, slow:false,
+    assist:false, destAssist:false, deaths:0, respawnAt:0, ghostT:0, assistT:0, inv:0}));
   return Wd;
 }
 function spawnX(Wd, G, min) {
@@ -733,23 +785,35 @@ function spawnX(Wd, G, min) {
   let x = G.doorX + side * d; if (x < Wd.hall.L + 40 || x > Wd.hall.R - 40) x = G.doorX - side * d;
   return cl(x, Wd.hall.L + 30, Wd.hall.R - 30);
 }
-function trySeat(Wd, a, ri) {
+function trySeat(Wd, a, ri, assist) {
   const r = Wd.rooms[ri]; if (!r || a.dead || r.fallen || a.seat >= 0) return false;
+  if (assist) {   // 보조석: 남의 방에서 같이 앉아 지킨다 (방 수당 공유)
+    if (!r.G || r.owner === a.id) return false;
+    const o = r.assist >= 0 ? Wd.av[r.assist] : null; if (o && !o.dead && o.seat === ri) return false;
+    r.assist = a.id; a.seat = ri; a.assist = true; a.x = r.ax; a.y = r.ay; a.dest = null; a.destSeat = -1; a.destAssist = false; a.mv = null; a.mission = null; r.G.away = false;
+    Wd.feed.push({k:"assist", id:a.id, name:a.name, room:ri}); return true;
+  }
   if (r.G) { const o = Wd.av[r.owner]; if (r.owner !== a.id && !(o && o.dead)) return false; if (a.home >= 0 && a.home !== ri) return false; }
   else if (a.home >= 0) return false;
   if (!r.G) {
     const G = newRun(r.def, a.meta, Wd.rng, Wd.diffKey, r.ox, r.dir, r.dl);
-    G.multi = true; G.world = true; { const w = WH[Wd.diffKey] || WH.normal; G.D = Object.assign({}, G.D, {hp:G.D.hp * w.hp, dps:G.D.dps * w.dps}); } G.emit = Wd.emitOn; G.nid = (ri + 1) * 100000 + 1; G.t = Math.max(0, Wd.t);
+    G.multi = true; G.world = true; G.lastStand = true; G.enCap = ENCAP[Wd.diffKey] || 36; { const w = WH[Wd.diffKey] || WH.normal; G.D = Object.assign({}, G.D, {hp:G.D.hp * w.hp, dps:G.D.dps * w.dps}); } G.emit = Wd.emitOn; G.nid = (ri + 1) * 100000 + 1; G.t = Math.max(0, Wd.t);
     G.pool = () => Wd.allEn; G.spawnSx = g => spawnX(Wd, g); G.ri = ri; G.hall = {t:Wd.hall.T + 11, b:Wd.hall.B - 8};
-    r.G = G;
+    r.G = G; r.since = Math.max(0, Wd.t);
   }
-  r.owner = a.id; a.home = ri; a.seat = ri; r.G.away = false;
-  a.x = r.deskX; a.y = r.ty(r.def.desk[1] + 6); a.dest = null; a.destSeat = -1; a.mv = null; a.mission = null;
+  r.owner = a.id; a.home = ri; a.seat = ri; a.assist = false; r.G.away = false;
+  a.x = r.deskX; a.y = r.ty(r.def.desk[1] + 6); a.dest = null; a.destSeat = -1; a.destAssist = false; a.mv = null; a.mission = null;
   Wd.feed.push({k:"seat", id:a.id, name:a.name, room:ri}); return true;
 }
 function standUp(Wd, a) {
   const r = Wd.rooms[a.seat]; if (!r) return;
-  a.seat = -1; if (r.G) r.G.away = true; const p = seatPoint(r); a.x = p.x; a.y = p.y;
+  a.seat = -1; if (a.assist) { a.assist = false; if (r.assist === a.id) r.assist = -1; } else if (r.G) r.G.away = true;
+  const p = seatPoint(r); a.x = p.x; a.y = p.y;
+}
+function reviveAv(Wd, a) {   // 쓰러진 뒤 일정 시간이 지나면 입구에서 다시 일어난다
+  const h = Wd.hall; a.dead = false; a.hp = AV_HP * .6; a.inv = 3.5; a.x = h.R - 80 + (a.id % 3) * 14; a.y = (h.T + h.B) / 2 + ((a.id % 3) - 1) * 34;
+  a.seat = -1; a.assist = false; a.dest = null; a.destSeat = -1; a.destAssist = false; a.mv = null; a.mission = null; a.hurt = 0; a.slow = false;
+  Wd.feed.push({k:"revive", id:a.id, name:a.name});
 }
 function moveAv(Wd, a, dt) {
   let vx = 0, vy = 0;
@@ -771,7 +835,7 @@ function helpRepair(Wd, a) {
   const w = a.home >= 0 ? Wd.rooms[a.home].G : null, c = repairCost(r.G);
   if (!c || r.G.door.hp > r.G.door.max * .85) return {ok:false, why:"full"}; if (!w || w.gold < c) return {ok:false, why:"gold"};
   if ((a.helpT || 0) > Wd.t) return {ok:false, why:"cd"}; a.helpT = Wd.t + 4;
-  w.gold -= c; r.G.door.hp = r.G.door.max; emit(r.G, {k:"repair"}); a.helps++; return {ok:true};
+  w.gold -= c; fixDoor(r.G); a.helps++; return {ok:true};
 }
 function helpSkill(Wd, a) {
   const z = zoneOf(Wd, a.x, a.y), r = z >= 0 ? Wd.rooms[z] : null;
@@ -779,13 +843,24 @@ function helpSkill(Wd, a) {
   if (siege(r.G) < 2) return {ok:false, why:"calm"}; if (!useSkill(r.G)) return {ok:false, why:"cd"}; a.helps++; return {ok:true};
 }
 function applyCmd(Wd, id, c, p) {
-  const a = Wd.av[id]; if (!a || a.dead || Wd.over) return {ok:false};
-  p = p || {}; const R = a.seat >= 0 ? Wd.rooms[a.seat] : null, G = R && R.G;
+  const a = Wd.av[id]; if (!a || Wd.over) return {ok:false};
+  p = p || {};
+  if (a.dead) {   // 쓰러진 동안엔 유령 소화기만: 싸움이 난 방에 멀리서 거품을 뿌린다
+    if (c !== "ghost") return {ok:false};
+    const r = Wd.rooms[p.i]; if (!r || !r.G || r.fallen) return {ok:false, why:"room"};
+    if (siege(r.G) < 2) return {ok:false, why:"calm"}; if (a.ghostT > Wd.t) return {ok:false, why:"cd"};
+    if (!useSkill(r.G)) return {ok:false, why:"cd"}; a.ghostT = Wd.t + GHOST_CD; a.helps++; return {ok:true};
+  }
+  const R = a.seat >= 0 ? Wd.rooms[a.seat] : null, G = R && R.G;
   switch (c) {
     case "mv": a.mv = (p.x || p.y) ? {x:cl(+p.x || 0, -1, 1), y:cl(+p.y || 0, -1, 1)} : null; return {ok:true};
-    case "go": if (a.seat >= 0) return {ok:false}; a.dest = snapDest(Wd, +p.x || 0, +p.y || 0); a.destSeat = -1; a.mv = null; return {ok:true};
-    case "goSeat": { const r = Wd.rooms[p.i]; if (a.seat >= 0 || !r) return {ok:false}; a.dest = seatPoint(r); a.destSeat = r.i; a.mv = null; return {ok:true}; }
-    case "sit": for (const r of Wd.rooms) if (dist(a, seatPoint(r)) < 70 && trySeat(Wd, a, r.i)) return {ok:true}; return {ok:false};
+    case "go": if (a.seat >= 0) return {ok:false}; a.dest = snapDest(Wd, +p.x || 0, +p.y || 0); a.destSeat = -1; a.destAssist = false; a.mv = null; return {ok:true};
+    case "goSeat": { const r = Wd.rooms[p.i]; if (a.seat >= 0 || !r) return {ok:false}; a.dest = seatPoint(r); a.destSeat = r.i; a.destAssist = false; a.mv = null; return {ok:true}; }
+    case "goAssist": { const r = Wd.rooms[p.i]; if (a.seat >= 0 || !r || !r.G || r.fallen) return {ok:false}; a.dest = {x:r.ax, y:r.ay}; a.destSeat = r.i; a.destAssist = true; a.mv = null; return {ok:true}; }
+    case "sit":
+      for (const r of Wd.rooms) if (dist(a, seatPoint(r)) < 70 && trySeat(Wd, a, r.i)) return {ok:true};
+      for (const r of Wd.rooms) if (r.G && dist(a, {x:r.ax, y:r.ay}) < 60 && trySeat(Wd, a, r.i, true)) return {ok:true};
+      return {ok:false};
     case "stand": if (a.seat < 0) return {ok:false}; standUp(Wd, a); return {ok:true};
   }
   if (c === "repair" && !G) return helpRepair(Wd, a);
@@ -794,7 +869,7 @@ function applyCmd(Wd, id, c, p) {
   switch (c) {
     case "build": if (!Object.prototype.hasOwnProperty.call(BUILD, p.t) || (p.i != null && !G.slots[p.i])) return {ok:false}; return build(G, p.t, p.i);
     case "up": return upgradeSlot(G, p.i);
-    case "sell": return sellSlot(G, p.i);
+    case "sell": if (a.assist) return {ok:false, why:"assist"}; return sellSlot(G, p.i);
     case "doorUp": return upgradeDoor(G);
     case "deskUp": return upgradeDesk(G);
     case "repair": return repairDoor(G);
@@ -808,11 +883,25 @@ function pickWeak(Wd, rooms, skip) {
   let x = Wd.rng() * sum; for (const r of c) { x -= r.w * r.w; if (x <= 0) return r; } return c[c.length - 1];
 }
 function fall(Wd, r) {
-  r.fallen = true; const G = r.G;
-  for (const a of Wd.av) if (a.seat === r.i) { a.seat = -1; const p = seatPoint(r); a.x = p.x; a.y = p.y; }
-  for (const e of G.en) { e.spot = -1; e.atk = false; }
+  r.fallen = true; r.fellAt = Math.max(0, Wd.t); const G = r.G; G.breach = null;
+  for (const a of Wd.av) if (a.seat === r.i) { a.seat = -1; a.assist = false; const p = seatPoint(r); a.x = p.x; a.y = p.y; }
+  r.assist = -1;
+  for (const e of G.en) { e.spot = -1; e.atk = false; e.tgs = null; }
   G.proj = []; G.crates = [];
   emit(G, {k:"fall"}); Wd.feed.push({k:"fall", room:r.i, owner:r.owner});
+}
+// 문이 뚫린 방: 귀신이 문 안으로 들어와 가장 가까운 설비부터 때린다
+function breachGoal(Wd, R, e) {
+  const G = R.G; let s = e.tgs != null ? G.slots[e.tgs] : null;
+  if (!s || !s.it) {
+    let best = null, bd = 1e9;
+    G.slots.forEach((q, i) => { if (!q.it) return; const d = Math.hypot(q.x - e.x, q.y - e.y); if (d < bd) { bd = d; best = i; } });
+    e.tgs = best; s = best != null ? G.slots[best] : null;
+  }
+  if (!s) return null;
+  e.spot = -1;
+  const wp = nextWaypoint(Wd, e, {x:s.x, y:s.y + R.dir * 22});
+  return {x:wp.x, y:wp.y, inRoom:zoneOf(Wd, wp.x, wp.y) >= 0};
 }
 function fallenStep(Wd, r, dt) {
   const G = r.G, alive = Wd.rooms.filter(x => x.G && !x.fallen), keep = [];
@@ -831,6 +920,16 @@ function aiHelp(Wd, a, tr, home) {
   if (rt < .7 && wal && repairCost(tr.G) <= wal.gold) helpRepair(Wd, a);
   if (siege(tr.G) >= 3 && tr.G.skill.cd <= 0) helpSkill(Wd, a);
 }
+// 방이 없거나 함락된 AI: 가장 급한 방의 보조석에 앉아 같이 싸운다
+function aiAssist(Wd, a) {
+  if (a.destAssist && a.dest) return;
+  let best = null, bs = -1;
+  for (const r of Wd.rooms) {
+    if (!r.G || r.fallen) continue; const o = r.assist >= 0 ? Wd.av[r.assist] : null; if (o && !o.dead && o.seat === r.i) continue;
+    const need = r.G.breach ? 1.5 : 1 - ratioOf(r.G), s2 = need + 1.2 / (1 + Math.hypot(r.ax - a.x, r.ay - a.y) / 700) + Wd.rng() * .15; if (s2 > bs) { bs = s2; best = r; }
+  }
+  if (best) { a.dest = {x:best.ax, y:best.ay}; a.destSeat = best.i; a.destAssist = true; }
+}
 function aiThink(Wd, a, dt) {
   a.acc += dt; a.botT -= dt; if (a.botT > 0) return;
   const dd = a.acc; a.acc = 0; a.botT = .4 + Wd.rng() * .3;
@@ -838,49 +937,53 @@ function aiThink(Wd, a, dt) {
   if (a.seat >= 0) {
     const G = rooms[a.seat].G;
     a.actT -= dd; if (a.actT <= 0) { botAct(G, sk); a.actT = (2.2 - 1.5 * sk) * (.7 + .6 * Wd.rng()); }
-    if (t > 30 && a.hp > 80 && ratioOf(G) > .7 && siege(G) < 3 && !G.en.some(e => e.boss)) {
+    if (a.assist) return;
+    if (t > 30 && a.hp > 80 && ratioOf(G) > .7 && siege(G) < 3 && !G.breach && !G.en.some(e => e.boss)) {
       let best = null, bs = 0;
       for (const r of rooms) {
         if (r.i === a.seat || !r.G || r.fallen) continue;
-        const rt = ratioOf(r.G), need = rt < .35 ? 1 - rt : (rt < .6 && r.G.en.some(e => e.boss && e.atk)) ? .5 : 0; if (!need) continue;
+        const rt = ratioOf(r.G), need = r.G.breach ? 1 : rt < .35 ? 1 - rt : (rt < .6 && r.G.en.some(e => e.boss && e.atk)) ? .5 : 0; if (!need) continue;
         const d = Math.abs(r.doorX - G.doorX); if (d > 1500 || routeDanger(Wd, r.doorX, G.doorX) > 3) continue;
         const s2 = need / (1 + d / 800); if (s2 > bs) { bs = s2; best = r; }
       }
-      if (best && Wd.rng() < .4 + .5 * sk) { standUp(Wd, a); a.mission = {room:best.i, until:t + 24}; a.dest = {x:best.doorX + (Wd.rng() - .5) * 140, y:best.ty(300)}; a.destSeat = -1; }
+      if (best && Wd.rng() < .4 + .5 * sk) { standUp(Wd, a); a.mission = {room:best.i, until:t + 24}; a.dest = {x:best.doorX + (Wd.rng() - .5) * 140, y:best.ty(300)}; a.destSeat = -1; a.destAssist = false; }
     }
     return;
   }
   if (a.home < 0) {
     if (t < -SETUP + 6 + a.id * 1.3) return;
-    if (a.destSeat >= 0 && !rooms[a.destSeat].G) return;
-    const free = rooms.filter(r => !r.G); if (!free.length) return;
+    if (a.destAssist && a.dest) return;
+    if (a.destSeat >= 0 && !a.destAssist && !rooms[a.destSeat].G) return;
+    const free = rooms.filter(r => !r.G); if (!free.length) { aiAssist(Wd, a); return; }
     let best = null, bs = -1; for (const r of free) { const sp = seatPoint(r); let s2 = 1 / (1 + Math.hypot(sp.x - a.x, sp.y - a.y) / 700) + Wd.rng() * .5; if (Wd.av.some(h => !h.ai && !h.dead && h.home < 0 && Math.hypot(sp.x - h.x, sp.y - h.y) < 520)) s2 -= 2; if (s2 > bs) { bs = s2; best = r; } }
-    a.dest = seatPoint(best); a.destSeat = best.i; return;
+    a.dest = seatPoint(best); a.destSeat = best.i; a.destAssist = false; return;
   }
   const home = rooms[a.home];
   let m = a.mission, tr = m && rooms[m.room];
   if (home.fallen) {
-    if (!m || !tr.G || tr.fallen || t > m.until || (a.hp < 50 && !m.rest)) {
-      let best = null, bs = -1; const hurt = a.hp < 50;
-      for (const r of rooms) { if (!r.G || r.fallen) continue; const s2 = (hurt ? 0 : 1 - ratioOf(r.G)) + (hurt ? 2 : .6) / (1 + Math.abs(r.doorX - a.x) / 700); if (s2 > bs) { bs = s2; best = r; } }
-      a.mission = best ? {room:best.i, until:t + 30, rest:a.hp < 50} : null; m = a.mission; tr = best;
+    const hurt = a.hp < 50;
+    if (!m || !tr.G || tr.fallen || t > m.until || (hurt && !m.rest)) {
+      let best = null, bs = -1;
+      for (const r of rooms) { if (!r.G || r.fallen) continue; const need = r.G.breach ? 1.2 : 1 - ratioOf(r.G); if (!hurt && need < .35) continue; const s2 = (hurt ? 0 : need) + (hurt ? 2 : .6) / (1 + Math.abs(r.doorX - a.x) / 700); if (s2 > bs) { bs = s2; best = r; } }
+      a.mission = best ? {room:best.i, until:t + 30, rest:hurt} : null; m = a.mission; tr = best;
     }
-  } else if (m && (!tr.G || tr.fallen || t > m.until || ratioOf(tr.G) > .85 || ratioOf(home.G) < .45 || a.hp < 45)) {
-    a.mission = null; m = null; a.dest = seatPoint(home); a.destSeat = home.i; return;
+  } else if (m && (!tr.G || tr.fallen || t > m.until || (ratioOf(tr.G) > .85 && !tr.G.breach) || ratioOf(home.G) < .45 || home.G.breach || a.hp < 45)) {
+    a.mission = null; m = null; a.dest = seatPoint(home); a.destSeat = home.i; a.destAssist = false; return;
   }
   if (m) {
     if (zoneOf(Wd, a.x, a.y) === tr.i) aiHelp(Wd, a, tr, home);
     else if (!a.dest) a.dest = {x:tr.doorX, y:tr.ty(300)};
     return;
   }
-  if (!home.fallen && (a.destSeat < 0 || !a.dest)) { a.dest = seatPoint(home); a.destSeat = home.i; }
+  if (home.fallen) { aiAssist(Wd, a); return; }
+  if (a.destSeat < 0 || !a.dest) { a.dest = seatPoint(home); a.destSeat = home.i; a.destAssist = false; }
 }
 function stepWorld(Wd, dt) {
   if (Wd.over) return;
   Wd.t += dt; const t = Wd.t, D = Wd.D, rooms = Wd.rooms;
   const claimed = rooms.filter(r => r.G), alive = claimed.filter(r => !r.fallen);
-  // 귀신 압력: 문이 약한 방으로 더 몰린다
-  let sum = 0; for (const r of alive) { r.w = 1 / (strengthOf(r.G) + 300); sum += r.w; }
+  // 귀신 압력: 문이 약한 방으로 더 몰린다 (이미 뚫려서 무너지는 중인 방에는 덜 간다)
+  let sum = 0; for (const r of alive) { r.w = (1 / (strengthOf(r.G) + 300)) * (r.G.breach ? .4 : 1); sum += r.w; }
   const total = (WP[Wd.diffKey] || 1) * (0.5 * claimed.length + 0.5 * alive.length);
   for (const r of alive) r.G.pressure = t < 0 ? 0 : total * r.w / sum;
   // 보스: 약한 방으로 제비뽑기
@@ -895,33 +998,44 @@ function stepWorld(Wd, dt) {
   // 아바타
   Wd.allEn = []; for (const r of claimed) for (const e of r.G.en) if (!e.dead) Wd.allEn.push(e);
   for (const a of Wd.av) {
-    if (a.dead) continue;
+    if (a.dead) {
+      if (a.ai) { a.botT -= dt; if (a.botT <= 0) { a.botT = .8; if (a.ghostT <= t) for (const r of claimed) if (!r.fallen && siege(r.G) >= 3 && r.G.skill.cd <= 0) { applyCmd(Wd, a.id, "ghost", {i:r.i}); break; } } }
+      if (t >= a.respawnAt) reviveAv(Wd, a);
+      continue;
+    }
     if (a.ai) aiThink(Wd, a, dt);
     if (a.seat < 0) moveAv(Wd, a, dt);
-    if (a.destSeat >= 0 && !a.dest) { const ri = a.destSeat; a.destSeat = -1; trySeat(Wd, a, ri); }
+    if (a.destSeat >= 0 && !a.dest) { const ri = a.destSeat, as = a.destAssist; a.destSeat = -1; a.destAssist = false; trySeat(Wd, a, ri, as); }
+    if (a.seat >= 0 && a.assist && t > 0) { const G = rooms[a.seat].G; if (G && (G.breach || siege(G) > 0)) a.assistT += dt; }
+    if (a.inv > 0) a.inv -= dt;
   }
-  // 귀신이 복도의 아바타를 쫓는다
+  // 귀신이 복도의 아바타를 쫓는다 (뚫린 방의 귀신은 설비를 향해 들어간다)
   const exp = Wd.av.filter(a => !a.dead && isExposed(Wd, a));
   for (const e of Wd.allEn) {
     let best = null, bd = e.boss ? 0 : e.chase != null ? 330 : e.spot >= 0 ? 0 : 190;
-    for (const a of exp) { const d = Math.hypot(a.x - e.x, a.y - e.y); if (d < bd) { bd = d; best = a; } }
+    for (const a of exp) { if (a.inv > 0) continue; const d = Math.hypot(a.x - e.x, a.y - e.y); if (d < bd) { bd = d; best = a; } }
     if (best) { const wp = nextWaypoint(Wd, e, best); e.chase = best.id; e.spot = -1; e.goal = {x:wp.x, y:wp.y, inRoom:zoneOf(Wd, wp.x, wp.y) >= 0}; }
-    else { e.chase = null; const T = e.xfer != null ? rooms[e.xfer] : null; e.goal = T && T.G && !T.fallen ? {x:T.doorX, y:T.ty(530)} : null; }
+    else {
+      e.chase = null; const T = e.xfer != null ? rooms[e.xfer] : null;
+      e.goal = T && T.G && !T.fallen ? {x:T.doorX, y:T.ty(530)} : null;
+      if (!e.goal) { const R = rooms[e.ri]; if (R && R.G && !R.fallen && R.G.breach) e.goal = breachGoal(Wd, R, e); }
+    }
   }
   // 방 진행
   for (const r of claimed) {
     const G = r.G;
     if (r.fallen) { fallenStep(Wd, r, dt); continue; }
-    const o = r.owner >= 0 ? Wd.av[r.owner] : null;
-    G.away = !(o && !o.dead && o.seat === r.i);
+    const o = r.owner >= 0 ? Wd.av[r.owner] : null, ao = r.assist >= 0 ? Wd.av[r.assist] : null;
+    G.away = !((o && !o.dead && o.seat === r.i) || (ao && !ao.dead && ao.seat === r.i && ao.assist));
     G.t = Math.max(0, t - dt); step(G, dt);
+    if (G.breach && !r.breachFeed) { r.breachFeed = true; Wd.feed.push({k:"breach", room:r.i, owner:r.owner}); } else if (!G.breach) r.breachFeed = false;
     if (G.over === "lose") fall(Wd, r);
   }
   // 아바타 체력
   const f = Math.max(0, t) / DURATION;
   for (const a of Wd.av) {
     if (a.dead) continue;
-    const ex = isExposed(Wd, a); let dmg = 0, cn = 0;
+    const ex = isExposed(Wd, a) && !(a.inv > 0); let dmg = 0, cn = 0;
     if (ex) for (const e of Wd.allEn) {
       if (e.dead || Math.abs(e.x - a.x) > 70 || Math.abs(e.y - a.y) > 70) continue;
       if (Math.hypot(e.x - a.x, e.y - a.y) < e.r + AV_R + 4) { dmg += e.dps * .8 * D.dps * (1 + .6 * f); cn++; }
@@ -929,33 +1043,37 @@ function stepWorld(Wd, dt) {
     a.slow = cn > 0; a.hurt = Math.max(0, a.hurt - dt);
     if (dmg > 0) { a.hp -= dmg * dt; if (a.hurt <= 0) { a.hurt = .3; if (Wd.emitOn) Wd.ev.push({k:"hurt", x:a.x, y:a.y - 10, ox:0}); } }
     else if (!ex) a.hp = Math.min(AV_HP, a.hp + (a.seat >= 0 ? 6 : 4) * dt);
-    if (a.hp <= 0) { a.hp = 0; a.dead = true; a.deadAt = Math.max(0, t); if (a.seat >= 0) standUp(Wd, a); a.dest = null; a.mv = null; a.mission = null; Wd.feed.push({k:"dead", id:a.id, name:a.name}); }
+    if (a.hp <= 0) { a.hp = 0; a.dead = true; a.deaths++; a.deadAt = Math.max(0, t); a.respawnAt = t + RESPAWN; if (a.seat >= 0) standUp(Wd, a); a.dest = null; a.mv = null; a.mission = null; a.destSeat = -1; a.destAssist = false; Wd.feed.push({k:"dead", id:a.id, name:a.name}); }
   }
   for (const r of claimed) { const G = r.G; if (G.ev.length) { for (const e of G.ev) if (Wd.ev.length < 240) Wd.ev.push(e); G.ev = []; } }
-  if (!Wd.av.some(a => !a.dead)) Wd.over = "wipe";
+  if (claimed.length && !rooms.some(r => r.G && !r.fallen) && t > 0) Wd.over = "wipe";
   else if (t >= DURATION) Wd.over = "win";
 }
-// 순위: 살아 있는 쪽이 먼저(점수순), 쓰러진 쪽은 늦게 쓰러진 순
+// 순위: 점수 하나로 줄 세운다. 점수 = (처치×10 + 방 버틴 초×4 + 도움×60 + 보조 초×3 + 보너스) × 난이도 배율
 function standingsW(Wd) {
+  const end = Math.max(0, Math.min(DURATION, Wd.t)), won = Wd.over === "win", mult = (DIFFS[Wd.diffKey] || DIFFS.normal).mult;
   const rows = Wd.av.map(a => {
-    const G = a.home >= 0 ? Wd.rooms[a.home].G : null, t = a.dead ? a.deadAt : Math.max(0, Math.min(DURATION, Wd.t)), win = !a.dead && Wd.over === "win";
-    const kills = G ? G.stats.kills : 0;
-    return {a, t:Math.floor(t), kills, helps:a.helps, alive:!a.dead, deadAt:a.deadAt, room:G ? G.room.id : null, score:scoreOf({t, kills, win, dragon:G ? G.stats.dragon : false}, G ? G.room.id : "4f-men", Wd.diffKey) + Math.min(a.helps, 10) * 40};
+    const R = a.home >= 0 ? Wd.rooms[a.home] : null, G = R && R.G, hold = G ? Math.max(0, (R.fallen ? R.fellAt : end) - Math.max(0, R.since)) : 0, heldEnd = !!(G && !R.fallen);
+    const kills = G ? G.stats.kills : 0, dragon = !!(G && G.stats.dragon), helps = Math.min(a.helps, HELP_CAP), asst = Math.min(Math.floor(a.assistT), ASSIST_CAP);
+    const pk = kills * WSC.kill, ph = Math.floor(hold) * WSC.hold, pp = helps * WSC.help, pa = asst * WSC.assist;
+    const pb = (won && heldEnd ? WSC.winRoom : 0) + (won && !a.dead ? WSC.winLive : 0) + (dragon ? WSC.dragon : 0);
+    return {a, kills, hold:Math.floor(hold), helps:a.helps, asst, deaths:a.deaths, dragon, heldEnd, fellAt:G && R.fallen ? Math.floor(R.fellAt) : -1, alive:!a.dead, room:G ? G.room.id : null, pk, ph, pp, pa, pb, score:Math.round((pk + ph + pp + pa + pb) * mult)};
   });
-  const live = rows.filter(r => r.alive).sort((x, y) => y.score - x.score), dead = rows.filter(r => !r.alive).sort((x, y) => y.deadAt - x.deadAt);
-  const all = [...live, ...dead]; all.forEach((r, i) => { r.place = i + 1; }); return all;
+  const all = rows.slice().sort((x, y) => y.score - x.score || y.kills - x.kills || y.hold - x.hold); all.forEach((r, i) => { r.place = i + 1; }); return all;
 }
-const resultW = Wd => standingsW(Wd).map(r => ({id:r.a.id, p:r.place, t:r.t, k:r.kills, h:r.helps, s:r.score, al:r.alive ? 1 : 0, rm:r.room}));
+const resultW = Wd => standingsW(Wd).map(r => ({id:r.a.id, p:r.place, hd:r.hold, k:r.kills, h:r.helps, as:r.asst, dt:r.deaths, dr:r.dragon ? 1 : 0, rm:r.room, he:r.heldEnd ? 1 : 0, fa:r.fellAt, al:r.alive ? 1 : 0, s:r.score, pk:r.pk, ph:r.ph, pp:r.pp, pa:r.pa, pb:r.pb}));
 // 화면에 보낼 요약본(호스트는 매 프레임, 손님은 네트워크로 받는다)
+const hpPct = (G, it) => { ensureHp(G, it); return Math.max(0, Math.round(100 * it.hp / it.mhp)); };
 function viewOf(Wd) {
   const V = {t:+Wd.t.toFixed(2), o:Wd.over, rooms:[], en:[], av:[], fd:Wd.feed.length};
   for (const r of Wd.rooms) {
     const G = r.G; if (!G) { V.rooms.push(0); continue; }
-    V.rooms.push({o:r.owner, f:r.fallen ? 1 : 0, aw:G.away ? 1 : 0, dl:G.door.lv, dh:Math.round(G.door.hp), dm:G.door.max, fl:G.door.flash > 0 ? 1 : 0, dk:G.deskLv, bo:G.blackout > 0 ? 1 : 0,
-      s:G.slots.map(s => s.locked ? -1 : s.it ? [ITYPES.indexOf(s.it.type), s.it.lv, Math.round(s.it.ang * 10) / 10] : 0), cr:G.crates.map(c => [c.id, Math.round(c.x), Math.round(c.y), c.val]), pj:G.proj.map(p => [Math.round(p.x), Math.round(p.y)])});
+    V.rooms.push({o:r.owner, f:r.fallen ? 1 : 0, aw:G.away ? 1 : 0, br:G.breach ? 1 : 0, as:r.assist, dl:G.door.lv, dh:Math.round(G.door.hp), dm:G.door.max, fl:G.door.flash > 0 ? 1 : 0, dk:G.deskLv, bo:G.blackout > 0 ? 1 : 0,
+      s:G.slots.map(s => s.locked ? -1 : s.it ? [ITYPES.indexOf(s.it.type), s.it.lv, Math.round(s.it.ang * 10) / 10, hpPct(G, s.it)] : 0), cr:G.crates.map(c => [c.id, Math.round(c.x), Math.round(c.y), c.val]), pj:G.proj.map(p => [Math.round(p.x), Math.round(p.y)])});
     for (const e of G.en) if (!e.dead) V.en.push([e.id, ETYPES.indexOf(e.type), Math.round(e.x), Math.round(e.y), Math.round(e.hp), Math.round(e.max), (e.flash > 0 ? 1 : 0) | (e.slow > 0 && e.slowF < 1 ? 2 : 0) | (e.stun > 0 ? 4 : 0) | (e.atk ? 8 : 0), r.i, e.goal ? 1 : 0]);
   }
-  for (const a of Wd.av) V.av.push([a.id, Math.round(a.x), Math.round(a.y), Math.round(a.hp), a.seat, (a.dead ? 1 : 0) | (a.ai ? 2 : 0) | (a.hurt > 0 ? 4 : 0) | (a.slow ? 8 : 0) | (a.face < 0 ? 16 : 0), a.home, a.mission ? a.mission.room : -1, a.helps]);
+  for (const a of Wd.av) V.av.push([a.id, Math.round(a.x), Math.round(a.y), Math.round(a.hp), a.seat, (a.dead ? 1 : 0) | (a.ai ? 2 : 0) | (a.hurt > 0 ? 4 : 0) | (a.slow ? 8 : 0) | (a.face < 0 ? 16 : 0) | (a.assist ? 32 : 0) | (a.inv > 0 ? 64 : 0), a.home, a.mission ? a.mission.room : -1, a.helps,
+    a.dead ? Math.max(0, Math.ceil(a.respawnAt - Wd.t)) : 0, a.deaths, Math.max(0, Math.ceil(a.ghostT - Wd.t))]);
   return V;
 }
 /* ===ENGINE_END=== */
@@ -1256,6 +1374,7 @@ function show(name) {
 /* ===== title / select / shop ===== */
 function buildTitle() {
   $("#t-rp").textContent = fmt(SAVE.rp) + " RP";
+  $("#t-links").innerHTML = linksHTML();
   const best = Object.values(SAVE.best), wins = SAVE.wins;
   $("#t-best").textContent = SAVE.runs ? `플레이 ${SAVE.runs}회 · 새벽 6시 도달 ${wins}회${best.length ? " · 최장 생존 " + fmtTime(Math.max(...best)) : ""}` : "";
   const gh = $("#t-ghosts"); if (!gh.childElementCount) for (let i = 0; i < 7; i++) {
@@ -1265,11 +1384,18 @@ function buildTitle() {
 }
 const fmtTime = t => `${Math.floor(t / 60)}:${pad(Math.floor(t % 60))}`;
 function stars(n) { return "★".repeat(n) + "☆".repeat(3 - n); }
-function buildSelect() {
+function buildPlan() {
   const plan = $("#plan"); $$(".hot", plan).forEach(b => b.remove());
   const pos = h => `left:${h[0] / 20}%;top:${h[1] / 15.8}%;width:${(h[2] - h[0]) / 20}%;height:${(h[3] - h[1]) / 15.8}%`;
+  if (SAVE.mode === "multi") {   // 다 같이: 배치도에서 층을 고른다
+    const fl = FLOORS[SAVE.floor] ? SAVE.floor : "4f";
+    for (const [k, box] of [["3f", [90, 230, 965, 1450]], ["4f", [1040, 230, 1910, 1450]]]) { const b = document.createElement("button"); b.className = "hot fl"; b.style.cssText = pos(box); b.dataset.act = "wf"; b.dataset.f = k; b.setAttribute("aria-pressed", String(k === fl)); b.setAttribute("aria-label", FLOORS[k].name + " 고르기"); b.innerHTML = `<span class="tip">${FLOORS[k].name}${k === fl ? " · 선택됨" : " · 눌러서 고르기"}</span>`; plan.appendChild(b); }
+    return;
+  }
   for (const r of ROOMS) { const b = document.createElement("button"); b.className = "hot"; b.style.cssText = pos(r.hot); b.dataset.room = r.id; b.dataset.act = "pick-room"; b.setAttribute("aria-label", `${r.floor} ${r.name} 선택`); b.setAttribute("aria-pressed", String(UI.pickId === r.id)); b.innerHTML = `<span class="tip">${r.floor} ${esc(r.name)}</span>`; plan.appendChild(b); }
   for (const a of OPEN_AREAS) { const b = document.createElement("button"); b.className = "hot lock"; b.style.cssText = pos(a.hot); b.dataset.act = "locked"; b.dataset.why = `${a.name}: ${a.why}`; b.setAttribute("aria-label", `${a.name}, ${a.why}`); b.innerHTML = `<span class="tip">${esc(a.name)} · 문 없음</span>`; plan.appendChild(b); }
+}
+function buildSelect() {
   const meta = metaOf(SAVE.ups);
   $("#cards").innerHTML = ROOMS.map(r => {
     const best = SAVE.best[r.id], clear = SAVE.cleared[r.id];
@@ -1290,11 +1416,11 @@ function buildMode() {
   $("#mode-seg").innerHTML = [["solo", "혼자"], ["multi", "다 같이"]].map(([k, l]) => `<button role="radio" aria-checked="${k === m}" data-act="mode" data-m="${k}">${l}</button>`).join("");
   $("#wn-seg").innerHTML = [2, 3, 4, 5].map(k => `<button role="radio" aria-checked="${k === n}" data-act="wn" data-n="${k}">${k}명</button>`).join("");
   $("#wf-seg").innerHTML = Object.keys(FLOORS).reverse().map(k => `<button role="radio" aria-checked="${k === fl}" data-act="wf" data-f="${k}">${FLOORS[k].name}</button>`).join("");
-  $("#world-intro").hidden = m !== "multi"; $("#plan").hidden = $("#cards").hidden = m === "multi"; $("#go").hidden = $("#pick-info").hidden = m === "multi";
-  $("#mode-desc").textContent = m === "multi" ? "복도 한 층을 걸어 다니며 자리를 잡고, 서로 도와 새벽까지 버텨요. (랭킹은 혼자 모드만)" : "혼자서 한 방을 지켜 랭킹에 도전해요.";
+  buildPlan(); $("#world-intro").hidden = m !== "multi"; $("#plan").hidden = false; $("#cards").hidden = m === "multi"; $("#go").hidden = $("#pick-info").hidden = m === "multi";
+  $("#mode-desc").textContent = m === "multi" ? "복도 한 층을 걸어 다니며 자리를 잡고, 서로 도와 새벽까지 버텨요. 점수는 다 같이 랭킹에 올라가요." : "혼자서 한 방을 지켜 랭킹에 도전해요. (다 같이도 랭킹이 있어요)";
   $("#go").textContent = "이 방으로 들어가기";
   $("#sel-title").textContent = m === "multi" ? "같이 버틸까요?" : "어느 방에 숨을까요?";
-  $("#sel-sub").textContent = m === "multi" ? "사람과 AI 동료가 한 층을 나눠 지켜요. 방은 시작한 뒤 직접 걸어가서 골라요." : "배치도에서 방을 고르세요. 방마다 설치 칸, 문 내구도, 특기가 달라요. 문이 없던 호리존 스튜디오와 휴게공간도 열렸어요.";
+  $("#sel-sub").textContent = m === "multi" ? "사람과 AI 동료가 한 층을 나눠 지켜요. 배치도에서 층을 고르고, 방은 시작한 뒤 직접 걸어가서 골라요." : "배치도에서 방을 고르세요. 방마다 설치 칸, 문 내구도, 특기가 달라요. 문이 없던 호리존 스튜디오와 휴게공간도 열렸어요.";
 }
 function updatePick() {
   const r = ROOMS.find(x => x.id === UI.pickId);
@@ -1421,6 +1547,8 @@ function consume(ev) {
     case "fall": burstP((DOOR.x + (e.ox || 0)), (e.dy != null ? e.dy : 400) + 20 * (e.dr || 1), 50, {sp:420, up:80, life:.8, size:5, color:"#e8553a"}); addShake(14); sfx("lose", 400); break;
     case "hurt": burstP(e.x, e.y, 6, {sp:200, life:.3, size:3, color:"#ff6a6a"}); sfx("door", 150); break;
     case "crate": banner("택배 도착!", ""); sfx("coin"); break;
+    case "breach": addShake(12); UI.flash = Math.max(UI.flash, .3); sfx("lose", 400); banner("문이 뚫렸다! 최후의 항전!", "red"); break;
+    case "tdead": burstP(e.x, e.y, 22, {sp:300, up:90, life:.6, size:4, color:"#ff9a6a"}); floater(e.x, e.y - 20, "설비 파괴", "#ff8a7a"); sfx("door", 100); break;
   } }
 }
 function banner(text, cls) { const el = $("#bn"); el.textContent = text; el.classList.toggle("red", cls === "red"); restart(el, "go"); }
@@ -1531,33 +1659,35 @@ function rankBoxHTML() {
   const L = UI.last;
   if (!apiOn()) return `<p class="small faint">랭킹 서버가 아직 연결되지 않았어요.</p>`;
   if (!L.runId) return `<p class="small faint">이번 판은 시작 기록이 없어 랭킹에 등록할 수 없어요.</p>`;
-  if (L.done) return `<p class="small" style="color:var(--mint)">${esc(L.msg)}</p><button class="btn btn-sm" data-act="to-rank">랭킹 보기</button>`;
-  return `<div class="row" style="justify-content:center"><input id="nick" maxlength="10" placeholder="닉네임 (2~10자)" value="${esc(SAVE.nick || "")}" aria-label="닉네임"><button class="btn btn-gold btn-sm" data-act="rank-submit">랭킹 등록</button></div><p class="small dim" id="rank-msg">${esc(L.msg || "점수 " + fmt(L.score) + "점을 닉네임과 함께 등록해요.")}</p>`;
+  if (L.done) return `<p class="small" style="color:var(--mint)">${esc(L.msg)}</p><button class="btn btn-sm" data-act="to-rank" data-m="${L.kind === "w" ? "w" : "s"}">랭킹 보기</button>`;
+  return `<div class="row" style="justify-content:center"><input id="nick" maxlength="10" placeholder="닉네임 (2~10자)" value="${esc(SAVE.nick || "")}" aria-label="닉네임"><button class="btn btn-gold btn-sm" data-act="rank-submit">${L.kind === "w" ? "다 같이 랭킹 등록" : "랭킹 등록"}</button></div><p class="small dim" id="rank-msg">${esc(L.msg || "점수 " + fmt(L.score) + "점을 닉네임과 함께 등록해요.")}</p>`;
 }
 async function submitRank() {
   const L = UI.last; if (!L || L.busy || L.done) return;
-  const nick = cleanNick(($("#nick") || {}).value), msg = $("#rank-msg");
+  const nick = cleanNick((($("#nick") || {}).value) || SAVE.nick), msg = $("#rank-msg");
   if (nick.length < 2) { if (msg) msg.textContent = ERR.nick; return; }
   L.busy = true; if (msg) msg.textContent = "등록하는 중…";
   try {
-    const j = await api("submit", {runId:L.runId, nick, run:L.run});
-    SAVE.nick = nick; persist(); L.done = true; L.msg = `현재 ${j.rank}위 (전체 ${j.total}명) · 내 최고 점수 ${fmt(j.best)}`; sfx("win");
+    const j = await api(L.kind === "w" ? "submitw" : "submit", {runId:L.runId, nick, run:L.run});
+    SAVE.nick = nick; persist(); L.done = true; L.msg = `${L.kind === "w" ? "다 같이 랭킹 " : "랭킹 "}현재 ${j.rank}위 (전체 ${j.total}명) · 내 최고 점수 ${fmt(j.best)}`; sfx("win");
   } catch (e) { L.msg = errText(e); if (["run", "fast", "bad"].includes(e && e.code)) L.runId = null; }
   L.busy = false;
   const box = $("#rankbox"); if (box && UI.screen === "result") box.innerHTML = rankBoxHTML();
 }
 const roomLabel = id => { const r = ROOMS.find(x => x.id === id); return r ? `${r.floor} ${r.name}` : id; };
 async function buildRank() {
-  const el = $("#rank-body");
-  if (!apiOn()) { el.innerHTML = `<p class="dim">랭킹 서버가 아직 연결되지 않았어요.</p>`; return; }
-  el.innerHTML = `<p class="dim">불러오는 중…</p>`;
+  const el = $("#rank-body"), mode = UI.rk === "w" ? "w" : "s";
+  const tabs = `<div class="row" style="margin-bottom:10px"><div class="seg" role="radiogroup" aria-label="랭킹 종류">${[["s", "혼자"], ["w", "다 같이"]].map(([k, l]) => `<button role="radio" aria-checked="${k === mode}" data-act="rk-tab" data-m="${k}">${l}</button>`).join("")}</div></div>`;
+  if (!apiOn()) { el.innerHTML = tabs + `<p class="dim">랭킹 서버가 아직 연결되지 않았어요.</p>`; return; }
+  el.innerHTML = tabs + `<p class="dim">불러오는 중…</p>`;
+  const sub = r => { if (String(r.room).startsWith("world-")) { const fl = FLOORS[String(r.room).slice(6)]; return `${fl ? fl.name : "한 층"} · ${r.n || "?"}명 · ${(DIFFS[r.diff] || {}).n || r.diff} · 방 ${fmt(r.t)}초 버팀${r.win ? " · 새벽까지" : ""}${r.dragon ? " · 드래곤 처치" : ""}`; } return `${roomLabel(r.room)} · ${(DIFFS[r.diff] || {}).n || r.diff} · ${fmtTime(r.t)}${r.win ? " · 클리어" : ""}${r.dragon ? " · 드래곤 처치" : ""}`; };
   try {
-    const j = await api("top", {limit:30}); if (UI.screen !== "rank") return;
-    if (!j.list.length) { el.innerHTML = `<p class="dim">아직 기록이 없어요. 첫 기록의 주인공이 되어 보세요!</p>`; return; }
-    el.innerHTML = `<div class="rk">${j.list.map(r => `<div class="rk-row ${SAVE.nick && r.nick.toLowerCase() === SAVE.nick.toLowerCase() ? "me" : ""}"><div class="rk-n ${r.rank <= 3 ? "rk-" + r.rank : ""}">${r.rank}</div>
-      <div style="min-width:0"><div class="rk-nick">${esc(r.nick)}</div><div class="rk-sub">${esc(roomLabel(r.room))} · ${esc((DIFFS[r.diff] || {}).n || r.diff)} · ${fmtTime(r.t)}${r.win ? " · 클리어" : ""}${r.dragon ? " · 드래곤 처치" : ""}</div></div>
+    const j = await api("top", {limit:30, mode}); if (UI.screen !== "rank" || (UI.rk === "w" ? "w" : "s") !== mode) return;
+    if (!j.list.length) { el.innerHTML = tabs + `<p class="dim">아직 기록이 없어요. 첫 기록의 주인공이 되어 보세요!</p>`; return; }
+    el.innerHTML = tabs + `<div class="rk">${j.list.map(r => `<div class="rk-row ${SAVE.nick && r.nick.toLowerCase() === SAVE.nick.toLowerCase() ? "me" : ""}"><div class="rk-n ${r.rank <= 3 ? "rk-" + r.rank : ""}">${r.rank}</div>
+      <div style="min-width:0"><div class="rk-nick">${esc(r.nick)}</div><div class="rk-sub">${esc(sub(r))}</div></div>
       <div class="rk-sc num">${fmt(r.score)}</div></div>`).join("")}</div><p class="small faint" style="margin-top:10px">전체 ${fmt(j.total)}명 참가</p>`;
-  } catch (e) { if (UI.screen === "rank") el.innerHTML = `<p>${esc(errText(e))}</p>`; }
+  } catch (e) { if (UI.screen === "rank") el.innerHTML = tabs + `<p>${esc(errText(e))}</p>`; }
 }
 function buildSave(msg) {
   const el = $("#save-body"), at = SAVE.syncAt ? new Date(SAVE.syncAt).toLocaleString("ko-KR") : "";
@@ -1600,7 +1730,8 @@ function showResult() {
 /* ===== actions ===== */
 function flashSel(ok, why) { if (!ok) { const G = UI.G; toast(why === "gold" ? "수당이 부족해요" : why === "full" ? "빈 칸이 없어요" : why === "max" ? "이미 최고 단계예요" : why === "full2" ? "이미 가득해요" : "지금은 할 수 없어요"); sfx("click"); } }
 const A = {
-  "to-rank": () => { show("rank"); buildRank(); },
+  "to-rank": b => { if (b && b.dataset && b.dataset.m) UI.rk = b.dataset.m; show("rank"); buildRank(); },
+  "rk-tab": b => { UI.rk = b.dataset.m === "w" ? "w" : "s"; buildRank(); sfx("click"); },
   "to-save": () => { loadArm = ""; buildSave(); show("save"); },
   diff: b => { SAVE.diff = b.dataset.d; persist(); buildDiff(); sfx("click"); },
   "rank-submit": () => submitRank(),
@@ -1689,9 +1820,9 @@ document.addEventListener("visibilitychange", () => { if (document.hidden && UI.
 
 /* ===== 월드 화면: 넓은 층 · 카메라 · 미니맵 · 조작 ===== */
 const AV_COL = ["#6aa8ff", "#ff9a3d", "#6fe0b0", "#f6c453", "#e68ad8", "#9bb0ff", "#ff7a7a"];
-const BANNER_EV = new Set(["mini", "warn", "blackout", "blackout_end", "crate", "roar", "breath"]);
+const BANNER_EV = new Set(["mini", "warn", "blackout", "blackout_end", "crate", "roar", "breath", "breach"]);
 const roomName = (W, i) => { const d = W.lay.rooms[i] && W.lay.rooms[i].def; return d ? `${d.floor} ${d.name}` : "?"; };
-const avRow = (V, id) => { const r = V.av[id]; return r ? {id:r[0], x:r[1], y:r[2], hp:r[3], seat:r[4], fl:r[5], home:r[6], mis:r[7], helps:r[8], dead:!!(r[5] & 1), ai:!!(r[5] & 2)} : null; };
+const avRow = (V, id) => { const r = V.av[id]; return r ? {id:r[0], x:r[1], y:r[2], hp:r[3], seat:r[4], fl:r[5], home:r[6], mis:r[7], helps:r[8], rs:r[9] || 0, deaths:r[10] || 0, gcd:r[11] || 0, dead:!!(r[5] & 1), ai:!!(r[5] & 2), asst:!!(r[5] & 32), inv:!!(r[5] & 64)} : null; };
 
 function setWorldDom(on) {
   $("#stage").classList.toggle("world", on);
@@ -1756,6 +1887,7 @@ function startWorld(opts) {
   const W = {Wd, lay, V:null, me:0, names:spec.map(s => s.name), net:opts.net || null, last:performance.now(), paused:false, evq:[], fi:0, cam:{x:0, y:0, s:1, mode:"follow"}, camCx:0, home:-1, seated:false, keys:new Set(), mvSent:"", bg:null, shadow:null, hudT:0, panelT:0, partyKey:"", roomsKey:"", feedT:0, pos:{}, moving:{}, diff, spec, seed, floor};
   beginWorldUI(W);
   W.timer = setInterval(wTick, 33);
+  if (apiOn()) api("start", {}).then(j => { W.runId = j.runId; }).catch(() => {});
 }
 function beginWorldUI(W) {
   const cvs = $("#cv"); cvs.width = 900 * DPR; cvs.height = 620 * DPR;
@@ -1764,7 +1896,7 @@ function beginWorldUI(W) {
   $("#h-speed").textContent = "x1"; $("#h-mute").textContent = SAVE.mute ? "소리 꺼짐" : "소리";
   $("#slots").innerHTML = ""; $("#crates").innerHTML = ""; $("#hint").hidden = true; $("#warn").hidden = true; $("#modal-slot").innerHTML = "";
   setWorldDom(true);
-  const mm = $("#mm"); mm.width = 440; mm.height = Math.round(440 * W.lay.H / W.lay.W);
+  const mm = $("#mm"); mm.width = 600; mm.height = Math.round(600 * W.lay.H / W.lay.W);
   if (W.Wd) { W.V = viewOf(W.Wd); W.V.fl = []; W.V.fn = 0; }
   buildPanelWorld(); buildPartyW();
   show("game"); sfx("click");
@@ -1779,9 +1911,9 @@ function endWorld() {
 
 /* ----- 호스트(혼자 + AI)의 시뮬레이션 틱 ----- */
 function bindHome(W) {
-  const a = W.Wd.av[W.me]; if (!a) return;
-  if (W.home !== a.home) { W.home = a.home; UI.sel = null; UI.selHtml = ""; }
-  UI.G = a.home >= 0 ? W.Wd.rooms[a.home].G : null; W.seated = a.seat >= 0;
+  const a = W.Wd.av[W.me]; if (!a) return; const ctx = a.seat >= 0 ? a.seat : a.home;
+  if (W.home !== ctx) { W.home = ctx; UI.sel = null; UI.selHtml = ""; }
+  UI.G = ctx >= 0 ? W.Wd.rooms[ctx].G : null; W.seated = a.seat >= 0;
 }
 function wTick() {
   const W = UI.W; if (!W || !W.Wd) return;
@@ -1861,6 +1993,7 @@ function wClick(e) {
     return;
   }
   if (a.dead) return;
+  for (const r of W.lay.rooms) { const st = V.rooms[r.i]; if (st && !st.f && Math.hypot(p.x - r.ax, p.y - r.ay) < 44 && st.o !== W.me) { worldAct("goAssist", {i:r.i}); return; } }
   for (const r of W.lay.rooms) if (Math.hypot(p.x - r.deskX, p.y - r.deskY) < 80) { const st = V.rooms[r.i]; if (!st || (st.o === W.me && !st.f)) { worldAct("goSeat", {i:r.i}); return; } }
   worldAct("go", {x:p.x, y:p.y}); W.cam.mode = "follow";
 }
@@ -1884,7 +2017,7 @@ function bindWorldInput() {
 /* ----- 그리기 ----- */
 function drawAvatar(g, row, name, col, time, isMe, moving) {
   const [id, x, y, hp, seat, fl] = row, dead = fl & 1, face = fl & 16 ? -1 : 1, hurt = fl & 4;
-  g.save(); g.translate(x, y);
+  g.save(); g.translate(x, y); if (fl & 64) g.globalAlpha = .5 + .35 * Math.sin(time * 18);
   g.fillStyle = "rgba(0,0,0,.3)"; ell(g, 0, 15, 15, 5); g.fill();
   if (dead) { g.globalAlpha = .75; rr(g, -9, -4, 18, 20, 5); stk(g, "#8a8f9c", 2.5); g.fillStyle = INK; g.font = "700 14px sans-serif"; g.textAlign = "center"; g.fillText("✝", 0, 11); g.restore(); return; }
   const bob = moving ? Math.sin(time * 16) * 2.2 : 0;
@@ -1900,6 +2033,27 @@ function drawAvatar(g, row, name, col, time, isMe, moving) {
   if (isMe) { g.fillStyle = "#ffe27a"; g.beginPath(); g.moveTo(-5, -52); g.lineTo(5, -52); g.lineTo(0, -45); g.closePath(); g.fill(); g.lineWidth = 2; g.strokeStyle = INK; g.stroke(); }
   g.restore();
 }
+// 문 체력 막대: 내 방뿐 아니라 모든 방의 문 상태를 한눈에 본다
+function drawDoorBar(g, r, st, s) {
+  const w = Math.max(100, r.def.doorW || DOOR.w), h = Math.max(14, 17 / s), y = r.dl - r.dir * (26 + 4 / s) - h / 2, ratio = clamp(st.dh / st.dm, 0, 1), fs = Math.max(11, 13 / s);
+  g.fillStyle = "rgba(0,0,0,.78)"; rr(g, r.doorX - w / 2 - 3, y - 3, w + 6, h + 6, 5); g.fill();
+  g.fillStyle = st.br ? "#7a2a22" : ratio > .5 ? "#6fe0b0" : ratio > .25 ? "#f6c453" : "#ff5a4a"; g.fillRect(r.doorX - w / 2, y, st.br ? w : w * ratio, h);
+  const tx = st.br ? "문 뚫림! 최후의 항전" : `문 ${Math.round(ratio * 100)}%`;
+  g.font = `700 ${fs}px 'IBM Plex Sans KR',sans-serif`; g.textAlign = "center"; g.textBaseline = "middle"; g.lineWidth = 3.5; g.strokeStyle = INK; g.strokeText(tx, r.doorX, y + h / 2 + 1); g.fillStyle = "#fff"; g.fillText(tx, r.doorX, y + h / 2 + 1);
+}
+function drawBreach(g, r, dw, time) {
+  const a = .22 + .18 * Math.sin(time * 9);
+  g.fillStyle = `rgba(232,60,40,${a})`; g.fillRect(r.doorX - dw / 2, r.dl - 26, dw, 52);
+  g.strokeStyle = "rgba(255,90,70,.95)"; g.lineWidth = 4; g.setLineDash([12, 8]); g.strokeRect(r.doorX - dw / 2, r.dl - 26, dw, 52); g.setLineDash([]);
+}
+function drawHpBar(g, p, pct) {
+  g.fillStyle = "rgba(0,0,0,.75)"; g.fillRect(p.x - 23, p.y - 50, 46, 8); g.fillStyle = pct > 50 ? "#6fe0b0" : pct > 25 ? "#f6c453" : "#ff5a4a"; g.fillRect(p.x - 22, p.y - 49, 44 * pct / 100, 6);
+}
+function drawAssistSeat(g, r, st, avs) {
+  const occ = st.as >= 0 ? avs[st.as] : null, taken = occ && !occ.dead && occ.seat === r.i && occ.asst;
+  rr(g, r.ax - 15, r.ay - 6, 30, 26, 10); stk(g, taken ? "#7a6a50" : MESH, 2.5);
+  if (!taken) { g.font = "700 11px 'IBM Plex Sans KR',sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.lineWidth = 3; g.strokeStyle = INK; g.strokeText("보조석", r.ax, r.ay + 30); g.fillStyle = "#cfe3ff"; g.fillText("보조석", r.ax, r.ay + 30); }
+}
 function wdraw(time) {
   const W = UI.W, V = W.V, C = W.cam, s = C.s, g = ctx, lay = W.lay, cvs = $("#cv");
   g.setTransform(1, 0, 0, 1, 0, 0); g.fillStyle = "#0b0d1a"; g.fillRect(0, 0, cvs.width, cvs.height);
@@ -1913,19 +2067,20 @@ function wdraw(time) {
     const st = V.rooms[i], b = W.bg.rooms[i], owner = st && st.o >= 0 ? avs[st.o] : null, dw = r.def.doorW || DOOR.w;
     g.save(); g.translate(r.ox, r.dl - 400 * r.dir); g.scale(1, r.dir); g.drawImage(b.c, b.x0, b.y0, b.w, b.h); g.restore();
     if (st) {
-      if (!st.f) drawDoorAt(g, r.doorX, st.dl, dw, st.dh / st.dm, st.fl, r.dl);
+      if (!st.f) { drawDoorAt(g, r.doorX, st.dl, dw, st.br ? 0 : st.dh / st.dm, st.fl, r.dl); if (st.br) drawBreach(g, r, dw, time); drawDoorBar(g, r, st, s); }
       else { g.fillStyle = "rgba(232,60,40,.16)"; g.fillRect(r.L, r.yMin, r.R - r.L, r.yMax - r.yMin); g.strokeStyle = "rgba(232,60,40,.9)"; g.lineWidth = 4; g.setLineDash([14, 10]); g.beginPath(); g.moveTo(r.doorX - dw / 2, r.dl); g.lineTo(r.doorX + dw / 2, r.dl); g.stroke(); g.setLineDash([]); }
       const seatedHere = owner && !owner.dead && owner.seat === i;
+      if (!st.f) drawAssistSeat(g, r, st, avs);
       drawDeskAt(g, r.deskX, r.deskY, st.dk, time, !!seatedHere);
       if (seatedHere) { g.strokeStyle = AV_COL[owner.id % AV_COL.length]; g.lineWidth = 3; ell(g, r.deskX, r.deskY + 8, 26, 30); g.stroke(); }
-      st.s.forEach((it, j) => { if (!it || it === -1) return; drawItem(g, r.slotsW[j], {type:ITYPES[it[0]], lv:it[1], ang:it[2]}, time, UI.itemFlash[i * 100 + j] || 0); });
+      st.s.forEach((it, j) => { if (!it || it === -1) return; drawItem(g, r.slotsW[j], {type:ITYPES[it[0]], lv:it[1], ang:it[2]}, time, UI.itemFlash[i * 100 + j] || 0); if (it[3] != null && it[3] < 100) drawHpBar(g, r.slotsW[j], it[3]); });
       for (const c of st.cr) { rr(g, c[1] - 30, c[2] - 15, 60, 30, 7); stk(g, OAK, 3); g.fillStyle = "#2a1a00"; g.font = "700 12px 'IBM Plex Sans KR',sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("도시락+" + c[3], c[1], c[2]); }
     } else {
       drawDeskAt(g, r.deskX, r.deskY, 1, time, false);
       const tx = "빈 방 · 책상으로 가서 앉기"; g.fillStyle = "rgba(255,255,255,.7)"; g.font = "700 14px 'IBM Plex Sans KR',sans-serif"; g.textAlign = "center"; g.lineWidth = 3; g.strokeStyle = INK; g.strokeText(tx, r.doorX, r.ty(def0(r) + 92)); g.fillText(tx, r.doorX, r.ty(def0(r) + 92));
     }
-    const label = `${r.def.floor} ${r.def.name}` + (st ? (st.f ? " · 함락" : owner ? " · " + W.names[owner.id] : "") : "");
-    g.font = "700 15px 'IBM Plex Sans KR',sans-serif"; g.textAlign = "center"; g.textBaseline = "alphabetic"; g.lineWidth = 4; g.strokeStyle = INK; g.strokeText(label, r.doorX, r.ty(52)); g.fillStyle = st && st.f ? "#ff8a7a" : "#fff"; g.fillText(label, r.doorX, r.ty(52));
+    const label = `${r.def.floor} ${r.def.name}` + (st ? (st.f ? " · 함락" : (st.br ? " · 최후의 항전!" : "") + (owner ? " · " + W.names[owner.id] : "")) : "");
+    g.font = "700 15px 'IBM Plex Sans KR',sans-serif"; g.textAlign = "center"; g.textBaseline = "alphabetic"; g.lineWidth = 4; g.strokeStyle = INK; g.strokeText(label, r.doorX, r.ty(52)); g.fillStyle = st && (st.f || st.br) ? "#ff8a7a" : "#fff"; g.fillText(label, r.doorX, r.ty(52));
   });
   // 내 방의 설치 칸
   if (me && me.seat >= 0 && UI.G) {
@@ -1951,7 +2106,7 @@ function wdraw(time) {
   for (const e of ens) if (e.x > x0 - 80 && e.x < x1 + 80 && e.y > y0 - 80 && e.y < y1 + 80) drawEnemy(g, e, time, alpha);
   for (const r of V.rooms) if (r) for (const p of r.pj) { g.fillStyle = "#9fdcff"; g.beginPath(); g.arc(p[0], p[1], 7, 0, 7); g.fill(); g.lineWidth = 2.5; g.strokeStyle = INK; g.stroke(); }
   for (const row of V.av) {
-    const a = avs[row[0]]; if (a.seat >= 0 && !a.dead) continue; if (a.x < x0 - 40 || a.x > x1 + 40 || a.y < y0 - 60 || a.y > y1 + 60) continue;
+    const a = avs[row[0]]; if (a.seat >= 0 && !a.dead && !a.asst) continue; if (a.x < x0 - 40 || a.x > x1 + 40 || a.y < y0 - 60 || a.y > y1 + 60) continue;
     drawAvatar(g, row, (a.ai ? "AI " : "") + W.names[a.id], AV_COL[a.id % AV_COL.length], time, a.id === W.me, W.moving[a.id]);
   }
   for (const b of UI.fx.b) { g.strokeStyle = `rgba(255,236,160,${b.life / .09})`; g.lineWidth = 4; g.beginPath(); g.moveTo(b.x1, b.y1); g.lineTo(b.x2, b.y2); g.stroke(); g.strokeStyle = "rgba(255,255,255,.9)"; g.lineWidth = 1.5; g.stroke(); }
@@ -1973,7 +2128,7 @@ function wdraw(time) {
   }
   if (UI.flash > 0) { g.fillStyle = `rgba(255,255,255,${UI.flash * .6})`; g.fillRect(0, 0, 900, 620); }
   if (V.t < 0) { g.font = "700 22px 'IBM Plex Sans KR',sans-serif"; g.textAlign = "center"; g.lineWidth = 5; g.strokeStyle = INK; const tx = `출근까지 ${Math.ceil(-V.t)}초 — 방을 골라 책상으로 가세요`; g.strokeText(tx, 450, 44); g.fillStyle = "#ffe27a"; g.fillText(tx, 450, 44); }
-  if (me && me.dead) { g.fillStyle = "rgba(20,20,28,.35)"; g.fillRect(0, 0, 900, 620); g.font = "700 20px 'IBM Plex Sans KR',sans-serif"; g.textAlign = "center"; g.lineWidth = 5; g.strokeStyle = INK; g.strokeText("쓰러졌어요 · 관전 중 (화면을 끌어 구경하세요)", 450, 40); g.fillStyle = "#fff"; g.fillText("쓰러졌어요 · 관전 중 (화면을 끌어 구경하세요)", 450, 40); }
+  if (me && me.dead) { const tx = `쓰러졌어요 · ${me.rs}초 뒤 입구에서 다시 일어나요 (그동안 유령 소화기로 도와요)`; g.fillStyle = "rgba(20,20,28,.35)"; g.fillRect(0, 0, 900, 620); g.font = "700 19px 'IBM Plex Sans KR',sans-serif"; g.textAlign = "center"; g.lineWidth = 5; g.strokeStyle = INK; g.strokeText(tx, 450, 40); g.fillStyle = "#fff"; g.fillText(tx, 450, 40); }
 }
 const def0 = r => r.def.desk[1];
 function drawLightWorld(V, time, ens) {
@@ -2021,7 +2176,7 @@ function wminimap() {
 
 /* ----- 파티 줄·피드·패널·HUD ----- */
 function buildPartyW() {
-  const W = UI.W; $("#party").innerHTML = W.names.map((n, i) => `<div class="pt${i === W.me ? " me" : ""}" data-p="${i}" data-act="w-look" title="눌러서 이 사람 쪽으로 화면 이동"><b><span style="color:${AV_COL[i % AV_COL.length]}">●</span><span class="pt-n">${esc(n)}</span><span class="pt-s"></span></b><div class="bar"><i></i></div><small></small></div>`).join("");
+  const W = UI.W; $("#party").innerHTML = W.names.map((n, i) => `<div class="pt${i === W.me ? " me" : ""}" data-p="${i}" data-act="w-look" title="눌러서 이 사람 쪽으로 화면 이동"><b><span style="color:${AV_COL[i % AV_COL.length]}">●</span><span class="pt-n">${esc(n)}</span><span class="pt-s"></span></b><div class="bar"><i></i></div><div class="bar door" title="문 체력"><i></i></div><small></small></div>`).join("");
   W.partyKey = "";
 }
 function updatePartyW() {
@@ -2030,7 +2185,11 @@ function updatePartyW() {
     const a = avRow(V, r[0]), el = $(`.pt[data-p="${a.id}"]`); if (!el) continue;
     el.classList.toggle("out", a.dead);
     const bar = $(".bar", el); bar.classList.toggle("low", a.hp < 35); bar.firstElementChild.style.width = clamp(a.hp, 0, 100) + "%";
-    const st = a.dead ? "쓰러짐" : a.seat >= 0 ? roomName(W, a.seat) : a.mis >= 0 ? "도우러 가는 중" : a.home >= 0 && V.rooms[a.home] && V.rooms[a.home].f ? "함락 · 이동 중" : "이동 중";
+    const hr = a.home >= 0 ? V.rooms[a.home] : null, db = $(".bar.door", el);
+    if (hr && !hr.f) { const rt = clamp(hr.dh / hr.dm, 0, 1); db.style.visibility = "visible"; db.classList.toggle("low", rt < .3 || !!hr.br); db.firstElementChild.style.width = (hr.br ? 100 : rt * 100) + "%"; } else db.style.visibility = "hidden";
+    const dtxt = hr ? (hr.f ? "방 함락" : hr.br ? "문 뚫림!" : "문 " + Math.round(clamp(hr.dh / hr.dm, 0, 1) * 100) + "%") : "";
+    const where = a.dead ? `쓰러짐 · ${a.rs}초 뒤 부활` : a.seat >= 0 ? roomName(W, a.seat) + (a.asst ? " 보조석" : "") : a.mis >= 0 ? "도우러 가는 중" : hr && hr.f ? "함락 · 이동 중" : "이동 중";
+    const st = a.dead || !dtxt || (hr && hr.f) ? where : where + " · " + dtxt;
     const sm = $("small", el); if (sm.textContent !== st) sm.textContent = st;
     $(".pt-s", el).textContent = a.ai ? "AI" : "";
   }
@@ -2040,10 +2199,13 @@ function updatePartyW() {
     const f = fl[k - (fn - fl.length)]; if (!f) continue; let msg = "", red = false;
     const nm = W.names[f.id], rn = f.room != null ? roomName(W, f.room) : "";
     if (f.k === "seat") msg = `${nm} 님이 ${rn}에 자리 잡았어요`;
-    else if (f.k === "fall") { msg = `${rn} 문이 뚫렸어요!`; red = true; sfx("lose", 400); }
+    else if (f.k === "fall") { msg = `${rn} 방이 무너졌어요!`; red = true; sfx("lose", 400); }
+    else if (f.k === "breach") { msg = `${rn} 문이 뚫렸어요! 최후의 항전!`; red = true; }
+    else if (f.k === "revive") msg = `${nm} 님이 입구에서 다시 일어났어요`;
+    else if (f.k === "assist") msg = `${nm} 님이 ${rn} 보조석에 앉았어요`;
     else if (f.k === "mini") { msg = `야근 대마왕이 ${rn}(으)로 향해요`; red = true; }
     else if (f.k === "dragon") { msg = `공실 드래곤이 ${rn}(으)로 향해요!`; red = true; sfx("warn", 400); banner(`공실 드래곤 → ${rn}`, "red"); }
-    else if (f.k === "dead") { msg = `${nm} 님이 쓰러졌어요`; red = true; }
+    else if (f.k === "dead") { msg = `${nm} 님이 쓰러졌어요 (22초 뒤 부활)`; red = true; }
     else if (f.k === "leave") msg = `${nm} 님이 나가서 AI가 이어받아요`;
     if (msg) { const el = $("#feed"); el.textContent = msg; el.style.color = red ? "#ff8a7a" : "var(--gold)"; W.feedT = 5; }
   }
@@ -2064,10 +2226,10 @@ function updatePanelWorld() {
   const W = UI.W, V = W.V, a = avRow(V, W.me); if (!a) return;
   const seated = a.seat >= 0, G = UI.G, z = zoneOf(W.lay, a.x, a.y), zst = z >= 0 ? V.rooms[z] : null;
   $("#panel").classList.toggle("standing", !seated);
-  $("#me-st").textContent = a.dead ? "쓰러졌어요 (관전 중)" : seated ? `${roomName(W, a.seat)} 근무 중` : zst && !zst.f ? `${roomName(W, z)} 안` : "복도·이동 중";
+  $("#me-st").textContent = a.dead ? `쓰러졌어요 · ${a.rs}초 뒤 부활` : seated ? `${roomName(W, a.seat)} ${a.asst ? "보조석" : "근무"} 중` : zst && !zst.f ? `${roomName(W, z)} 안` : "복도·이동 중";
   $("#me-hp").textContent = Math.round(a.hp) + " / " + AV_HP; const bar = $("#me-bar"); bar.classList.toggle("low", a.hp < 35); bar.firstElementChild.style.width = clamp(a.hp, 0, 100) + "%";
   $("#me-sit").hidden = seated || a.dead; $("#me-stand").hidden = !seated;
-  $("#me-tip").textContent = a.dead ? "아직 새벽까지 버티는 동료들을 구경해요. 아래 지도를 눌러 화면을 옮겨 보세요." : seated ? "다른 방이 위험하면 일어나 달려가서 도울 수 있어요. 복도에서는 귀신에게 맞아요." : a.home >= 0 && V.rooms[a.home] && V.rooms[a.home].f ? "내 방은 함락됐어요. 안전한 방에 들어가 동료를 도와요." : "WASD로 걷거나 바닥을 눌러 이동해요. 책상에 가면 방 문이 닫혀요.";
+  $("#me-tip").textContent = a.dead ? "곧 입구에서 다시 일어나요. 그동안 아래 '유령 소화기'로 싸우는 방을 도울 수 있어요." : seated && a.asst ? "보조석: 이 방 수당으로 같이 설치·수리·소화기를 쓸 수 있어요(철거는 방 주인만)." : seated ? "다른 방이 위험하면 일어나 달려가서 도울 수 있어요. 방 옆 보조석엔 동료가 같이 앉을 수 있어요." : a.home >= 0 && V.rooms[a.home] && V.rooms[a.home].f ? "내 방은 함락됐어요. 안전한 방에 들어가 동료를 도와요." : "WASD로 걷거나 바닥을 눌러 이동해요. 책상에 가면 방 문이 닫혀요.";
   const help = !seated && !a.dead && zst && !zst.f;
   $("#bx-help").hidden = !help;
   if (help) {
@@ -2075,17 +2237,20 @@ function updatePanelWorld() {
     $("#help-rep").textContent = c ? `문 수리 ₩${c} (R)` : "문이 멀쩡해요"; $("#help-rep").setAttribute("aria-disabled", String(!c || !UI.G || UI.G.gold < c));
   }
   // 방 목록
-  const key = V.rooms.map(r => r ? r.o + ":" + r.f : "-").join("|") + "|" + a.home + "|" + a.seat + "|" + a.dead;
+  const sg = {}; for (const e of V.en) if (e[6] & 8) sg[e[7]] = (sg[e[7]] || 0) + 1;
+  const key = V.rooms.map((r, i) => r ? r.o + ":" + r.f + ":" + r.as + ":" + r.br + ":" + ((sg[i] || 0) >= 2 ? 1 : 0) : "-").join("|") + "|" + a.home + "|" + a.seat + "|" + a.dead + "|" + (a.gcd > 0 ? 1 : 0);
   if (key !== W.roomsKey && !seated) {
     W.roomsKey = key;
     $("#rooms-list").innerHTML = W.lay.rooms.map(r => {
-      const st = V.rooms[r.i], mine = a.home === r.i, def = r.def;
-      let d = "", c = "가기";
+      const st = V.rooms[r.i], mine = a.home === r.i, def = r.def, fight = (sg[r.i] || 0) >= 2;
+      let d = "", c = "가기", extra = "";
       if (!st) { d = `비어 있어요 · 설치 ${def.base}칸 · 시작 ₩${def.gold}`; c = a.home >= 0 || a.dead ? "구경" : "자리 잡기"; }
       else if (st.f) { d = "함락됨 · 귀신이 들어와 있어요"; c = "위험"; }
-      else if (mine) { d = "내 자리"; c = "돌아가기"; }
-      else { const o = st.o >= 0 ? W.names[st.o] : "?"; d = `${o} 님 자리 · 도우러 가기`; c = "도우러"; }
-      return `<button class="bi" data-act="w-goroom" data-i="${r.i}"><span class="k">${"★".repeat(def.star)}</span><span><b>${esc(def.floor + " " + def.name)}</b><span class="d">${esc(d)}</span></span><span class="c">${c}</span></button>`;
+      else if (mine) { d = st.br ? "내 자리 · 문이 뚫렸어요!" : "내 자리"; c = "돌아가기"; }
+      else { const o = st.o >= 0 ? W.names[st.o] : "?"; d = (st.br ? "문이 뚫렸어요! " : "") + `${o} 님 자리 · 도우러 가기`; c = "도우러"; }
+      if (a.dead && st && !st.f) extra = `<button class="btn btn-sm" data-act="w-ghost" data-i="${r.i}" ${fight && a.gcd <= 0 ? "" : "aria-disabled='true'"}>${a.gcd > 0 ? `소화기 ${a.gcd}초` : fight ? "유령 소화기" : "조용해요"}</button>`;
+      else if (!a.dead && st && !st.f && !mine) { const oc = st.as >= 0 ? avRow(V, st.as) : null; if (!(oc && !oc.dead && oc.seat === r.i && oc.asst)) extra = `<button class="btn btn-sm" data-act="w-assist" data-i="${r.i}">보조석</button>`; }
+      return `<div class="biw"><button class="bi" data-act="w-goroom" data-i="${r.i}"><span class="k">${"★".repeat(def.star)}</span><span><b>${esc(def.floor + " " + def.name)}</b><span class="d">${esc(d)}</span></span><span class="c">${c}</span></button>${extra}</div>`;
     }).join("");
   }
   photoUpdate(seated ? W.lay.rooms[a.seat].def.id : zst && !zst.f ? W.lay.rooms[z].def.id : a.home >= 0 ? W.lay.rooms[a.home].def.id : null);
@@ -2136,32 +2301,42 @@ function wframe(ts) {
 
 /* ----- 결과 ----- */
 function showWorldResult() {
-  const W = UI.W, V = W.V, res = V.res || [], me = res.find(r => r.id === W.me) || {p:res.length, t:0, k:0, h:0, s:0, al:0}, n = res.length, win = V.o === "win" && me.al;
+  const W = UI.W, V = W.V, res = V.res || [], n = res.length, win = V.o === "win";
+  const me = res.find(r => r.id === W.me) || {p:n, hd:0, k:0, h:0, as:0, dt:0, s:0, al:0, he:0, fa:-1, dr:0, pk:0, ph:0, pp:0, pa:0, pb:0};
   const bonus = n >= 3 ? [20, 10, 5][me.p - 1] || 0 : me.p === 1 ? 10 : 0;
-  const rp = Math.floor(me.t / 12) + Math.floor(me.k / 15) + (win ? 25 : 0) + Math.min(me.h, 10) * 3 + bonus;
-  SAVE.runs++; if (win) SAVE.wins++;
+  const rp = Math.floor(me.hd / 12) + Math.floor(me.k / 15) + (win && me.he ? 25 : 0) + Math.min(me.h, 10) * 3 + bonus;
+  SAVE.runs++; if (win && (me.he || me.al)) SAVE.wins++;
   const a = avRow(V, W.me), rid = a && a.home >= 0 ? W.lay.rooms[a.home].def.id : null;
-  if (rid) { SAVE.best[rid] = Math.max(SAVE.best[rid] || 0, Math.floor(me.t)); if (win) SAVE.cleared[rid] = true; }
+  if (rid) { SAVE.best[rid] = Math.max(SAVE.best[rid] || 0, Math.floor(me.hd)); if (win && me.he) SAVE.cleared[rid] = true; }
   SAVE.rp += rp; persist();
-  const alive = res.filter(r => r.al).length;
-  const head = V.o === "win" ? (me.al ? (me.p === 1 ? "1등! 오늘 밤은 내가 지킨다" : `새벽 6시 — ${me.p}등으로 출근 완료`) : "동료들이 아침까지 버텼어요") : "모두 쓰러졌다…";
-  const sub = V.o === "win" ? `${alive}명이 새벽 6시까지 버텼어요.` : "아침이 오기 전에 모두 쓰러졌어요.";
-  const rows = res.map(r => `<div class="rk-row ${r.id === W.me ? "me" : ""}"><div class="rk-n ${r.p <= 3 ? "rk-" + r.p : ""}">${r.p}</div><div style="min-width:0;text-align:left"><div class="rk-nick">${esc(W.names[r.id])}${r.id === W.me ? (W.names[r.id] === "나" ? "" : " (나)") : (avRow(V, r.id) || {}).ai ? " (AI)" : ""}</div><div class="rk-sub">${r.rm ? esc(roomLabel(r.rm)) : "자리 못 잡음"} · ${r.al ? "새벽까지 생존" : fmtTime(r.t) + " 쓰러짐"} · 처치 ${fmt(r.k)} · 도움 ${r.h}</div></div><div class="rk-sc num">${fmt(r.s)}</div></div>`).join("");
-  $("#res").innerHTML = `<h2 class="disp" style="color:${V.o === "win" ? "var(--gold)" : "var(--red)"}">${esc(head)}</h2>
-    <p class="dim">다 같이 ${n}명 · ${DIFFS[W.diff].n}<br>${esc(sub)}</p><div class="rk" style="text-align:left">${rows}</div>
+  const mult = DIFFS[W.diff].mult, held = res.filter(r => r.he).length;
+  const head = win ? (me.p === 1 ? "1등! 오늘 밤은 내가 지킨다" : `새벽 6시 — ${me.p}등으로 출근 완료`) : "모든 방이 무너졌다…";
+  const sub = win ? `${held}개 방이 새벽 6시까지 버텼어요.` : "아침이 오기 전에 모든 방이 무너졌어요.";
+  const nm = r => esc(W.names[r.id]) + (r.id === W.me ? (W.names[r.id] === "나" ? "" : " (나)") : (avRow(V, r.id) || {}).ai ? " (AI)" : "");
+  const rows = res.map(r => `<div class="rk-row w ${r.id === W.me ? "me" : ""}"><div class="rk-n ${r.p <= 3 ? "rk-" + r.p : ""}">${r.p}</div><div style="min-width:0;text-align:left"><div class="rk-nick">${nm(r)}</div>
+    <div class="rk-sub">${r.rm ? esc(roomLabel(r.rm)) : "자리 못 잡음"} · ${r.he ? "방을 끝까지 지킴" : r.fa >= 0 ? fmtTime(r.fa) + "에 방 함락" : "방 없음"}${r.al ? "" : " · 쓰러진 채 끝"}${r.dt ? ` · 쓰러짐 ${r.dt}회` : ""}</div>
+    <div class="rk-bd">처치 ${fmt(r.k)}마리 → ${fmt(r.pk)} · 방 버틴 ${fmt(r.hd)}초 → ${fmt(r.ph)} · 도움 ${Math.min(r.h, HELP_CAP)}회 → ${fmt(r.pp)} · 보조석 ${fmt(r.as)}초 → ${fmt(r.pa)}${r.pb ? " · 보너스 " + fmt(r.pb) : ""}</div></div><div class="rk-sc num">${fmt(r.s)}</div></div>`).join("");
+  UI.last = {kind:"w", run:{floor:W.floor, diff:W.diff, n, t:me.hd, kills:me.k, helps:Math.min(me.h, HELP_CAP), asst:me.as, deaths:me.dt, he:me.he, al:me.al, win, dragon:!!me.dr}, score:me.s, runId:W.runId || null, done:false, busy:false, msg:""};
+  $("#res").innerHTML = `<h2 class="disp" style="color:${win ? "var(--gold)" : "var(--red)"}">${esc(head)}</h2>
+    <p class="dim">다 같이 ${n}명 · ${esc(FLOORS[W.floor] ? FLOORS[W.floor].name : "")} · ${DIFFS[W.diff].n}<br>${esc(sub)}</p>
+    <div class="box" style="text-align:left;gap:4px"><b>순위는 점수 하나로 정해요</b><span class="small dim">점수 = (처치×10 + 방을 버틴 초×4 + 도움×60 + 보조석 초×3 + 보너스) × 난이도 ${mult}배(${DIFFS[W.diff].n})</span><span class="small faint">보너스: 방을 끝까지 지키면 +800 · 새벽까지 살아 있으면 +300 · 공실 드래곤 처치 +600. 도움은 15회, 보조석은 150초까지 인정돼요. 방 종류(★)는 점수에 영향이 없어요.</span></div>
+    <div class="rk" style="text-align:left">${rows}</div>
     <div class="row" style="justify-content:center"><span class="chip" style="color:var(--gold)">+${rp} RP${bonus ? ` (순위 보너스 ${bonus})` : ""}</span><span class="chip">보유 ${fmt(SAVE.rp)} RP</span></div>
+    <div class="rankbox" id="rankbox">${rankBoxHTML()}</div>
     ${promoHTML(rid || "common")}
-    <p class="small faint">다 같이 모드는 랭킹에 올라가지 않아요. 랭킹은 혼자 모드 기록이에요.</p>
     <div class="row" style="justify-content:center"><button class="btn btn-red" data-act="retry">다시 하기</button><button class="btn" data-act="to-select">처음 화면</button><button class="btn btn-gold" data-act="to-shop">상점 (${fmt(SAVE.rp)} RP)</button></div>`;
   endWorldKeepResult();
   show("result"); UI.screen = "result";
+  if (apiOn() && UI.last.runId && cleanNick(SAVE.nick).length >= 2) submitRank();   // 닉네임이 있으면 자동으로 올려요 (아래 칸으로 직접 등록도 돼요)
 }
 function endWorldKeepResult() { const W = UI.W; if (!W) return; clearInterval(W.timer); if (typeof netClose === "function") netClose(W); UI.lastW = W; UI.W = null; UI.G = null; setWorldDom(false); }
 
 /* ----- 월드 행동 버튼 ----- */
 Object.assign(A, {
-  "w-sit": () => { const r = worldAct("sit"); if (!r.ok) toast("자기 책상 가까이에서 눌러 주세요"); },
+  "w-sit": () => { const r = worldAct("sit"); if (!r.ok) toast("책상이나 보조석 가까이에서 눌러 주세요"); },
   "w-stand": () => { worldAct("stand"); },
+  "w-assist": b => { const r = worldAct("goAssist", {i:Number(b.dataset.i)}); if (!r.ok) toast("지금은 보조석에 앉을 수 없어요"); },
+  "w-ghost": b => { const r = worldAct("ghost", {i:Number(b.dataset.i)}); if (!r.ok) toast(r.why === "calm" ? "아직 조용한 방이에요" : r.why === "cd" ? "소화기가 아직 충전 중이에요" : "지금은 할 수 없어요"); else sfx("skill"); },
   "w-home": () => { UI.W.cam.mode = "follow"; },
   "w-look": b => { const W = UI.W, a = avRow(W.V, Number(b.dataset.p)); if (!a) return; W.cam.mode = "free"; const rm = a.seat >= 0 && W.lay.rooms[a.seat]; W.cam.x = (rm ? rm.doorX : a.x) - 450 / W.cam.s; W.cam.y = (rm ? rm.ty(310) : a.y) - 310 / W.cam.s; },
   "w-zoom": () => { const C = UI.W.cam, L = UI.W.lay; C.s = C.s > .8 ? Math.min(900 / L.W, 620 / L.H) * .97 : 1; $("#h-zoom").textContent = C.s > .8 ? "넓게" : "가깝게"; },
@@ -2176,8 +2351,8 @@ Object.assign(A, {
 const worldOpts = () => ({total:SAVE.players, humans:[{name:SAVE.nick || "나", meta:metaOf(SAVE.ups)}], diff:SAVE.diff, floor:SAVE.floor});
 
 /* ===== 온라인 다 같이: 로비(약 8초) · P2P(PeerJS) · 모자란 자리는 AI ===== */
-const NET_PREFIX = "rbnd-nd1-L", NET_SLOTS = 4, NET_MAX = 5;
-const NET_CMDS = new Set(["mv", "go", "goSeat", "sit", "stand", "build", "up", "sell", "doorUp", "deskUp", "repair", "skill", "crate"]);
+const NET_PREFIX = "rbnd-nd2-L", NET_SLOTS = 4, NET_MAX = 5;
+const NET_CMDS = new Set(["mv", "go", "goSeat", "sit", "stand", "build", "up", "sell", "doorUp", "deskUp", "repair", "skill", "crate", "goAssist", "ghost"]);
 let LB = null;   // 열려 있는 로비(없으면 null)
 const cleanUps = u => { const o = {}; for (const [k, m] of Object.entries({startGold:5, doorHp:5, income:5, skillCd:5, slots:2})) o[k] = clamp(Math.floor(Number(u && u[k])) || 0, 0, m); return o; };
 const cleanCmd = p => { const o = {}; if (!p || typeof p !== "object") return o; for (const k of ["x", "y", "i", "id"]) if (Number.isFinite(Number(p[k])) && p[k] !== null) o[k] = Number(p[k]); if (p.i === null) o.i = null; if (typeof p.t === "string" && Object.prototype.hasOwnProperty.call(BUILD, p.t)) o.t = p.t; if (typeof o.i === "number") o.i = clamp(Math.floor(o.i), 0, 11); return o; };
@@ -2196,7 +2371,7 @@ function renderLobby(force) {
   const host = L.phase === "host", names = host ? L.humans.map(h => h.name) : (L.names || []), key = L.phase + "|" + names.join(",");
   const msg = L.phase === "host" ? `사람을 찾는 중… 지금 ${names.length}명 · ${Math.ceil(L.left)}초 뒤에 시작해요` : L.phase === "joined" ? `방장이 곧 시작해요 · ${Math.ceil(L.left || 0)}초` : L.msg;
   if (!force && L.key === key && $("#lb-msg")) { $("#lb-msg").textContent = msg; lobbyPhoto(L); return; }
-  L.key = key; L.phAt = performance.now(); const ph = GALLERY[(L.phI == null ? (L.phI = (Math.random() * GALLERY.length) | 0) : L.phI) % GALLERY.length];
+  L.key = key; L.phAt = performance.now(); const ph = PRIM[(L.phI == null ? (L.phI = (Math.random() * PRIM.length) | 0) : L.phI) % PRIM.length];
   $("#modal-slot").innerHTML = `<div class="modal" role="dialog" aria-modal="true" aria-label="사람 찾는 중"><div style="width:min(440px,100%)"><h2 class="disp" style="font-size:26px">같이 할 사람 찾는 중</h2><p class="dim" id="lb-msg">${esc(msg)}</p>
     <img class="lb-photo" id="lb-photo" src="${phSrc(ph)}" alt="${esc(ph.alt)}"><p class="small dim" id="lb-cap">${esc(ph.title)} — ${esc(ph.caption)}</p>
     ${names.length ? `<div class="rk" style="text-align:left">${names.map((n, i) => `<div class="rk-row ${n === (SAVE.nick || "나") && (host ? i === 0 : false) ? "me" : ""}"><div class="rk-n">${i + 1}</div><div class="rk-nick">${esc(n)}</div><div class="rk-sub">${i === 0 ? "방장" : ""}</div></div>`).join("")}</div>` : ""}
@@ -2328,22 +2503,23 @@ function startWorldClient(L, conn, msg) {
   const lay = layoutWorld(FLOORS[msg.floor] ? msg.floor : "4f"), names = Array.isArray(msg.names) ? msg.names.map(n => String(n)) : [];
   const W = {Wd:null, lay, V:null, me:Number(msg.you) || 0, names, net:L, last:performance.now(), paused:false, evq:[], fi:0, cam:{x:(lay.hall.L + lay.hall.R) / 2 - 450, y:(lay.hall.T + lay.hall.B) / 2 - 310, s:1, mode:"follow"}, camCx:0, camCy:0, home:-1, seated:false, keys:new Set(), mvSent:"", bg:null, shadow:null, hudT:0, panelT:0, partyKey:"", roomsKey:"", feedT:0, pos:{}, moving:{}, diff:DIFFS[msg.diff] ? msg.diff : "normal", floor:FLOORS[msg.floor] ? msg.floor : "4f", snapAt:0, startAt:performance.now(), snapGap:70, pEn:new Map(), pAv:new Map()};
   beginWorldUI(W);
+  if (apiOn()) api("start", {}).then(j => { W.runId = j.runId; }).catch(() => {});
 }
 function onSnapshot(W, V) {
   const now = performance.now();
   if (W.V) { W.snapGap = clamp(now - W.snapAt, 30, 400); W.pEn = new Map(W.V.en.map(r => [r[0], r])); W.pAv = new Map(W.V.av.map(r => [r[0], r])); }
   W.snapAt = now; W.V = V;
   if (V.ev) for (const e of V.ev) if (W.evq.length < 400) W.evq.push(e);
-  const a = avRow(V, W.me); if (!a) return;
-  if (W.home !== a.home) { W.home = a.home; UI.sel = null; UI.selHtml = ""; W.shadow = a.home >= 0 ? newRun(W.lay.rooms[a.home].def, metaOf(cleanUps(SAVE.ups)), null, W.diff, W.lay.rooms[a.home].ox) : null; }
+  const a = avRow(V, W.me); if (!a) return; const ctx = a.seat >= 0 ? a.seat : a.home, cr = ctx >= 0 ? W.lay.rooms[ctx] : null;
+  if (W.home !== ctx) { W.home = ctx; UI.sel = null; UI.selHtml = ""; W.shadow = cr ? newRun(cr.def, metaOf(cleanUps(SAVE.ups)), null, W.diff, cr.ox, cr.dir, cr.dl) : null; }
   W.seated = a.seat >= 0;
   if (V.my && W.shadow) {
     const G = W.shadow, m = V.my;
     G.gold = m.g; G.deskLv = m.dk; G.door.lv = m.dl; G.door.hp = m.dh; G.door.max = m.dm; G.door.flash = m.fl ? .1 : 0; G.blackout = m.bo ? 5 : 0; G.away = !!m.aw; G.skill.cd = m.sk[0]; G.skill.max = m.sk[1];
     m.sl.forEach((s, i) => { const sl = G.slots[i]; if (!sl) return; sl.locked = !!s[0]; sl.it = s[1] >= 0 ? {type:ITYPES[s[1]], lv:s[2], inv:s[3], ang:-Math.PI / 2, cd:0} : null; });
-    const rs = V.rooms[a.home]; G.crates = rs ? rs.cr.map(c => ({id:c[0], x:c[1], y:c[2], val:c[3]})) : [];
+    const rs = V.rooms[ctx]; G.crates = rs ? rs.cr.map(c => ({id:c[0], x:c[1], y:c[2], val:c[3]})) : [];
   }
-  UI.G = a.home >= 0 ? W.shadow : null;
+  UI.G = ctx >= 0 ? W.shadow : null;
 }
 function lerpView(W) {
   const V = W.V, k = clamp((performance.now() - W.snapAt) / W.snapGap, 0, 1);
@@ -2354,7 +2530,7 @@ function lerpView(W) {
 
 /* ----- 방장 쪽: 상태 보내기 ----- */
 function myOf(Wd, id) {
-  const a = Wd.av[id]; if (!a || a.home < 0) return null; const G = Wd.rooms[a.home].G; if (!G) return null;
+  const a = Wd.av[id]; if (!a) return null; const ri = a.seat >= 0 ? a.seat : a.home; if (ri < 0) return null; const G = Wd.rooms[ri].G; if (!G) return null;
   return {g:Math.floor(G.gold), dk:G.deskLv, dl:G.door.lv, dh:Math.round(G.door.hp), dm:G.door.max, fl:G.door.flash > 0 ? 1 : 0, bo:G.blackout > 0 ? 1 : 0, aw:G.away ? 1 : 0, sk:[+G.skill.cd.toFixed(1), G.skill.max],
     sl:G.slots.map(s => [s.locked ? 1 : 0, s.it ? ITYPES.indexOf(s.it.type) : -1, s.it ? s.it.lv : 0, s.it ? Math.round(s.it.inv) : 0])};
 }
@@ -2382,44 +2558,79 @@ Object.assign(A, {
 });
 
 /* ===== 공간 사진(홍보): 실제 라운드비 사진 ===== */
-const GALLERY = [{"file": "g01.jpg", "title": "라운드비가 있는 건물", "caption": "푸른 유리창이 길게 이어진 건물 외관, 이곳에 라운드비가 있어요.", "room": "common", "alt": "올려다본 고층 건물 외관. 푸른빛 유리창과 은회색 패널 벽이 길게 이어진다."}, {"file": "g02.jpg", "title": "ROUNDBOFFICE 입구", "caption": "우드톤 벽면에 ROUNDBOFFICE 로고가 새겨진 입구, 안쪽으로 복도와 팬트리가 이어져요.", "room": "common", "alt": "나무 무늬 벽에 검은 글씨로 ROUNDBOFFICE라고 적혀 있고, 왼쪽으로 복도와 팬트리 카운터, 창문이 보인다."}, {"file": "g03.jpg", "title": "햇살 드는 공유 좌석", "caption": "우드 칸막이 너머로 창가를 따라 하얀 책상과 서랍, 메쉬 의자가 놓여 있어요.", "room": "common", "alt": "나무 칸막이 옆으로 하얀 책상과 서랍장, 회색 메쉬 의자가 놓인 밝은 사무 공간. 큰 창으로 빛이 들어온다."}, {"file": "g04.jpg", "title": "나란히 놓인 업무 좌석", "caption": "서랍이 딸린 하얀 책상과 메쉬 의자가 창가를 따라 줄지어 있어요.", "room": "common", "alt": "나무 칸막이 옆으로 하얀 책상과 서랍장, 흰색 메쉬 의자가 한 줄로 놓여 있고 뒤로 창문이 보인다."}, {"file": "g05.jpg", "title": "유리 회의 공간이 보이는 좌석 구역", "caption": "좌석 구역 안쪽으로 반투명 유리벽의 회의 공간이 이어져요.", "room": "common", "alt": "하얀 책상과 의자가 놓인 사무 공간 너머로 반투명 유리벽이 있는 방이 보인다."}, {"file": "g06.jpg", "title": "콘센트가 있는 우드 벤치 코너", "caption": "우드 패널 코너에 콘센트가 달린 벤치가 있고, 그 뒤로 좌석 구역이 보여요.", "room": "common", "alt": "나무 패널로 둘러싸인 모서리에 낮은 벤치와 콘센트가 있고, 왼쪽 뒤로 하얀 책상과 의자들이 보인다."}, {"file": "g07.jpg", "title": "팬트리", "caption": "우드 수납장 아래 은은한 조명, 정수기와 냉장고가 놓인 팬트리 코너예요.", "room": "common", "alt": "연한 나무색 상부장과 하부장, 조명이 켜진 선반 아래에 정수기와 흰색 냉장고가 놓여 있다."}, {"file": "g08.jpg", "title": "도시가 보이는 창가 라운지", "caption": "통창 너머로 거리 풍경이 펼쳐지는 휴게 공간, 주황빛 벤치와 테이블이 놓여 있어요.", "room": "4f-lounge", "alt": "나무 패널 벽 앞에 주황색 쿠션 벤치와 글씨 무늬 식탁보를 씌운 테이블이 있고, 큰 유리창 밖으로 건물과 도로가 보인다."}, {"file": "g09.jpg", "title": "벤치와 테이블이 있는 휴게 코너", "caption": "우드 패널 벽과 주황색 벤치, 창밖으로 거리가 내려다보이는 아늑한 코너예요.", "room": "4f-lounge", "alt": "나무 패널 벽을 따라 주황색 벤치가 L자로 놓여 있고 가운데 테이블이 있으며, 오른쪽 통창 밖으로 도로와 건물이 보인다."}, {"file": "g10.jpg", "title": "우드 패널 휴게 공간", "caption": "나무 패널로 둘러싸인 코너에 벤치와 테이블이 놓인 휴게 공간이에요.", "room": "4f-lounge", "alt": "나무 패널 벽 앞 주황색 벤치와 글씨 무늬 식탁보를 씌운 테이블, 오른쪽으로 긴 유리창이 이어지는 모습."}, {"file": "g11.jpg", "title": "창가 회의실", "caption": "하얀 회의 테이블과 의자가 놓인, 통창으로 빛이 드는 회의실이에요.", "room": "4f-conf", "alt": "긴 하얀 테이블 양옆에 검은 메쉬 의자가 놓인 작은 회의실. 한쪽 벽이 큰 창이다."}, {"file": "g12.jpg", "title": "밝은 회의 공간", "caption": "하얀 벽과 큰 창, 테이블과 의자만 놓인 깔끔한 회의 공간이에요.", "room": "4f-conf", "alt": "큰 창 앞에 하얀 테이블과 검은 의자들이 놓인 밝고 깔끔한 회의실."}, {"file": "g13.jpg", "title": "아치형 책장이 있는 세미나 공간", "caption": "아치형 우드 책장과 주황빛 선반 앞에 하얀 테이블과 의자가 놓여 있어요.", "room": "4f-conf", "alt": "주황색 선반이 있는 아치형 나무 책장 앞에 하얀 테이블과 검은 의자가 놓인 밝은 공간."}, {"file": "g14.jpg", "title": "대형 스크린이 있는 교육 공간", "caption": "대형 스크린과 테이블·의자가 놓인 넓고 밝은 공간이에요.", "room": "4f-conf", "alt": "벽에 큰 화면이 걸려 있고, 하얀 테이블과 검은 의자가 길게 놓인 밝은 방. 한쪽은 통창이다."}, {"file": "g15.jpg", "title": "스크린 앞 강의형 좌석", "caption": "스크린 앞으로 책상과 의자가 줄지어 놓인 강의형 배치예요.", "room": "4f-conf", "alt": "아치형 나무 책장 앞 큰 화면을 향해 하얀 책상과 검은 의자가 여러 줄 놓여 있다."}, {"file": "g16.jpg", "title": "넓은 교육·세미나 공간", "caption": "통창으로 빛이 드는 넓은 공간에 테이블과 의자가 줄지어 놓여 있어요.", "room": "4f-conf", "alt": "넓은 방에 하얀 테이블과 검은 의자가 여러 줄 놓여 있고 오른쪽에 큰 창이 있다."}, {"file": "g17.jpg", "title": "호리존 촬영 스튜디오", "caption": "하얀 호리존 배경과 조명이 갖춰진 촬영 스튜디오예요.", "room": "3f-studio", "alt": "바닥과 벽이 곡선으로 이어진 하얀 호리존 배경, 왼쪽 창가에 대형 소프트박스 조명이 서 있다."}, {"file": "g18.jpg", "title": "소프트박스 조명", "caption": "대형 소프트박스 조명이 하얀 배경을 비추도록 세팅된 스튜디오예요.", "room": "3f-studio", "alt": "창 옆에 커다란 소프트박스 조명이 세워져 있고, 정면에 하얀 호리존 배경이 펼쳐져 있다."}];
+const GALLERY = [{"file":"g01.jpg","title":"라운드비가 있는 건물","caption":"푸른 유리창이 길게 이어진 건물 외관, 이곳에 라운드비가 있어요.","room":"common","cat":"공용","group":"building","primary":true,"alt":"올려다본 고층 건물 외관. 푸른빛 유리창과 은회색 패널 벽이 길게 이어진다."},{"file":"g02.jpg","title":"ROUNDBOFFICE 입구","caption":"우드톤 벽면에 ROUNDBOFFICE 로고가 새겨진 입구, 안쪽으로 복도와 팬트리가 이어져요.","room":"common","cat":"공용","group":"entrance","primary":true,"alt":"나무 무늬 벽에 검은 글씨로 ROUNDBOFFICE라고 적혀 있고, 왼쪽으로 복도와 팬트리 카운터, 창문이 보인다."},{"file":"g04.jpg","title":"나란히 놓인 업무 좌석","caption":"서랍이 딸린 하얀 책상과 메쉬 의자가 창가를 따라 줄지어 있어요.","room":"common","cat":"공용","group":"seats","primary":true,"alt":"나무 칸막이 옆으로 하얀 책상과 서랍장, 흰색 메쉬 의자가 한 줄로 놓여 있고 뒤로 창문이 보인다."},{"file":"g07.jpg","title":"팬트리","caption":"우드 수납장 아래 은은한 조명, 정수기와 냉장고가 놓인 팬트리 코너예요.","room":"common","cat":"공용","group":"pantry","primary":true,"alt":"연한 나무색 상부장과 하부장, 조명이 켜진 선반 아래에 정수기와 흰색 냉장고가 놓여 있다."},{"file":"g03.jpg","title":"햇살 드는 공유 좌석","caption":"우드 칸막이 너머로 창가를 따라 하얀 책상과 서랍, 메쉬 의자가 놓여 있어요.","room":"common","cat":"공용","group":"seats","primary":false,"alt":"나무 칸막이 옆으로 하얀 책상과 서랍장, 회색 메쉬 의자가 놓인 밝은 사무 공간. 큰 창으로 빛이 들어온다."},{"file":"g05.jpg","title":"유리 회의 공간이 보이는 좌석 구역","caption":"좌석 구역 안쪽으로 반투명 유리벽의 회의 공간이 이어져요.","room":"common","cat":"공용","group":"seats","primary":false,"alt":"하얀 책상과 의자가 놓인 사무 공간 너머로 반투명 유리벽이 있는 방이 보인다."},{"file":"g06.jpg","title":"콘센트가 있는 우드 벤치 코너","caption":"우드 패널 코너에 콘센트가 달린 벤치가 있고, 그 뒤로 좌석 구역이 보여요.","room":"common","cat":"공용","group":"seats","primary":false,"alt":"나무 패널로 둘러싸인 모서리에 낮은 벤치와 콘센트가 있고, 왼쪽 뒤로 하얀 책상과 의자들이 보인다."},{"file":"g08.jpg","title":"도시가 보이는 창가 라운지","caption":"통창 너머로 거리 풍경이 펼쳐지는 휴게 공간, 주황빛 벤치와 테이블이 놓여 있어요.","room":"4f-lounge","cat":"휴게공간","group":"lounge-corner","primary":true,"alt":"나무 패널 벽 앞에 주황색 쿠션 벤치와 글씨 무늬 식탁보를 씌운 테이블이 있고, 큰 유리창 밖으로 건물과 도로가 보인다."},{"file":"g09.jpg","title":"벤치와 테이블이 있는 휴게 코너","caption":"우드 패널 벽과 주황색 벤치, 창밖으로 거리가 내려다보이는 아늑한 코너예요.","room":"4f-lounge","cat":"휴게공간","group":"lounge-corner","primary":false,"alt":"나무 패널 벽을 따라 주황색 벤치가 L자로 놓여 있고 가운데 테이블이 있으며, 오른쪽 통창 밖으로 도로와 건물이 보인다."},{"file":"g10.jpg","title":"우드 패널 휴게 공간","caption":"나무 패널로 둘러싸인 코너에 벤치와 테이블이 놓인 휴게 공간이에요.","room":"4f-lounge","cat":"휴게공간","group":"lounge-corner","primary":false,"alt":"나무 패널 벽 앞 주황색 벤치와 글씨 무늬 식탁보를 씌운 테이블, 오른쪽으로 긴 유리창이 이어지는 모습."},{"file":"g15.jpg","title":"스크린 앞 강의형 좌석","caption":"스크린 앞으로 책상과 의자가 줄지어 놓인 강의형 배치예요.","room":"4f-conf","cat":"회의실","group":"conf-whiteboard","primary":true,"alt":"아치형 나무 책장 앞 큰 화면을 향해 하얀 책상과 검은 의자가 여러 줄 놓여 있다."},{"file":"g20.jpg","title":"전자칠판","caption":"바퀴 달린 스탠드에 세워진 대형 전자칠판과 주황빛 선반장이 있는 회의실이에요.","room":"4f-conf","cat":"회의실","group":"conf-whiteboard","primary":false,"alt":"큰 창 옆, 바퀴 달린 스탠드 위에 세워진 대형 전자칠판 화면. 화면 아래 선반에 리모컨과 케이블이 놓여 있고, 오른쪽에는 주황빛 조명이 든 나무 선반장이 있다."},{"file":"g16.jpg","title":"넓은 교육·세미나 공간","caption":"통창으로 빛이 드는 넓은 공간에 테이블과 의자가 줄지어 놓여 있어요.","room":"4f-conf","cat":"회의실","group":"conf-whiteboard","primary":false,"alt":"넓은 방에 하얀 테이블과 검은 의자가 여러 줄 놓여 있고 오른쪽에 큰 창이 있다."},{"file":"g11.jpg","title":"창가 회의실","caption":"하얀 회의 테이블과 의자가 놓인, 통창으로 빛이 드는 회의실이에요.","room":"4f-conf","cat":"회의실","group":"conf-whiteboard","primary":false,"alt":"긴 하얀 테이블 양옆에 검은 메쉬 의자가 놓인 작은 회의실. 한쪽 벽이 큰 창이다."},{"file":"g13.jpg","title":"아치형 책장이 있는 세미나 공간","caption":"아치형 우드 책장과 주황빛 선반 앞에 하얀 테이블과 의자가 놓여 있어요.","room":"4f-conf","cat":"회의실","group":"conf-whiteboard","primary":false,"alt":"주황색 선반이 있는 아치형 나무 책장 앞에 하얀 테이블과 검은 의자가 놓인 밝은 공간."},{"file":"g14.jpg","title":"대형 스크린이 있는 교육 공간","caption":"대형 스크린과 테이블·의자가 놓인 넓고 밝은 공간이에요.","room":"4f-conf","cat":"회의실","group":"conf-whiteboard","primary":false,"alt":"벽에 큰 화면이 걸려 있고, 하얀 테이블과 검은 의자가 길게 놓인 밝은 방. 한쪽은 통창이다."},{"file":"g12.jpg","title":"밝은 회의 공간","caption":"하얀 벽과 큰 창, 테이블과 의자만 놓인 깔끔한 회의 공간이에요.","room":"4f-conf","cat":"회의실","group":"conf-whiteboard","primary":false,"alt":"큰 창 앞에 하얀 테이블과 검은 의자들이 놓인 밝고 깔끔한 회의실."},{"file":"g17.jpg","title":"호리존 촬영 스튜디오","caption":"하얀 호리존 배경과 조명이 갖춰진 촬영 스튜디오예요.","room":"3f-studio","cat":"스튜디오","group":"studio-horizon","primary":true,"alt":"바닥과 벽이 곡선으로 이어진 하얀 호리존 배경, 왼쪽 창가에 대형 소프트박스 조명이 서 있다."},{"file":"g18.jpg","title":"소프트박스 조명","caption":"대형 소프트박스 조명이 하얀 배경을 비추도록 세팅된 스튜디오예요.","room":"3f-studio","cat":"스튜디오","group":"studio-horizon","primary":false,"alt":"창 옆에 커다란 소프트박스 조명이 세워져 있고, 정면에 하얀 호리존 배경이 펼쳐져 있다."},{"file":"g19.jpg","title":"화장실 입구","caption":"회색 문 두 개가 나란히 있고, 문 사이 벽에 남자화장실 표지가 붙어 있어요.","room":"4f-men","cat":"화장실","group":"restroom-door","primary":false,"alt":"회색 문 두 개가 있는 좁은 복도 모서리. 두 문 사이 벽에 파란 남성 픽토그램 표지와 전등 스위치가 붙어 있고, 왼쪽 문 앞 바닥에 주황색 점자블록 두 장이 놓여 있다."}];
+const LINKS = [["라운드비 홈페이지", "https://roundb.co.kr/"], ["카카오톡 채널 문의", "https://pf.kakao.com/_guxfxlX"], ["유튜브", "https://www.youtube.com/c/roundboffice"], ["인스타그램", "https://www.instagram.com/roundboffice/"]];
+const linksHTML = () => `<div class="row lk">${LINKS.map(([t, u]) => `<a class="btn btn-sm" href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(t)}</a>`).join("")}</div><p class="small faint" style="text-align:center">문의 전화 02-2252-8766 · 동대문 공유오피스 라운드비</p>`;
 const PROMO = {name:"라운드비 공유오피스", line:"게임 속 공간은 실제 라운드비를 바탕으로 만들었어요.", link:"", linkText:"라운드비 알아보기"};
 const phSrc = g => "img/gallery/" + g.file;
-function photosOf(rid) { const l = GALLERY.filter(g => g.room === rid); return l.length ? l : GALLERY.filter(g => g.room === "common"); }
-function roomThumb(rid) { const l = GALLERY.filter(g => g.room === rid); return l.length ? `<img class="rc-img" loading="lazy" src="${phSrc(l[0])}" alt="${esc(l[0].alt)}">` : ""; }
-function photoBoxHTML() { return `<div class="box" id="bx-photo" hidden><h3>실제 라운드비</h3><img id="ph-img" alt=""><b id="ph-t"></b><span class="d" id="ph-c"></span></div>`; }
+const PRIM = GALLERY.filter(g => g.primary);
+const roomDef = rid => ROOMS.find(r => r.id === rid);
+const isToilet = rid => { const d = roomDef(rid); return !!d && d.type === "toilet"; };
+const hasOwn = rid => GALLERY.some(g => g.room === rid) || (isToilet(rid) && GALLERY.some(g => g.cat === "화장실"));
+function photosOf(rid) {
+  const l = GALLERY.filter(g => g.room === rid).sort((a, b) => (b.primary ? 1 : 0) - (a.primary ? 1 : 0));
+  if (l.length) return l;
+  if (isToilet(rid)) { const t = GALLERY.filter(g => g.cat === "화장실"); if (t.length) return t; }
+  return PRIM.filter(g => g.room === "common");
+}
+// 사진이 없는 방은 배치도에서 그 방 둘레를 잘라 보여 준다
+const PLAN_W = 2000, PLAN_H = 1580;
+function planCrop(rid, cls) {
+  const r = roomDef(rid); if (!r) return "";
+  const [x0, y0, x1, y1] = r.hot, cw = Math.max((x1 - x0) * 1.7, 520), ch = cw / 2.1, cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+  const left = clamp(cx - cw / 2, 0, PLAN_W - cw), top = clamp(cy - ch / 2, 0, PLAN_H - ch);
+  return `<div class="${cls || "rc-img"} ph-crop" role="img" aria-label="배치도 속 ${esc(r.floor + " " + r.name)}" style="background-image:url(img/plan.jpg);background-size:${(PLAN_W / cw * 100).toFixed(1)}% auto;background-position:${(left / (PLAN_W - cw) * 100).toFixed(1)}% ${(top / (PLAN_H - ch) * 100).toFixed(1)}%"></div>`;
+}
+function roomThumb(rid) {
+  if (!hasOwn(rid)) return `<div class="rc-wrap">${planCrop(rid)}<span class="rc-tag">배치도 · 사진 준비 중</span></div>`;
+  const g = photosOf(rid)[0], tag = g.room !== rid ? `<span class="rc-tag">${esc(g.title)}</span>` : "";
+  return `<div class="rc-wrap"><img class="rc-img" loading="lazy" src="${phSrc(g)}" alt="${esc(g.alt)}">${tag}</div>`;
+}
+function photoBoxHTML() { return `<div class="box" id="bx-photo" hidden><h3>실제 라운드비</h3><img id="ph-img" alt=""><div id="ph-crop"></div><b id="ph-t"></b><span class="d" id="ph-c"></span></div>`; }
 function photoUpdate(rid, force) {
   const box = $("#bx-photo"); if (!box) return;
   if (!rid) { box.hidden = true; return; }
-  const l = photosOf(rid), now = performance.now();
+  const now = performance.now();
+  if (!hasOwn(rid)) {
+    if (UI.phRid === rid && !force) return;
+    const d = roomDef(rid); UI.phRid = rid; UI.phAt = now;
+    $("#ph-img").hidden = true; $("#ph-crop").innerHTML = planCrop(rid); $("#ph-t").textContent = `배치도 속 ${d.floor} ${d.name}`; $("#ph-c").textContent = "이 공간의 실제 사진은 곧 추가해요."; box.hidden = false; return;
+  }
+  const l = photosOf(rid);
   if (!force && UI.phRid === rid && now - (UI.phAt || 0) < 14000) return;
   UI.phI = UI.phRid !== rid ? Math.floor(Math.random() * l.length) : ((UI.phI || 0) + 1) % l.length;
   UI.phRid = rid; UI.phAt = now; const g = l[UI.phI % l.length];
-  $("#ph-img").src = phSrc(g); $("#ph-img").alt = g.alt; $("#ph-t").textContent = g.title; $("#ph-c").textContent = g.caption; box.hidden = false;
+  $("#ph-crop").innerHTML = ""; $("#ph-img").hidden = false; $("#ph-img").src = phSrc(g); $("#ph-img").alt = g.alt; $("#ph-t").textContent = g.title; $("#ph-c").textContent = g.caption; box.hidden = false;
 }
 function promoHTML(rid) {
   const l = photosOf(rid), g = l[Math.floor(Math.random() * l.length)];
-  return `<div class="promo"><img src="${phSrc(g)}" alt="${esc(g.alt)}" loading="lazy"><div><b>${esc(g.title)}</b><span class="small dim">${esc(g.caption)}</span><span class="small faint">${esc(PROMO.line)}</span>${PROMO.link ? `<a class="btn btn-sm btn-gold" href="${esc(PROMO.link)}" target="_blank" rel="noopener">${esc(PROMO.linkText)}</a>` : ""}<button class="btn btn-sm btn-ghost" data-act="to-gallery">공간 사진 더 보기</button></div></div>`;
+  return `<div class="promo"><img src="${phSrc(g)}" alt="${esc(g.alt)}" loading="lazy"><div><b>${esc(g.title)}</b><span class="small dim">${esc(g.caption)}</span><span class="small faint">${esc(PROMO.line)}</span><button class="btn btn-sm btn-ghost" data-act="to-gallery">공간 사진 더 보기</button></div></div>${linksHTML()}`;
 }
 function lobbyPhoto(L) {
   const now = performance.now(); if (now - (L.phAt || 0) < 4500) return; L.phAt = now;
-  const img = $("#lb-photo"); if (!img) return; L.phI = ((L.phI || 0) + 1) % GALLERY.length; const g = GALLERY[L.phI];
+  const img = $("#lb-photo"); if (!img) return; L.phI = ((L.phI || 0) + 1) % PRIM.length; const g = PRIM[L.phI];
   img.src = phSrc(g); img.alt = g.alt; $("#lb-cap").textContent = g.title + " — " + g.caption;
 }
+const GCAT = {"회의실":"회의·교육 공간", "휴게공간":"4F 휴게공간", "스튜디오":"3F 호리존 스튜디오", "화장실":"화장실", "공용":"공유 좌석·공용"};
+const galIdx = () => { const f = UI.gf || "all"; return GALLERY.map((g, i) => i).filter(i => f === "all" ? GALLERY[i].primary : GALLERY[i].cat === f); };
 function buildGallery() {
-  const f = UI.gf || "all", kinds = [["all", "전체"], ["3f-studio", "3F 호리존 스튜디오"], ["4f-lounge", "4F 휴게공간"], ["4f-conf", "4F 회의·교육"], ["common", "공유 좌석·공용"]];
-  $("#gal-filter").innerHTML = kinds.map(([k, l]) => `<button role="radio" aria-checked="${k === f}" data-act="g-filter" data-f="${k}">${l}</button>`).join("");
-  $("#gal").innerHTML = GALLERY.map((g, i) => [g, i]).filter(([g]) => f === "all" || g.room === f).map(([g, i]) => `<button class="gcard" data-act="g-open" data-i="${i}"><img loading="lazy" src="${phSrc(g)}" alt="${esc(g.alt)}"><b>${esc(g.title)}</b><span class="d">${esc(g.caption)}</span></button>`).join("");
+  if (!(UI.gf === "all" || GCAT[UI.gf])) UI.gf = "all";
+  const f = UI.gf || "all", kinds = [["all", "전체"], ...Object.keys(GCAT).map(k => [k, GCAT[k]])];
+  const cnt = k => k === "all" ? GALLERY.filter(g => g.primary).length : GALLERY.filter(g => g.cat === k).length;
+  $("#gal-filter").innerHTML = kinds.map(([k, l]) => `<button role="radio" aria-checked="${k === f}" data-act="g-filter" data-f="${k}">${l} <span class="faint">${cnt(k)}</span></button>`).join("");
+  $("#gal").innerHTML = galIdx().map(i => { const g = GALLERY[i]; return `<button class="gcard" data-act="g-open" data-i="${i}"><img loading="lazy" src="${phSrc(g)}" alt="${esc(g.alt)}"><b>${esc(g.title)}</b><span class="d">${esc(g.caption)}</span></button>`; }).join("");
+  $("#gal-note").textContent = f === "all" ? "같은 공간의 다른 사진은 위의 분류 탭에서 볼 수 있어요." : "";
+  $("#g-links").innerHTML = linksHTML();
 }
 function viewPhoto(i) {
-  const n = GALLERY.length; i = (i + n) % n; UI.viewer = i; const g = GALLERY[i];
-  $("#modal-slot").innerHTML = `<div class="modal" role="dialog" aria-modal="true" aria-label="사진 보기" data-act="gv-close"><div data-act="noop" style="width:min(900px,100%)"><img class="gv-img" src="${phSrc(g)}" alt="${esc(g.alt)}"><h3 class="disp" style="font-size:20px">${esc(g.title)}</h3><p class="dim small">${esc(g.caption)}</p><div class="row" style="justify-content:center"><button class="btn btn-sm" data-act="gv-prev">이전</button><span class="small faint">${i + 1} / ${n}</span><button class="btn btn-sm" data-act="gv-next">다음</button><button class="btn btn-sm btn-ghost" data-act="gv-close">닫기</button></div></div></div>`;
+  const l = galIdx(), p = Math.max(0, l.indexOf(i)), n = l.length; UI.viewer = l[p]; const g = GALLERY[l[p]];
+  $("#modal-slot").innerHTML = `<div class="modal" role="dialog" aria-modal="true" aria-label="사진 보기" data-act="gv-close"><div data-act="noop" style="width:min(900px,100%)"><img class="gv-img" src="${phSrc(g)}" alt="${esc(g.alt)}"><h3 class="disp" style="font-size:20px">${esc(g.title)}</h3><p class="dim small">${esc(g.caption)}</p><div class="row" style="justify-content:center"><button class="btn btn-sm" data-act="gv-prev">이전</button><span class="small faint">${p + 1} / ${n}</span><button class="btn btn-sm" data-act="gv-next">다음</button><button class="btn btn-sm btn-ghost" data-act="gv-close">닫기</button></div></div></div>`;
 }
 Object.assign(A, {
   "to-gallery": () => { if (UI.W) return; UI.gf = UI.gf || "all"; buildGallery(); show("gallery"); },
   "g-filter": b => { UI.gf = b.dataset.f; buildGallery(); sfx("click"); },
   "g-open": b => viewPhoto(Number(b.dataset.i)),
-  "gv-prev": () => viewPhoto(UI.viewer - 1), "gv-next": () => viewPhoto(UI.viewer + 1),
+  "gv-prev": () => { const l = galIdx(), p = l.indexOf(UI.viewer); viewPhoto(l[(p - 1 + l.length) % l.length]); }, "gv-next": () => { const l = galIdx(), p = l.indexOf(UI.viewer); viewPhoto(l[(p + 1) % l.length]); },
   "gv-close": () => { UI.viewer = null; $("#modal-slot").innerHTML = ""; },
   noop: () => {},
 });
