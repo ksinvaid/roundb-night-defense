@@ -177,7 +177,7 @@ h1,h2,h3,p{margin:0}
 .modal{position:fixed;inset:0;z-index:50;display:grid;place-items:center;background:rgba(5,7,18,.78);backdrop-filter:blur(4px);padding:16px}
 .modal>div{width:min(380px,100%);background:var(--card);border:3px solid var(--ink);border-radius:18px;padding:20px;display:grid;gap:12px;text-align:center;box-shadow:0 8px 0 var(--ink)}
 .toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:60;background:var(--card2);border:2px solid var(--ink);padding:8px 16px;border-radius:12px;font-weight:600;box-shadow:0 3px 0 var(--ink);max-width:calc(100% - 32px)}
-input{font:inherit;font-size:15px;color:var(--cream);background:var(--bg2);border:2px solid var(--line2);border-radius:10px;padding:9px 12px;min-width:0;box-sizing:border-box}
+input,textarea{font:inherit;font-size:15px;color:var(--cream);background:var(--bg2);border:2px solid var(--line2);border-radius:10px;padding:9px 12px;min-width:0;box-sizing:border-box}
 .seg{display:inline-flex;border:2px solid var(--ink);border-radius:12px;overflow:hidden;box-shadow:0 3px 0 var(--ink)}
 .seg button{appearance:none;border:0;border-right:2px solid var(--ink);background:var(--card2);color:var(--dim);font-weight:700;padding:8px 14px;cursor:pointer}
 .seg button:last-child{border-right:0}
@@ -1037,11 +1037,30 @@ async function cloudPush(create) {
   const j = await api("save", {code: create ? undefined : SAVE.code, data: snapshot()});
   SAVE.code = j.code; SAVE.syncAt = j.at; persist(true); return j;
 }
-async function cloudPull(code) {
-  const c = normCode(code), j = await api("load", {code:c}), d = j.data || {};
+function applySnapshot(d) {
   SAVE.rp = Math.max(0, Math.floor(d.rp) || 0); SAVE.ups = {...(d.ups || {})}; SAVE.best = {...(d.best || {})}; SAVE.cleared = {...(d.cleared || {})};
   SAVE.runs = Math.floor(d.runs) || 0; SAVE.wins = Math.floor(d.wins) || 0; if (d.nick) SAVE.nick = d.nick; if (DIFFS[d.diff]) SAVE.diff = d.diff;
+}
+async function cloudPull(code) {
+  const c = normCode(code), j = await api("load", {code:c});
+  applySnapshot(j.data || {});
   SAVE.code = c; SAVE.syncAt = Date.now(); persist(true);
+}
+/* 서버 없이 기록 옮기기: 문자열 하나를 복사·붙여넣기 해요 (Claude 미리보기처럼 밖으로 못 나가는 곳의 기록을 GitHub 판으로 옮길 때) */
+const h32 = s => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); };
+function packSave() {
+  const b = btoa(unescape(encodeURIComponent(JSON.stringify(snapshot())))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  return "RB1." + b + "." + h32(b);
+}
+function unpackSave(text) {
+  const m = String(text || "").replace(/\s+/g, "").match(/RB1\.([A-Za-z0-9_-]+)\.([0-9a-z]+)/);
+  if (!m || h32(m[1]) !== m[2]) return null;
+  try {
+    const d = JSON.parse(decodeURIComponent(escape(atob(m[1].replace(/-/g, "+").replace(/_/g, "/"))))), out = {rp:clamp(Math.floor(d.rp) || 0, 0, 1e6), ups:{}, best:{}, cleared:{}, runs:clamp(Math.floor(d.runs) || 0, 0, 1e5), wins:clamp(Math.floor(d.wins) || 0, 0, 1e5), nick:cleanNick(d.nick), diff:DIFFS[d.diff] ? d.diff : "easy"};
+    for (const s of SHOP) if (d.ups && d.ups[s.k]) out.ups[s.k] = clamp(Math.floor(d.ups[s.k]) || 0, 0, s.max);
+    for (const r of ROOMS) { if (d.best && d.best[r.id]) out.best[r.id] = clamp(Math.floor(d.best[r.id]) || 0, 0, 600); if (d.cleared && d.cleared[r.id]) out.cleared[r.id] = true; }
+    return out;
+  } catch (e) { return null; }
 }
 
 /* ===== art palette & drawing helpers ===== */
@@ -1542,14 +1561,20 @@ async function buildRank() {
 }
 function buildSave(msg) {
   const el = $("#save-body"), at = SAVE.syncAt ? new Date(SAVE.syncAt).toLocaleString("ko-KR") : "";
-  if (!apiOn()) { el.innerHTML = `<div class="box"><p class="dim">서버가 아직 연결되지 않아서 지금은 이 기기에만 저장돼요.</p></div>`; return; }
-  const keep = ($("#load-code") || {}).value || "";
+  const keep = ($("#load-code") || {}).value || "", keepPack = ($("#pack-box") || {}).value || "";
+  const packBox = `<div class="box"><h3>서버 없이 옮기기</h3>
+    <p class="small dim">Claude 미리보기처럼 서버에 못 닿는 곳의 기록을 GitHub 판으로 옮길 때 써요. 옮겨 줄 쪽에서 '기록 복사'를 누르고, 받는 쪽 칸에 붙여넣어 불러오세요.</p>
+    <div class="row"><button class="btn btn-sm" data-act="pack-copy">기록 복사 (사원증 ${fmt(SAVE.rp)} RP)</button></div>
+    <textarea id="pack-box" rows="3" placeholder="여기에 붙여넣기 (RB1.…)" aria-label="옮길 기록 문자열" style="width:100%">${esc(keepPack)}</textarea>
+    <div class="row"><button class="btn" data-act="pack-load" id="pack-btn">붙여넣은 기록 불러오기</button></div></div>`;
+  if (!apiOn()) { el.innerHTML = `<div class="box"><p class="dim">서버가 아직 연결되지 않아서 지금은 이 기기에만 저장돼요.</p></div>${packBox}<p class="small" id="save-msg" role="status" style="min-height:20px">${esc(msg || "")}</p>`; return; }
   el.innerHTML = `<div class="box"><h3>내 저장 코드</h3>
     ${SAVE.code ? `<div class="row"><b class="disp" style="font-size:26px;letter-spacing:.06em">${esc(SAVE.code)}</b><button class="btn btn-sm" data-act="copy-code">복사</button></div>
       <p class="small dim">마지막 저장 ${esc(at)} · 판이 끝날 때마다 알아서 저장돼요.</p><div class="row"><button class="btn btn-sm btn-gold" data-act="cloud-save">지금 저장</button></div>`
     : `<p class="dim">저장 코드를 만들면 다른 폰이나 PC에서도 사원증 포인트와 강화를 이어 갈 수 있어요.</p><div class="row"><button class="btn btn-gold" data-act="cloud-new">저장 코드 만들기</button></div>`}
     <p class="small faint">코드를 아는 사람은 누구나 불러올 수 있어요. 남에게 알려 주지 마세요.</p></div>
     <div class="box"><h3>코드로 불러오기</h3><div class="row"><input id="load-code" placeholder="RB-XXXX-XXXX" maxlength="14" aria-label="저장 코드" value="${esc(keep)}"><button class="btn" data-act="cloud-load" id="load-btn">불러오기</button></div></div>
+    ${packBox}
     <p class="small" id="save-msg" role="status" style="min-height:20px">${esc(msg || "")}</p>`;
 }
 function saveMsg(t, good) { const m = $("#save-msg"); if (m) { m.textContent = t; m.style.color = good ? "var(--mint)" : "var(--cream)"; } }
@@ -1588,6 +1613,16 @@ const A = {
     if (loadArm !== code) { loadArm = code; b.textContent = "정말 불러오기"; saveMsg(`이 기기의 기록(사원증 ${fmt(SAVE.rp)} RP)이 코드의 기록으로 바뀌어요. 한 번 더 누르면 불러와요.`); return; }
     loadArm = ""; saveMsg("불러오는 중…");
     try { await cloudPull(code); buildSave("불러왔어요. 사원증 " + fmt(SAVE.rp) + " RP"); sfx("up"); } catch (e) { b.textContent = "불러오기"; saveMsg(errText(e)); }
+  },
+  "pack-copy": async () => {
+    const s = packSave(), box = $("#pack-box"); if (box) { box.value = s; box.select(); }
+    try { await navigator.clipboard.writeText(s); saveMsg("기록을 복사했어요. 받는 쪽 칸에 붙여넣으세요.", true); } catch (e) { saveMsg("복사가 안 돼요. 칸에 나온 글자를 직접 선택해서 복사해 주세요."); }
+  },
+  "pack-load": b => {
+    const d = unpackSave(($("#pack-box") || {}).value);
+    if (!d) { loadArm = ""; b.textContent = "붙여넣은 기록 불러오기"; saveMsg("기록 문자열이 맞지 않아요. 'RB1.' 로 시작하는 글자를 끝까지 붙여넣어 주세요."); return; }
+    if (loadArm !== "pack") { loadArm = "pack"; b.textContent = "정말 불러오기"; saveMsg(`이 기기의 기록(사원증 ${fmt(SAVE.rp)} RP)이 붙여넣은 기록(사원증 ${fmt(d.rp)} RP)으로 바뀌어요. 한 번 더 누르면 불러와요.`); return; }
+    loadArm = ""; applySnapshot(d); persist(); buildSave("불러왔어요. 사원증 " + fmt(SAVE.rp) + " RP"); sfx("up");
   },
   "to-title": () => { buildTitle(); show("title"); },
   "to-select": () => { buildSelect(); show("select"); },
