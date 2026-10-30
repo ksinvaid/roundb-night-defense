@@ -337,6 +337,14 @@ input,textarea{font:inherit;font-size:15px;color:var(--cream);background:var(--b
 .tdcb[aria-checked="true"]{outline:3px solid #fff;outline-offset:2px;transform:translateY(-2px)}
 .tdcb.rnd{width:auto;padding:0 10px}
 @media (max-width:600px){.tdb{font-size:10px}.tdb canvas{width:34px;height:34px}}
+
+/* 화면 정리: 짓는 중 배너는 아래쪽(보스 체력바·위쪽 알림과 안 겹치게), 업글 일괄 구매 줄 */
+#td-fb.fb-banner{top:auto;bottom:10px;left:50%;transform:translateX(-50%);max-width:calc(100% - 330px);font-size:12px;padding:4px 8px;gap:8px}
+@media (max-width:600px){#td-fb.fb-banner{bottom:118px;left:8px;transform:none;max-width:calc(100% - 16px)}}
+.tdbulk{display:flex;margin-bottom:2px}
+.tdbulk button{flex:1;padding:4px 0;font-size:12px}
+#td-katk{margin-top:4px;color:var(--mint)}
+#td-hint{font-size:13px;padding:6px 10px}
 /* ===== 라운드비 로드뷰 투어 ===== */
 .rd-card{display:grid;grid-template-columns:96px 1fr;gap:14px;align-items:center;max-width:560px;margin:14px auto 4px;padding:12px 14px;border:2px solid var(--line2);border-radius:16px;background:linear-gradient(135deg,rgba(31,39,80,.92),rgba(24,30,59,.92));text-align:left;box-shadow:0 4px 0 rgba(0,0,0,.35)}
 .rd-card .rd-th{position:relative;width:96px;aspect-ratio:9/16;border-radius:12px;overflow:hidden;border:2px solid var(--ink);background:#0b0e1d;cursor:pointer;padding:0}
@@ -417,7 +425,7 @@ input,textarea{font:inherit;font-size:15px;color:var(--cream);background:var(--b
         <div class="row" style="justify-content:center"><button class="btn btn-sm" data-act="to-rank">랭킹</button><button class="btn btn-sm" data-act="to-save">저장·불러오기</button><button class="btn btn-sm" data-act="to-gallery">공간 둘러보기</button></div>
         <p class="small faint" id="t-best"></p>
         <div id="t-links"></div>
-        <p class="small faint">PROTOTYPE v1.9 · 혼자(스테이지 22개) · 같이(사람·AI) · 대결(AI) · 소용돌이(자유 건설 터렛 협동) · 클릭·터치로 플레이 · 단축키는 게임 중 패널에 표시돼요</p>
+        <p class="small faint">PROTOTYPE v2.0 · 혼자(스테이지 22개) · 같이(사람·AI) · 대결(AI) · 소용돌이(자유 건설 터렛 협동) · 클릭·터치로 플레이 · 단축키는 게임 중 패널에 표시돼요</p>
       </div>
     </div>
   </section>
@@ -437,7 +445,7 @@ input,textarea{font:inherit;font-size:15px;color:var(--cream);background:var(--b
         <div id="stage-box" style="display:grid;gap:8px" hidden><div id="stage-grid" style="display:grid;gap:8px"></div><div class="box" id="stage-info"></div></div>
         <div class="row" id="wf-row"><span class="small dim">층</span><div class="seg" id="wf-seg" role="radiogroup" aria-label="층"></div></div>
         <div class="row" id="wn-row"><span class="small dim">참가 인원 (사람이 모자라면 AI가 채워요)</span><div class="seg" id="wn-seg" role="radiogroup" aria-label="참가 인원"></div></div>
-        <div id="td-opts" hidden><div class="row"><span class="small dim">진영 (진영마다 터렛이 달라요)</span><div class="seg" id="tdf-seg" role="radiogroup" aria-label="진영"></div></div><div class="row"><span class="small dim">맵</span><div class="seg" id="tdm-seg" role="radiogroup" aria-label="맵"></div></div><p class="small dim" id="tdf-desc"></p></div>
+        <div id="td-opts" hidden><div class="row"><span class="small dim">진영 (진영마다 터렛이 달라요)</span><div class="seg" id="tdf-seg" role="radiogroup" aria-label="진영"></div></div><p class="small dim" id="tdf-desc"></p></div>
         <div class="row" id="pvp-row" hidden><span class="small dim">팀 구성 (모자란 자리는 AI가 채워요)</span><div class="seg" id="pvp-seg" role="radiogroup" aria-label="팀 구성"></div></div>
         <div class="row" id="w-multi-btns"><button class="btn btn-red btn-lg" data-act="w-lobby">사람 찾아서 같이 하기</button><button class="btn btn-lg" data-act="w-ai">AI와 바로 시작</button></div>
         <div class="row" id="w-pvp-btns" hidden><button class="btn btn-red btn-lg" data-act="w-pvp">AI와 대결 시작</button></div>
@@ -553,6 +561,7 @@ input,textarea{font:inherit;font-size:15px;color:var(--cream);background:var(--b
             <div class="tdme"><img id="td-me-i" alt=""><div><b id="td-me-n"></b><div class="small dim" id="td-me-s"></div><div class="small" id="td-fac"></div></div></div>
             <button class="btn" id="td-sk" data-act="td-skill"><i id="td-sk-i"></i><span id="td-sk-t"></span></button>
             <div class="small dim" id="td-sk-d"></div>
+            <div class="small" id="td-katk"></div>
           </div>
           <div class="box" id="td-bx-pal"><h3>터렛 (1~7) · 고르고 땅을 눌러요</h3>
             <div class="tdp" id="td-pal"></div>
@@ -562,7 +571,7 @@ input,textarea{font:inherit;font-size:15px;color:var(--cream);background:var(--b
           <div class="box" id="td-bx-sel" hidden><h3>고른 터렛</h3><div class="small" id="td-sel-i"></div>
             <div class="row"><button class="btn btn-sm btn-gold" id="td-sel-t" data-act="td-tier"></button><button class="btn btn-sm" id="td-sel-s" data-act="td-sell1"></button></div>
           </div>
-          <div class="box" id="td-bx-up"><h3>내 업그레이드 · 나한테만 적용 (최대 255단계)</h3><div class="tdup" id="td-upg"></div></div>
+          <div class="box" id="td-bx-up"><h3>내 업그레이드 · 나한테만 적용 (최대 1000단계)</h3><div class="tdup" id="td-upg"></div></div>
           <div class="box" id="td-bx-stg"><h3>스테이지</h3><div class="tdstg" id="td-stg"></div><button class="btn btn-red" id="td-ready" data-act="td-ready">준비 완료 (Space)</button></div>
           <div class="box" id="td-bx-team"><h3>팀 · 색과 모양으로 구분해요</h3><div class="tdteam" id="td-team"></div></div>
         </aside>
@@ -3282,8 +3291,8 @@ function buildStage() {
   const b = $("#w-solo-btns").firstElementChild; if (b) b.textContent = `${s.id} 시작하기`;
 }
 function buildMode() {
-  const m = SAVE.mode === "multi" ? "multi" : SAVE.mode === "pvp" ? "pvp" : SAVE.mode === "td" ? "td" : "solo", n = m === "td" ? clamp(SAVE.tdn || 4, 1, 5) : [2, 3, 4, 5].includes(SAVE.players) ? SAVE.players : 4, fl = FLOORS[SAVE.floor] ? SAVE.floor : "3f", pn = SAVE.pvpn === 2 ? 2 : 1;
-  $("#mode-seg").innerHTML = [["solo", "혼자"], ["multi", "다 같이"], ["pvp", "대결"], ["td", "소용돌이"]].map(([k, l]) => `<button role="radio" aria-checked="${k === m}" data-act="mode" data-m="${k}">${l}</button>`).join("");
+  const m = SAVE.mode === "multi" ? "multi" : SAVE.mode === "pvp" ? "pvp" : SAVE.mode === "td" || SAVE.mode === "maze" ? "td" : "solo", mm = SAVE.mode === "maze" ? "maze" : m, n = m === "td" ? clamp(SAVE.tdn || 4, 1, 5) : [2, 3, 4, 5].includes(SAVE.players) ? SAVE.players : 4, fl = FLOORS[SAVE.floor] ? SAVE.floor : "3f", pn = SAVE.pvpn === 2 ? 2 : 1;
+  $("#mode-seg").innerHTML = [["solo", "혼자"], ["multi", "다 같이"], ["pvp", "대결"], ["td", "소용돌이"], ["maze", "미로"]].map(([k, l]) => `<button role="radio" aria-checked="${k === mm}" data-act="mode" data-m="${k}">${l}</button>`).join("");
   $("#wn-seg").innerHTML = (m === "td" ? [1, 2, 3, 4, 5] : [2, 3, 4, 5]).map(k => `<button role="radio" aria-checked="${k === n}" data-act="${m === "td" ? "tdn" : "wn"}" data-n="${k}">${k}명</button>`).join("");
   $("#pvp-seg").innerHTML = [[1, "1 대 1"], [2, "2 대 2 (나 + AI 동료)"]].map(([k, l]) => `<button role="radio" aria-checked="${k === pn}" data-act="pvn" data-n="${k}">${l}</button>`).join("");
   $("#wf-seg").innerHTML = Object.keys(FLOORS).map(k => `<button role="radio" aria-checked="${k === fl}" data-act="wf" data-f="${k}">${FLOORS[k].name}</button>`).join("");
@@ -3691,7 +3700,7 @@ const A = {
   stg: b => { const k = Number(b.dataset.k); if (!(k <= SAVE.sc)) { toast("앞 스테이지를 클리어하면 열려요"); sfx("click"); return; } SAVE.stg = k; persist(true); buildStage(); sfx("click"); },
   "stage-next": () => { const o = UI.lastWorld; if (!o || o.stage == null) return; const k = Math.min(STAGES.length - 1, o.stage + 1); SAVE.stg = k; persist(true); startWorld({...o, stage:k}); },
   "w-lobby": () => lobbyStart(),
-  mode: b => { SAVE.mode = b.dataset.m === "multi" ? "multi" : b.dataset.m === "pvp" ? "pvp" : b.dataset.m === "td" ? "td" : "solo"; persist(true); buildMode(); sfx("click"); },
+  mode: b => { SAVE.mode = b.dataset.m === "multi" ? "multi" : b.dataset.m === "pvp" ? "pvp" : b.dataset.m === "td" || b.dataset.m === "maze" ? b.dataset.m : "solo"; persist(true); buildMode(); sfx("click"); },
   pvn: b => { SAVE.pvpn = Number(b.dataset.n) === 2 ? 2 : 1; persist(true); buildMode(); sfx("click"); },
   "w-pvp": () => startWorld({pvp:true, total:(SAVE.pvpn === 2 ? 4 : 2), humans:[{name:SAVE.nick || "나", meta:metaOf(SAVE.ups), kn:SAVE.kn, col:SAVE.col}], diff:SAVE.diff, floor:SAVE.floor}),
   "pv-atk": () => {   // 총공격: 병력 하나하나가 자기와 가장 가까운 적(문·건물·병력·본캐릭)으로
@@ -4554,7 +4563,7 @@ function lobbyFallback(msg) { const td = LB && LB.td, o = worldOpts(); lobbyClos
 /* ----- 시작: 방장 자리를 먼저 차지해 보고, 이미 있으면 손님으로 들어간다 ----- */
 async function lobbyStart(td) {
   if (LB) return;
-  const L = LB = {td:!!td, phase:"load", peer:null, slot:0, humans:[], left:LOBBY_SEC, names:[], msg:"연결하는 중…", timer:0, canceled:false, tries:0, started:false, role:"", evBuf:[], lastSend:0};
+  const L = LB = {td:td || false, phase:"load", peer:null, slot:0, humans:[], left:LOBBY_SEC, names:[], msg:"연결하는 중…", timer:0, canceled:false, tries:0, started:false, role:"", evBuf:[], lastSend:0};
   renderLobby(true);
   try { await loadPeerJS(); } catch (e) { if (LB === L) lobbyFallback("온라인 연결 도구를 불러오지 못했어요. AI와 시작해요"); return; }
   if (LB === L) lobbyClaim(L, 0);
@@ -4563,7 +4572,7 @@ function lobbyClaim(L, slot) {
   if (LB !== L || L.canceled) return;
   if (++L.tries > 8) { lobbyFallback("같이 할 사람 방을 만들지 못했어요. AI와 시작해요"); return; }
   L.slot = slot; L.msg = "같이 할 사람 방을 찾는 중…"; renderLobby(true);
-  const peer = new Peer((L.td ? "rbnd-td2-L" : NET_PREFIX) + slot, {debug:0}); L.peer = peer; let opened = false;
+  const peer = new Peer((L.td ? (L.td === "maze" ? "rbnd-tm2-L" : "rbnd-td2-L") : NET_PREFIX) + slot, {debug:0}); L.peer = peer; let opened = false;
   const to = setTimeout(() => { if (!opened && LB === L) { try { peer.destroy(); } catch (e) {} lobbyFallback("온라인 서버에 연결하지 못했어요. AI와 시작해요"); } }, 7000);
   peer.on("open", () => { opened = true; clearTimeout(to); if (LB === L) lobbyHost(L, peer); else try { peer.destroy(); } catch (e) {} });
   peer.on("error", err => {
@@ -4645,7 +4654,7 @@ function lobbyJoin(L, slot) {
     else next();
   });
   peer.on("open", () => {
-    const conn = peer.connect((L.td ? "rbnd-td2-L" : NET_PREFIX) + slot, {reliable:true, serialization:"json"});
+    const conn = peer.connect((L.td ? (L.td === "maze" ? "rbnd-tm2-L" : "rbnd-td2-L") : NET_PREFIX) + slot, {reliable:true, serialization:"json"});
     const tmo = setTimeout(next, 6000);
     conn.on("open", () => { clearTimeout(tmo); if (done || LB !== L) return; L.conn = conn; conn.send({t:"hello", name:SAVE.nick || "손님", ups:SAVE.ups, kn:SAVE.kn, fac:SAVE.tdf | 0, col:Number.isInteger(SAVE.col) ? SAVE.col : -1}); });
     conn.on("data", msg => clientMsg(L, conn, msg, next));
@@ -4816,10 +4825,10 @@ const TD_HALF = 2048, TD_MC = 32, TD_MN = 128, TD_STAGES = 30, TD_BOSS_EVERY = 6
 const TD_BR = 230, TD_BSPD = 340, TD_QMAX = 300, TD_LANE_CLR = 66, TD_CORE_CLR = 190, TD_STEP = 16;
 const TD_DIFF = {
   easy:      {hp:.82, cnt:.85, gold:1.15, spd:.95, leak:.8,  start:1.3},
-  normal:    {hp:1,   cnt:1,   gold:1,    spd:1,   leak:1,   start:1},
-  hard:      {hp:1.3, cnt:1.15, gold:.95, spd:1.05, leak:1.15, start:1},
-  nightmare: {hp:1.7, cnt:1.3, gold:.9,   spd:1.1, leak:1.3, start:.9},
-  hell:      {hp:2.3, cnt:1.5, gold:.85,  spd:1.15, leak:1.5, start:.85},
+  normal:    {hp:1.15, cnt:1.08, gold:1,    spd:1,   leak:1,   start:1},
+  hard:      {hp:1.35, cnt:1.15, gold:.95, spd:1.05, leak:1.15, start:1},
+  nightmare: {hp:1.5, cnt:1.2, gold:.9,   spd:1.1, leak:1.3, start:.9},
+  hell:      {hp:1.7, cnt:1.3, gold:.85,  spd:1.15, leak:1.5, start:.85},
 };
 const TD_EN = {   // 키는 화면의 몹 그림(mxDraw) 이름과 같다. spd 는 맵 배율(spdK)을 곱해 쓴다
   ghost:   {n:"야근 유령",   hp:34,   spd:62,  r:16, leak:3,   cost:1},
@@ -4860,7 +4869,7 @@ const TD_FAC = [
     {n:"발전기",     cost:110, cls:2, aura:170, aspd:.15, adm:.15, sh:"gen", col:"#ffe27a", d:"주변 터렛의 연사와 공격력을 조금씩 올려요"},
     {n:"크레인",     cost:190, cls:0, dmg:95,  cd:2.4, range:300, push:90, sh:"crane", col:"#f6c453", d:"때리면서 귀신을 뒤로 밀어내요"}]},
 ];
-const TD_UPMAX = 255, TD_CLSN = ["단일", "광역", "특수"];
+const TD_UPMAX = 1000, TD_CLSN = ["단일", "광역", "특수", "기사"], TD_UPN = 8;
 const TD_SK = {
   rally:   {n:"전군 돌격",   cd:50, tgt:0, d:"8초 동안 모든 터렛이 40% 빠르게 쏴요"},
   stun:    {n:"정적",       cd:38, tgt:1, d:"누른 곳 둘레의 귀신을 2.6초 멈춰요"},
@@ -4873,6 +4882,18 @@ const TD_SK = {
   cash:    {n:"비상 수당",   cd:75, tgt:0, d:"내 수당이 바로 들어와요"},
   shield:  {n:"방패 벽",     cd:55, tgt:0, d:"10초 동안 전원실 균열이 60% 덜 생겨요"},
 };
+const TD_KATK = [
+  {n:"지휘검 베기", st:"sweep",  range:120, dmg:1.0,  cd:.75, arc:2.2, d:"앞의 귀신을 부채꼴로 한꺼번에 베요"},
+  {n:"쌍단검",      st:"dagger", range:130, dmg:.5,   cd:.26, crit:.2, d:"가장 가까운 귀신을 빠르게 찔러요(가끔 2배)"},
+  {n:"성광구",      st:"orb",    range:270, dmg:.85,  cd:1.0, splash:70, slow:[.7, 1.2], d:"빛 구슬이 터져 주변을 느리게 해요"},
+  {n:"속사 화살",   st:"arrow",  range:430, dmg:1.1,  cd:.55, pierce:1, d:"멀리서 방어를 뚫는 화살을 연달아 쏴요"},
+  {n:"표식 창",     st:"lance",  range:310, dmg:.8,   cd:.9, mark:1.4, d:"맞은 귀신이 터렛 피해를 25% 더 받아요"},
+  {n:"마검 파동",   st:"wave",   range:300, dmg:1.2,  cd:1.3, pierce:1, d:"일직선으로 뻗는 파동이 줄 선 귀신을 모두 베요"},
+  {n:"돌진 일격",   st:"smash",  range:105, dmg:2.5,  cd:1.5, push:60, d:"묵직한 한 방으로 귀신을 뒤로 밀어요"},
+  {n:"방패 강타",   st:"bash",   range:95,  dmg:.75,  cd:1.0, stun:.45, d:"둘레 귀신 전부를 때려 잠깐 멈춰요"},
+  {n:"약점 저격",   st:"snipe",  range:340, dmg:1.7,  cd:1.1, gold:.3, d:"가장 단단한 귀신을 노려요. 잡으면 수당 +30%"},
+  {n:"방패 부메랑", st:"boom",   range:230, dmg:.9,   cd:.95, chain:2, d:"던진 방패가 귀신 셋을 튕겨 다녀요"},
+];
 const TD_KSK = ["rally", "stun", "heal", "rain", "mark", "nova", "core", "slowall", "cash", "shield"];   // 라운드기사단 순서(서아 … 태오)
 const TD_SKEYS = Object.keys(TD_SK);
 const TD_ARCH = {
@@ -4894,7 +4915,7 @@ const TD_MUT = [
   {n:"부자 팀",          d:"시작 수당 1.5배 · 업그레이드 값 +15%", start:1.5, up:1.15},
 ];
 const TD_MAPS = [{id:"vortex", n:"소용돌이", d:"밖에서 안으로 말려 드는 나선 길. 한가운데 전원실이 있어요."}, {id:"maze", n:"미로", d:"네모난 미로를 구불구불 지나고, 길이 합쳐지는 구간이 있어요."}];
-const TD_TUNE = {hp1:.18, hp2:.05, kGold:.12, goldMul:1, budA:10, budB:5, upA:.2, upS:.1, tier:.5, startGold:330, sbA:25, sbB:2.2, bossFrac:.35, finalFrac:.18, maxN:260, pfT:[.34, .8, 1.5, 2.2, 2.7], ramp:14, spdK:2, mazeSpd:2.2, mazeP:3.2};   // 균형 조절 손잡이(시뮬로 맞춘다)
+const TD_TUNE = {hp1:.18, hp2:.05, kGold:.12, goldMul:1, budA:10, budB:5, upA:.2, upS:.1, tier:.5, startGold:330, sbA:25, sbB:2.2, bossFrac:.35, finalFrac:.18, maxN:260, pfT:[.25, .65, 1.2, 2.2, 2.7], ramp:30, spdK:2, mazeSpd:2.2, mazeP:4.2, cn:40, ce:1.1, gDecay:0, kd:16};   // 균형 조절 손잡이(시뮬로 맞춘다)
 const TD_SCALE_HP = s => 1 + TD_TUNE.hp1 * s + TD_TUNE.hp2 * s * s;
 
 function tdRng(seed) { let a = seed >>> 0; return function () { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
@@ -4987,13 +5008,17 @@ function tdNew(o) {
   W.pl = o.players.map((p, i) => {
     const kn = Number.isInteger(p.kn) && p.kn >= 0 && p.kn < TD_KSK.length ? p.kn : i % TD_KSK.length, f = Number.isInteger(p.fac) && p.fac >= 0 && p.fac < TD_FAC.length ? p.fac : i % TD_FAC.length, a = i / Math.max(1, o.players.length) * 6.2832;
     return {id:i, name:String(p.name || "플레이어"), kn, fac:f, col:Number.isInteger(p.col) ? p.col : i, ai:!!p.ai, sk:p.skill != null ? p.skill : .75, gold:Math.round(TD_TUNE.startGold * D.start * (mut.start || 1)), kills:0, nTu:0, ready:false, skKind:TD_KSK[kn], skCd:12, bt:.5 + rng() * 2, dealt:0, built:0,
-      x:map.core.x + Math.cos(a) * 270, y:map.core.y + Math.sin(a) * 270, mx:null, my:null, dx:0, dy:0, q:[], up:[0, 0, 0, 0, 0, 0], face:1, moving:0};
+      x:map.core.x + Math.cos(a) * 270, y:map.core.y + Math.sin(a) * 270, mx:null, my:null, dx:0, dy:0, q:[], up:[0, 0, 0, 0, 0, 0, 0, 0], kcd:0, face:1, moving:0, pol:o.players[i].pol || ""};
   });
   return W;
 }
 
 /* ----- 스탯 ----- */
-const tdUpCost = (W, cls, k, lv) => Math.round((cls === 0 ? 60 : cls === 1 ? 75 : 90) * (k ? .9 : 1.15) * Math.pow(lv + 1, 1.5) * (W && W.mut ? W.mut.up || 1 : 1));   // 첫 단계는 싸고 올릴수록 비싸진다
+const TD_UPBASE = [60, 75, 90, 70];
+const tdUpCost = (W, cls, k, lv) => Math.round(TD_UPBASE[cls] * (k ? .9 : 1.15) * Math.pow(lv + 1, 1.5) * (W && W.mut ? W.mut.up || 1 : 1));   // 첫 단계는 싸고 올릴수록 비싸진다
+function tdUpBulk(W, cls, k, lv, n, gold) { let c = 0, m = 0; while (m < n && lv + m < TD_UPMAX) { const x = tdUpCost(W, cls, k, lv + m); if (c + x > gold) break; c += x; m++; } return {n:m, cost:c}; }   // n 단계를 한꺼번에: 살 수 있는 만큼
+/* 터렛 값: 내가 지은 터렛이 많을수록 새 터렛이 비싸진다(똑같은 걸 수천 개 도배하는 걸 막는다) */
+const tdCostMul = n => 1 + Math.pow(n / TD_TUNE.cn, TD_TUNE.ce), tdBuildCost = (d, n) => Math.round(d.cost * tdCostMul(n));
 const tdUpDmg = lv => 1 + TD_TUNE.upA * Math.pow(lv, .92), tdUpSpd = lv => 1 + TD_TUNE.upS * Math.pow(lv, .9);
 const tdTierCost = (d, tier) => Math.round(d.cost * 1.1 * Math.pow(tier, 1.5));
 const tdTuRange = (W, tu, d) => (d.range || d.aura || 100) * (W.mut.range || 1) * (1 + .05 * (tu.tier - 1));
@@ -5015,16 +5040,16 @@ function tdValidSpot(W, p, f, k, x, y) {
   return "";
 }
 function tdPlace(W, p, o) {
-  const d = tdTw(p.fac, o.k); if (p.gold < d.cost) return "gold"; if (!tdOK(W.map, o.x, o.y)) return "cell";
-  p.gold -= d.cost; const tu = {id:W.tid++, f:p.fac, k:o.k, x:Math.round(o.x * 10) / 10, y:Math.round(o.y * 10) / 10, ow:p.id, tier:1, cd:.2 + W.rng() * .3, bf:0, bd:0, bl:0, ang:-1.2, flash:0};
+  const d = tdTw(p.fac, o.k), cost = tdBuildCost(d, p.nTu); if (p.gold < cost) return "gold"; if (!tdOK(W.map, o.x, o.y)) return "cell";
+  p.gold -= cost; const tu = {id:W.tid++, f:p.fac, k:o.k, x:Math.round(o.x * 10) / 10, y:Math.round(o.y * 10) / 10, ow:p.id, tier:1, paid:cost, cd:.2 + W.rng() * .3, bf:0, bd:0, bl:0, ang:-1.2, flash:0};
   W.tu.push(tu); tdThAdd(W, tu); W.tv++; p.nTu++; p.built++; W.nTu = W.tu.length;
-  W.ev.push({k:"tuAdd", r:[tu.id, tu.f, tu.k, tu.x, tu.y, tu.ow, tu.tier]}); return "";
+  W.ev.push({k:"tuAdd", r:[tu.id, tu.f, tu.k, tu.x, tu.y, tu.ow, tu.tier, tu.paid]}); return "";
 }
 function tdCmd(W, pid, cmd, a) {
   const p = W.pl[pid]; if (!p || W.over) return {ok:false, why:"over"}; a = a || {};
   if (cmd === "build") {
     const k = Math.floor(a.k), x = Number(a.x), y = Number(a.y), d = tdTw(p.fac, k); if (!d) return {ok:false, why:"type"};
-    const why = tdValidSpot(W, p, p.fac, k, x, y); if (why) return {ok:false, why}; if (p.gold < d.cost) return {ok:false, why:"gold"}; if (p.q.length >= TD_QMAX) return {ok:false, why:"max"};
+    const why = tdValidSpot(W, p, p.fac, k, x, y); if (why) return {ok:false, why}; if (p.gold < tdBuildCost(d, p.nTu + p.q.length)) return {ok:false, why:"gold"}; if (p.q.length >= TD_QMAX) return {ok:false, why:"max"};
     p.q.push({k, x, y}); p.mx = null; return {ok:true};
   }
   if (cmd === "move") { const x = Number(a.x), y = Number(a.y); if (!(Number.isFinite(x) && Number.isFinite(y))) return {ok:false, why:"cell"}; p.mx = Math.max(-TD_HALF + 40, Math.min(TD_HALF - 40, x)); p.my = Math.max(-TD_HALF + 40, Math.min(TD_HALF - 40, y)); p.q.length = 0; return {ok:true}; }
@@ -5032,15 +5057,15 @@ function tdCmd(W, pid, cmd, a) {
   if (cmd === "stop") { p.q.length = 0; p.mx = null; return {ok:true}; }
   if (cmd === "sell") {
     const i = W.tu.findIndex(u => u.id === a.id); if (i < 0) return {ok:false, why:"none"}; const tu = W.tu[i]; if (tu.ow !== pid) return {ok:false, why:"owner"}; const d = tdTw(tu.f, tu.k);
-    p.gold += Math.floor((d.cost + (tu.tier - 1) * tdTierCost(d, 1.6)) * .7); W.tu.splice(i, 1); tdThDel(W, tu); W.tv++; p.nTu--; W.nTu = W.tu.length; W.ev.push({k:"tuDel", i:tu.id, x:tu.x, y:tu.y}); return {ok:true};
+    p.gold += Math.floor(((tu.paid || d.cost) + (tu.tier - 1) * tdTierCost(d, 1.6)) * .7); W.tu.splice(i, 1); tdThDel(W, tu); W.tv++; p.nTu--; W.nTu = W.tu.length; W.ev.push({k:"tuDel", i:tu.id, x:tu.x, y:tu.y}); return {ok:true};
   }
   if (cmd === "tier") {
     const tu = W.tu.find(u => u.id === a.id); if (!tu) return {ok:false, why:"none"}; if (tu.ow !== pid) return {ok:false, why:"owner"}; if (tu.tier >= 3) return {ok:false, why:"maxed"};
     const c = tdTierCost(tdTw(tu.f, tu.k), tu.tier + 1); if (p.gold < c) return {ok:false, why:"gold"}; p.gold -= c; tu.tier++; W.tv++; W.ev.push({k:"tuTier", i:tu.id, t:tu.tier, x:tu.x, y:tu.y}); return {ok:true};
   }
   if (cmd === "up") {
-    const cls = Math.floor(a.c), k = a.k ? 1 : 0, ix = cls * 2 + k; if (!(cls >= 0 && cls <= 2)) return {ok:false, why:"type"}; if (p.up[ix] >= TD_UPMAX) return {ok:false, why:"maxed"};
-    const c = tdUpCost(W, cls, k, p.up[ix]); if (p.gold < c) return {ok:false, why:"gold"}; p.gold -= c; p.up[ix]++; W.ev.push({k:"up", c:cls}); return {ok:true};
+    const cls = Math.floor(a.c), k = a.k ? 1 : 0, ix = cls * 2 + k, n = Math.max(1, Math.min(TD_UPMAX, Math.floor(a.n) || 1)); if (!(cls >= 0 && cls <= 3)) return {ok:false, why:"type"}; if (p.up[ix] >= TD_UPMAX) return {ok:false, why:"maxed"};
+    const r = tdUpBulk(W, cls, k, p.up[ix], n, p.gold); if (r.n < 1) return {ok:false, why:"gold"}; p.gold -= r.cost; p.up[ix] += r.n; W.ev.push({k:"up", c:cls, n:r.n}); return {ok:true, n:r.n};
   }
   if (cmd === "ready") { if (W.ph !== "prep" || p.ready) return {ok:false, why:"phase"}; p.ready = true; return {ok:true}; }
   if (cmd === "skill") {
@@ -5071,8 +5096,8 @@ const tdPool = (W, s) => W.map.pK * (TD_TUNE.budA + TD_TUNE.budB * s) * 34 * TD_
 function tdSpawn(W, type, lane, o) {
   o = o || {}; const b = TD_EN[type], s = Math.max(1, W.stage), ln = W.map.lanes[lane];
   const hp = o.hp != null ? o.hp : b.hp * TD_SCALE_HP(s) * tdDK(W, s, "hp") * (W.mut.hp || 1) * (o.hpx || 1);
-  const e = {id:W.nid++, type, lane, d:o.d || 0, x:ln.pts[0][0], y:ln.pts[0][1], hp, max:hp, r:b.r * (o.rs || 1), spd:b.spd * W.map.spdK * W.D.spd * (W.mut.spd || 1) * (o.spdx || 1), slow:0, slowF:1, stun:0, mark:0, boss:b.boss ? 1 : 0, bk:o.bk || "", ar:b.ar || 0,
-    leak:o.leak != null ? o.leak : b.leak, gold:hp * TD_TUNE.kGold * TD_TUNE.goldMul * W.D.gold * (W.mut.gold || 1) * (o.goldx || 1) * (b.boss ? .6 : 1), wob:W.rng() * 6, flash:0, dead:false, bonus:o.bonus ? 1 : 0, t0:0, t1:0, lat:b.boss ? 0 : (W.rng() - .5) * 56};
+  const e = {id:W.nid++, type, lane, d:o.d || 0, x:ln.pts[0][0], y:ln.pts[0][1], hp, max:hp, r:b.r * (o.rs || 1), spd:b.spd * W.map.spdK * W.D.spd * (W.mut.spd || 1) * (o.spdx || 1), slow:0, slowF:1, stun:0, mark:0, weak:0, boss:b.boss ? 1 : 0, bk:o.bk || "", ar:b.ar || 0,
+    leak:o.leak != null ? o.leak : b.leak, gold:hp * TD_TUNE.kGold * Math.pow(TD_SCALE_HP(s), -TD_TUNE.gDecay) * TD_TUNE.goldMul * W.D.gold * (W.mut.gold || 1) * (o.goldx || 1) * (b.boss ? .6 : 1), wob:W.rng() * 6, flash:0, dead:false, bonus:o.bonus ? 1 : 0, t0:0, t1:0, lat:b.boss ? 0 : (W.rng() - .5) * 56};
   W.en.push(e); W.pool[W.stage] = (W.pool[W.stage] || 0) + hp; return e;
 }
 function tdStartStage(W) {
@@ -5102,7 +5127,7 @@ function tdStartStage(W) {
 
 /* ----- 피해 · 처치 ----- */
 function tdHurt(W, e, dmg, ow, pierce) {
-  if (e.dead) return 0; let d = dmg; if (e.ar && !pierce) d *= 1 - e.ar; if (e.mark > 0) d *= 1.8;
+  if (e.dead) return 0; let d = dmg; if (e.ar && !pierce) d *= 1 - e.ar; if (e.mark > 0) d *= 1.8; if (e.weak > 0) d *= 1.25;
   e.hp -= d; e.flash = .09; const p = W.pl[ow]; if (p) p.dealt += d;
   if (e.hp <= 0) tdKill(W, e, ow); return d;
 }
@@ -5146,7 +5171,7 @@ function tdStep(W, dt) {
   // 귀신 이동
   const scr = [];
   for (const e of W.en) {
-    if (e.dead) continue; if (e.flash > 0) e.flash -= dt; e.wob += dt * 6; if (e.slow > 0) { e.slow -= dt; if (e.slow <= 0) e.slowF = 1; } if (e.mark > 0) e.mark -= dt;
+    if (e.dead) continue; if (e.flash > 0) e.flash -= dt; e.wob += dt * 6; if (e.slow > 0) { e.slow -= dt; if (e.slow <= 0) e.slowF = 1; } if (e.mark > 0) e.mark -= dt; if (e.weak > 0) e.weak -= dt;
     if (e.type === "screamer") scr.push(e);
     if (e.boss && e.bk) {
       e.t0 += dt;
@@ -5175,6 +5200,22 @@ function tdStep(W, dt) {
       if (d.aura) { const rr = tdTuRange(W, c, d), r2 = rr * rr, a = d.aspd * (1 + .08 * (c.tier - 1) + (W.pl[c.ow] ? .02 * Math.pow(W.pl[c.ow].up[4], .9) : 0)), m = d.adm || 0; tdThEach(W, c.x, c.y, rr, tu => { if (tu === c) return; const dx = tu.x - c.x, dy = tu.y - c.y; if (dx * dx + dy * dy <= r2) { if (a > tu.bf) tu.bf = a; if (m > tu.bd) tu.bd = m; } }); }
       else if (d.field) { const rr = tdTuRange(W, c, d), r2 = rr * rr, f = d.field; query(c.x, c.y, rr + 30, e => { const dx = e.x - c.x, dy = e.y - c.y; if (dx * dx + dy * dy <= r2) { e.slow = Math.max(e.slow, .5); e.slowF = Math.min(e.slowF, e.boss ? Math.max(f, .75) : f); } }); }
     }
+  }
+  // 기사 공격(캐릭터마다 방식이 다르다): 가까운 귀신을 알아서 때린다
+  for (const p of W.pl) {
+    p.kcd -= dt; if (p.kcd > 0) continue; const a = TD_KATK[p.kn]; if (!a) continue; const rr = a.range;
+    let best = null, bs = 1e18;
+    query(p.x, p.y, rr + 40, e => { const dx = e.x - p.x, dy = e.y - p.y, d2 = dx * dx + dy * dy, lim = rr + e.r; if (d2 > lim * lim) return; const sc = a.st === "snipe" ? -e.hp - (e.boss ? 1e9 : 0) : d2; if (sc < bs) { bs = sc; best = e; } });
+    if (!best) { p.kcd = .15; continue; }
+    const dmg = TD_TUNE.kd * a.dmg * tdUpDmg(p.up[6]), ang = Math.atan2(best.y - p.y, best.x - p.x), hit = (e, m, pr) => tdHurt(W, e, dmg * (m || 1), p.id, pr || a.pierce);
+    p.kcd = a.cd / tdUpSpd(p.up[7]); let ex = best.x, ey = best.y; if (Math.cos(ang) > .1) p.face = 1; else if (Math.cos(ang) < -.1) p.face = -1;
+    if (a.st === "sweep") query(p.x, p.y, rr + 40, e => { const dx = e.x - p.x, dy = e.y - p.y, lim = rr + e.r; if (dx * dx + dy * dy > lim * lim) return; let da = Math.atan2(dy, dx) - ang; da = Math.atan2(Math.sin(da), Math.cos(da)); if (Math.abs(da) <= a.arc / 2) hit(e); });
+    else if (a.st === "wave") { const ux = Math.cos(ang), uy = Math.sin(ang); ex = p.x + ux * rr; ey = p.y + uy * rr; query(p.x, p.y, rr + 40, e => { const dx = e.x - p.x, dy = e.y - p.y, pr = dx * ux + dy * uy; if (pr < 0 || pr > rr + e.r) return; if (Math.abs(-dx * uy + dy * ux) <= 46 + e.r) hit(e, 1, true); }); }
+    else if (a.st === "bash") query(p.x, p.y, rr + 40, e => { const dx = e.x - p.x, dy = e.y - p.y, lim = rr + e.r; if (dx * dx + dy * dy > lim * lim) return; hit(e); if (!e.dead && a.stun) e.stun = Math.max(e.stun, e.boss ? a.stun * .3 : a.stun); });
+    else if (a.st === "orb") { query(best.x, best.y, a.splash + 30, e => { const dx = e.x - best.x, dy = e.y - best.y; if (dx * dx + dy * dy > a.splash * a.splash) return; hit(e, e === best ? 1 : .6); if (!e.dead) { e.slow = a.slow[1]; e.slowF = Math.min(e.slowF, a.slow[0]); } }); }
+    else if (a.st === "boom") { hit(best); let prev = best; const seen = new Set([best.id]); for (let c = 0; c < a.chain; c++) { let nb = null, nd = 1e9; query(prev.x, prev.y, 170, e => { if (seen.has(e.id)) return; const dx = e.x - prev.x, dy = e.y - prev.y, dd = dx * dx + dy * dy; if (dd < 28900 && dd < nd) { nd = dd; nb = e; } }); if (!nb) break; seen.add(nb.id); ev.push({k:"arc", x1:prev.x, y1:prev.y, x2:nb.x, y2:nb.y}); hit(nb, Math.pow(.8, c + 1)); prev = nb; } }
+    else { hit(best, a.crit && W.rng() < a.crit ? 2 : 1); if (a.mark && !best.dead) best.weak = Math.max(best.weak, a.mark); if (a.push && !best.dead) best.d = Math.max(0, best.d - a.push * (best.boss ? .3 : 1)); if (a.gold && best.dead) p.gold += best.gold * a.gold; }
+    ev.push({k:"katk", p:p.id, kn:p.kn, x1:Math.round(p.x), y1:Math.round(p.y), x2:Math.round(ex), y2:Math.round(ey)});
   }
   // 터렛 공격
   for (const tu of W.tu) {
@@ -5210,9 +5251,21 @@ function tdStep(W, dt) {
   if (ev.length > 700) ev.splice(0, ev.length - 700);
 }
 
+function tdBotSkill(W, p) {
+  if (p.skCd <= 0 && W.rng() < .6) {
+    const kind = p.skKind, sk = TD_SK[kind], live = W.en.filter(e => !e.dead); let tx = 0, ty = 0, use = false;
+    if (live.length) {
+      const front = live.reduce((a, e) => e.d > a.d ? e : a, live[0]);
+      if (sk.tgt) { tx = front.x; ty = front.y; let c = 0; for (const e of live) if (Math.hypot(e.x - tx, e.y - ty) < 220) c++; use = c >= (kind === "stun" ? 4 : 5) || (live.some(e => e.boss) && c >= 2); }
+      else if (kind === "heal") use = W.gauge > 40; else if (kind === "cash") use = true; else if (kind === "shield" || kind === "slowall") use = W.gauge > 20 || live.some(e => e.boss);
+      else if (kind === "core") { let c = 0; for (const e of live) if (Math.hypot(e.x - W.map.core.x, e.y - W.map.core.y) < 340) c++; use = c >= 4; } else use = live.length > 18;
+    }
+    if (use) tdCmd(W, p.id, "skill", {x:tx, y:ty});
+  }
+}
 /* ----- AI 동료: 길 가까운 곳에 몰아서 짓고, 가끔 업그레이드 ----- */
 function tdAnchor(W, p) {   // 한 곳을 정해 그 둘레에 몰아서 짓는다(걸어 다니는 시간을 아낀다)
-  const L = W.map.lanes, f = W.rng; for (let i = 0; i < 30; i++) { const ln = L[Math.floor(f() * L.length)], t = .35 + f() * .62, o = [0, 0, 0, 0]; tdLanePos(ln, ln.len * t, o); const l = Math.hypot(o[2], o[3]) || 1, side = f() < .5 ? -1 : 1, dist = TD_LANE_CLR + 40 + f() * 90, x = o[0] + (-o[3] / l) * side * dist, y = o[1] + (o[2] / l) * side * dist; if (tdOK(W.map, x, y)) { p.anc = [x, y]; p.ancN = 0; p.ancMax = 14 + Math.floor(f() * 14); return; } }
+  const L = W.map.lanes, f = W.rng; for (let i = 0; i < 30; i++) { const ln = L[Math.floor(f() * L.length)], t = p.pol ? .8 + f() * .17 : .35 + f() * .62, o = [0, 0, 0, 0]; tdLanePos(ln, ln.len * t, o); const l = Math.hypot(o[2], o[3]) || 1, side = f() < .5 ? -1 : 1, dist = TD_LANE_CLR + 40 + f() * 90, x = o[0] + (-o[3] / l) * side * dist, y = o[1] + (o[2] / l) * side * dist; if (tdOK(W.map, x, y)) { p.anc = [x, y]; p.ancN = 0; p.ancMax = p.pol ? 90 : 14 + Math.floor(f() * 14); return; } }
 }
 function tdSite(W, p, d, tries) {
   const L = W.map.lanes, f = W.rng, rng0 = (d.range || d.aura || 150) * (W.mut.range || 1); let best = null, bs = -1;
@@ -5227,24 +5280,29 @@ function tdSite(W, p, d, tries) {
   return best;
 }
 const TD_BOT_MIX = [.32, .2, .14, .1, .1, .06, .08];
+function tdBotPro(W, p, dt) {   // 사람처럼 돈을 거의 다 쓰는 시험용 정책. spam=터렛만 도배, bal=터렛 + 업그레이드 절반
+  p.bt -= dt; if (p.bt > 0) return; p.bt = .6;
+  if (W.ph === "prep" && !p.ready && W.cd < W.prepMax - 4) tdCmd(W, p.id, "ready");
+  tdBotSkill(W, p);
+  const fac = TD_FAC[p.fac].tw;
+  if (p.pol === "bal" && p.nTu >= 4) {
+    const num = [0, 0, 0]; for (const tu of W.tu) if (tu.ow === p.id) num[tdTw(tu.f, tu.k).cls]++; let budget = p.gold * .45;
+    for (let r = 0; r < 4; r++) { let bi = -1, bv = -1; for (let ix = 0; ix < 8; ix++) { const cls = ix >> 1, lv = p.up[ix]; if (lv >= TD_UPMAX) continue; const c = tdUpCost(W, cls, ix & 1, lv); if (c > budget) continue; const v = (cls === 3 ? 4 : num[cls]) / c; if (v > bv) { bv = v; bi = ix; } } if (bi < 0) break; const q = tdUpBulk(W, bi >> 1, bi & 1, p.up[bi], 25, budget); if (q.n < 1) break; budget -= q.cost; tdCmd(W, p.id, "up", {c:bi >> 1, k:bi & 1, n:q.n}); }
+  }
+  let k = 0, bs = -1; for (let i = 0; i < 7; i++) { const d = fac[i]; if (!d.dmg || d.pulse) continue; const sc = (d.dmg / d.cd) * (d.chain ? 1.5 : 1) * (d.splash ? 1.4 : 1) / d.cost; if (sc > bs) { bs = sc; k = i; } }
+  let spent = 0, guard = 0; const d = fac[k];
+  while (guard++ < 40 && p.q.length < 120) { const c = tdBuildCost(d, p.nTu + p.q.length); if (p.gold - spent < c) break; const s = tdSite(W, p, d, 22); if (!s) break; tdCmd(W, p.id, "build", {k, x:s[0], y:s[1]}); spent += c; }
+}
 function tdBot(W, p, dt) {
+  if (p.pol) return tdBotPro(W, p, dt);
   p.bt -= dt; if (p.bt > 0) return; p.bt = (.9 + W.rng() * 1.5) / (.5 + .6 * p.sk);
   if (W.ph === "prep" && !p.ready && W.cd < W.prepMax - 2 - W.rng() * 6) tdCmd(W, p.id, "ready");
-  if (p.skCd <= 0 && W.rng() < .6) {
-    const kind = p.skKind, sk = TD_SK[kind], live = W.en.filter(e => !e.dead); let tx = 0, ty = 0, use = false;
-    if (live.length) {
-      const front = live.reduce((a, e) => e.d > a.d ? e : a, live[0]);
-      if (sk.tgt) { tx = front.x; ty = front.y; let c = 0; for (const e of live) if (Math.hypot(e.x - tx, e.y - ty) < 220) c++; use = c >= (kind === "stun" ? 4 : 5) || (live.some(e => e.boss) && c >= 2); }
-      else if (kind === "heal") use = W.gauge > 40; else if (kind === "cash") use = true; else if (kind === "shield" || kind === "slowall") use = W.gauge > 20 || live.some(e => e.boss);
-      else if (kind === "core") { let c = 0; for (const e of live) if (Math.hypot(e.x - W.map.core.x, e.y - W.map.core.y) < 340) c++; use = c >= 4; } else use = live.length > 18;
-    }
-    if (use) tdCmd(W, p.id, "skill", {x:tx, y:ty});
-  }
+  tdBotSkill(W, p);
   if (p.q.length >= 3) return;
   const cnt = [0, 0, 0, 0, 0, 0, 0]; for (const tu of W.tu) if (tu.ow === p.id) cnt[tu.k]++; const tot = p.nTu;
   if (tot >= 6 && W.rng() < .3) {   // 업그레이드(클래스별)
     let bi = -1, bv = -1; const num = [0, 0, 0]; for (const tu of W.tu) if (tu.ow === p.id) num[tdTw(tu.f, tu.k).cls]++;
-    for (let ix = 0; ix < 6; ix++) { const cls = ix >> 1; if (p.up[ix] >= TD_UPMAX) continue; const c = tdUpCost(W, cls, ix & 1, p.up[ix]); if (c > p.gold) continue; const v = num[cls] / c * (1 + .3 * W.rng()); if (v > bv) { bv = v; bi = ix; } }
+    for (let ix = 0; ix < 8; ix++) { const cls = ix >> 1; if (p.up[ix] >= TD_UPMAX) continue; const c = tdUpCost(W, cls, ix & 1, p.up[ix]); if (c > p.gold) continue; const v = (cls === 3 ? 1.5 : num[cls]) / c * (1 + .3 * W.rng()); if (v > bv) { bv = v; bi = ix; } }
     if (bi >= 0) { tdCmd(W, p.id, "up", {c:bi >> 1, k:bi & 1}); return; }
   }
   if (tot >= 12 && W.rng() < .25) { const cands = W.tu.filter(t => t.ow === p.id && t.tier < 3); if (cands.length) { const t = cands[Math.floor(W.rng() * cands.length)], c = tdTierCost(tdTw(t.f, t.k), t.tier + 1); if (c <= p.gold) { tdCmd(W, p.id, "tier", {id:t.id}); return; } } }
@@ -5270,6 +5328,8 @@ function tdScore(W) { return Math.round((W.stage * 100 + (W.over === "win" ? 200
 const TD_PC = [{n:"노랑", c:"#FFE600", s:"circle"}, {n:"파랑", c:"#2F6BFF", s:"triangle"}, {n:"하양", c:"#FFFFFF", s:"square"}, {n:"하늘", c:"#00D5FF", s:"diamond"}, {n:"자주", c:"#FF2FD2", s:"star"}, {n:"주황", c:"#FF8A00", s:"cross"}, {n:"보라", c:"#9A5BFF", s:"hex"}, {n:"연두", c:"#8CFF3A", s:"half"}];
 const PCOL = typeof PLAYER_COLORS !== "undefined" ? PLAYER_COLORS : TD_PC;   // 다른 모드와 같은 색 8가지(적록색약에서도 구분되는 진한 색 + 모양)
 const TDU = {W:null, V:null, map:null, mut:null, me:0, diff:"normal", cam:{x:0, y:0, s:.8}, follow:true, sel:null, tuSel:-1, speed:1, paused:false, raf:0, last:0, acc:0, shots:[], rings:[], floats:[], arcs:[], st:{}, ended:false, endT:0, drag:null, keys:new Set(), net:null, names:[], kn:[], fac:[], col:[], tw:[], twById:new Map(), pend:[], evq:[], panelT:0, hover:null, shake:0, coreFlash:0, stageName:"", mm:[], dirSent:"", camT:0, lastPaint:null, fl:{}, pEn:null, snapAt:0, snapGap:70, st0:null};
+Object.assign(TDU, {bulk:1, katk:[], kpose:{}, hintT:0});
+const tdMapId = () => SAVE.mode === "maze" ? "maze" : "vortex", tdMapName = () => TDU.map && TDU.map.id === "maze" ? "미로" : "소용돌이";
 const TD_REASON = {gold:"수당이 부족해요", taken:"이미 터렛이 있어요", cell:"여기는 지을 수 없어요 (길 · 전원실 · 바깥)", max:"주문이 너무 많아요", cd:"아직 충전 중이에요", target:"기술을 쓸 곳을 눌러 주세요", maxed:"이미 최대예요", owner:"내 터렛만 만질 수 있어요", phase:"지금은 누를 수 없어요", over:"끝난 판이에요", none:"터렛이 없어요", type:"?", cmd:"?"};
 const TD_SPD = [1, 2, 3];
 const TD_GLYPH = {circle:"●", tri:"▲", triangle:"▲", square:"■", diamond:"◆", star:"★", cross:"✚", hex:"⬢", half:"◖", ring:"◎"}, tdGlyph = pc => TD_GLYPH[pc.s] || "●";
@@ -5301,9 +5361,9 @@ function tdBadge(g, shape, x, y, r, fill, line) {
 
 const tdLight = c => { const n = parseInt(c.slice(1), 16), r = n >> 16 & 255, g = n >> 8 & 255, b = n & 255; return (.299 * r + .587 * g + .114 * b) / 255 > .55; };
 /* ----- 터렛 그림: 바닥판 전체를 주인 색으로 칠하고 몸체는 대비되는 색으로 ----- */
-function tdDrawTw(g, d, col, shape, ang, time, flash, tier, lod) {
+function tdDrawTw(g, d, col, shape, ang, time, flash, tier, lod, slim) {
   const dark = "#0b0d1a", lt = tdLight(col), bd = flash ? "#fff" : lt ? "#161a30" : "#f6f8ff", hi = flash ? "#fff" : lt ? "#3a4166" : "#c9d0ee";
-  g.fillStyle = "rgba(0,0,0,.32)"; ell(g, 0, 15, 16, 5); g.fill();
+  if (!slim) { g.fillStyle = "rgba(0,0,0,.32)"; ell(g, 0, 15, 16, 5); g.fill(); }
   rr(g, -16, -16, 32, 32, 7); g.fillStyle = col; g.fill(); g.lineWidth = 3; g.strokeStyle = dark; g.stroke();   // 바닥판을 내 색으로 꽉 채운다
   if (lod) return;
   const sh = d.sh; g.save(); g.lineJoin = "round";
@@ -5375,10 +5435,11 @@ function tdDraw(time) {
   if (bt >= 0 && TDU.hover) { const hp = TDU.hover, d = TD_FAC[TDU.fac[TDU.me]].tw[bt], ok = tdOK(map, hp.x, hp.y), rg = (d.range || d.aura || 100) * (TDU.mut.range || 1); g.beginPath(); g.arc(hp.x, hp.y, rg, 0, 6.2832); g.fillStyle = ok ? "rgba(255,255,255,.06)" : "rgba(255,80,60,.07)"; g.fill(); g.lineWidth = 2; g.strokeStyle = ok ? "rgba(255,255,255,.55)" : "rgba(255,90,70,.7)"; g.stroke(); g.save(); g.translate(hp.x, hp.y); g.globalAlpha = ok ? .85 : .4; tdDrawTw(g, d, dFac.c, dFac.s, -1.2, time, false, 1, false); g.restore(); g.globalAlpha = 1; if (!ok) { g.strokeStyle = "#ff6a4a"; g.lineWidth = 3; g.beginPath(); g.moveTo(hp.x - 14, hp.y - 14); g.lineTo(hp.x + 14, hp.y + 14); g.moveTo(hp.x + 14, hp.y - 14); g.lineTo(hp.x - 14, hp.y + 14); g.stroke(); } }
   // 터렛 (아래쪽부터 그려 겹쳐 보이게)
   const vis = []; for (const u of TDU.tw) if (u.x > R[0] && u.x < R[2] && u.y > R[1] && u.y < R[3]) vis.push(u); vis.sort((a, b) => a.y - b.y);
-  if (lod) {   // 멀리서 볼 때는 내 색 사각형만 (수천 기도 가볍게)
+  const dense = vis.length > 400 ? 2 : vis.length > 150 ? 1 : 0;   // 화면에 터렛이 많을수록 그림을 단순하게
+  if (lod || dense === 2) {   // 멀리서 보거나 아주 빽빽할 때는 내 색 사각형만 (수천 기도 가볍게)
     g.fillStyle = "#0b0d1a"; for (const u of vis) g.fillRect(u.x - 17, u.y - 17, 34, 34);
     for (let o = 0; o < TDU.fac.length; o++) { g.fillStyle = tdColOf(o).c; for (const u of vis) if (u.ow === o) g.fillRect(u.x - 13, u.y - 13, 26, 26); }
-  } else for (const u of vis) { const d = tdTw(u.f, u.k), pc = tdColOf(u.ow); g.save(); g.translate(u.x, u.y); tdDrawTw(g, d, pc.c, pc.s, u.ang, time, u.flash > 0 || (TDU.fl[u.id] > 0), u.tier, false); tdBadge(g, pc.s, 12, -12, 4.4, "#fff", "#0a0a14"); g.restore(); }
+  } else for (const u of vis) { const d = tdTw(u.f, u.k), pc = tdColOf(u.ow); g.save(); g.translate(u.x, u.y); tdDrawTw(g, d, pc.c, pc.s, u.ang, time, u.flash > 0 || (TDU.fl[u.id] > 0), u.tier, false, dense === 1); if (!dense) tdBadge(g, pc.s, 12, -12, 4.4, "#fff", "#0a0a14"); g.restore(); }
   const su = TDU.tuSel >= 0 ? TDU.twById.get(TDU.tuSel) : null;
   if (su) { const rr0 = tdTuRange({mut:TDU.mut}, su, tdTw(su.f, su.k)); g.beginPath(); g.arc(su.x, su.y, rr0, 0, 6.2832); g.fillStyle = "rgba(255,226,122,.07)"; g.fill(); g.lineWidth = 3; g.strokeStyle = "rgba(255,226,122,.85)"; g.stroke(); g.strokeStyle = "#ffe27a"; rr(g, su.x - 19, su.y - 19, 38, 38, 8); g.stroke(); }
   // 귀신
@@ -5392,13 +5453,14 @@ function tdDraw(time) {
   // 건설 기사(기사단 캐릭터)
   V.pl.forEach((q, i) => { const x = q[6], y = q[7]; if (x < R[0] - 80 || x > R[2] + 80 || y < R[1] - 100 || y > R[3] + 80) return; const pc = tdColOf(i), kn = TDU.kn[i], im = kn >= 0 ? kimg(kn) : null, bob = q[9] ? Math.sin(time * 14) * 2.2 : 0, H = (im ? kHeadH(kn, 25) : 64) * 1.15;
     g.save(); g.translate(x, y); g.fillStyle = "rgba(0,0,0,.35)"; ell(g, 0, 16, 18, 6); g.fill(); g.lineWidth = 4; g.strokeStyle = pc.c; ell(g, 0, 16, 20, 7); g.stroke();
-    if (im) { const wI = H * im.naturalWidth / im.naturalHeight; g.save(); g.translate(0, bob * .8); g.scale(q[10] || 1, 1); g.drawImage(im, -wI / 2, 19 - H, wI, H); g.restore(); } else { g.fillStyle = pc.c; ell(g, 0, -10, 10, 14); g.fill(); }
+    if (im) { const wI = H * im.naturalWidth / im.naturalHeight; const kp = TDU.kpose[i], ph = kp ? Math.sin(kp.t / .16 * Math.PI) : 0; g.save(); g.translate(kp ? Math.cos(kp.ang) * ph * 14 : 0, bob * .8 + (kp ? Math.sin(kp.ang) * ph * 6 : 0)); if (kp) { g.translate(0, 19); g.rotate(Math.cos(kp.ang) * ph * .22); g.translate(0, -19); } g.scale(q[10] || 1, 1); g.drawImage(im, -wI / 2, 19 - H, wI, H); g.restore(); } else { g.fillStyle = pc.c; ell(g, 0, -10, 10, 14); g.fill(); }
     tdBadge(g, pc.s, 0, 19 - H - 14, 6, pc.c, "#0a0a14"); g.font = "700 12px 'IBM Plex Sans KR',sans-serif"; g.textAlign = "center"; g.lineWidth = 3.5; g.strokeStyle = INK; const nm = TDU.names[i] || ""; g.strokeText(nm, 0, 19 - H - 24); g.fillStyle = i === TDU.me ? "#ffe27a" : "#fff"; g.fillText(nm, 0, 19 - H - 24); g.restore(); });
   // 총알 · 효과
   g.lineCap = "round";
-  for (const s of TDU.shots) { g.globalAlpha = Math.max(0, s.life / .1); g.strokeStyle = s.col; g.lineWidth = s.w; g.beginPath(); g.moveTo(s.x1, s.y1); g.lineTo(s.x2, s.y2); g.stroke(); } g.globalAlpha = 1;
+  for (const s of TDU.shots) { g.globalAlpha = Math.max(0, s.life / .1) * .8; g.strokeStyle = s.col; g.lineWidth = s.w; g.beginPath(); g.moveTo(s.x1, s.y1); g.lineTo(s.x2, s.y2); g.stroke(); } g.globalAlpha = 1;
   g.strokeStyle = "#e6d6ff"; g.lineWidth = 3; for (const a of TDU.arcs) { g.globalAlpha = Math.max(0, a.life / .15); g.beginPath(); g.moveTo(a.x1, a.y1); const n = 5, dx = (a.x2 - a.x1) / n, dy = (a.y2 - a.y1) / n; for (let i = 1; i < n; i++) g.lineTo(a.x1 + dx * i + (Math.random() - .5) * 18, a.y1 + dy * i + (Math.random() - .5) * 18); g.lineTo(a.x2, a.y2); g.stroke(); } g.globalAlpha = 1;
-  for (const r of TDU.rings) { const k = 1 - r.life / r.max; g.globalAlpha = Math.max(0, 1 - k); g.strokeStyle = r.col; g.lineWidth = 4; g.beginPath(); g.arc(r.x, r.y, r.r * (.25 + .75 * k), 0, 6.2832); g.stroke(); if (r.fill) { g.fillStyle = r.col; g.globalAlpha = Math.max(0, (1 - k) * .12); g.fill(); } } g.globalAlpha = 1;
+  g.lineWidth = 2.5; for (const r of TDU.rings) { const k = 1 - r.life / r.max; g.globalAlpha = Math.max(0, 1 - k) * (r.fill ? .5 : .9); g.strokeStyle = r.col; g.beginPath(); g.arc(r.x, r.y, r.r * (.25 + .75 * k), 0, 6.2832); g.stroke(); } g.globalAlpha = 1;
+  tdDrawKatk(g);
   g.font = "700 15px 'IBM Plex Sans KR',sans-serif"; g.textAlign = "center"; g.lineWidth = 4;
   for (const f of TDU.floats) { const k = 1 - f.life / f.max; g.globalAlpha = Math.max(0, 1 - k * k); g.strokeStyle = INK; g.strokeText(f.text, f.x, f.y - k * 34); g.fillStyle = f.col; g.fillText(f.text, f.x, f.y - k * 34); } g.globalAlpha = 1;
   g.restore();
@@ -5414,7 +5476,27 @@ function tdDrawMini(V) {
   V.pl.forEach((q, i) => { const pc = tdColOf(i); tdBadge(g, pc.s, px(q[6]), px(q[7]), i === TDU.me ? 5 : 3.6, pc.c, "#000"); });
   const R = tdRect(0); g.strokeStyle = "#fff"; g.lineWidth = 1.5; g.strokeRect(px(R[0]), px(R[1]), (R[2] - R[0]) * k, (R[3] - R[1]) * k);
 }
+function tdDrawKatk(g) {   // 기사 공격 그림(캐릭터마다 모양이 다르다)
+  g.lineCap = "round";
+  for (const e of TDU.katk) {
+    const a = TD_KATK[e.kn]; if (!a) continue; const k = 1 - e.life / e.max, al = Math.max(0, 1 - k * k), dx = e.x2 - e.x1, dy = e.y2 - e.y1, ang = Math.atan2(dy, dx);
+    g.save(); g.globalAlpha = al; g.strokeStyle = e.col; g.fillStyle = e.col;
+    if (a.st === "sweep") { g.lineWidth = 16 * al + 3; g.beginPath(); g.arc(e.x1, e.y1, a.range * (.55 + .4 * k), ang - a.arc / 2, ang + a.arc / 2); g.stroke(); g.globalAlpha = al * .6; g.strokeStyle = "#fff"; g.lineWidth = 3; g.beginPath(); g.arc(e.x1, e.y1, a.range * (.62 + .4 * k), ang - a.arc / 2.3, ang + a.arc / 2.3); g.stroke(); }
+    else if (a.st === "dagger") { g.strokeStyle = "#fff"; g.lineWidth = 3.5; for (const o of [-8, 8]) { const nx = -Math.sin(ang) * o, ny = Math.cos(ang) * o; g.beginPath(); g.moveTo(e.x1 + nx + dx * .3 * k, e.y1 + ny + dy * .3 * k); g.lineTo(e.x2 + nx * .3, e.y2 + ny * .3); g.stroke(); } g.strokeStyle = e.col; g.lineWidth = 4; g.beginPath(); g.arc(e.x2, e.y2, 8 + 14 * k, 0, 6.2832); g.stroke(); }
+    else if (a.st === "orb") { const t = Math.min(1, k * 2.2), x = e.x1 + dx * t, y = e.y1 + dy * t; g.beginPath(); g.arc(x, y, 9 * (1 - k * .4), 0, 6.2832); g.fillStyle = "#fff6c8"; g.fill(); g.lineWidth = 3; g.stroke(); if (k > .35) { g.lineWidth = 3; g.beginPath(); g.arc(e.x2, e.y2, a.splash * Math.min(1, (k - .35) * 1.6), 0, 6.2832); g.stroke(); } }
+    else if (a.st === "arrow") { g.lineWidth = 4; const t = Math.min(1, k * 3), x = e.x1 + dx * t, y = e.y1 + dy * t, x0 = e.x1 + dx * Math.max(0, t - .22), y0 = e.y1 + dy * Math.max(0, t - .22); g.beginPath(); g.moveTo(x0, y0); g.lineTo(x, y); g.stroke(); g.beginPath(); g.moveTo(x, y); g.lineTo(x - Math.cos(ang - .5) * 9, y - Math.sin(ang - .5) * 9); g.lineTo(x - Math.cos(ang + .5) * 9, y - Math.sin(ang + .5) * 9); g.closePath(); g.fill(); }
+    else if (a.st === "lance") { const t = Math.min(1, k * 4); g.lineWidth = 7; g.beginPath(); g.moveTo(e.x1, e.y1); g.lineTo(e.x1 + dx * t, e.y1 + dy * t); g.stroke(); g.lineWidth = 2; g.strokeStyle = "#fff"; g.beginPath(); g.moveTo(e.x2 - 11, e.y2); g.lineTo(e.x2, e.y2 - 11); g.lineTo(e.x2 + 11, e.y2); g.lineTo(e.x2, e.y2 + 11); g.closePath(); g.stroke(); }
+    else if (a.st === "wave") { const t = Math.min(1, k * 2.5 + .2); g.globalAlpha = al * .35; g.lineWidth = 52; g.beginPath(); g.moveTo(e.x1, e.y1); g.lineTo(e.x1 + dx * t, e.y1 + dy * t); g.stroke(); g.globalAlpha = al; g.strokeStyle = "#fff"; g.lineWidth = 4; g.beginPath(); g.moveTo(e.x1, e.y1); g.lineTo(e.x2, e.y2); g.stroke(); }
+    else if (a.st === "smash") { g.lineWidth = 7 * al + 1; g.beginPath(); g.arc(e.x2, e.y2, 16 + 55 * k, 0, 6.2832); g.stroke(); g.strokeStyle = "#fff"; g.lineWidth = 2.5; for (let i = 0; i < 5; i++) { const aa = i * 1.2566 + .3, r0 = 10 + 30 * k; g.beginPath(); g.moveTo(e.x2 + Math.cos(aa) * r0, e.y2 + Math.sin(aa) * r0); g.lineTo(e.x2 + Math.cos(aa) * (r0 + 18), e.y2 + Math.sin(aa) * (r0 + 18)); g.stroke(); } }
+    else if (a.st === "bash") { g.lineWidth = 8 * al + 1; g.beginPath(); g.arc(e.x1, e.y1, a.range * (.25 + .75 * k), 0, 6.2832); g.stroke(); g.globalAlpha = al * .12; g.fill(); }
+    else if (a.st === "snipe") { g.strokeStyle = "#ff5a4a"; g.lineWidth = 2.5; g.beginPath(); g.moveTo(e.x1, e.y1); g.lineTo(e.x2, e.y2); g.stroke(); g.lineWidth = 2; g.beginPath(); g.arc(e.x2, e.y2, 13 - 6 * k, 0, 6.2832); g.moveTo(e.x2 - 18, e.y2); g.lineTo(e.x2 + 18, e.y2); g.moveTo(e.x2, e.y2 - 18); g.lineTo(e.x2, e.y2 + 18); g.stroke(); }
+    else if (a.st === "boom") { const t = Math.min(1, k * 2), x = e.x1 + dx * t, y = e.y1 + dy * t - Math.sin(t * Math.PI) * 26; g.beginPath(); g.arc(x, y, 9, 0, 6.2832); g.fillStyle = "#cfd6ff"; g.fill(); g.lineWidth = 3; g.stroke(); g.beginPath(); g.moveTo(x - 6, y); g.lineTo(x + 6, y); g.moveTo(x, y - 6); g.lineTo(x, y + 6); g.stroke(); }
+    g.restore();
+  }
+}
 function tdFx(dt) {
+  for (const s of TDU.katk) s.life -= dt; TDU.katk = TDU.katk.filter(s => s.life > 0);
+  for (const i in TDU.kpose) if ((TDU.kpose[i].t -= dt) <= 0) delete TDU.kpose[i];
   for (const s of TDU.shots) s.life -= dt; TDU.shots = TDU.shots.filter(s => s.life > 0);
   for (const s of TDU.arcs) s.life -= dt; TDU.arcs = TDU.arcs.filter(s => s.life > 0);
   for (const r of TDU.rings) r.life -= dt; TDU.rings = TDU.rings.filter(r => r.life > 0);
@@ -5422,7 +5504,7 @@ function tdFx(dt) {
   for (const k in TDU.fl) if ((TDU.fl[k] -= dt) <= 0) delete TDU.fl[k];
   TDU.coreFlash = Math.max(0, TDU.coreFlash - dt * 1.8); TDU.shake *= Math.pow(.002, dt);
 }
-const tdRing = (x, y, r, col, life, fill) => { if (TDU.rings.length < 80) TDU.rings.push({x, y, r, col, life:life || .4, max:life || .4, fill}); };
+const tdRing = (x, y, r, col, life, fill) => { if (TDU.rings.length < 24) TDU.rings.push({x, y, r, col, life:life || .4, max:life || .4, fill}); };
 const tdFloat = (x, y, text, col) => { if (TDU.floats.length < 40) TDU.floats.push({x, y, text, col:col || "#f6c453", life:.9, max:.9}); };
 function tdBanner(text, red) { const el = $("#td-bn"); el.textContent = text; el.classList.toggle("red", !!red); restart(el, "go"); }
 const addShakeTd = a => { if (!reduced()) TDU.shake = Math.max(TDU.shake, a); };
@@ -5430,7 +5512,7 @@ const addShakeTd = a => { if (!reduced()) TDU.shake = Math.max(TDU.shake, a); };
 /* 손님 쪽 터렛 거울: 구조 이벤트는 화면이 멈춰 있어도(백그라운드 탭) 바로 반영한다. 여러 번 받아도 결과가 같다 */
 function tdTuApply(e) {
   if (TDU.W) return;
-  if (e.k === "tuAdd") { const r = e.r; if (!TDU.twById.has(r[0])) { const u = {id:r[0], f:r[1], k:r[2], x:r[3], y:r[4], ow:r[5], tier:r[6], ang:-1.2, flash:0}; TDU.tw.push(u); TDU.twById.set(u.id, u); } }
+  if (e.k === "tuAdd") { const r = e.r; if (!TDU.twById.has(r[0])) { const u = {id:r[0], f:r[1], k:r[2], x:r[3], y:r[4], ow:r[5], tier:r[6], paid:r[7], ang:-1.2, flash:0}; TDU.tw.push(u); TDU.twById.set(u.id, u); } }
   else if (e.k === "tuDel") { const u = TDU.twById.get(e.i); if (u) { const i = TDU.tw.indexOf(u); if (i >= 0) TDU.tw.splice(i, 1); TDU.twById.delete(e.i); } }
   else if (e.k === "tuTier") { const u = TDU.twById.get(e.i); if (u) u.tier = e.t; }
 }
@@ -5442,14 +5524,15 @@ function tdConsume(evs) {
     if (k === "tuAdd") { const r = e.r; if (!TDU.W) tdTuApply(e); else { const tu = TDU.W.tu; for (let i = tu.length - 1, n = 0; i >= 0 && n < 400; i--, n++) if (tu[i].id === r[0]) { TDU.twById.set(r[0], tu[i]); break; } } if (r[5] === TDU.me) { const i = TDU.pend.findIndex(q => Math.abs(q.x - r[3]) < 8 && Math.abs(q.y - r[4]) < 8); if (i >= 0) TDU.pend.splice(i, 1); } if (inR(r[3], r[4])) { tdRing(r[3], r[4], 36, tdColOf(r[5]).c, .35); tdSfx("build", 70); } }
     else if (k === "tuDel") { if (!TDU.W) tdTuApply(e); TDU.twById.delete(e.i); if (TDU.tuSel === e.i) { TDU.tuSel = -1; tdSelUpdate(); } tdRing(e.x, e.y, 30, "rgba(255,255,255,.8)", .3); tdSfx("click", 60); }
     else if (k === "tuTier") { if (!TDU.W) tdTuApply(e); tdRing(e.x, e.y, 44, "rgba(255,230,120,.95)", .5); tdSfx("up", 100); }
-    else if (k === "shot") { if (!inR(e.x1, e.y1) && !inR(e.x2, e.y2)) continue; const u = TDU.twById.get(e.i); if (u && !TDU.W) u.ang = Math.atan2(e.y2 - e.y1, e.x2 - e.x1); TDU.fl[e.i] = .1; if (TDU.shots.length < 220) TDU.shots.push({x1:e.x1, y1:e.y1, x2:e.x2, y2:e.y2, col:tdColOf(u ? u.ow : 0).c, w:(tdTw(e.f, e.t) || {}).dmg > 30 ? 4 : 2.2, life:.1}); tdSfx("beam", 90); }
+    else if (k === "shot") { if (!inR(e.x1, e.y1) && !inR(e.x2, e.y2)) continue; const u = TDU.twById.get(e.i); if (u && !TDU.W) u.ang = Math.atan2(e.y2 - e.y1, e.x2 - e.x1); TDU.fl[e.i] = .1; if (TDU.shots.length < 120) TDU.shots.push({x1:e.x1, y1:e.y1, x2:e.x2, y2:e.y2, col:tdColOf(u ? u.ow : 0).c, w:(tdTw(e.f, e.t) || {}).dmg > 30 ? 3 : 1.6, life:.1}); tdSfx("beam", 90); }
     else if (k === "arc") { if (TDU.arcs.length < 60 && inR(e.x1, e.y1)) TDU.arcs.push({x1:e.x1, y1:e.y1, x2:e.x2, y2:e.y2, life:.15}); }
-    else if (k === "splash") { if (inR(e.x, e.y)) { tdRing(e.x, e.y, e.r, "rgba(106,182,238,.85)", .35, true); tdSfx("splash", 150); } }
-    else if (k === "pulse") { if (inR(e.x, e.y)) { tdRing(e.x, e.y, e.r, "rgba(255,246,176,.95)", .45, true); tdSfx("flash", 200); } }
+    else if (k === "splash") { if (inR(e.x, e.y)) { if (TDU.rings.length < 12) tdRing(e.x, e.y, e.r, "rgba(106,182,238,.8)", .3, true); tdSfx("splash", 150); } }
+    else if (k === "pulse") { if (inR(e.x, e.y)) { if (TDU.rings.length < 12) tdRing(e.x, e.y, e.r, "rgba(255,246,176,.9)", .35, true); tdSfx("flash", 200); } }
     else if (k === "kill") { if (!inR(e.x, e.y)) continue; if (e.b || e.bn || e.g >= 8) tdFloat(e.x, e.y - 12, "+" + e.g, e.bn ? "#ffd24a" : "#f6c453"); else if (TDU.floats.length < 20) tdFloat(e.x, e.y - 8, "+" + e.g, "#cfd6ff"); tdSfx(e.bn ? "coin" : "kill", e.bn ? 60 : 100); if (e.b) { addShakeTd(8); tdRing(e.x, e.y, 130, "rgba(255,200,120,.9)", .6, true); } }
     else if (k === "leak") { TDU.coreFlash = 1; addShakeTd(e.b ? 14 : 5); tdFloat(e.x, e.y - 160, "균열 +" + e.v, "#ff7a5c"); tdSfx("door", 120); }
     else if (k === "stage") { TDU.stageName = e.n; const boss = e.kind === "boss" || e.kind === "final", bonus = e.kind === "bonus"; tdBanner(boss ? e.n : bonus ? "보너스! 월급 유령이 온다 (놓쳐도 괜찮아요)" : `스테이지 ${e.s} · ${e.n}`, boss); if (boss) { sfx("warn"); setTimeout(() => sfx("roar"), 500); } else if (bonus) sfx("coin"); else sfx("click"); }
-    else if (k === "up") tdSfx("up", 80);
+    else if (k === "katk") { if (!inR(e.x1, e.y1)) continue; const a = TD_KATK[e.kn] || {}; if (TDU.katk.length < 50) TDU.katk.push({kn:e.kn, x1:e.x1, y1:e.y1, x2:e.x2, y2:e.y2, col:tdColOf(e.p).c, life:.34, max:.34}); TDU.kpose[e.p] = {t:.16, ang:Math.atan2(e.y2 - e.y1, e.x2 - e.x1)}; if (a.st === "smash") addShakeTd(3); if (e.p === TDU.me) tdSfx(a.st === "sweep" || a.st === "dagger" || a.st === "smash" || a.st === "bash" ? "kill" : "beam", 120); }
+    else if (k === "up") { tdSfx("up", 80); if (e.n > 1 && TDU.W) tdFloat(TDU.V.pl[TDU.me][6], TDU.V.pl[TDU.me][7] - 60, "+" + e.n + "단계", "#9be0ff"); }
     else if (k === "fail") { if (e.id === TDU.me) { if (TDU.pend.length) TDU.pend.shift(); tdFail(e.why); } }
     else if (k === "skill") { tdRing(e.x, e.y, TD_SK[TD_SKEYS[e.s]].tgt ? 260 : 380, "rgba(106,168,255,.95)", .7, true); sfx("skill"); toast(`${TDU.names[e.id] || "동료"} · ${TD_SK[TD_SKEYS[e.s]].n}!`); }
     else if (k === "early") toast(`서둘러 출근! 모두 +₩${e.g}`);
@@ -5469,13 +5552,13 @@ function tdPlayers(total) {
 function tdBegin(o) {
   tdEnd(true); DPR = Math.min(2, window.devicePixelRatio || 1); UI.lastTd = {net:!!o.net};
   const W = o.client ? null : (o.W || tdNew({players:o.players, diff:o.diff, seed:o.seed, mapId:o.mapId}));
-  Object.assign(TDU, {W, V:null, map:W ? W.map : o.map, mut:W ? W.mut : o.mut, me:o.me || 0, diff:o.diff || "normal", cam:{x:0, y:0, s:.8}, follow:true, sel:null, tuSel:-1, speed:1, paused:false, acc:0, shots:[], rings:[], floats:[], arcs:[], st:{}, ended:false, endT:0, drag:null, keys:new Set(), net:o.net || null, names:o.players.map(p => p.name), kn:o.players.map(p => p.kn), fac:o.players.map(p => p.fac), col:o.players.map(p => p.col), tw:W ? W.tu : [], twById:new Map(), pend:[], evq:[], panelT:0, hover:null, stageName:"", coreFlash:0, shake:0, mm:[], dirSent:"", camT:0, lastPaint:null, fl:{}, pEn:null, snapAt:0, snapGap:70, sentEnd:false});
+  Object.assign(TDU, {W, V:null, map:W ? W.map : o.map, mut:W ? W.mut : o.mut, me:o.me || 0, diff:o.diff || "normal", cam:{x:0, y:0, s:.8}, follow:true, sel:null, tuSel:-1, speed:1, paused:false, acc:0, shots:[], rings:[], floats:[], arcs:[], st:{}, ended:false, endT:0, drag:null, keys:new Set(), net:o.net || null, names:o.players.map(p => p.name), kn:o.players.map(p => p.kn), fac:o.players.map(p => p.fac), col:o.players.map(p => p.col), tw:W ? W.tu : [], twById:new Map(), pend:[], evq:[], panelT:0, hover:null, stageName:"", coreFlash:0, shake:0, mm:[], dirSent:"", camT:0, lastPaint:null, fl:{}, pEn:null, snapAt:0, snapGap:70, sentEnd:false, katk:[], kpose:{}, hintT:0});
   TDU.st0 = tdMakeStatic(TDU.map); if (W) TDU.V = tdView(W);
   show("td"); tdBind(); tdPanelInit(); tdSelUpdate();
   const mp = TDU.V ? TDU.V.pl[TDU.me] : null; if (mp) { TDU.cam.x = mp[6]; TDU.cam.y = mp[7]; } tdClampCam();
   $("#td-speed").textContent = "x1"; $("#td-speed").hidden = !!o.net; $("#td-mute").textContent = SAVE.mute ? "소리 꺼짐" : "소리";
-  tdBanner("소용돌이 방어전! 기사를 움직여 터렛을 지어요"); sfx("click");
-  if (!SAVE.tdHint2) { $("#td-hint").hidden = false; $("#td-hint").textContent = "① 아래에서 터렛을 고르고 땅을 누르면 내 기사가 걸어가서 지어요(누른 채 끌면 줄줄이, 겹쳐도 돼요) ② 빈 땅을 누르거나 오른쪽 클릭·WASD로 기사를 움직여요 ③ 귀신이 길 끝 전원실에 닿으면 균열이 올라요. 휠·+/−로 확대, 미니맵을 눌러 이동!"; } else $("#td-hint").hidden = true;
+  tdBanner(tdMapName() + " 방어전! 기사를 움직여 터렛을 지어요"); sfx("click");
+  if (!SAVE.tdHint2) { SAVE.tdHint2 = 1; persist(true); TDU.hintT = 22; $("#td-hint").hidden = false; $("#td-hint").textContent = "터렛을 고르고 땅을 누르면(끌면 줄줄이) 내 기사가 걸어가서 지어요. 기사는 귀신도 직접 때려요. 오른쪽 클릭·WASD로 기사를 움직이고, 휠로 확대, 미니맵을 눌러 이동!"; } else $("#td-hint").hidden = true;
   TDU.last = performance.now(); if (!TDU.raf) TDU.raf = requestAnimationFrame(tdFrame);
 }
 function tdEnd(keep) { if (TDU.net && typeof tdNetClose === "function") tdNetClose(); TDU.net = null; TDU.W = null; TDU.V = null; $("#modal-slot").innerHTML = ""; if (!keep) TDU.raf = 0; }
@@ -5490,7 +5573,7 @@ function tdFrame(ts) {
     const evs = W.ev; W.ev = []; TDU.V = tdView(W);
     tdConsume(evs); if (TDU.net && TDU.net.role === "host") tdNetHostPush(evs);
   } else if (!W && TDU.evq.length) { const evs = TDU.evq; TDU.evq = []; tdConsume(evs); }
-  const V = TDU.V;
+  const V = TDU.V; if (TDU.hintT > 0 && (TDU.hintT -= dt) <= 0) $("#td-hint").hidden = true;
   if (!TDU.paused) tdFx(dt * (W ? TDU.speed : 1));
   if (V && TDU.follow) { const mp = V.pl[TDU.me]; if (mp) { const c = TDU.cam, k = 1 - Math.pow(.0005, dt); c.x += (mp[6] - c.x) * k; c.y += (mp[7] - c.y) * k; tdClampCam(); } }
   if (TDU.keys.size) { const S = TDU.cam.s, v = 620 / S * dt, c = TDU.cam; let m = 0; if (TDU.keys.has("left")) { c.x -= v; m = 1; } if (TDU.keys.has("right")) { c.x += v; m = 1; } if (TDU.keys.has("up")) { c.y -= v; m = 1; } if (TDU.keys.has("down")) { c.y += v; m = 1; } if (m) { TDU.follow = false; tdClampCam(); } }
@@ -5511,8 +5594,8 @@ function tdDo(cmd, a, quiet) {
 }
 function tdBuildAt(p, quiet) {
   const k = Number(TDU.sel.slice(2)), d = TD_FAC[TDU.fac[TDU.me]].tw[k], V = TDU.V; if (!d || !V) return;
-  if (!tdOK(TDU.map, p.x, p.y)) { if (!quiet) tdFail("cell"); return; } const have = V.pl[TDU.me][0] - TDU.pend.reduce((a, q) => a + q.cost, 0); if (have < d.cost) { if (!quiet) tdFail("gold"); return; }
-  const r = tdDo("build", {k, x:p.x, y:p.y}, quiet); if (r.ok) { TDU.pend.push({x:p.x, y:p.y, cost:d.cost}); TDU.follow = true; }
+  if (!tdOK(TDU.map, p.x, p.y)) { if (!quiet) tdFail("cell"); return; } const pl = V.pl[TDU.me], cost = tdBuildCost(d, pl[1] + Math.max(pl[8], TDU.pend.length)), have = pl[0] - TDU.pend.reduce((a, q) => a + q.cost, 0); if (have < cost) { if (!quiet) tdFail("gold"); return; }
+  const r = tdDo("build", {k, x:p.x, y:p.y}, quiet); if (r.ok) { TDU.pend.push({x:p.x, y:p.y, cost}); TDU.follow = true; if (TDU.hintT > 0) { TDU.hintT = 0; $("#td-hint").hidden = true; } }
 }
 function tdPaint(p) { const lp = TDU.lastPaint; if (lp && Math.hypot(lp.x - p.x, lp.y - p.y) < 20) return; TDU.lastPaint = {x:p.x, y:p.y}; tdBuildAt(p, !!(TDU.drag && TDU.drag.moved)); }
 function tdTowerAt(p) { let best = null, bd = Math.pow(22 / Math.max(.5, TDU.cam.s), 2); for (const u of TDU.tw) { const dx = u.x - p.x, dy = u.y - p.y, d2 = dx * dx + dy * dy; if (d2 < bd) { bd = d2; best = u; } } return best; }
@@ -5536,14 +5619,14 @@ function tdSelUpdate() {
   const sb = $("#td-sellb"); if (sb) sb.classList.toggle("btn-gold", sel === "sell");
   fb.hidden = !(sel === "skill" || sel === "sell" || (sel && sel.startsWith("b:")));
   $("#td-fb-t").textContent = sel === "skill" ? "스킬을 쓸 곳을 눌러요" : sel === "sell" ? "철거할 터렛을 눌러요" : sel ? `${TD_FAC[fi].tw[Number(sel.slice(2))].n} 짓는 중 · 땅을 누르거나 끌어요` : "";
-  const d = $("#td-tdesc"); if (d) d.textContent = sel && sel.startsWith("b:") ? `${TD_FAC[fi].tw[Number(sel.slice(2))].n}: ${TD_FAC[fi].tw[Number(sel.slice(2))].d}` : "터렛을 고른 뒤 땅을 누르면 내 기사가 걸어가서 지어요. 누른 채 끌면 줄줄이, 겹쳐서도 지어져요.";
+  const d = $("#td-tdesc"); if (d) d.textContent = sel && sel.startsWith("b:") ? `${TD_FAC[fi].tw[Number(sel.slice(2))].n}: ${TD_FAC[fi].tw[Number(sel.slice(2))].d}` : "터렛을 고른 뒤 땅을 누르면 내 기사가 걸어가서 지어요. 누른 채 끌면 줄줄이, 겹쳐서도 지어져요. 많이 지을수록 새 터렛 값이 올라요.";
   if (st) st.classList.toggle("pan", !sel);
   tdSelBox();
 }
 function tdSelBox() {
   const box = $("#td-bx-sel"); if (!box) return; const u = TDU.tuSel >= 0 ? TDU.twById.get(TDU.tuSel) : null;
   if (!u) { box.hidden = true; return; } const d = tdTw(u.f, u.k), mine = u.ow === TDU.me; box.hidden = false;
-  const tc = u.tier < 3 ? tdTierCost(d, u.tier + 1) : 0, rf = Math.floor((d.cost + (u.tier - 1) * tdTierCost(d, 1.6)) * .7), pc = tdColOf(u.ow);
+  const tc = u.tier < 3 ? tdTierCost(d, u.tier + 1) : 0, rf = Math.floor(((u.paid || d.cost) + (u.tier - 1) * tdTierCost(d, 1.6)) * .7), pc = tdColOf(u.ow);
   tdSet("#td-sel-i", `<b style="color:${pc.c}">${tdGlyph(pc)}</b> <b>${esc(d.n)}</b> · ${esc(TDU.names[u.ow] || "")}의 터렛 · 강화 ${u.tier}/3<br><span class="small dim">${esc(d.d)}</span>`, "innerHTML");
   const bt = $("#td-sel-t"), bs = $("#td-sel-s"); bt.hidden = bs.hidden = !mine; tdSet(bt, u.tier >= 3 ? "최대 강화" : `강화 ₩${fmt(tc)} (E)`); bt.classList.toggle("max", u.tier >= 3); tdSet(bs, `철거 +₩${fmt(rf)} (Del)`);
 }
@@ -5553,7 +5636,9 @@ function tdPanelInit() {
   const me = TDU.me, f = TD_FAC[TDU.fac[me] || 0];
   $("#td-pal").innerHTML = f.tw.map((d, k) => `<button class="tdb" data-act="td-sel" data-k="${k}" aria-pressed="false" title="${esc(d.n)}"><kbd>${k + 1}</kbd><canvas width="68" height="68"></canvas><b>${esc(d.n)}</b><span>₩${d.cost}</span></button>`).join("");
   $("#td-fac").innerHTML = `<b style="color:${tdColOf(me).c}">${tdGlyph(tdColOf(me))}</b> ${esc(f.n)} <span class="small dim">· ${esc(f.sub)}</span>`;
-  $("#td-upg").innerHTML = [0, 1, 2].map(c => `<div class="tdu"><b>${TD_CLSN[c]}</b><button class="btn btn-sm" data-act="td-up" data-c="${c}" data-k="0"></button><button class="btn btn-sm" data-act="td-up" data-c="${c}" data-k="1"></button></div>`).join("");
+  const ka = TD_KATK[TDU.kn[me]] || {n:"공격", d:""};
+  $("#td-upg").innerHTML = `<div class="seg tdbulk" id="td-bulk" role="radiogroup" aria-label="한 번에 올릴 단계">${[[1, "x1"], [10, "x10"], [100, "x100"], [1000, "최대"]].map(([n, l]) => `<button role="radio" aria-checked="${n === TDU.bulk}" data-act="td-bulk" data-n="${n}">${l}</button>`).join("")}</div>` + [0, 1, 2, 3].map(c => `<div class="tdu"><b>${c === 3 ? "내 기사 · " + esc(ka.n) : TD_CLSN[c]}</b><button class="btn btn-sm" data-act="td-up" data-c="${c}" data-k="0"></button><button class="btn btn-sm" data-act="td-up" data-c="${c}" data-k="1"></button></div>`).join("");
+  tdSet("#td-katk", `⚔ ${ka.n} — ${ka.d}`);
   tdPalIcons();
   const kn = TDU.kn[me]; $("#td-me-i").src = kn >= 0 ? kSrc(kn, true) : ""; $("#td-me-n").textContent = (TDU.names[me] || "나") + " · " + (KNIGHTS[kn] ? KNIGHTS[kn].r : "");
   $("#td-team").innerHTML = TDU.names.map((n, i) => `<div class="tdt ${i === me ? "me" : ""}"><canvas class="tdbadge" id="tdbg-${i}" width="26" height="26"></canvas><div><b>${esc(n)}</b> <small id="tdt-s${i}"></small></div><span class="num small" id="tdt-g${i}"></span></div>`).join("");
@@ -5564,9 +5649,10 @@ function tdPanelUpdate(V) {
   const me = TDU.me, p = V.pl[me] || [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], gold = p[0], plan = TDU.mut, f = TD_FAC[TDU.fac[me] || 0];
   tdSet("#td-st", `${Math.max(1, V.s)}/${TD_STAGES}`); tdSet("#td-ph", V.o ? (V.o === "win" ? "새벽 출근!" : "전원실 붕괴") : V.ph === "prep" ? `준비 ${Math.ceil(V.cd)}초` : "진행 중");
   tdSet("#td-gold", "₩" + fmt(gold)); const gw = $("#td-gw"); $("#td-g").style.width = clamp(V.g, 0, 100) + "%"; tdSet("#td-gt", `전원실 균열 ${Math.round(V.g)}%`); gw.classList.toggle("hot", V.g >= 70); gw.setAttribute("aria-valuenow", String(Math.round(V.g)));
-  $$("#td-pal .tdb").forEach((b, i) => b.classList.toggle("off", gold < f.tw[i].cost));
-  const up = V.up[me] || [0, 0, 0, 0, 0, 0], fakeW = {mut:TDU.mut || {}};
-  $$("#td-upg .tdu").forEach((row, c) => row.querySelectorAll("button").forEach((b, k) => { const lv = up[c * 2 + k], maxed = lv >= TD_UPMAX, cost = maxed ? 0 : tdUpCost(fakeW, c, k, lv), nm = c === 2 ? (k ? "효과 속도" : "효과 세기") : (k ? "공속" : "공격"); b.classList.toggle("max", maxed); b.classList.toggle("off", !maxed && gold < cost); const txt = maxed ? `${nm} 최대` : `${nm} Lv${lv} ₩${fmt(cost)}`; if (b._t !== txt) { b._t = txt; b.textContent = txt; } }));
+  const nOwn = p[1] + Math.max(p[8], TDU.pend.length);
+  $$("#td-pal .tdb").forEach((b, i) => { const c = tdBuildCost(f.tw[i], nOwn); b.classList.toggle("off", gold < c); const sp = b.querySelector("span"); if (sp) tdSet(sp, "₩" + fmt(c)); });
+  const up = V.up[me] || [0, 0, 0, 0, 0, 0, 0, 0], fakeW = {mut:TDU.mut || {}}, nB = TDU.bulk;
+  $$("#td-upg .tdu").forEach((row, c) => row.querySelectorAll("button").forEach((b, k) => { const lv = up[c * 2 + k] || 0, maxed = lv >= TD_UPMAX, one = maxed ? 0 : tdUpCost(fakeW, c, k, lv), r = maxed || nB === 1 ? null : tdUpBulk(fakeW, c, k, lv, nB, gold), nm = c === 2 ? (k ? "효과 속도" : "효과 세기") : (k ? "공속" : "공격"); b.classList.toggle("max", maxed); b.classList.toggle("off", !maxed && (r ? r.n < 1 : gold < one)); const txt = maxed ? `${nm} 최대` : r && r.n > 0 ? `${nm} Lv${lv} +${r.n} ₩${fmt(r.cost)}` : `${nm} Lv${lv} ₩${fmt(one)}`; if (b._t !== txt) { b._t = txt; b.textContent = txt; } }));
   const sk = TD_SK[TD_KSK[TDU.kn[me]]]; if (sk) { const cd = p[3], ratio = clamp(cd / sk.cd, 0, 1); $("#td-sk-i").style.transform = `scaleX(${ratio})`; tdSet("#td-sk-t", `${sk.n} ${cd > 0 ? Math.ceil(cd) + "초" : "(Q)"}`); tdSet("#td-sk-d", sk.d); const fab = $("#td-fab"); fab.hidden = false; $("#td-fab-i").style.transform = `scaleY(${ratio})`; tdSet("#td-fab-t", cd > 0 ? Math.ceil(cd) + "초" : sk.n + " (Q)"); fab.setAttribute("aria-disabled", String(cd > 0)); }
   tdSet("#td-me-s", `터렛 ${p[1]}기 · 처치 ${p[2]}${p[8] ? " · 짓는 중 " + p[8] : ""}`);
   const nx = V.nx, cur = TDU.stageName || "", rd = $("#td-ready"); rd.hidden = !(V.ph === "prep" && !V.o); tdSet(rd, p[4] ? "준비 완료! 다른 사람을 기다려요" : `준비 완료 (Space) · 일찍 시작하면 수당 +₩${Math.floor(V.cd * .6)}`); rd.classList.toggle("btn-gold", !!p[4]);
@@ -5620,7 +5706,8 @@ Object.assign(A, {
   "td-sel": b => { const t = b.dataset.k; TDU.sel = TDU.sel === "b:" + t ? null : "b:" + t; TDU.tuSel = -1; sfx("click"); tdSelUpdate(); },
   "td-sellmode": () => { TDU.sel = TDU.sel === "sell" ? null : "sell"; sfx("click"); tdSelUpdate(); },
   "td-cancel": () => { TDU.sel = null; tdSelUpdate(); },
-  "td-up": b => { const r = tdDo("up", {c:Number(b.dataset.c), k:Number(b.dataset.k)}); if (!r.ok && !r.net) sfx("click"); },
+  "td-up": b => { const r = tdDo("up", {c:Number(b.dataset.c), k:Number(b.dataset.k), n:TDU.bulk}); if (!r.ok && !r.net) sfx("click"); },
+  "td-bulk": b => { TDU.bulk = Number(b.dataset.n) || 1; $$("#td-bulk button").forEach(x => x.setAttribute("aria-checked", String(Number(x.dataset.n) === TDU.bulk))); TDU.panelT = 0; sfx("click"); },
   "td-tier": () => { if (TDU.tuSel >= 0) tdDo("tier", {id:TDU.tuSel}); },
   "td-sell1": () => { if (TDU.tuSel >= 0) tdDo("sell", {id:TDU.tuSel}); },
   "td-ready": () => tdDo("ready", {}),
@@ -5634,10 +5721,9 @@ Object.assign(A, {
   "td-follow": () => { TDU.follow = !TDU.follow; toast(TDU.follow ? "내 기사를 따라가요" : "카메라를 직접 움직여요 (C로 다시 따라가기)"); },
   "td-again": () => tdRestart(),
   "td-home": () => { tdEnd(); buildSelect(); show("select"); },
-  "td-start": () => { const n = clamp(SAVE.tdn || 4, 1, 5); tdBegin({players:tdPlayers(n), diff:SAVE.diff, me:0, mapId:SAVE.tdm === "vortex" || SAVE.tdm === "maze" ? SAVE.tdm : "rand"}); },
+  "td-start": () => { const n = clamp(SAVE.tdn || 4, 1, 5); tdBegin({players:tdPlayers(n), diff:SAVE.diff, me:0, mapId:tdMapId()}); },
   tdn: b => { SAVE.tdn = clamp(Number(b.dataset.n) || 4, 1, 5); persist(true); buildMode(); sfx("click"); },
   "td-fac": b => { SAVE.tdf = clamp(Number(b.dataset.f) || 0, 0, TD_FAC.length - 1); persist(true); buildMode(); sfx("click"); },
-  "td-map": b => { SAVE.tdm = b.dataset.m === "vortex" || b.dataset.m === "maze" ? b.dataset.m : "rand"; persist(true); buildMode(); sfx("click"); },
   "td-col": b => { SAVE.col = Number(b.dataset.c); if (!(SAVE.col >= -1 && SAVE.col < PCOL.length)) SAVE.col = -1; persist(true); buildMode(); sfx("click"); },
 });
 
@@ -5645,10 +5731,10 @@ Object.assign(A, {
 function tdShowResult() {
   const V = TDU.V, win = V.o === "win", W = TDU.W, res = V.res || (W ? {sc:tdScore(W), pl:W.pl.map(p => [p.kills, p.built, Math.round(p.dealt)])} : {sc:0, pl:[]}), diff = TDU.diff;
   const rpm = (DIFFS[diff] && DIFFS[diff].rp) || 1, rp = Math.round((V.s * 2 + (win ? 40 : 0) + Math.floor(V.kills / 30)) * rpm);
-  SAVE.runs++; if (win) SAVE.wins++; SAVE.rp += rp; SAVE.td = SAVE.td || {}; const b = SAVE.td[diff] || {s:0, win:0, sc:0}; b.s = Math.max(b.s, V.s); b.win += win ? 1 : 0; b.sc = Math.max(b.sc, res.sc); SAVE.td[diff] = b; persist();
+  SAVE.runs++; if (win) SAVE.wins++; SAVE.rp += rp; SAVE.td = SAVE.td || {}; const tkey = (TDU.map.id === "maze" ? "m_" : "") + diff, b = SAVE.td[tkey] || {s:0, win:0, sc:0}; b.s = Math.max(b.s, V.s); b.win += win ? 1 : 0; b.sc = Math.max(b.sc, res.sc); SAVE.td[tkey] = b; persist();
   const rows = TDU.names.map((n, i) => { const r = res.pl[i] || [0, 0, 0], pc = tdColOf(i); return `<div class="rk-row w ${i === TDU.me ? "me" : ""}"><div class="rk-n" style="color:${pc.c}">${tdGlyph(pc)}</div><div style="min-width:0;text-align:left"><div class="rk-nick">${esc(n)}<span class="faint small">${esc(TD_FAC[TDU.fac[i] || 0].n)}</span></div><div class="rk-sub">처치 ${fmt(r[0])} · 터렛 ${fmt(r[1])}기 · 피해 ${fmt(r[2])}</div></div></div>`; }).join("");
   $("#res").innerHTML = `<h2 class="disp" style="color:${win ? "var(--gold)" : "var(--red)"}">${win ? "새벽 6시, 전원실을 지켰다!" : "전원실이 무너졌다…"}</h2>
-    <p class="dim">소용돌이 방어전 · ${esc((DIFFS[diff] || {}).n || "")} · ${TDU.map.id === "maze" ? "미로" : "소용돌이"} · 길 ${TDU.map.lanes.length}개 · ${esc((TDU.mut && TDU.mut.n) || "")}<br>스테이지 ${V.s} / ${TD_STAGES}까지 · 처치 ${fmt(V.kills)}마리 · 점수 ${fmt(res.sc)}</p>
+    <p class="dim">${tdMapName()} 방어전 · ${esc((DIFFS[diff] || {}).n || "")} · 길 ${TDU.map.lanes.length}개 · ${esc((TDU.mut && TDU.mut.n) || "")}<br>스테이지 ${V.s} / ${TD_STAGES}까지 · 처치 ${fmt(V.kills)}마리 · 점수 ${fmt(res.sc)}</p>
     <div class="rk" style="text-align:left">${rows}</div>
     <div class="row" style="justify-content:center"><span class="chip" style="color:var(--gold)">+${rp} RP${rpm !== 1 ? ` (난이도 x${rpm})` : ""}</span><span class="chip">최고 스테이지 ${b.s}</span><span class="chip">보유 ${fmt(SAVE.rp)} RP</span></div>
     <div class="row" style="justify-content:center"><button class="btn btn-red" data-act="td-again">다시 하기</button><button class="btn" data-act="td-home">처음 화면</button><button class="btn btn-gold" data-act="to-shop">상점 (${fmt(SAVE.rp)} RP)</button></div>`;
@@ -5659,17 +5745,16 @@ function tdShowResult() {
 
 /* ===TDNET_START=== 소용돌이 방어전 v2: 모드 선택 글 · 진영/맵/색 고르기 · 온라인(방장이 계산하고 손님은 명령만 보낸다) */
 function tdModeText() {
-  const D = TD_DIFF[SAVE.diff] || TD_DIFF.normal, f = clamp(Number.isInteger(SAVE.tdf) ? SAVE.tdf : 0, 0, TD_FAC.length - 1), F = TD_FAC[f], m = SAVE.tdm === "vortex" || SAVE.tdm === "maze" ? SAVE.tdm : "rand", col = Number.isInteger(SAVE.col) && SAVE.col >= 0 && SAVE.col < PCOL.length ? SAVE.col : -1;
-  $("#wi-title").textContent = "소용돌이 방어전 · 자유 건설 터렛 협동";
-  $("#wi-text").textContent = "넓은 지도 한가운데 전원실을 귀신 떼에서 지켜요. 내 기사(캐릭터)가 직접 걸어 다니며 길과 장애물만 피해 아무 데나 터렛을 지어요. 겹쳐 지어도 되고 개수 제한도 없어요. 돈과 업그레이드(최대 255단계)는 전부 내 것! 처치 수당으로 터렛을 늘리고 업그레이드를 올리세요. 균열 게이지가 100%가 되면 끝, 30스테이지를 버티면 새벽 6시 출근이에요. 진영마다 터렛이 달라요.";
+  const D = TD_DIFF[SAVE.diff] || TD_DIFF.normal, f = clamp(Number.isInteger(SAVE.tdf) ? SAVE.tdf : 0, 0, TD_FAC.length - 1), F = TD_FAC[f], mz = SAVE.mode === "maze", nm = mz ? "미로" : "소용돌이";
+  $("#wi-title").textContent = nm + " 방어전 · 자유 건설 터렛 협동";
+  $("#wi-text").textContent = (mz ? "네모난 미로를 구불구불 지나(길이 합쳐지는 구간도 있어요) 한가운데가 아닌 길 끝의 전원실로 귀신 떼가 몰려와요. " : "귀신 떼가 바깥에서 안쪽으로 말려 드는 나선 길을 따라 한가운데 전원실로 몰려와요. ") + "내 기사(캐릭터)가 직접 걸어 다니며 길과 장애물만 피해 아무 데나 터렛을 짓고, 귀신도 직접 때려요(캐릭터마다 공격이 달라요). 겹쳐 지어도 되지만 많이 지을수록 새 터렛이 비싸져요. 돈과 업그레이드(최대 1000단계, 한 번에 x10·x100)는 전부 내 것! 균열 게이지가 100%가 되면 끝, 30스테이지를 버티면 새벽 6시 출근이에요.";
   $("#wi-note").textContent = "사람 찾기는 최대 1분 기다려요(인원이 다 모이면 바로 시작). 모자란 자리는 AI 동료가 채우고, 한 판은 보통 15~25분이에요. 혼자 할 때는 배속(x2·x3)도 돼요. 조작: 땅 누르기=건설/이동, 오른쪽 클릭·WASD=기사 이동, 휠=확대, 미니맵 누르기=이동.";
-  $("#mode-desc").textContent = "스타크래프트 터렛 디펜스 느낌의 넓은 맵 협동 모드예요. 기존 '다 같이'와는 따로 즐겨요.";
-  $("#sel-title").textContent = "소용돌이를 막아 볼까요?";
-  $("#sel-sub").textContent = "방을 고를 필요 없이 바로 시작해요. 진영과 맵, 내 색을 고르세요.";
+  $("#mode-desc").textContent = mz ? "구불구불 미로 길을 막는 넓은 맵 협동 모드예요. '소용돌이'와 따로 즐겨요." : "나선 길을 막는 넓은 맵 협동 모드예요. '미로'와 따로 즐겨요.";
+  $("#sel-title").textContent = mz ? "미로를 막아 볼까요?" : "소용돌이를 막아 볼까요?";
+  $("#sel-sub").textContent = "방을 고를 필요 없이 바로 시작해요. 진영과 내 색을 고르세요.";
   $("#diff-desc").textContent = "AI 난이도 " + DIFFS[SAVE.diff].n + " · 귀신 체력 x" + D.hp + " · 수 x" + D.cnt + " · 수당 x" + D.gold + " · RP x" + DIFFS[SAVE.diff].rp;
   const box = $("#td-opts"); if (!box) return;
   $("#tdf-seg").innerHTML = TD_FAC.map((x, i) => `<button role="radio" aria-checked="${i === f}" data-act="td-fac" data-f="${i}">${esc(x.n)}</button>`).join("");
-  $("#tdm-seg").innerHTML = [["rand", "무작위"], ["vortex", "소용돌이"], ["maze", "미로"]].map(([id, n]) => `<button role="radio" aria-checked="${id === m}" data-act="td-map" data-m="${id}">${n}</button>`).join("");
   $("#tdf-desc").innerHTML = `<b style="color:${F.col}">${esc(F.n)}</b> · ${esc(F.sub)} — ${esc(F.d)}<br>터렛: ${F.tw.map(t => esc(t.n)).join(" · ")}`;
 }
 const cleanCol = v => Number.isInteger(v) && v >= 0 && v < 8 ? v : -1;
@@ -5680,7 +5765,7 @@ function tdCleanArgs(c, p) {
   else if (c === "move" || c === "skill") { o.x = pos(p.x); o.y = pos(p.y); }
   else if (c === "dir") { o.x = clamp(num(p.x) || 0, -1, 1); o.y = clamp(num(p.y) || 0, -1, 1); }
   else if (c === "sell" || c === "tier") o.id = Math.floor(num(p.id));
-  else if (c === "up") { o.c = Math.floor(num(p.c)); o.k = p.k ? 1 : 0; }
+  else if (c === "up") { o.c = Math.floor(num(p.c)); o.k = p.k ? 1 : 0; o.n = clamp(Math.floor(num(p.n)) || 1, 1, 1000); }
   return o;
 }
 /* ----- 방장: 로비가 끝나면 판을 열고 손님에게 알린다 ----- */
@@ -5689,7 +5774,7 @@ function tdLobbyBegin(L) {
   lobbyClose(online);
   const assigned = assignKn(humans.map(h => cleanKn(h.kn)), total), cols = tdPickColors(humans.map(h => Number.isInteger(h.col) ? h.col : -1), total);
   const players = Array.from({length:total}, (_, i) => i < humans.length ? {name:humans[i].name, kn:assigned[i], fac:clamp(Number.isInteger(humans[i].fac) ? humans[i].fac : 0, 0, TD_FAC.length - 1), col:cols[i], ai:false} : {name:BOT_NAMES[(i - humans.length) % BOT_NAMES.length], kn:assigned[i], fac:Math.floor(Math.random() * TD_FAC.length), col:cols[i], ai:true, skill:.6 + .1 * (i % 3)});
-  tdBegin({players, diff:SAVE.diff, me:0, mapId:SAVE.tdm === "vortex" || SAVE.tdm === "maze" ? SAVE.tdm : "rand", net:online ? L : null});
+  tdBegin({players, diff:SAVE.diff, me:0, mapId:L.td === "maze" ? "maze" : "vortex", net:online ? L : null});
   const W = TDU.W; L.humans = humans; if (!online) return;
   L.evBuf = []; L.lastSend = 0; humans.forEach(h => { h.rect = null; });
   const flat = pts => { const o = [], n = pts.length; for (let i = 0; i < n; i += 2) o.push(Math.round(pts[i][0]), Math.round(pts[i][1])); if ((n - 1) % 2) o.push(Math.round(pts[n - 1][0]), Math.round(pts[n - 1][1])); return o; };   // 32px 간격이면 충분해요(보내는 양을 줄임)
@@ -5760,7 +5845,7 @@ function tdNetClose() {
     if (N.peer) N.peer.destroy();
   } catch (e) {}
 }
-Object.assign(A, {"td-lobby": () => lobbyStart(true)});
+Object.assign(A, {"td-lobby": () => lobbyStart(SAVE.mode === "maze" ? "maze" : "vortex")});
 /* ===TDNET_END=== */
 
 const ROAD_STOPS = [{"f": "s01.mp4", "d": 6.0, "fl": "3F", "x": 0.7318, "y": 0.5309, "t": "3F 입구", "s": "ROUNDB · 도어락으로 들어가요", "mk": [0.5, 0.6719]}, {"f": "s02.mp4", "d": 8.0, "fl": "3F", "x": 0.3575, "y": 0.6312, "t": "라운지 · 세미나 공간", "s": "좌석 총 32석 (책상 30 + 스튜디오 앞 2)", "mk": [0.5, 0.6771]}, {"f": "s03.mp4", "d": 5.0, "fl": "3F", "x": 0.8492, "y": 0.2531, "t": "호리존 스튜디오", "s": "촬영용 흰 배경 · 개방형", "mk": [0.5, 0.6771]}, {"f": "s04.mp4", "d": 8.0, "fl": "3F", "x": 0.3575, "y": 0.3133, "t": "전자칠판", "s": "사용설명서가 옆에 있어요", "mk": [0.5, 0.6771]}, {"f": "s05.mp4", "d": 6.87, "fl": "3F", "x": 0.4358, "y": 0.3495, "t": "음향장비", "s": "앰프 · 믹서 · 스피커 · 연결 케이블", "mk": [0.5, 0.6771]}, {"f": "s06.mp4", "d": 7.5, "fl": "3F", "x": 0.3911, "y": 0.3688, "t": "마이크", "s": "음향장비 선반에 마이크가 있어요", "mk": [0.5, 0.6771]}, {"f": "s07.mp4", "d": 7.0, "fl": "3F", "x": 0.6313, "y": 0.7083, "t": "정수기 · 휴지통", "s": "공용 정수기와 휴지통", "mk": [0.5, 0.6771]}, {"f": "s08.mp4", "d": 7.5, "fl": "3F", "x": 0.7263, "y": 0.9244, "t": "화장실", "s": "남자 · 여자 화장실이 분리돼 있어요", "mk": [0.5, 0.6771]}, {"f": "s09.mp4", "d": 9.33, "fl": "4F", "x": 0.6816, "y": 0.5309, "t": "4F 입구", "s": "ROUNDBOFFICE · 도어락으로 들어가요", "mk": [0.5, 0.6771]}, {"f": "s10.mp4", "d": 8.0, "fl": "4F", "x": 0.2235, "y": 0.1759, "t": "휴게공간", "s": "창가 휴게 · 긴 의자(ㄴ자)", "mk": [0.5, 0.6771]}, {"f": "s11.mp4", "d": 7.5, "fl": "4F", "x": 0.8156, "y": 0.2994, "t": "회의실", "s": "모니터·TV가 있는 회의 공간", "mk": [0.5, 0.6771]}, {"f": "s12.mp4", "d": 10.0, "fl": "4F", "x": 0.257, "y": 0.5617, "t": "공유오피스 업무 공간", "s": "A구역 6석 · B구역 4석 · C구역 6석 · D구역 6석", "mk": [0.5, 0.6771]}, {"f": "s13.mp4", "d": 8.0, "fl": "4F", "x": 0.6257, "y": 0.662, "t": "공용 주방", "s": "전자레인지 · 냉장고 · 복합기", "mk": [0.5, 0.6771]}, {"f": "s14.mp4", "d": 5.33, "fl": "4F", "x": 0.6592, "y": 0.9244, "t": "화장실", "s": "남자 · 여자 화장실", "mk": [0.5, 0.6771]}, {"f": "s15.mp4", "d": 8.93, "fl": "4F", "x": 0.257, "y": 0.6466, "t": "우편물 보관장소", "s": "'우편물 보관장소' 표시가 붙은 보관함", "mk": null}];
