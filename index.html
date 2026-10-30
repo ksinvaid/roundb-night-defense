@@ -277,6 +277,15 @@ input,textarea{font:inherit;font-size:15px;color:var(--cream);background:var(--b
 .t-kn img:nth-child(2n){animation-delay:-1.1s}.t-kn img:nth-child(3n){animation-delay:-2.1s}
 @keyframes tkn{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
 @media (prefers-reduced-motion:reduce){.t-kn img{animation:none}}
+/* 내 색 고르기 (v1.8) */
+.col-row{display:flex;flex-wrap:wrap;gap:8px}
+.col-b{appearance:none;display:flex;flex-direction:column;align-items:center;gap:4px;width:74px;padding:7px 4px 6px;border:3px solid var(--ink);border-radius:12px;background:var(--card2);color:var(--dim);font:700 12px var(--f-body);cursor:pointer}
+.col-b .sw{width:44px;height:44px;border-radius:50%;border:3px solid var(--ink);display:grid;place-items:center;font:900 24px/1 var(--f-body);box-shadow:0 0 0 2px rgba(255,255,255,.25)}
+.col-b[aria-checked="true"]{background:var(--gold);color:#2a1a00;box-shadow:0 3px 0 var(--ink)}
+.col-b:hover{filter:brightness(1.1)}
+.col-b.rnd .sw{background:linear-gradient(135deg,#FFE600 0 25%,#2F6BFF 25% 50%,#FF2FD2 50% 75%,#8CFF3A 75%);color:#14141c;font-size:20px}
+.pcg{font-weight:900;text-shadow:0 0 1px #000,0 0 2px #000,0 0 3px #000,1px 1px 0 #000,-1px -1px 0 #000}
+.tflag{vertical-align:-2px;margin:0 2px}
 /* ===== 소용돌이 방어전(터렛 협동) v2: 넓은 맵 · 자유 건설 ===== */
 .stage.td{background:#080a16;width:100%;aspect-ratio:1/.92;max-height:calc(100vh - 150px);box-sizing:border-box;overflow:hidden}
 @media (max-width:600px){.stage.td{aspect-ratio:1/1.05;max-height:none}#td-bn{font-size:clamp(18px,6vw,30px)}}
@@ -346,7 +355,7 @@ input,textarea{font:inherit;font-size:15px;color:var(--cream);background:var(--b
         <div class="row" style="justify-content:center"><button class="btn btn-sm" data-act="to-rank">랭킹</button><button class="btn btn-sm" data-act="to-save">저장·불러오기</button><button class="btn btn-sm" data-act="to-gallery">공간 둘러보기</button></div>
         <p class="small faint" id="t-best"></p>
         <div id="t-links"></div>
-        <p class="small faint">PROTOTYPE v1.8 · 혼자(스테이지 22개) · 같이(사람·AI) · 대결(AI) · 소용돌이(자유 건설 터렛 협동) · 클릭·터치로 플레이 · 단축키는 게임 중 패널에 표시돼요</p>
+        <p class="small faint">PROTOTYPE v1.9 · 혼자(스테이지 22개) · 같이(사람·AI) · 대결(AI) · 소용돌이(자유 건설 터렛 협동) · 클릭·터치로 플레이 · 단축키는 게임 중 패널에 표시돼요</p>
       </div>
     </div>
   </section>
@@ -359,13 +368,14 @@ input,textarea{font:inherit;font-size:15px;color:var(--cream);background:var(--b
       </div>
       <div class="box sel-set" id="sel-set"><div class="row sel-row"><div class="sel-grp"><span class="small dim">모드</span><div class="seg" id="mode-seg" role="radiogroup" aria-label="모드"></div></div><div class="sel-grp" id="diff-grp"><span class="small dim">난이도</span><div class="seg" id="diff-seg" role="radiogroup" aria-label="난이도"></div></div></div><div class="small faint" id="diff-desc"></div><div class="small faint" id="mode-desc"></div></div>
       <div class="box" id="kn-box"><div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:6px"><b>내 기사 고르기</b><span class="small faint">게임 속 내 캐릭터예요 · 라운드기사단 10명</span></div><div class="kn-row" id="kn-row" role="radiogroup" aria-label="내 기사"></div><p class="small dim" id="kn-desc" style="margin:0"></p></div>
+      <div class="box" id="col-box"><div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:6px"><b>내 색 고르기</b><span class="small faint">내 캐릭터·병력·건물에 칠해지는 진영 색이에요 · 색마다 모양이 달라서 색이 헷갈려도 모양으로 알아볼 수 있어요 · AI는 겹치지 않게 랜덤</span></div><div class="col-row" id="col-row" role="radiogroup" aria-label="내 색"></div><p class="small dim" id="col-desc" style="margin:0"></p></div>
       <div id="world-intro"><div class="box" style="gap:12px">
         <h3 id="wi-title">다 같이 · 한 층 전체를 지켜요</h3>
         <p class="dim small" id="wi-text"></p>
         <div id="stage-box" style="display:grid;gap:8px" hidden><div id="stage-grid" style="display:grid;gap:8px"></div><div class="box" id="stage-info"></div></div>
         <div class="row" id="wf-row"><span class="small dim">층</span><div class="seg" id="wf-seg" role="radiogroup" aria-label="층"></div></div>
         <div class="row" id="wn-row"><span class="small dim">참가 인원 (사람이 모자라면 AI가 채워요)</span><div class="seg" id="wn-seg" role="radiogroup" aria-label="참가 인원"></div></div>
-        <div id="td-opts" hidden><div class="row"><span class="small dim">진영 (진영마다 터렛이 달라요)</span><div class="seg" id="tdf-seg" role="radiogroup" aria-label="진영"></div></div><div class="row"><span class="small dim">맵</span><div class="seg" id="tdm-seg" role="radiogroup" aria-label="맵"></div></div><div class="row"><span class="small dim">내 색 (터렛이 이 색으로 칠해져요)</span><div class="tdcol" id="tdc-row" role="radiogroup" aria-label="내 색"></div></div><p class="small dim" id="tdf-desc"></p></div>
+        <div id="td-opts" hidden><div class="row"><span class="small dim">진영 (진영마다 터렛이 달라요)</span><div class="seg" id="tdf-seg" role="radiogroup" aria-label="진영"></div></div><div class="row"><span class="small dim">맵</span><div class="seg" id="tdm-seg" role="radiogroup" aria-label="맵"></div></div><p class="small dim" id="tdf-desc"></p></div>
         <div class="row" id="pvp-row" hidden><span class="small dim">팀 구성 (모자란 자리는 AI가 채워요)</span><div class="seg" id="pvp-seg" role="radiogroup" aria-label="팀 구성"></div></div>
         <div class="row" id="w-multi-btns"><button class="btn btn-red btn-lg" data-act="w-lobby">사람 찾아서 같이 하기</button><button class="btn btn-lg" data-act="w-ai">AI와 바로 시작</button></div>
         <div class="row" id="w-pvp-btns" hidden><button class="btn btn-red btn-lg" data-act="w-pvp">AI와 대결 시작</button></div>
@@ -666,6 +676,7 @@ function timeline(G) {
 }
 function hit(G, e, dmg, turret) {
   if (e.dead) return;
+  if (e.st) { structHit(e, dmg * PVP_TUR); return; }   // 대결: 상대의 문·방 설비·복도 건물(방벽 포함)
   if (e.av) { const q = e.av; if (!q.dead && !(q.inv > 0)) { q.hp -= dmg * PVP_AVD; e.hp = q.hp; if (q.hurt <= 0) { q.hurt = .3; emit(G, {k:"hurt", x:q.x, y:q.y - 10}); } } return; }   // 대결: 설비·유닛·소화기가 상대 캐릭터도 맞힌다
   if (e.team != null && turret) dmg *= PVP_TUR;   // 대결: 설비·소화기가 상대 유닛에게 주는 피해는 줄여서 공격도 해 볼 만하게
   e.hp -= dmg; e.flash = .1; e.hurtT = 1.2;
@@ -764,6 +775,11 @@ function fixDoor(G) {
 }
 const FOREIGN_R = 330;   // 월드: 옆 방 귀신은 내 문 앞 이만큼 안으로 와야 도와 쏜다
 const pool = G => G.pool ? G.pool() : G.en;
+function pickSt(G, s, range) {   // 귀신·유닛이 없을 때 쏠 상대 시설(문·설비·복도 건물). 방벽은 마지막
+  const sl = G.stPool ? G.stPool() : null; if (!sl) return null; let best = null, bs = 1e9;
+  for (const e of sl) { if (e.dead) continue; const d = Math.hypot(e.x - s.x, e.y - s.y); if (d > range) continue; const sc = d * e.pr; if (sc < bs) { bs = sc; best = e; } }
+  return best;
+}
 function pick(G, s, range) {
   let best = null, bd = 1e9;
   for (const e of pool(G)) {
@@ -782,11 +798,11 @@ function turrets(G, dt) {
     if (it.type === "desk") return;
     it.cd -= dt; if (it.cd > 0) return;
     if (it.type === "micro") {
-      const t = pick(G, s, b.range); if (!t) { it.cd = .05; return; }
+      const t = pick(G, s, b.range) || pickSt(G, s, b.range); if (!t) { it.cd = .05; return; }
       it.ang = Math.atan2(t.y - s.y, t.x - s.x); hit(G, t, b.dmg[L], true); it.cd = b.cd[L];
       emit(G, {k:"beam", i, x1:s.x, y1:s.y - 8, x2:t.x, y2:t.y});
     } else if (it.type === "cooler") {
-      const t = pick(G, s, b.range); if (!t) { it.cd = .05; return; }
+      const t = pick(G, s, b.range) || pickSt(G, s, b.range); if (!t) { it.cd = .05; return; }
       it.ang = Math.atan2(t.y - s.y, t.x - s.x);
       const d = Math.hypot(t.x - s.x, t.y - s.y);
       G.proj.push({x:s.x, y:s.y - 14, sx:s.x, sy:s.y - 14, tx:t.x, ty:t.y, t:0, T:.35 + d / 1000, dmg:b.dmg[L], slow:b.slow[L]});
@@ -805,6 +821,7 @@ function projectiles(G, dt) {
     if (k >= 1) {
       p.done = true;
       for (const e of pool(G)) if (!e.dead && Math.hypot(e.x - p.tx, e.y - p.ty) < BUILD.cooler.splash + e.r * 0.5) { hit(G, e, p.dmg, true); e.slow = 1.8; e.slowF = Math.min(e.slowF, p.slow); }
+      if (G.stPool) { const sl = G.stPool(); if (sl) for (const e of sl) if (!e.dead && Math.hypot(e.x - p.tx, e.y - p.ty) < BUILD.cooler.splash) hit(G, e, p.dmg, true); }
       emit(G, {k:"splash", x:p.tx, y:p.ty});
     }
   }
@@ -821,7 +838,10 @@ function step(G, dt) {
   moveEnemies(G, dt); doorDamage(G, dt); if (G.breach && !G.over) lastStandStep(G, dt); if (G.over) return;
   turrets(G, dt); projectiles(G, dt);
   for (const c of G.crates) c.ttl -= dt;
-  G.crates = G.crates.filter(c => c.ttl > 0);
+  if (G.crates.some(c => c.ttl <= 0)) {   // 안 눌러도 12초가 지나면 자동으로 수당이 들어온다(눌러서 먼저 받으면 그 자리에서 바로)
+    for (const c of G.crates) if (c.ttl <= 0) { G.gold += c.val; G.stats.earned += c.val; emit(G, {k:"coin", x:c.x, y:c.y, val:c.val, auto:1}); }
+    G.crates = G.crates.filter(c => c.ttl > 0);
+  }
   G.en = G.en.filter(e => !e.dead);
   if (G.en.length > G.stats.peak) G.stats.peak = G.en.length;
   if (G.t >= G.dur) { G.t = G.dur; G.over = "win"; }
@@ -915,6 +935,11 @@ function strengthOf(G) {
   }
   return s;
 }
+// 보조석에 앉은 봇은 방 주인의 돈을 쓰지 않고 소화기만 쓴다
+function botSkill(G, skill) {
+  const att = G.en.filter(e => e.atk).length;
+  if (G.skill.cd <= 0 && (att >= 3 || G.en.some(e => e.type === "dragon" && e.atk)) && G.rng() < 0.4 + 0.6 * skill) useSkill(G);
+}
 // 봇이 한 번에 하는 행동. skill(0~1)이 낮을수록 실수하고 늦다
 function botAct(G, skill) {
   const R = G.rng, cnt = t => G.slots.filter(s => s.it && s.it.type === t).length, att = G.en.filter(e => e.atk).length;
@@ -950,12 +975,13 @@ const WORLD_ROOMS = ["3f-storage", "4f-men", "4f-women", "4f-ac", "4f-conf", "3f
 const SETUP = 25, AV_HP = 100, AV_SPD = 205, AV_R = 14, CORR_TOP = 414, CORR_BOT = 596, LOBBY_SEC = 60;
 const RESPAWN = 22, GHOST_CD = 35, ASSIST_CAP = 150, HELP_CAP = 15;   // 쓰러진 뒤 부활까지(초) · 유령 소화기 쿨다운 · 점수에 쳐 주는 보조 시간·도움 횟수 상한
 const TURRET_HP = {micro:90, cooler:100, fridge:130, light:110, desk:100};   // 설비 체력(1단계). 문이 뚫린 뒤 귀신이 설비를 때려요
-const FREE_TYPES = ["micro", "cooler", "light", "wall", "hr"], FREE_CAP = 50, FREE_COST = 1.25, FREE_GAP = 46, FREE_AGGRO = 230;   // 자유 건설: 종류 · 1인당 개수 · 비용 배율 · 건물 간격 · 귀신이 건물을 노리는 거리
+const STRUCT_CAP = 100, TYPE_CAP = {desk:6, fridge:6, light:8, hr:14};   // 구조물 상한: 방 설비 + 복도 건물을 합쳐 1인 100개. 종류별 안전 상한(수당 폭증·기절 무한 반복 방지)은 따로
+const FREE_TYPES = ["micro", "cooler", "light", "wall", "hr"], FREE_CAP = STRUCT_CAP, FREE_COST = 1.25, FREE_GAP = 46, FREE_AGGRO = 230;   // 자유 건설: 종류 · 1인당 개수 · 비용 배율 · 건물 간격 · 귀신이 건물을 노리는 거리
 const BUILD_R_SEAT = 480, BUILD_R_WALK = 320, BUILD_ITEMS = ["micro", "cooler", "fridge", "light", "desk"];   // 건설 범위(앉아 있을 때 · 걸어 다닐 때) · 방 안에 짓는 설비
 const buildR = a => a.seat >= 0 || a.dead ? BUILD_R_SEAT : BUILD_R_WALK;
 const buildCenter = (Wd, a) => { if (a.dead && a.home >= 0) { const R = Wd.rooms[a.home]; return {x:R.doorX, y:R.ty(440)}; } return a; };   // 쓰러졌을 땐 내 방 문 앞이 중심
 const MELEE = {dmg:12, cd:.6, rng:60};   // 아바타 근접 공격(걷는 중 가까운 귀신을 자동으로 때려요)
-const UNIT_TYPES = ["intern", "dae", "jang"], UNIT_SUP = 8, UNIT_Q = 12, UNIT_AGGRO = 250, UNIT_LEASH = 400;
+const UNIT_TYPES = ["intern", "dae", "jang"], UNIT_SUP = 8, UNIT_Q = 24, UNIT_AGGRO = 250, UNIT_LEASH = 400;
 const UNIT = {
   intern:{n:"인턴", d:"앞장서 싸우는 근접 유닛", cost:45, hp:75, spd:150, dmg:9, cd:.7, rng:36, tt:3.5, sup:1},
   dae:{n:"대리", d:"서류를 던지는 원거리 유닛", cost:80, hp:55, spd:125, dmg:8, cd:.8, rng:215, tt:4.5, sup:1},
@@ -963,11 +989,11 @@ const UNIT = {
 };
 // PVP(대결): 위쪽 방 = 팀0, 아래쪽 방 = 팀1. 유닛이 서로·적 문·설비를 때려요
 const UNIT_R = 14, PVP_DUR = 480, PVP_MON = .2, PVP_SUP = 12, PVP_INC = 2.6, PVP_TUR = .6, PVP_SIEGE = {door:.9, slot:.9, struct:.8};
-const PVP_AI_INC = {easy:.75, normal:1, hard:1.3, nightmare:1.65, hell:2.1};   // 대결 난이도 = AI 방의 수당 배율
+const PVP_AI_INC = {easy:.75, normal:1, hard:1.15, nightmare:1.3, hell:1.4};   // 대결 난이도 = AI 방의 수당 배율(사람 흉내 봇 시뮬로 맞춤: 쉬움 ~93% · 보통 ~80% · 어려움 ~55% · 극악 ~40% · 지옥 ~15% 사람 승률)
 const allyRoom = (Wd, a, r) => !Wd.pvp || r.side === a.team;
 const WALL = {n:"책상 방벽", cost:45, hp:420, d:"튼튼한 방벽. 귀신이 몰려와 때려서 시간을 벌어 줘요"};
 const FREE_LABEL = {micro:"전자렌지", cooler:"정수기", light:"호리존 조명", wall:"책상 방벽", hr:"인사팀 사무실"};
-const HRB = {n:"인사팀 사무실", cost:90, step:22, hp:260, sup:8, d:"유닛 인원 +8 (최대 50). 지을수록 비싸져요"}, SUP_MAX = 50, PVP_AVD = .5;
+const HRB = {n:"인사팀 사무실", cost:90, step:22, hp:260, sup:10, d:"유닛 인원 +10 (최대 100), 훈련도 15% 빨라져요. 지을수록 비싸져요"}, SUP_MAX = 100, PVP_AVD = .35;   // 대결에서 본캐릭이 받는 피해 배율(전부 곱해져요: 맷집 약 3배)
 const hrCost = n => Math.round(HRB.cost + HRB.step * n);
 const hrCount = (Wd, a) => Wd.fs.filter(q => q.t === "hr" && q.owner === a.id).length;
 const supCap = (Wd, a) => Math.min(SUP_MAX, (Wd.pvp ? PVP_SUP : UNIT_SUP) + HRB.sup * hrCount(Wd, a));   // 유닛 인원 상한 = 기본 + 인사팀 사무실 × 8
@@ -1034,19 +1060,19 @@ const FLOORS = {
   "4f":{name:"4F 공유오피스", top:["4f-lounge", "4f-conf"], bot:["4f-ac", "4f-men", "4f-women"]},
 };
 // 실제 배치도처럼: 위쪽 벽을 따라 큰 방, 아래쪽 벽에는 설비·화장실, 가운데는 탁 트인 사무 공간(홀)
-function layoutWorld(floor) {
-  const F = FLOORS[floor] ? FLOORS[floor] : FLOORS["4f"], GAP = 56, HALL_H = 340, HT = 414;
+function layoutWorld(floor, big) {   // big = 대결 맵: 방 사이 간격·복도 높이·바깥 여백을 키워 접근 거리를 약 2배로
+  const F = FLOORS[floor] ? FLOORS[floor] : FLOORS["4f"], GAP = big ? 150 : 56, HALL_H = big ? 800 : 340, HT = 414, MX = big ? 320 : 140;
   const wd = id => { const d = ROOMS.find(r => r.id === id); return d.R - d.L; }, sum = ids => ids.reduce((q, id) => q + wd(id), 0) + GAP * (ids.length - 1);
-  const W = Math.max(sum(F.top), sum(F.bot)) + 280, hall = {L:60, R:W - 60, T:HT, B:HT + HALL_H}, dlBot = hall.B + 14, H = dlBot + 370 + 40, rooms = [];
+  const W = Math.max(sum(F.top), sum(F.bot)) + (big ? 780 : 280), hall = {L:60, R:W - 60, T:HT, B:HT + HALL_H}, dlBot = hall.B + 14, H = dlBot + 370 + 40, rooms = [];
   const put = (id, X, dl, dir) => {
     const def = ROOMS.find(r => r.id === id), w = def.R - def.L, cx = X + w / 2, ox = cx - 450, ty = y => dl + dir * (y - 400), yA = ty(30), yB = ty(400);
     rooms.push({i:rooms.length, side:dir > 0 ? 0 : 1, def, ox, dl, dir, ty, L:X, R:X + w, doorX:cx, gap:Math.max(34, (def.doorW || DOOR.w) / 2 - 8), deskX:def.desk[0] + ox, deskY:ty(def.desk[1]),
       slotsW:def.slots.map(q => ({x:q.x + ox, y:ty(q.y)})), yMin:Math.min(yA, yB), yMax:Math.max(yA, yB), G:null, owner:-1, fallen:false, w:1, as:[-1, -1, -1, -1], seats:ASEATS.map(([dx, dy]) => ({x:def.desk[0] + ox + dx, y:ty(def.desk[1] + dy)})), since:-1, fellAt:-1, ax:def.desk[0] + ox + 88, ay:ty(def.desk[1] + 46)});
   };
-  let x = 140; for (const id of F.top) { put(id, x, 400, 1); x += wd(id) + GAP; }
-  put(F.bot[0], 140, dlBot, -1);
-  const rest = F.bot.slice(1); x = W - 140 - sum(rest); for (const id of rest) { put(id, x, dlBot, -1); x += wd(id) + GAP; }
-  return {rooms, W, H, hall, floor:FLOORS[floor] ? floor : "4f"};
+  let x = MX; for (const id of F.top) { put(id, x, 400, 1); x += wd(id) + GAP; }
+  put(F.bot[0], MX, dlBot, -1);
+  const rest = F.bot.slice(1); x = W - MX - sum(rest); for (const id of rest) { put(id, x, dlBot, -1); x += wd(id) + GAP; }
+  return {rooms, W, H, hall, floor:FLOORS[floor] ? floor : "4f", big:!!big};
 }
 const ASEATS = [[88, 46], [-88, 46], [88, 100], [-88, 100]];   // 책상 둘레 보조석 4개(오른쪽 위·왼쪽 위·오른쪽 아래·왼쪽 아래)
 const seatPoint = r => ({x:r.deskX, y:r.ty(r.def.desk[1] + 66)});
@@ -1084,8 +1110,8 @@ const routeDanger = (Wd, x0, x1) => { const lo = Math.min(x0, x1) - 150, hi = Ma
 const siege = G => { let n = 0; for (const e of G.en) if (e.atk && !e.dead) n++; return n; };
 
 function newWorld(spec, diff, seed, emitOn, floor, stage, pvp) {
-  const sg = stageOf(stage), tr = !sg ? (TIERS[diff] || null) : null, L = layoutWorld(floor), D = sg ? stageD(sg) : (DIFFS[diff] || DIFFS.normal);
-  const Wd = {t:-SETUP, W:L.W, H:L.H, hall:L.hall, floor:L.floor, rooms:L.rooms, av:[], D, sg, tr, dur:pvp ? PVP_DUR : sg ? sg.dur : DURATION, bsch:pvp ? [] : sg ? sg.boss : tr ? tr.boss : STD_BOSS, diffKey:!sg && DIFFS[diff] ? diff : "normal", rng:mkRng((seed || 1) * 2246822519), over:null, feed:[], ev:[], boss:{}, allEn:[], fs:[], fid:1, un:[], uid:1, emitOn:!!emitOn, reqs:[], rid:1, pvp:!!pvp, winner:-1, byTime:false, unT:[[], []], poolT:[[], []]};
+  const sg = stageOf(stage), tr = !sg ? (TIERS[diff] || null) : null, L = layoutWorld(floor, pvp), D = sg ? stageD(sg) : (DIFFS[diff] || DIFFS.normal);
+  const Wd = {t:-SETUP, W:L.W, H:L.H, hall:L.hall, floor:L.floor, rooms:L.rooms, av:[], D, sg, tr, dur:pvp ? PVP_DUR : sg ? sg.dur : DURATION, bsch:pvp ? [] : sg ? sg.boss : tr ? tr.boss : STD_BOSS, diffKey:!sg && DIFFS[diff] ? diff : "normal", rng:mkRng((seed || 1) * 2246822519), over:null, feed:[], ev:[], boss:{}, allEn:[], fs:[], fid:1, un:[], uid:1, emitOn:!!emitOn, reqs:[], rid:1, pvp:!!pvp, winner:-1, byTime:false, unT:[[], []], poolT:[[], []], stT:[[], []], avk:[0, 0], wg:null};
   spec.forEach((s, i) => Wd.av.push({id:i, name:s.name, ai:!!s.ai, skill:s.skill || .6, meta:s.meta || metaOf({}), x:(L.hall.L + L.hall.R) / 2 + (i - (spec.length - 1) / 2) * 38, y:(L.hall.T + L.hall.B) / 2 + (i % 2) * 26 - 10,
     hp:AV_HP, calm:0, home:-1, seat:-1, dead:false, deadAt:0, dest:null, destSeat:-1, mv:null, mission:null, botT:.6 + Wd.rng() * 1.6, acc:0, actT:0, helps:0, face:1, hurt:0, slow:false,
     assist:false, destAssist:false, deaths:0, respawnAt:0, ghostT:0, assistT:0, inv:0, tq:[], rally:null, mt:0, prev:{hold:0, kills:0, dragon:false}, team:s.team || 0, pvAtk:false}));
@@ -1124,7 +1150,7 @@ function trySeat(Wd, a, ri, assist) {
   if (!r.G) {
     const G = newRun(Wd.pvp ? Object.assign({}, r.def, {doorMult:1.1, gold:110, income:1, contact:5, base:Math.min(4, r.def.slots.length)}) : r.def, a.meta, Wd.rng, Wd.diffKey, r.ox, r.dir, r.dl);
     G.multi = true; G.world = true; G.lastStand = true; G.enCap = ENCAP[Wd.diffKey] || 36; G.dur = Wd.dur; G.sg = Wd.sg || Wd.tr; if (Wd.sg) G.gold += Wd.sg.gold; { const w = WH[Wd.diffKey] || WH.normal, b0 = Wd.sg ? Wd.D : G.D; G.D = Object.assign({}, b0, {hp:b0.hp * w.hp, dps:b0.dps * w.dps}); } G.emit = Wd.emitOn; G.nid = (ri + 1) * 100000 + 1; G.t = Math.max(0, Wd.t);
-    G.team = r.side; if (Wd.pvp) G.D = Object.assign({}, G.D, {inc:G.D.inc * PVP_INC * (a.ai ? (PVP_AI_INC[Wd.diffKey] || 1) : 1)}); G.pool = () => Wd.pvp ? Wd.poolT[r.side] : Wd.allEn; G.spawnSx = g => spawnX(Wd, g); G.ri = ri; G.hall = {t:Wd.hall.T + 11, b:Wd.hall.B - 8};
+    G.team = r.side; if (Wd.pvp) G.D = Object.assign({}, G.D, {inc:G.D.inc * PVP_INC * (a.ai ? (PVP_AI_INC[Wd.diffKey] || 1) : 1)}); G.pool = () => Wd.pvp ? Wd.poolT[r.side] : Wd.allEn; G.stPool = () => Wd.pvp ? Wd.stT[r.side] : null; G.spawnSx = g => spawnX(Wd, g); G.ri = ri; G.hall = {t:Wd.hall.T + 11, b:Wd.hall.B - 8};
     r.G = G; r.since = Math.max(0, Wd.t);
   }
   r.owner = a.id; a.home = ri; a.seat = ri; a.assist = false; r.G.away = false;
@@ -1151,7 +1177,8 @@ function moveAv(Wd, a, dt) {
   }
   if (!vx && !vy) return;
   const sp = AV_SPD * (a.slow ? .55 : 1) * dt;
-  const stepTo = (dx, dy) => { for (let f = 1; f > .1; f *= .5) if (legalPos(Wd, a.x + dx * f, a.y + dy * f)) { a.x += dx * f; a.y += dy * f; return; } };   // 벽 앞에서는 딱 붙을 때까지 걸음을 줄인다
+  const wb = Wd.pvp && Wd.wg, wasIn = wb && wallBlock(Wd, a.x, a.y, a.team);
+  const stepTo = (dx, dy) => { for (let f = 1; f > .1; f *= .5) { const nx = a.x + dx * f, ny = a.y + dy * f; if (legalPos(Wd, nx, ny) && !(wb && !wasIn && wallBlock(Wd, nx, ny, a.team))) { a.x = nx; a.y = ny; return; } } };   // 벽 앞에서는 딱 붙을 때까지 걸음을 줄인다
   stepTo(vx * sp, 0); stepTo(0, vy * sp);
   if (vx) a.face = vx > 0 ? 1 : -1;
 }
@@ -1170,7 +1197,7 @@ function helpSkill(Wd, a) {
   if (siege(r.G) < 2) return {ok:false, why:"calm"}; if (!useSkill(r.G)) return {ok:false, why:"cd"}; a.helps++; return {ok:true};
 }
 const ROOM_SPEND = new Set(["build", "up", "sell", "doorUp", "deskUp", "repair"]);
-const DEAD_OK = new Set(["give", "req", "buildAt", "sellAt", "train", "rally", "doorUp", "deskUp", "repair", "crate", "build", "up", "sell"]);   // 쓰러져 있어도 할 수 있는 일
+const DEAD_OK = new Set(["give", "req", "buildAt", "sellAt", "train", "rally", "order", "doorUp", "deskUp", "repair", "crate", "build", "up", "sell"]);   // 쓰러져 있어도 할 수 있는 일
 function applyCmd(Wd, id, c, p) {
   const a = Wd.av[id]; if (!a || Wd.over) return {ok:false};
   p = p || {};
@@ -1201,8 +1228,10 @@ function applyCmd(Wd, id, c, p) {
     case "req": return pvpRequest(Wd, a, p);
     case "give": return pvpGive(Wd, a, p);
     case "rally": return setRally(Wd, a, p);
+    case "order": return setOrder(Wd, a, p);
   }
-  if (Wd.pvp && a.assist && ROOM_SPEND.has(c)) return {ok:false, why:"assist"};   // 대결: 보조석에선 방 주인의 수당으로 설치·강화·수리를 못 한다 (소화기는 가능)
+  if (a.assist && c === "repair") return helpRepair(Wd, a);   // 보조석에서 문을 고칠 땐 '내' 수당으로 (개인 지갑)
+  if (a.assist && ROOM_SPEND.has(c)) return {ok:false, why:"assist"};   // 모든 모드: 보조석에선 방 주인의 수당으로 설치·강화를 못 한다 (소화기는 가능)
   if (c === "repair" && !G) return helpRepair(Wd, a);
   if (c === "skill" && !G) return helpSkill(Wd, a);
   if (!G) return {ok:false};
@@ -1221,8 +1250,18 @@ function applyCmd(Wd, id, c, p) {
 /* ----- 건설: 내 캐릭터 둘레 어디든 짓는다 (방 안 = 방 설비 칸, 복도 = 자유 건물) ----- */
 const freeCost = (G, t) => t === "wall" ? Math.round(WALL.cost * FREE_COST) : Math.round(buildCost(G, t) * FREE_COST);
 const freeHp = (G, t) => Math.round((t === "wall" ? WALL.hp : t === "hr" ? HRB.hp : TURRET_HP[t] * 1.25) * G.meta.doorHp);
-const fundRi = (Wd, a) => Wd.pvp ? a.home : (a.seat >= 0 ? a.seat : a.home);   // 대결에선 항상 내 방의 수당만 쓴다
+const fundRi = (Wd, a) => a.home;   // 모든 모드: 건설·훈련은 항상 '내 방'의 수당(개인 지갑)만 쓴다. 보조석에 앉아도 방 주인의 돈은 못 써요
 function fundG(Wd, a) { const ri = fundRi(Wd, a), R = ri >= 0 ? Wd.rooms[ri] : null; return R && R.G ? R.G : null; }   // 건설 비용은 앉은 방(없으면 내 방)의 수당에서
+function structOf(Wd, a) {   // 내 구조물 수 = 복도 건물 + 내 방 설비
+  let n = 0; for (const q of Wd.fs) if (q.owner === a.id) n++;
+  const G = fundG(Wd, a); if (G) for (const s of G.slots) if (s.it) n++;
+  return n;
+}
+function typeCount(Wd, a, t) {
+  let n = 0; for (const q of Wd.fs) if (q.owner === a.id && q.t === t) n++;
+  const G = fundG(Wd, a); if (G) for (const s of G.slots) if (s.it && s.it.type === t) n++;
+  return n;
+}
 function buildAt(Wd, a, p) {
   const t = p.t, G = fundG(Wd, a); if (!G) return {ok:false, why:"noroom"};
   const x = +p.x, y = +p.y; if (!Number.isFinite(x) || !Number.isFinite(y) || !legalPos(Wd, x, y)) return {ok:false, why:"place"};
@@ -1231,24 +1270,28 @@ function buildAt(Wd, a, p) {
   if (z >= 0 && R && z === ri && !R.fallen && BUILD_ITEMS.includes(t)) {   // 내 방 안 + 방 설비: 칸 수 한도, 짓는 곳이 곧 그 칸의 자리가 된다
     if (Math.hypot(x - R.deskX, y - R.deskY) < 70 || (Math.abs(x - R.doorX) < 60 && Math.abs(y - R.dl) < 60)) return {ok:false, why:"near"};
     for (const q of G.slots) if (q.it && Math.hypot(q.x - x, q.y - y) < 46) return {ok:false, why:"near"};
-    const idx = G.slots.findIndex(q => !q.locked && !q.it); if (idx < 0) return {ok:false, why:"full"};
+    if (structOf(Wd, a) >= STRUCT_CAP) return {ok:false, why:"cap"};
+    if (TYPE_CAP[t] && typeCount(Wd, a, t) >= TYPE_CAP[t]) return {ok:false, why:"tcap"};
+    let idx = G.slots.findIndex(q => !q.locked && !q.it);
+    if (idx < 0) { G.slots.push({x:Math.round(x), y:Math.round(y), locked:false, it:null, dyn:true}); idx = G.slots.length - 1; const r2 = build(G, t, idx); if (!r2.ok) G.slots.pop(); return r2; }   // 빈 칸이 없으면 새 칸을 만든다(상한 100까지)
     const sl = G.slots[idx], ox = sl.x, oy = sl.y; sl.x = Math.round(x); sl.y = Math.round(y);
     const r = build(G, t, idx); if (!r.ok) { sl.x = ox; sl.y = oy; } return r;
   }
   if (!FREE_TYPES.includes(t)) return {ok:false, why:z >= 0 && z !== ri ? "notmine" : "roomonly"};   // 냉장고·책상은 내 방 안에만
   if (z >= 0) { const Z = Wd.rooms[z]; if (Math.hypot(x - Z.deskX, y - Z.deskY) < 70 || (Math.abs(x - Z.doorX) < 60 && Math.abs(y - Z.dl) < 60)) return {ok:false, why:"near"}; }   // 책상·문 앞은 막지 않는다
-  if (Wd.fs.length >= 120 || Wd.fs.filter(q => q.owner === a.id).length >= FREE_CAP) return {ok:false, why:"cap"};
+  if (Wd.fs.length >= STRUCT_CAP * Wd.av.length + 40 || structOf(Wd, a) >= STRUCT_CAP) return {ok:false, why:"cap"};
+  if (TYPE_CAP[t] && typeCount(Wd, a, t) >= TYPE_CAP[t]) return {ok:false, why:"tcap"};
   for (const q of Wd.fs) if (Math.hypot(q.x - x, q.y - y) < FREE_GAP) return {ok:false, why:"near"};
   const c = t === "hr" ? hrCost(hrCount(Wd, a)) : freeCost(G, t); if (G.gold < c) return {ok:false, why:"gold"};
   G.gold -= c; const hp = freeHp(G, t);
-  Wd.fs.push({id:Wd.fid++, t, x:Math.round(x), y:Math.round(y), hp, mhp:hp, cd:.4, ang:-Math.PI / 2, owner:a.id, inv:c});
+  Wd.fs.push({id:Wd.fid++, t, x:Math.round(x), y:Math.round(y), hp, mhp:hp, cd:.4, ang:-Math.PI / 2, owner:a.id, inv:c, tm:a.team});
   if (Wd.emitOn) Wd.ev.push({k:"build", x:Math.round(x), y:Math.round(y), ox:Math.round(x) - 450, ri:99});
   return {ok:true};
 }
 function sellAt(Wd, a, p) {
   const q = Wd.fs.find(f => f.id === +p.id); if (!q || q.owner !== a.id) return {ok:false};
   const G = fundG(Wd, a); if (G) G.gold += Math.floor(q.inv * .6);
-  Wd.fs = Wd.fs.filter(f => f !== q); if (Wd.emitOn) Wd.ev.push({k:"sell", x:q.x, y:q.y, ox:q.x - 450, ri:99});
+  q.sold = true; Wd.fs = Wd.fs.filter(f => f !== q); if (Wd.emitOn) Wd.ev.push({k:"sell", x:q.x, y:q.y, ox:q.x - 450, ri:99});
   return {ok:true};
 }
 // 귀신이 노릴 수 있는 곳인지: 복도·함락된 방·뚫린 방·빈 방만. 문이 멀쩡한 방 안은 귀신이 들어오지 못한다
@@ -1264,10 +1307,11 @@ function structStep(Wd, dt) {
     const b = BUILD[q.t];
     if (q.t === "micro" || q.t === "cooler") {
       let best = null, bd = 1e9; for (const e of en) { if (e.dead) continue; const d = Math.hypot(e.x - q.x, e.y - q.y); if (d <= b.range + e.r * .3 && d < bd) { bd = d; best = e; } }
+      if (!best && Wd.pvp) { let bs = 1e9; for (const e of Wd.stT[own.team]) { if (e.dead) continue; const dd = Math.hypot(e.x - q.x, e.y - q.y); if (dd > b.range) continue; const sc = dd * e.pr; if (sc < bs) { bs = sc; best = e; } } }
       if (!best) { q.cd = .1; continue; }
       q.ang = Math.atan2(best.y - q.y, best.x - q.x);
       if (q.t === "micro") { hit(G, best, b.dmg[0], true); q.cd = b.cd[0]; if (Wd.emitOn) Wd.ev.push({k:"beam", i:0, ri:99, x1:q.x, y1:q.y - 8, x2:best.x, y2:best.y, ox:q.x - 450}); }
-      else { for (const e of en) if (!e.dead && Math.hypot(e.x - best.x, e.y - best.y) < b.splash + e.r * .5) { hit(G, e, b.dmg[0], true); e.slow = 1.8; e.slowF = Math.min(e.slowF, b.slow[0]); } q.cd = b.cd[0]; if (Wd.emitOn) Wd.ev.push({k:"splash", x:best.x, y:best.y, ox:best.x - 450, ri:99}); }
+      else { if (best.st) { for (const e of Wd.stT[own.team]) if (!e.dead && Math.hypot(e.x - best.x, e.y - best.y) < b.splash) hit(G, e, b.dmg[0], true); } else for (const e of en) if (!e.dead && Math.hypot(e.x - best.x, e.y - best.y) < b.splash + e.r * .5) { hit(G, e, b.dmg[0], true); e.slow = 1.8; e.slowF = Math.min(e.slowF, b.slow[0]); } q.cd = b.cd[0]; if (Wd.emitOn) Wd.ev.push({k:"splash", x:best.x, y:best.y, ox:best.x - 450, ri:99}); }
     } else if (q.t === "light") {
       const near = en.filter(e => !e.dead && Math.hypot(e.x - q.x, e.y - q.y) < b.radius * .8); if (!near.length) { q.cd = .3; continue; }
       for (const e of near) { hit(G, e, b.dmg[0], true); e.stun = Math.max(e.stun, b.stun[0]); }
@@ -1305,65 +1349,185 @@ function pvpRequest(Wd, a, p) {
   for (const o of allies) if (o.ai) aiObey(Wd, o, a, k);
   return {ok:true};
 }
-function blockedFor(Wd, x, y, team) {
+/* ===== 대결 전투 코어 (v1.8): 공격 이동 · 총공격(각자 가까운 곳) · 본캐릭 공격 · 방벽 충돌 · 시설 목표 ===== */
+const WALL_COL = 30, WALL_CELL = 64;   // 방벽 충돌 반지름(바로 옆 방벽 46칸 간격이면 틈이 없다) · 격자 칸 크기
+const ORD_DEF = {k:"def"};
+function wallGrid(Wd) {   // 걸음마다 한 번: 방벽을 칸 격자에 담아 둔다(충돌 검사를 빠르게)
+  let g = null;
+  for (const q of Wd.fs) if (q.t === "wall" && q.hp > 0) { if (!g) g = new Map(); const k = (Math.floor(q.x / WALL_CELL) + 64) * 256 + Math.floor(q.y / WALL_CELL) + 64; let l = g.get(k); if (!l) g.set(k, l = []); l.push(q); }
+  Wd.wg = g;
+}
+function wallBlock(Wd, x, y, team) {   // 상대 팀 방벽에 막히는가 (우리 팀 방벽은 그냥 지나간다)
+  const g = Wd.wg; if (!g) return false;
+  const cx = Math.floor(x / WALL_CELL), cy = Math.floor(y / WALL_CELL);
+  for (let i = cx - 1; i <= cx + 1; i++) for (let j = cy - 1; j <= cy + 1; j++) {
+    const l = g.get((i + 64) * 256 + j + 64); if (!l) continue;
+    for (const q of l) if (q.tm !== team && (q.x - x) * (q.x - x) + (q.y - y) * (q.y - y) < WALL_COL * WALL_COL) return true;
+  }
+  return false;
+}
+function roomBlock(Wd, x, y, team) {   // 닫힌 상대 방 안
   const z = zoneOf(Wd, x, y); if (z < 0) return false; const R = Wd.rooms[z];
   return !!(R.G && !R.fallen && !R.G.breach && R.side !== team);
 }
-function pvpUnitMove(Wd, u, dest, step) {
-  const wp = nextWaypoint(Wd, u, dest), dx = wp.x - u.x, dy = wp.y - u.y, d = Math.hypot(dx, dy); if (d < 1) return;
-  const m = Math.min(d, step), vx = dx / d * m, vy = dy / d * m;
-  for (let f = 1; f > .1; f *= .5) if (legalPos(Wd, u.x + vx * f, u.y) && !blockedFor(Wd, u.x + vx * f, u.y, u.team)) { u.x += vx * f; break; }
-  for (let f = 1; f > .1; f *= .5) if (legalPos(Wd, u.x, u.y + vy * f) && !blockedFor(Wd, u.x, u.y + vy * f, u.team)) { u.y += vy * f; break; }
-  if (vx) u.face = vx > 0 ? 1 : -1;
+const blockedFor = (Wd, x, y, team) => roomBlock(Wd, x, y, team) || wallBlock(Wd, x, y, team);   // 닫힌 상대 방 안 · 상대 방벽은 못 들어간다
+const avTargetable = (Wd, a) => {   // 본캐릭을 때릴 수 있는가: 밖에 나와 있거나, 책상에 앉아 있어도 그 방 문이 뚫렸다면
+  if (a.dead || a.inv > 0) return false;
+  if (a.seat >= 0) { const R = Wd.rooms[a.seat]; return !!(R && (R.fallen || (R.G && R.G.breach))); }
+  return isExposed(Wd, a);
+};
+function avHurt(Wd, a, dmg) {
+  if (a.dead || a.inv > 0) return;
+  a.hp -= dmg * PVP_AVD; if (a.hurt <= 0) { a.hurt = .3; if (Wd.emitOn) Wd.ev.push({k:"hurt", x:a.x, y:a.y - 10, ox:0}); }
+}
+// 시설 목록: out[tm] = tm 팀이 가진 문·방 설비·복도 건물. 상대 팀이 때릴 수 있다 (걸음마다 새로 만든다)
+function stRecords(Wd) {
+  const out = [[], []];
+  for (const r of Wd.rooms) {
+    const G = r.G; if (!G || r.fallen) continue; const closed = !G.breach && G.door.hp > 0;
+    if (closed) out[r.side].push({st:1, kind:"d", x:r.doorX, y:r.dl, r:8, w2:(r.def.doorW || DOOR.w) / 2, R:r, G, ri:-1, dead:false, closed:true, pr:1.1});
+    for (let i = 0; i < G.slots.length; i++) { const s = G.slots[i]; if (s.it) out[r.side].push({st:1, kind:"i", x:s.x, y:s.y, r:18, R:r, G, s, i, ri:-1, dead:false, closed, pr:1}); }
+  }
+  for (const q of Wd.fs) { const o = Wd.av[q.owner]; if (!o || q.hp <= 0) continue; out[o.team].push({st:1, kind:"s", x:q.x, y:q.y, r:20, q, ri:-1, dead:false, closed:false, pr:q.t === "wall" ? 2 : q.t === "hr" ? 1.4 : .9, wall:q.t === "wall"}); }
+  return out;
+}
+function structHit(e, dmg) {   // dmg 는 이미 공격자 쪽 배율이 곱해진 값. 시설 종류별 방어 배율(PVP_SIEGE)만 여기서 곱한다
+  if (e.dead) return;
+  if (e.kind === "d") {
+    const G = e.G; if (G.breach || G.door.hp <= 0) { e.dead = true; return; }
+    const dm = dmg * PVP_SIEGE.door; G.door.hp -= dm; G.door.flash = .12; G.stats.hpLost += dm; G.stats.pvDmg = (G.stats.pvDmg || 0) + dm; emit(G, {k:"doorhit", dmg:dm, dw:G.doorW});
+    if (G.door.hp <= 0) e.dead = true;
+  } else if (e.kind === "i") {
+    const it = e.s.it; if (!it) { e.dead = true; return; }
+    ensureHp(e.G, it); const dm = dmg * PVP_SIEGE.slot; it.hp -= dm; e.G.stats.pvDmg = (e.G.stats.pvDmg || 0) + dm;
+    if (it.hp <= 0) { emit(e.G, {k:"tdead", i:e.i, x:e.s.x, y:e.s.y}); e.s.it = null; e.dead = true; }
+  } else { e.q.hp -= dmg * PVP_SIEGE.struct; if (e.q.hp <= 0) e.dead = true; }
+}
+// ----- 유닛 이동: 곧장 → 옆으로 돌아서 → 한 축씩 미끄러져. 막히면 막힌 시간(u.sk)을 센다 -----
+const STEER = [0, .55, -.55, 1.1, -1.1];
+function pvMove(Wd, u, dest, step, dt) {
+  const wp = nextWaypoint(Wd, u, dest), dx = wp.x - u.x, dy = wp.y - u.y, d = Math.hypot(dx, dy); if (d < 1) { u.sk = 0; return 0; }
+  const m = Math.min(d, step), ux = dx / d, uy = dy / d, inWall = wallBlock(Wd, u.x, u.y, u.team), sd = u.sd || 1, ox = u.x, oy = u.y;
+  u.dx = ux; u.dy = uy;
+  if (Wd.wg && wallBlock(Wd, u.x + ux * (UNIT_R + 18), u.y + uy * (UNIT_R + 18), u.team)) u.wk = (u.wk || 0) + dt; else u.wk = Math.max(0, (u.wk || 0) - dt * 2);   // 가려는 길 바로 앞이 상대 방벽이면 막힌 시간을 센다
+  const ok = (x, y) => legalPos(Wd, x, y) && (inWall ? !roomBlock(Wd, x, y, u.team) : !blockedFor(Wd, x, y, u.team));   // 이미 방벽 안에 끼어 있으면 빠져나오는 걸음은 허용
+  let moved = false;
+  for (const sa of STEER) {
+    const c = Math.cos(sa * sd), sn = Math.sin(sa * sd), vx = (ux * c - uy * sn) * m, vy = (ux * sn + uy * c) * m;
+    if (ok(u.x + vx, u.y + vy)) { u.x += vx; u.y += vy; moved = true; break; }
+  }
+  if (!moved) {
+    for (let f = 1; f > .1; f *= .5) if (ok(u.x + ux * m * f, u.y)) { u.x += ux * m * f; moved = true; break; }
+    for (let f = 1; f > .1; f *= .5) if (ok(u.x, u.y + uy * m * f)) { u.y += uy * m * f; moved = true; break; }
+  }
+  if (ux) u.face = ux > 0 ? 1 : -1;
+  const adv = Math.hypot(u.x - ox, u.y - oy);
+  if (adv < m * .3) { u.sk = (u.sk || 0) + dt; if (u.sk > .45 && !u.sf) { u.sd = -sd; u.sf = true; } } else { u.sk = 0; u.sf = false; }
+  return adv;
+}
+// 목표 고르기. 이름: u 유닛 · a 본캐릭 · m 귀신 · s 시설(문·설비·복도 건물·방벽)
+const pvW = (o, k, fa) => k === "u" ? .9 : k === "a" ? (o.id === fa ? .1 : .65) : k === "m" ? 1.25 : o.pr;
+function pvPick(Wd, u, d, cx, cy, rad, fa, wallW) {
+  const tm = u.team, melee = d.rng < 100, rr = rad * rad, ux = u.x, uy = u.y; let best = null, bc = 1e18, bk = "";
+  const T = (o, kind, w) => {
+    const dx = o.x - ux, dy = o.y - uy, c = Math.sqrt(dx * dx + dy * dy) * w; if (c >= bc) return;
+    if (cx != null) { const ex = o.x - cx, ey = o.y - cy; if (ex * ex + ey * ey > rr) return; }
+    best = o; bc = c; bk = kind;
+  };
+  for (const e of Wd.allEn) if (!e.dead && Math.abs(e.x - ux) < 260 && Math.abs(e.y - uy) < 260) T(e, "m", 1.25);
+  for (const o of Wd.unT[1 - tm]) if (o.hp > 0) T(o, "u", .9);
+  for (const a of Wd.av) if (a.team !== tm && avTargetable(Wd, a)) T(a, "a", a.id === fa ? .1 : .65);
+  for (const s of Wd.stT[tm]) { if (s.dead) continue; if (s.wall && !wallW) continue; if (melee && s.closed && s.kind === "i") continue; T(s, "s", s.wall ? wallW * (s.q.hp < s.q.mhp * .95 ? .55 : 1) : s.pr * (s.kind === "s" && s.q.hp < s.q.mhp * .7 ? .8 : 1)); }   // 이미 상처 난 시설을 먼저(집중 공격)
+  PK.c = bc; PK.k = bk; return best;
+}
+const PK = {c:0, k:""};
+function pvValid(Wd, u, tg, k) {
+  if (!tg) return false;
+  if (k === "u") return tg.hp > 0;
+  if (k === "m") return !tg.dead;
+  if (k === "a") return avTargetable(Wd, tg);
+  if (tg.dead) return false;
+  if (tg.kind === "d") return !tg.R.fallen && !tg.G.breach && tg.G.door.hp > 0;
+  if (tg.kind === "i") return !tg.R.fallen && !!tg.s.it;
+  return tg.q.hp > 0 && !tg.q.sold;
+}
+const doorRec = R => ({st:1, kind:"d", x:R.doorX, y:R.dl, r:8, w2:(R.def.doorW || DOOR.w) / 2, R, G:R.G, ri:-1, dead:false, closed:true, pr:1.1});
+const postHome = (R, id) => ({x:R.doorX + (((id * 53) % 11) - 5) * 20, y:R.ty(440 + ((id * 31) % 6) * 14)});
+function escAnchor(Wd, own, R, id) {   // 호위: 본캐릭 곁
+  if (!own || own.dead) return R ? postHome(R, id) : null;
+  const ang = id * 2.4, rr = 54 + (id % 3) * 24, x = own.x + Math.cos(ang) * rr, y = own.y + Math.sin(ang) * rr * .8;
+  return legalPos(Wd, x, y) ? {x, y} : {x:own.x, y:own.y};
 }
 function pvpUnitStep(Wd, dt) {
-  const un = Wd.un, f = Math.max(0, Wd.t) / Wd.dur, D = Wd.D;
+  const un = Wd.un, f = Math.max(0, Wd.t) / Wd.dur;
   for (const u of un) {
     if (u.hp <= 0) continue;
     const own = Wd.av[u.owner], R = own && own.home >= 0 ? Wd.rooms[own.home] : null, G = R && R.G, d = UNIT[u.t], tm = u.team;
-    u.cd -= dt; if (u.slow > 0) u.slow -= dt; else u.slowF = 1; if (u.stun > 0) u.stun -= dt; if (u.flash > 0) u.flash -= dt; if (u.hurtT > 0) u.hurtT -= dt;
+    u.cd -= dt; if (u.ak > 0) u.ak -= dt; if (u.slow > 0) u.slow -= dt; else u.slowF = 1; if (u.stun > 0) u.stun -= dt; if (u.flash > 0) u.flash -= dt; if (u.hurtT > 0) u.hurtT -= dt;
     if (u.stun > 0 || !G) continue;
-    const rl = (own && own.rally) || (R ? {x:R.doorX, y:R.ty(480)} : {x:u.x, y:u.y});
-    // 집결 지점이 적 방 문 앞이면 공성: 문을 부수고, 뚫리면 설비를 부순다
-    const sr = Wd.rooms.find(r => r.G && !r.fallen && r.side !== tm && Math.hypot(rl.x - r.doorX, rl.y - r.ty(440)) < 230);
-    let tg = null, kind = "", bd = UNIT_AGGRO;
-    const lim = UNIT_LEASH + 120, near = (o, k) => { const dd = Math.hypot(o.x - u.x, o.y - u.y) - (o.r || 12) * .4; if (dd < bd && (Math.hypot(o.x - rl.x, o.y - rl.y) < lim || (R && Math.hypot(o.x - R.doorX, o.y - R.ty(440)) < 460))) { bd = dd; tg = o; kind = k; } };   // 집결 지점 근처이거나 내 방 문 앞이면 노린다
-    for (const e of Wd.allEn) if (!e.dead) near(e, "m");
-    for (const o of Wd.unT[1 - tm]) if (o.hp > 0) near(o, "u");
-    for (const a of Wd.av) if (a.team !== tm && !a.dead && !(a.inv > 0) && isExposed(Wd, a)) near({x:a.x, y:a.y, r:AV_R, av:a}, "a");
-    for (const q of Wd.fs) { const qo = Wd.av[q.owner]; if (qo && qo.team !== tm && (openTo(Wd, q.x, q.y) || sideAt(Wd, q.x, q.y) === tm)) near(q, "s"); }
-    const shot = (x, y) => { if (!Wd.emitOn) return; Wd.ev.push(d.rng > 100 ? {k:"paper", i:0, ri:99, x1:u.x, y1:u.y - 12, x2:x, y2:y, ox:u.x - 450} : {k:"slash", x, y, ox:x - 450, ri:99}); };
-    let dest = null;
+    const od = own.order || ORD_DEF, k = u.g ? "esc" : od.k, spd = d.spd * dt * (u.slow > 0 ? u.slowF : 1);
+    // --- 어디서 누구를 찾을까 ---
+    let cx = null, cy = null, rad = 1e9, dest = null, fa = -1, home = null;
+    if (k === "am" || k === "focus") { dest = {x:od.x, y:od.y}; cx = u.x; cy = u.y; rad = Math.hypot(od.x - u.x, od.y - u.y) < 60 ? 430 : 330; if (k === "focus") fa = od.fa; }
+    else if (k === "all") { rad = 1e9; }
+    else if (k === "esc") { home = escAnchor(Wd, own, R, u.id); dest = home; if (home) { cx = home.x; cy = home.y; rad = 360; } }
+    else { home = postHome(R, u.id); dest = home; cx = home.x; cy = home.y; rad = 440; }
+    // --- 목표 고르기(0.4초마다 다시, 지금 목표보다 훨씬 가까운 게 나타나면 갈아탄다) ---
+    u.tt = (u.tt || 0) - dt; if (u.lock > 0) u.lock -= dt;
+    let tg = u.tg, kind = u.tgk;
+    if (tg && !pvValid(Wd, u, tg, kind)) { tg = u.tg = null; u.lock = 0; }
+    if (k === "focus" && fa >= 0 && !(tg && kind === "s" && tg.wall)) { const fo = Wd.av[fa]; if (fo && fo.team !== tm && avTargetable(Wd, fo)) { tg = u.tg = fo; kind = u.tgk = "a"; } }   // 강제 공격: 그 본캐릭을 우선(길을 막는 방벽을 부수는 중이면 그걸 먼저)
+    if ((!tg || u.tt <= 0) && !(u.lock > 0)) {
+      u.tt = .4 + Wd.rng() * .3;
+      const nt = pvPick(Wd, u, d, cx, cy, rad, fa, k === "all" ? 1.8 : 0);   // 공격 이동·방어 중에는 방벽을 일부러 찾아 부수지 않는다(길을 막을 때만). 총공격은 방벽도 가까운 대상
+      if (nt && (!tg || PK.c < pvW(tg, kind, fa) * Math.hypot(tg.x - u.x, tg.y - u.y) * .72)) { tg = u.tg = nt; kind = u.tgk = PK.k; }
+    }
+    // 가는 길에 닫힌 적 방의 문이 막고 있으면 문이 곧 목표 (문 앞에서 우물쭈물하지 않는다)
+    if (!tg && (k === "am" || k === "focus") && dest) {
+      let zr = zoneOf(Wd, dest.x, dest.y);
+      if (k === "focus" && fa >= 0) { const fo = Wd.av[fa]; if (fo && fo.seat >= 0) zr = fo.seat; else if (fo) zr = zoneOf(Wd, fo.x, fo.y); if (fo) dest = {x:fo.x, y:fo.y}; }
+      if (zr >= 0) { const Rz = Wd.rooms[zr]; if (Rz.G && !Rz.fallen && Rz.side !== tm && !Rz.G.breach && Rz.G.door.hp > 0) { tg = doorRec(Rz); kind = "s"; u.tg = tg; u.tgk = "s"; u.lock = .6; } }
+    }
+    // --- 때리거나 다가간다 ---
+    let mv = dest;
     if (tg) {
-      if (bd <= d.rng + (tg.r || 12) * .6) {
+      let tx = tg.x, ty = tg.y;
+      const isDoor = kind === "s" && tg.kind === "d";
+      if (isDoor) { tx = clamp2(u.x, tg.x - tg.w2, tg.x + tg.w2); ty = tg.y; }
+      const dd = Math.hypot(tx - u.x, ty - u.y) - ((tg.r || 12) * .4), reach = d.rng + (isDoor ? 14 : 6);
+      if (dd <= reach) {
         if (u.cd <= 0) {
-          u.cd = d.cd; shot(tg.x, tg.y);
+          u.cd = d.cd; u.ak = .28;
+          const sh = d.rng > 100 ? {k:"paper", i:0, ri:99, x1:u.x, y1:u.y - 12, x2:tx, y2:ty, ox:u.x - 450} : {k:"slash", x:tx, y:ty, ox:tx - 450, ri:99};
+          if (Wd.emitOn) Wd.ev.push(sh);
           if (kind === "m") hit(G, tg, d.dmg * (1 + .5 * f), true);
           else if (kind === "u") hit(G, tg, d.dmg, true);
-          else if (kind === "a") { tg.av.hp -= d.dmg * (1 + .3 * f); if (tg.av.hurt <= 0) { tg.av.hurt = .3; if (Wd.emitOn) Wd.ev.push({k:"hurt", x:tg.x, y:tg.y - 10, ox:0}); } }
-          else tg.hp -= d.dmg * PVP_SIEGE.struct;
+          else if (kind === "a") avHurt(Wd, tg, d.dmg * (1 + .3 * f));
+          else structHit(tg, d.dmg * (1 + .3 * f));
         }
-      } else dest = {x:tg.x, y:tg.y};
-    } else if (sr) {
-      const Gt = sr.G, w2 = (sr.def.doorW || DOOR.w) / 2 + 24;
-      if (!Gt.breach && Gt.door.hp > 0) {
-        if (Math.abs(u.y - sr.dl) <= d.rng + 26 && Math.abs(u.x - sr.doorX) <= w2) {
-          if (u.cd <= 0) { u.cd = d.cd; const dm = d.dmg * PVP_SIEGE.door * (1 + .3 * f); Gt.door.hp -= dm; Gt.door.flash = .12; Gt.stats.hpLost += dm; Gt.stats.pvDmg = (Gt.stats.pvDmg || 0) + dm; emit(Gt, {k:"doorhit", dmg:dm, dw:Gt.doorW}); shot(sr.doorX + (u.id % 5 - 2) * 14, sr.dl); }
-        } else dest = {x:sr.doorX + ((u.id * 37) % 7 - 3) * 14, y:sr.ty(425)};
-      } else {
-        let best = null, bi = -1, bq = 1e9; Gt.slots.forEach((q, i) => { if (!q.it) return; const dd = Math.hypot(q.x - u.x, q.y - u.y); if (dd < bq) { bq = dd; best = q; bi = i; } });
-        if (best) {
-          if (bq <= d.rng + 22) { if (u.cd <= 0) { u.cd = d.cd; shot(best.x, best.y); ensureHp(Gt, best.it); best.it.hp -= d.dmg * PVP_SIEGE.slot; Gt.stats.pvDmg = (Gt.stats.pvDmg || 0) + d.dmg * PVP_SIEGE.slot; if (best.it.hp <= 0) { emit(Gt, {k:"tdead", i:bi, x:best.x, y:best.y}); best.it = null; } } }
-          else dest = {x:best.x, y:best.y + sr.dir * 22};
-        } else dest = {x:sr.doorX, y:sr.ty(300)};
+        mv = null; u.sk = 0;
+      } else if (isDoor) {
+        const od2 = Math.min(d.rng * .8, 140), sp = ((u.id * 37) % 7 - 3) * 14;
+        mv = {x:clamp2(tg.x + sp, tg.x - tg.w2 + 14, tg.x + tg.w2 - 14), y:tg.R.dl + tg.R.dir * (14 + od2 * (d.rng > 100 ? 1 : .15))};
+      } else mv = {x:tg.x, y:tg.y};
+    } else if (k === "all") mv = null;
+    if (mv) {
+      const away = Math.hypot(mv.x - u.x, mv.y - u.y);
+      if (away > (tg ? 4 : 44)) {
+        pvMove(Wd, u, mv, spd, dt);
+        if (u.sk > .8 || u.wk > .5) {   // 한참 막혔다 = 방벽이 길을 막고 있다 → 가는 쪽에 있는 가까운 상대 방벽을 부순다
+          let bw = null, bd = 1e9; for (const s of Wd.stT[tm]) if (s.wall && !s.dead) { const q = Math.hypot(s.x - u.x, s.y - u.y); if (q > 100 || ((s.x - u.x) * (u.dx || 0) + (s.y - u.y) * (u.dy || 0)) < -8) continue; const c = q * (s.q.hp < s.q.mhp * .95 ? .45 : 1); if (c < bd) { bd = c; bw = s; } }   // 가는 쪽의 방벽 중 상처 난 것부터(집중 공격)
+          if (bw) { u.tg = bw; u.tgk = "s"; u.lock = 1.4; u.sk = 0; u.wk = 0; }
+        }
       }
-    } else if (Math.hypot(rl.x - u.x, rl.y - u.y) > 48) dest = rl;
-    if (dest) pvpUnitMove(Wd, u, dest, d.spd * dt * (u.slow > 0 ? u.slowF : 1));
+    }
   }
   for (let i = 0; i < un.length; i++) for (let j = i + 1; j < un.length; j++) {   // 겹치지 않게 살짝 밀어낸다
-    const a = un[i], b = un[j], dx = b.x - a.x, dy = b.y - a.y, dd = Math.hypot(dx, dy) || .01;
+    const a = un[i], b = un[j], dx = b.x - a.x; if (dx > 22 || dx < -22) continue; const dy = b.y - a.y; if (dy > 22 || dy < -22) continue;
+    const dd = Math.hypot(dx, dy) || .01;
     if (dd < 22) { const p = (22 - dd) / 2, nx = dx / dd, ny = dy / dd; if (legalPos(Wd, a.x - nx * p, a.y - ny * p) && !blockedFor(Wd, a.x - nx * p, a.y - ny * p, a.team)) { a.x -= nx * p; a.y -= ny * p; } if (legalPos(Wd, b.x + nx * p, b.y + ny * p) && !blockedFor(Wd, b.x + nx * p, b.y + ny * p, b.team)) { b.x += nx * p; b.y += ny * p; } }
   }
+  const D = Wd.D;
   for (const e of Wd.allEn) {   // 귀신이 유닛을 때린다
     if (e.dead || e.usg == null) continue;
     const u = un.find(z => z.id === e.usg); if (!u) continue;
@@ -1371,30 +1535,86 @@ function pvpUnitStep(Wd, dt) {
   }
   Wd.un = un.filter(u => { if (u.hp > 0) return true; u.dead = true; if (Wd.emitOn) Wd.ev.push({k:"tdead", x:u.x, y:u.y, ox:u.x - 450, ri:99}); return false; });
 }
+const clamp2 = (v, a, b) => v < a ? a : v > b ? b : v;
+
 function pvpJudge(Wd, rooms, t) {
   if (t <= 0) return;
   const alive = [0, 1].map(tm => rooms.some(r => r.G && !r.fallen && r.side === tm)), claimed = [0, 1].map(tm => rooms.some(r => r.G && r.side === tm));
   const lost = [0, 1].map(tm => (claimed[tm] && !alive[tm]) || (!claimed[tm] && t > 45));
   if (lost[0] || lost[1]) { Wd.over = "pvp"; Wd.winner = lost[0] && lost[1] ? -1 : lost[0] ? 1 : 0; return; }
   if (t >= Wd.dur) {   // 시간 종료: 남은 문 체력과 설비로 판정
-    const sc = [0, 1].map(tm => { let v = 0; for (const r of rooms) if (r.G) { if (r.side === tm) { if (!r.fallen) v += 100 * ratioOf(r.G) + 12 * r.G.slots.filter(q => q.it).length; v += 2.5 * (r.G.stats.ukills || 0); } else v += .12 * (r.G.stats.pvDmg || 0); } return v; });   // 남은 문·설비 + 쓰러뜨린 상대 유닛 + 적 방에 준 피해
+    const sc = [0, 1].map(tm => { let v = 0; for (const r of rooms) if (r.G) { if (r.side === tm) { if (!r.fallen) v += 100 * ratioOf(r.G) + 12 * r.G.slots.filter(q => q.it).length; v += 2.5 * (r.G.stats.ukills || 0); } else v += .12 * (r.G.stats.pvDmg || 0); } return v + 12 * ((Wd.avk || [0, 0])[tm]); });   // 남은 문·설비 + 쓰러뜨린 상대 유닛 + 적 방에 준 피해
     Wd.over = "pvp"; Wd.byTime = true; Wd.winner = Math.abs(sc[0] - sc[1]) < 2 ? -1 : sc[0] > sc[1] ? 0 : 1;
   }
 }
-function aiPvp(Wd, a, G, sk0) {   // 대결 AI: 유닛을 계속 뽑아 모으고, 충분하면 가장 약한 적 방으로 총공격, 줄면 물러난다. 난이도는 AI 수당 배율로(PVP_AI_INC)
-  const sk = .75;
+/* ===== 대결 AI (v1.8): 난이도별로 본캐릭을 지키는 법을 다르게 한다 =====
+   쉬움 = 거의 안 지킴 · 보통 = 방벽 몇 개와 호위 몇 명 · 어려움 = 방벽 한 겹 + 호위 + 위험할 때 병력을 전부 불러들임
+   극악·지옥 = 방벽 두 겹 + 호위 40~50% + 설비 추가 + 위협 감지 즉시 집결 + 본캐릭은 절대 자리를 뜨지 않음(밖에 있으면 곧장 돌아와 앉음)
+   난이도 배율(PVP_AI_INC: 수당)은 그대로 쓰고, 행동 차이는 아래 표로 줘요. wall 방벽 수 · rings 겹 수 · guard 호위 비율 · recall 불러들이기(0 안 함, 1 뚫렸거나 적이 몰릴 때, 2 조금만 위험해도) · hr 인사팀 수 · ext 추가 설비 수 · door 문 강화 목표 단계 · flee 본캐릭이 자리를 뜨지 않음 · all 총공격 사용 */
+const PVP_AI = {
+  easy:      {wall:0,  rings:0, guard:0,   recall:0, hr:2, ext:0,  flee:0, all:0, door:0},
+  normal:    {wall:5,  rings:1, guard:.12, recall:1, hr:3, ext:0,  flee:0, all:0, door:0},
+  hard:      {wall:12, rings:1, guard:.22, recall:2, hr:4, ext:3,  flee:1, all:0, door:0},
+  nightmare: {wall:26, rings:2, guard:.38, recall:2, hr:6, ext:4,  flee:1, all:1, door:0},
+  hell:      {wall:34, rings:2, guard:.5,  recall:2, hr:8, ext:5,  flee:1, all:1, door:0},
+};
+const PVP_AI_DESC = {easy:"거의 없음", normal:"방벽 몇 개 + 호위 병력 몇 명", hard:"방벽 한 겹 + 호위 + 위험하면 병력을 불러들임", nightmare:"철통 방어(방벽 두 겹 · 호위 38% · 설비 추가 · 위협 즉시 집결)", hell:"철통 방어 최대(방벽 두 겹 · 호위 50% · 설비 추가 · 위협 즉시 집결 · 수당 x1.4)"};
+function aiWalls(Wd, a, G, R, cfg) {   // 본캐릭(책상) 둘레에 방벽을 두른다. 문 쪽부터 막는다
+  let n = 0; for (const q of Wd.fs) if (q.owner === a.id && q.t === "wall") n++;
+  if (n >= cfg.wall) return;
+  if (!a.rp) {
+    a.rp = [];
+    for (let k = 0; k < cfg.rings; k++) { const rr = 84 + 46 * k, m = Math.floor(6.2832 * rr / 50); for (let i = 0; i < m; i++) { const ang = i / m * 6.2832; a.rp.push({x:R.deskX + Math.cos(ang) * rr, y:R.deskY + Math.sin(ang) * rr, f:0, k}); } }
+    a.rp.sort((p, q) => (p.k - q.k) * 60 + Math.hypot(p.x - R.doorX, p.y - R.dl) * .08 - Math.hypot(q.x - R.doorX, q.y - R.dl) * .08);
+  }
+  const wc = freeCost(G, "wall"); let tries = 0;
+  for (const p of a.rp) {
+    if (p.f || tries >= 2) continue; if (G.gold < wc + 20) return;
+    tries++; const r = applyCmd(Wd, a.id, "buildAt", {t:"wall", x:p.x, y:p.y, force:1});
+    if (r.ok) { if (++n >= cfg.wall) return; } else if (r.why === "gold") return; else if (r.why !== "cap") p.f = 1;   // 못 짓는 자리(방 밖·너무 가까움)는 건너뛴다
+  }
+}
+function aiExtra(Wd, a, G, R, cfg) {   // 방 칸이 다 차면 문과 책상 사이에 전자렌지·정수기를 더 짓는다(칸은 자동으로 늘어난다)
+  const have = G.slots.reduce((n, s) => n + (s.it ? 1 : 0), 0); if (have >= 4 + cfg.ext) return;
+  const cm = G.slots.filter(s => s.it && s.it.type === "micro").length, cc = G.slots.filter(s => s.it && s.it.type === "cooler").length, t = cm <= cc * 2 ? "micro" : "cooler";
+  if (G.gold < buildCost(G, t) * 1.2 + 60) return;
+  for (let k = 0; k < 8; k++) { const x = R.deskX + (Wd.rng() - .5) * Math.min(520, R.R - R.L - 180), y = R.ty(150 + Wd.rng() * 190); if (applyCmd(Wd, a.id, "buildAt", {t, x, y, force:1}).ok) return; }
+}
+function aiPvp(Wd, a, G, sk0) {
+  const sk = .75, cfg = PVP_AI[Wd.diffKey] || PVP_AI.normal;
   const R = Wd.rooms[a.seat]; if (!R || a.assist) return;
-  const mine = Wd.un.filter(u => u.owner === a.id).length, cap = supCap(Wd, a), hrN = hrCount(Wd, a);
-  if (supOf(Wd, a) >= cap - 1 && cap < SUP_MAX && hrN < 4 && G.gold >= hrCost(hrN) + 30) for (let k = 0; k < 8; k++) { const x = R.doorX + (Wd.rng() - .5) * 300, y = R.ty(452 + Wd.rng() * 70); if (applyCmd(Wd, a.id, "buildAt", {t:"hr", x, y, force:1}).ok) break; }
-  if (a.tq.length < 2 && G.gold > 55 + (1 - sk) * 80) { const q = Wd.rng(), t = q < .45 ? "intern" : q < .8 ? "dae" : "jang"; if (G.gold >= UNIT[t].cost + 25) trainUnit(Wd, a, {t}); }
-  let tr = null, bs = 1e9;
-  for (const r of Wd.rooms) if (r.G && !r.fallen && r.side !== a.team) { const s2 = ratioOf(r.G) * 100 - (r.G.breach ? 80 : 0) + Math.abs(r.doorX - R.doorX) / 40; if (s2 < bs) { bs = s2; tr = r; } }
-  const need = sk > .8 ? 6 : sk > .65 ? 8 : 10, foes = Wd.unT[1 - a.team].length, weak = tr && ratioOf(tr.G) < .6;   // 숫자와 상대 전력을 보고 공격할지 정한다
-  if (!a.pvAtk && Wd.t > 40 + (1 - sk) * 40 && ((mine >= need && mine >= foes + (sk > .8 ? 2 : 3)) || (weak && mine >= 5))) a.pvAtk = true;
-  if (a.pvAtk && (mine <= 2 || mine < foes - 2)) a.pvAtk = false;
-  if (a.ordHelp) { const Rq = Wd.rooms[a.ordHelp.ri]; if (Wd.t < a.ordHelp.until && Rq && Rq.G && !Rq.fallen) { a.pvAtk = false; a.rally = {x:Rq.doorX, y:Rq.ty(470)}; return; } a.ordHelp = null; }   // 동료가 병력 지원을 요청하면 그 방 문 앞을 지킨다
+  const mineU = Wd.un.filter(u => u.owner === a.id), mine = mineU.length, cap = supCap(Wd, a), hrN = hrCount(Wd, a), foesAll = Wd.unT[1 - a.team];
+  if (supOf(Wd, a) >= cap - 1 && cap < SUP_MAX && hrN < cfg.hr && G.gold >= hrCost(hrN) + 30) for (let k = 0; k < 8; k++) { const x = R.doorX + (Wd.rng() - .5) * 300, y = R.ty(452 + Wd.rng() * 70); if (applyCmd(Wd, a.id, "buildAt", {t:"hr", x, y, force:1}).ok) break; }
+  const dNext = cfg.door && !G.breach && G.door.lv < cfg.door ? DOOR_LV[G.door.lv + 1].cost : 0, rsv = dNext ? dNext + 30 : 0;   // 문이 목표 단계보다 낮으면 그 값을 먼저 모은다
+  if (dNext && G.gold >= rsv) applyCmd(Wd, a.id, "doorUp", {});   // 본캐릭을 지키는 첫 관문: 문을 난이도 목표 단계까지 강화
+  if (a.tq.length < 2 && G.gold > 55 + (1 - sk) * 80) { const q = Wd.rng(), t = q < .45 ? "intern" : q < .8 ? "dae" : "jang"; if (G.gold >= UNIT[t].cost + 25 + rsv * .5) trainUnit(Wd, a, {t}); }
+  if (cfg.wall && G.gold >= rsv) aiWalls(Wd, a, G, R, cfg);
+  if (cfg.ext && G.gold >= rsv) aiExtra(Wd, a, G, R, cfg);
+  // 호위: 번호가 빠른 유닛부터 본캐릭 곁을 지킨다(공격 명령을 받지 않는다)
+  const gn = cfg.guard ? Math.min(mine, Math.max(mine >= 3 ? 1 : 0, Math.round(cfg.guard * mine))) : 0;
+  for (let i = 0; i < mine; i++) mineU[i].g = i < gn ? 1 : 0;
+  // 위협 감지: 내 문 앞에 적 병력이 몰렸거나, 적 본캐릭이 가까이 왔거나, 문이 뚫렸거나 약해졌다
+  const fx = R.doorX, fy = R.ty(430); let foesNear = 0; for (const u of foesAll) if (Math.hypot(u.x - fx, u.y - fy) < 560) foesNear++;
+  const enAv = Wd.av.some(o => o.team !== a.team && avTargetable(Wd, o) && Math.hypot(o.x - fx, o.y - fy) < 620);
+  let danger = !!G.breach || enAv || (cfg.recall >= 2 ? foesNear >= 2 || ratioOf(G) < .55 : foesNear >= 4);
+  if (cfg.recall < 1) danger = false;
+  if (danger) a.dgUntil = Wd.t + 6; else if (Wd.t < (a.dgUntil || 0)) danger = true;
+  // 공격 목표: 가장 약한 적 방 (한 번 정하면 그 방이 무너질 때까지)
+  let tr = a.tr && a.tr.G && !a.tr.fallen ? a.tr : null;
+  if (!tr) { let bs = 1e9; for (const r of Wd.rooms) if (r.G && !r.fallen && r.side !== a.team) { const s2 = ratioOf(r.G) * 100 - (r.G.breach ? 80 : 0) + Math.abs(r.doorX - R.doorX) / 40; if (s2 < bs) { bs = s2; tr = r; } } a.tr = tr; }
+  const atkN = mine - gn, need = sk > .8 ? 6 : sk > .65 ? 8 : 10, foes = foesAll.length, weak = tr && ratioOf(tr.G) < .6;
+  if (!a.pvAtk && Wd.t > 40 + (1 - sk) * 40 && ((atkN >= need && atkN >= foes + (sk > .8 ? 2 : 3)) || (weak && atkN >= 5))) a.pvAtk = true;
+  if (a.pvAtk && (atkN <= 2 || atkN < foes - 2)) a.pvAtk = false;
+  if (danger) a.pvAtk = false;   // 즉시 집결
+  if (a.ordHelp) { const Rq = Wd.rooms[a.ordHelp.ri]; if (Wd.t < a.ordHelp.until && Rq && Rq.G && !Rq.fallen) { a.pvAtk = false; const hp = {x:Rq.doorX, y:Rq.ty(470)}; a.order = {k:"am", x:hp.x, y:hp.y}; a.rally = hp; return; } a.ordHelp = null; }   // 동료가 병력 지원을 요청하면 그 방 문 앞으로
   if (G.door.hp / G.door.max < .45 && (a.reqT || 0) <= Wd.t) pvpRequest(Wd, a, {k:"troops"});   // 내 문이 위험하면 동료에게 요청한다
-  a.rally = a.pvAtk && tr ? {x:tr.doorX + ((a.id * 41) % 5 - 2) * 20, y:tr.ty(436)} : {x:R.doorX, y:R.ty(470)};
+  if (a.pvAtk && tr) {
+    const hp = {x:Math.round(tr.deskX), y:Math.round(tr.ty(tr.def.desk[1] + 50))};
+    const fo = Wd.av[tr.owner];   // 어려움 이상: 문이 뚫린 방이면 그 본캐릭을 곧장 노린다
+    if (cfg.recall >= 2 && fo && tr.G.breach && avTargetable(Wd, fo)) a.order = {k:"focus", x:hp.x, y:hp.y, fa:fo.id};
+    else a.order = cfg.all && atkN >= foes * 2 && atkN >= 10 ? {k:"all"} : {k:"am", x:hp.x, y:hp.y};
+    a.rally = hp;   // 적 방 중심(책상 쪽)으로 공격 이동: 문을 부수고 들어가 설비와 본캐릭까지
+  } else { a.order = {k:"def"}; a.rally = null; }
 }
 function aiFree(Wd, a, G, sk) {   // AI 도 가끔 문 앞 복도에 건물을 짓는다
   if (a.assist || Wd.t < 60 || G.gold < 260 || Wd.rng() > .35 * sk) return;
@@ -1413,15 +1633,33 @@ function trainUnit(Wd, a, p) {
   const c = UNIT[t].cost, paid = G.gold >= c; if (paid) G.gold -= c;   // 수당이 모자라면 예약: 앞 순서가 되었을 때 수당이 있으면 시작해요
   a.tq.push({t, left:UNIT[t].tt, ri:R.i, paid}); return {ok:true, reserved:!paid};
 }
-function setRally(Wd, a, p) { const x = +p.x, y = +p.y; if (!Number.isFinite(x) || !Number.isFinite(y) || !legalPos(Wd, x, y)) return {ok:false, why:"place"}; a.rally = {x:Math.round(x), y:Math.round(y)}; return {ok:true}; }
+function setRally(Wd, a, p) {
+  const x = +p.x, y = +p.y; if (!Number.isFinite(x) || !Number.isFinite(y)) return {ok:false, why:"place"};
+  if (Wd.pvp) {   // 대결: 우클릭 = 공격 이동 (그 지점으로 가면서 길에 있는 문·시설·유닛·본캐릭을 전부 공격한다)
+    const s = snapDest(Wd, x, y), fo = p.fa != null ? Wd.av[+p.fa] : null, fa = fo && fo.team !== a.team ? fo.id : -1;
+    a.order = {k:fa >= 0 ? "focus" : "am", x:Math.round(s.x), y:Math.round(s.y), fa}; a.rally = {x:Math.round(s.x), y:Math.round(s.y)}; return {ok:true};
+  }
+  if (!legalPos(Wd, x, y)) return {ok:false, why:"place"};
+  let room = zoneOf(Wd, x, y);   // 협동: 방 위나 방 문 앞을 찍으면 '그 방 지키기', 복도를 찍으면 그 지점 지키기
+  if (room < 0) for (const r of Wd.rooms) if (Math.abs(x - r.doorX) < 260 && Math.abs(y - r.ty(450)) < 120) { room = r.i; break; }
+  const Rm = room >= 0 ? Wd.rooms[room] : null;
+  a.rally = {x:Math.round(x), y:Math.round(y), room:Rm && Rm.G && !Rm.fallen ? room : null}; return {ok:true, room:a.rally.room};
+}
+function setOrder(Wd, a, p) {   // 병력 명령: all 총공격(각자 가까운 곳) · def 집으로 · esc 호위 · auto 자동(협동: 급한 방으로 알아서)
+  const k = p.k;
+  if (k === "auto") { a.rally = null; a.order = null; return {ok:true}; }
+  if (!Wd.pvp) return {ok:false};
+  if (k === "all" || k === "def" || k === "esc") { a.order = {k}; a.rally = null; return {ok:true}; }
+  return {ok:false};
+}
 function trainStep(Wd, dt) {
   for (const a of Wd.av) {
     if (!a.tq.length) continue; const q = a.tq[0], R = Wd.rooms[q.ri];
     if (!R || !R.G || R.fallen) { if (R && R.G && q.paid) R.G.gold += UNIT[q.t].cost; a.tq.shift(); continue; }   // 방이 무너지면 환불
     if (!q.paid) { if (R.G.gold >= UNIT[q.t].cost) { R.G.gold -= UNIT[q.t].cost; q.paid = true; } else continue; }
-    q.left -= dt; if (q.left > 0) continue;
+    q.left -= dt * (1 + .15 * Math.min(10, hrCount(Wd, a))); if (q.left > 0) continue;
     a.tq.shift(); const hp = Math.round(UNIT[q.t].hp * R.G.meta.doorHp);
-    Wd.un.push({id:Wd.uid++, t:q.t, owner:a.id, x:R.doorX + (Wd.rng() - .5) * 90, y:R.ty(345 + Wd.rng() * 25), hp, mhp:hp, cd:.5, face:1, team:a.team, r:UNIT_R, ri:-1, type:q.t, boss:false, bk:"", dead:false, atk:false, slow:0, slowF:1, stun:0, flash:0, hurtT:0, haste:0, gold:Math.round(UNIT[q.t].cost * .35)});
+    Wd.un.push({id:Wd.uid++, t:q.t, owner:a.id, x:R.doorX + (Wd.rng() - .5) * 90, y:R.ty(345 + Wd.rng() * 25), hp, mhp:hp, cd:.5, face:1, team:a.team, r:UNIT_R, ri:-1, type:q.t, boss:false, bk:"", dead:false, atk:false, slow:0, slowF:1, stun:0, flash:0, hurtT:0, haste:0, rm:-1, ak:0, sd:1, sk:0, gold:Math.round(UNIT[q.t].cost * .35)});
     if (Wd.emitOn) Wd.ev.push({k:"up", x:R.doorX, y:R.ty(345), ox:R.doorX - 450, ri:99});
   }
 }
@@ -1432,29 +1670,77 @@ function unitMove(Wd, u, dest, step) {
   for (let f = 1; f > .1; f *= .5) if (legalPos(Wd, u.x, u.y + vy * f)) { u.y += vy * f; break; }
   if (vx) u.face = vx > 0 ? 1 : -1;
 }
+/* ===== 다 같이(협동) 병력: 방을 바로바로 찾아가 지킨다 (v1.8) =====
+   기본(집결 지점 없음 = 자동): 새 유닛은 곧바로 가장 급한 방(귀신이 문을 때리거나 문이 약해진 방)으로, 급한 방이 없으면 주인 방 안에서 대기.
+   급한 방이 여러 곳이면 가까운 곳부터 위험한 정도에 비례해 나눠 간다. 복도 한가운데에는 머물지 않는다.
+   집결 지점을 직접 찍으면(우클릭·G): 방 위나 방 문 앞을 찍으면 그 방 지키기, 복도를 찍으면 그 지점 지키기. "자동" 버튼으로 되돌린다. */
+function roomNeed(Wd, r) {   // 이 방이 병력을 얼마나 필요로 하나 (0 = 조용함)
+  const G = r.G, fx = G.front.x, fy = G.front.y; let thr = 0;
+  for (const e of Wd.allEn) { if (e.dead) continue; if (Math.abs(e.x - fx) + Math.abs(e.y - fy) > 540) continue; thr += e.boss ? 5 : e.atk ? 1.5 : 1; }
+  let need = thr * (.55 + 1.5 * (1 - ratioOf(G)));
+  if (G.breach) need += 10 + thr;
+  return need < .8 ? 0 : need;
+}
+const roomPost = (R, id) => ({x:R.doorX + (((id * 53) % 11) - 5) * 20, y:R.ty(446 + ((id * 31) % 5) * 14)});   // 방 문 앞 대기 자리(자리마다 조금씩 달라 한 곳에 뭉치지 않음)
+const roomIn = (R, id) => ({x:R.doorX + (((id * 37) % 9) - 4) * 18, y:R.ty(352 - (id % 4) * 18)});             // 방 안쪽 대기 자리
+const roomFight = (R, id) => ({x:R.doorX + (((id * 41) % 9) - 4) * 20, y:R.ty(330 - (id % 3) * 20)});            // 문이 뚫린 방에선 안으로 들어가 싸운다
 function unitStep(Wd, dt) {
   const un = Wd.un; if (!un.length) return;
   if (Wd.pvp) return pvpUnitStep(Wd, dt);
-  const en = Wd.allEn.filter(e => !e.dead), f = Math.max(0, Wd.t) / Wd.dur, D = Wd.D;
+  const en = Wd.allEn.filter(e => !e.dead), f = Math.max(0, Wd.t) / Wd.dur, D = Wd.D, alive = Wd.rooms.filter(r => r.G && !r.fallen);
+  Wd.nt = (Wd.nt || 0) - dt;
+  if (Wd.nt <= 0) {   // 0.5초마다: 방별 급함 · 방별로 배정된 유닛 수
+    Wd.nt = .5; Wd.need = Wd.rooms.map(r => r.G && !r.fallen ? roomNeed(Wd, r) : 0); Wd.load = Wd.rooms.map(() => 0);
+    for (const u of un) if (u.rm >= 0 && Wd.load[u.rm] != null) Wd.load[u.rm]++;
+  }
+  const need = Wd.need || [], load = Wd.load || [];
   for (const u of un) {
-    const own = Wd.av[u.owner], R = own && own.home >= 0 ? Wd.rooms[own.home] : null, G = R && R.G, d = UNIT[u.t];
-    u.cd -= dt;
-    const rl = (own && own.rally) || (R ? {x:R.doorX, y:R.ty(480)} : {x:u.x, y:u.y});
+    const own = Wd.av[u.owner], R = own && own.home >= 0 ? Wd.rooms[own.home] : null, G = R && R.G, d = UNIT[u.t], rally = own && own.rally;
+    u.cd -= dt; if (u.ak > 0) u.ak -= dt;
+    const zi = zoneOf(Wd, u.x, u.y), Zr = zi >= 0 ? Wd.rooms[zi] : null, safe = !!(Zr && Zr.G && !Zr.fallen && !Zr.G.breach);
+    // --- 많이 다치면 방 안에서 쉰다(문이 닫힌 방 안에서만 회복) ---
+    if (!u.rest && u.hp < u.mhp * .3 && alive.length) u.rest = true;
+    if (u.rest) { if (u.hp > u.mhp * .75) u.rest = false; else if (safe) u.hp = Math.min(u.mhp, u.hp + u.mhp * .06 * dt); }
+    // --- 어느 방을 지킬까(배정) ---
+    u.at = (u.at || 0) - dt;
+    if (u.at <= 0) {
+      u.at = .6 + Wd.rng() * .3; let rm = -1;
+      if (rally && rally.room != null && Wd.rooms[rally.room] && Wd.rooms[rally.room].G && !Wd.rooms[rally.room].fallen) rm = rally.room;
+      else if (!rally) {
+        let bs = .35;
+        for (const r of alive) {
+          const n = need[r.i] || 0; if (n <= 0) continue;
+          const dd = Math.hypot(r.doorX - u.x, r.ty(450) - u.y), ld = (load[r.i] || 0) - (u.rm === r.i ? 1 : 0);
+          const sc = n / (1 + dd / 900) / (1 + ld * .35) * (u.rm === r.i ? 1.25 : 1);
+          if (sc > bs) { bs = sc; rm = r.i; }
+        }
+      }
+      if (u.rm !== rm) { if (u.rm >= 0 && load[u.rm] > 0) load[u.rm]--; if (rm >= 0) load[rm] = (load[rm] || 0) + 1; u.rm = rm; }
+    }
+    // --- 지켜야 할 곳(post)과 싸움터 중심(anchor) ---
+    let post, ax, ay, leash = UNIT_LEASH;
+    if (rally && rally.room == null) { post = {x:rally.x, y:rally.y}; ax = rally.x; ay = rally.y; }
+    else if (u.rm >= 0 && Wd.rooms[u.rm] && Wd.rooms[u.rm].G && !Wd.rooms[u.rm].fallen) { const Rm = Wd.rooms[u.rm]; post = Rm.G.breach ? roomFight(Rm, u.id) : roomPost(Rm, u.id); ax = Rm.G.front.x; ay = Rm.G.front.y; leash = 460; }
+    else if (R && !R.fallen) { post = roomIn(R, u.id); ax = R.G.front.x; ay = R.G.front.y; leash = 420; }
+    else if (alive.length) { let b = alive[0], bd = 1e9; for (const r of alive) { const q = Math.hypot(r.doorX - u.x, r.ty(450) - u.y); if (q < bd) { bd = q; b = r; } } post = roomIn(b, u.id); ax = b.G.front.x; ay = b.G.front.y; }
+    else { post = {x:u.x, y:u.y}; ax = u.x; ay = u.y; }
+    if (u.rest) { const b = alive.length ? alive.reduce((m, r) => Math.hypot(r.doorX - u.x, r.ty(450) - u.y) < Math.hypot(m.doorX - u.x, m.ty(450) - u.y) ? r : m) : null; if (b) post = roomIn(b, u.id); }
     let tg = null, bd = UNIT_AGGRO;
-    for (const e of en) { if (e.dead) continue; const dd = Math.hypot(e.x - u.x, e.y - u.y); if (dd < bd && Math.hypot(e.x - rl.x, e.y - rl.y) < UNIT_LEASH) { bd = dd; tg = e; } }
+    if (!u.rest) for (const e of en) { if (e.dead) continue; const dd = Math.hypot(e.x - u.x, e.y - u.y); if (dd < bd && Math.hypot(e.x - ax, e.y - ay) < leash) { bd = dd; tg = e; } }
     let dest = null;
     if (tg) {
       if (bd <= d.rng + tg.r * .6) {
         if (u.cd <= 0 && G) {
-          hit(G, tg, d.dmg * (1 + .5 * f), true); u.cd = d.cd;
+          hit(G, tg, d.dmg * (1 + .5 * f), true); u.cd = d.cd; u.ak = .28;
           if (Wd.emitOn) Wd.ev.push(d.rng > 100 ? {k:"paper", i:0, ri:99, x1:u.x, y1:u.y - 12, x2:tg.x, y2:tg.y, ox:u.x - 450} : {k:"slash", x:tg.x, y:tg.y, ox:tg.x - 450, ri:99});
         }
       } else dest = {x:tg.x, y:tg.y};
-    } else if (Math.hypot(rl.x - u.x, rl.y - u.y) > 48) dest = rl;
+    } else if (Math.hypot(post.x - u.x, post.y - u.y) > 40) dest = post;
     if (dest) unitMove(Wd, u, dest, d.spd * dt);
   }
   for (let i = 0; i < un.length; i++) for (let j = i + 1; j < un.length; j++) {   // 겹치지 않게 살짝 밀어낸다
-    const a = un[i], b = un[j], dx = b.x - a.x, dy = b.y - a.y, dd = Math.hypot(dx, dy) || .01;
+    const a = un[i], b = un[j], dx = b.x - a.x; if (dx > 22 || dx < -22) continue; const dy = b.y - a.y; if (dy > 22 || dy < -22) continue;
+    const dd = Math.hypot(dx, dy) || .01;
     if (dd < 22) { const p = (22 - dd) / 2, nx = dx / dd, ny = dy / dd; if (legalPos(Wd, a.x - nx * p, a.y - ny * p)) { a.x -= nx * p; a.y -= ny * p; } if (legalPos(Wd, b.x + nx * p, b.y + ny * p)) { b.x += nx * p; b.y += ny * p; } }
   }
   for (const e of en) {   // 귀신이 유닛을 때린다
@@ -1528,9 +1814,9 @@ function aiThink(Wd, a, dt) {
   const sk = a.skill, t = Wd.t, rooms = Wd.rooms;
   if (a.seat >= 0) {
     const G = rooms[a.seat].G;
-    a.actT -= dd; if (a.actT <= 0) { botAct(G, sk); aiFree(Wd, a, G, sk); aiTrain(Wd, a, G, sk); if (Wd.pvp) aiPvp(Wd, a, G, sk); a.actT = (2.2 - 1.5 * sk) * (.7 + .6 * Wd.rng()); }
+    a.actT -= dd; if (a.actT <= 0) { if (a.assist) botSkill(G, sk); else { botAct(G, sk); aiFree(Wd, a, G, sk); aiTrain(Wd, a, G, sk); if (Wd.pvp) aiPvp(Wd, a, G, sk); } a.actT = (2.2 - 1.5 * sk) * (.7 + .6 * Wd.rng()); }
     if (a.assist) return;
-    if (t > 30 && a.hp > 80 && ratioOf(G) > .7 && siege(G) < 3 && !G.breach && !G.en.some(e => e.boss)) {
+    if (t > 30 && a.hp > 80 && ratioOf(G) > .7 && siege(G) < 3 && !G.breach && !G.en.some(e => e.boss) && !(Wd.pvp && (PVP_AI[Wd.diffKey] || {}).flee)) {   // 어려움 이상 대결 AI 본캐릭은 자리를 뜨지 않는다
       let best = null, bs = 0;
       for (const r of rooms) {
         if (r.i === a.seat || !r.G || r.fallen || !allyRoom(Wd, a, r)) continue;
@@ -1574,6 +1860,7 @@ function aiThink(Wd, a, dt) {
 function stepWorld(Wd, dt) {
   if (Wd.over) return;
   Wd.t += dt; const t = Wd.t, D = Wd.D, rooms = Wd.rooms;
+  if (Wd.pvp) wallGrid(Wd);
   const claimed = rooms.filter(r => r.G), alive = claimed.filter(r => !r.fallen);
   // 귀신 압력: 문이 약한 방으로 더 몰린다 (이미 뚫려서 무너지는 중인 방에는 덜 간다)
   let sum = 0; for (const r of alive) { r.w = (1 / (strengthOf(r.G) + 300)) * (r.G.breach ? .4 : 1); sum += r.w; }
@@ -1597,8 +1884,9 @@ function stepWorld(Wd, dt) {
   Wd.allEn = []; for (const r of claimed) for (const e of r.G.en) if (!e.dead) Wd.allEn.push(e);
   if (Wd.pvp) {   // 팀별로 맞힐 수 있는 것 = 귀신 + 상대 팀 유닛 + 밖에 나와 있는 상대 팀 캐릭터(av 대역)
     Wd.unT = [[], []]; for (const u of Wd.un) if (u.hp > 0) Wd.unT[u.team].push(u); Wd.reqs = Wd.reqs.filter(q => Wd.t - q.t < 30);
-    const px = [[], []]; for (const a of Wd.av) if (!a.dead && !(a.inv > 0) && isExposed(Wd, a)) px[a.team].push({x:a.x, y:a.y, r:AV_R, hp:a.hp, max:AV_HP, av:a, dead:false, ri:-1, boss:false, bk:"", team:a.team, slow:0, slowF:1, stun:0, flash:0, hurtT:0, haste:0, spot:-1, atk:false, gold:0, type:"avatar"});
+    const px = [[], []]; for (const a of Wd.av) if (avTargetable(Wd, a)) px[a.team].push({x:a.x, y:a.y, r:AV_R, hp:a.hp, max:AV_HP, av:a, dead:false, ri:-1, boss:false, bk:"", team:a.team, slow:0, slowF:1, stun:0, flash:0, hurtT:0, haste:0, spot:-1, atk:false, gold:0, type:"avatar"});
     Wd.poolT = [Wd.allEn.concat(Wd.unT[1], px[1]), Wd.allEn.concat(Wd.unT[0], px[0])];
+    { const st = stRecords(Wd); Wd.stT = [st[1], st[0]]; }   // stT[팀] = 그 팀이 때릴 수 있는 상대 시설
   }
   for (const a of Wd.av) {
     if (a.dead) {
@@ -1661,7 +1949,14 @@ function stepWorld(Wd, dt) {
     a.slow = cn > 0; a.hurt = Math.max(0, a.hurt - dt);
     if (dmg > 0) { a.calm = 0; a.hp -= dmg * dt; if (a.hurt <= 0) { a.hurt = .3; if (Wd.emitOn) Wd.ev.push({k:"hurt", x:a.x, y:a.y - 10, ox:0}); } }
     else { a.calm = (a.calm || 0) + dt; if (!ex) a.hp = Math.min(AV_HP, a.hp + (a.seat >= 0 ? 6 : 4) * dt); else if (a.calm >= 1.5) a.hp = Math.min(AV_HP, a.hp + 2.5 * dt); }   // 복도·위험한 곳은 느리게(2.5/초), 안전한 방은 4/초, 책상은 6/초
-    if (a.hp <= 0) { a.hp = 0; a.dead = true; a.deaths++; a.deadAt = Math.max(0, t); a.respawnAt = t + RESPAWN; if (a.seat >= 0) standUp(Wd, a); a.dest = null; a.mv = null; a.mission = null; a.destSeat = -1; a.destAssist = false; Wd.feed.push({k:"dead", id:a.id, name:a.name}); }
+    if (a.hp <= 0) {
+      a.hp = 0;
+      if (Wd.pvp) {
+        (Wd.avk || (Wd.avk = [0, 0]))[1 - a.team]++;
+        const Hm = a.home >= 0 ? Wd.rooms[a.home] : null;   // 문이 뚫린 내 방 안에서 본캐릭이 쓰러지면 그 방은 함락
+        if (Hm && Hm.G && !Hm.fallen && Hm.G.breach && (a.seat === a.home || zoneOf(Wd, a.x, a.y) === a.home)) { Wd.feed.push({k:"snipe", id:a.id, room:a.home}); fall(Wd, Hm); }
+      }
+      a.dead = true; a.deaths++; a.deadAt = Math.max(0, t); a.respawnAt = t + RESPAWN; if (a.seat >= 0) standUp(Wd, a); a.dest = null; a.mv = null; a.mission = null; a.destSeat = -1; a.destAssist = false; Wd.feed.push({k:"dead", id:a.id, name:a.name}); }
   }
   for (const r of claimed) { const G = r.G; if (G.ev.length) { for (const e of G.ev) if (Wd.ev.length < 240) Wd.ev.push(e); G.ev = []; } }
   if (Wd.pvp) pvpJudge(Wd, rooms, t);
@@ -1685,12 +1980,12 @@ const resultW = Wd => standingsW(Wd).map(r => ({tm:r.tm, id:r.a.id, p:r.place, h
 const hpPct = (G, it) => { ensureHp(G, it); return Math.max(0, Math.round(100 * it.hp / it.mhp)); };
 function viewOf(Wd) {
   const V = {t:+Wd.t.toFixed(2), du:Wd.dur, pv:Wd.pvp ? 1 : 0, rq:Wd.reqs.filter(q => Wd.t - q.t < 25).slice(-4).map(q => [q.id, q.from, q.k === "troops" ? 0 : q.k === "gold" ? 1 : 2, Math.round(25 - (Wd.t - q.t))]), pw:Wd.winner, bt:Wd.byTime ? 1 : 0, sk:Wd.sg ? Wd.sg.k : -1, o:Wd.over, rooms:[], en:[], av:[], fd:Wd.feed.length, fs:Wd.fs.map(q => [q.id, FREE_TYPES.indexOf(q.t), q.x, q.y, Math.max(0, Math.round(100 * q.hp / q.mhp)), q.owner, Math.round(q.ang * 10) / 10]),
-    un:Wd.un.map(u => [u.id, UNIT_TYPES.indexOf(u.t), Math.round(u.x), Math.round(u.y), Math.max(0, Math.round(100 * u.hp / u.mhp)), u.owner, u.face < 0 ? 1 : 0]),
-    tq:Wd.av.map(a => a.tq.map(q => [UNIT_TYPES.indexOf(q.t), Math.round(100 * (1 - q.left / UNIT[q.t].tt)), q.paid ? 1 : 0])), cp:Wd.av.map(a => supCap(Wd, a)), rl:Wd.av.map(a => a.rally ? [a.rally.x, a.rally.y] : null)};
+    un:Wd.un.map(u => [u.id, UNIT_TYPES.indexOf(u.t), Math.round(u.x), Math.round(u.y), Math.max(0, Math.round(100 * u.hp / u.mhp)), u.owner, u.face < 0 ? 1 : 0, u.ak > 0 ? 1 : 0]),
+    tq:Wd.av.map(a => a.tq.map(q => [UNIT_TYPES.indexOf(q.t), Math.round(100 * (1 - q.left / UNIT[q.t].tt)), q.paid ? 1 : 0])), cp:Wd.av.map(a => supCap(Wd, a)), rl:Wd.av.map(a => a.rally ? [a.rally.x, a.rally.y] : null), od:Wd.av.map(a => a.order ? a.order.k : a.rally ? (a.rally.room != null ? "room" : "rp") : ""), orm:Wd.av.map(a => a.rally && a.rally.room != null ? a.rally.room : -1)};
   for (const r of Wd.rooms) {
     const G = r.G; if (!G) { V.rooms.push(0); continue; }
     V.rooms.push({sd:r.side, o:r.owner, f:r.fallen ? 1 : 0, aw:G.away ? 1 : 0, br:G.breach ? 1 : 0, as:r.as, dl:G.door.lv, dh:Math.round(G.door.hp), dm:G.door.max, fl:G.door.flash > 0 ? 1 : 0, dk:G.deskLv, bo:G.blackout > 0 ? 1 : 0,
-      s:G.slots.map(s => s.locked ? -1 : s.it ? [ITYPES.indexOf(s.it.type), s.it.lv, Math.round(s.it.ang * 10) / 10, hpPct(G, s.it), Math.round(s.x), Math.round(s.y)] : 0), cr:G.crates.map(c => [c.id, Math.round(c.x), Math.round(c.y), c.val]), pj:G.proj.map(p => [Math.round(p.x), Math.round(p.y)])});
+      s:G.slots.map(s => s.locked ? -1 : s.it ? [ITYPES.indexOf(s.it.type), s.it.lv, Math.round(s.it.ang * 10) / 10, hpPct(G, s.it), Math.round(s.x), Math.round(s.y)] : 0), cr:G.crates.map(c => [c.id, Math.round(c.x), Math.round(c.y), c.val, Math.max(0, Math.ceil(c.ttl))]), pj:G.proj.map(p => [Math.round(p.x), Math.round(p.y)])});
     for (const e of G.en) if (!e.dead) V.en.push([e.id, ETYPES.indexOf(e.type), Math.round(e.x), Math.round(e.y), Math.round(e.hp), Math.round(e.max), (e.flash > 0 ? 1 : 0) | (e.slow > 0 && e.slowF < 1 ? 2 : 0) | (e.stun > 0 ? 4 : 0) | (e.atk ? 8 : 0), r.i, e.goal ? 1 : 0, e.bk ? BKS.indexOf(e.bk) + 1 : 0]);
   }
   for (const a of Wd.av) V.av.push([a.id, Math.round(a.x), Math.round(a.y), Math.round(a.hp), a.seat, (a.dead ? 1 : 0) | (a.ai ? 2 : 0) | (a.hurt > 0 ? 4 : 0) | (a.slow ? 8 : 0) | (a.face < 0 ? 16 : 0) | (a.assist ? 32 : 0) | (a.inv > 0 ? 64 : 0), a.home, a.mission ? a.mission.room : -1, a.helps,
@@ -1707,12 +2002,24 @@ const fmt = n => Math.floor(n).toLocaleString("ko-KR");
 const pad = n => String(n).padStart(2, "0");
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const reduced = () => { try { return matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return false; } };
+/* 플레이어 색 8가지(적록색약에서도 구분되도록 채도·명도·색상 차이가 큰 순색, 파스텔 없음) + 모양 배지. 색 번호 0~7, 저장값 SAVE.col = 0~7(고정) 또는 -1(판마다 랜덤) */
+const PLAYER_COLORS = [
+  {n:"노랑", c:"#FFE600", s:"circle"}, {n:"파랑", c:"#2F6BFF", s:"triangle"}, {n:"하양", c:"#FFFFFF", s:"square"}, {n:"하늘", c:"#00D5FF", s:"diamond"},
+  {n:"자주", c:"#FF2FD2", s:"star"}, {n:"주황", c:"#FF8A00", s:"cross"}, {n:"보라", c:"#9A5BFF", s:"hex"}, {n:"연두", c:"#8CFF3A", s:"half"}];
+const PC_GLYPH = {circle:"○", triangle:"△", square:"□", diamond:"◇", star:"★", cross:"✚", hex:"⬡", half:"◖"};
+function pickColors(n, prefs) {   // n 명의 색 번호: 사람이 고른 색은 그대로(겹치면 뒤 사람은 랜덤), 나머지(AI 포함)는 안 겹치게 랜덤
+  const used = new Set(), out = [];
+  for (let i = 0; i < n; i++) { const p = prefs && Number.isInteger(prefs[i]) ? prefs[i] : -1; if (p >= 0 && p < 8 && !used.has(p)) { used.add(p); out.push(p); } else out.push(-1); }
+  const pool = PLAYER_COLORS.map((_, i) => i).filter(i => !used.has(i)).sort(() => Math.random() - .5);
+  return out.map(v => v >= 0 ? v : (pool.length ? pool.pop() : Math.floor(Math.random() * 8)));
+}
 const KEY = "roundb.night.v1";
-let SAVE = {rp:0, ups:{}, best:{}, cleared:{}, runs:0, wins:0, mute:false, diff:"easy", nick:"", code:"", syncAt:0, mode:"solo", players:4, floor:"3f", sc:0, stg:0, sbest:{}, kn:0};
+let SAVE = {rp:0, ups:{}, best:{}, cleared:{}, runs:0, wins:0, mute:false, diff:"easy", nick:"", code:"", syncAt:0, mode:"solo", players:4, floor:"3f", sc:0, stg:0, sbest:{}, kn:0, col:-1};
 try { const j = JSON.parse(localStorage.getItem(KEY) || "null"); if (j && typeof j === "object") SAVE = {...SAVE, ...j, ups:{...(j.ups || {})}, best:{...(j.best || {})}, cleared:{...(j.cleared || {})}, sbest:{...(j.sbest || {})}}; } catch (e) {}
 if (!SAVE.f3) { SAVE.floor = "3f"; SAVE.f3 = 1; }   // 처음엔 3층부터 (한 번만)
 SAVE.sc = clamp(Math.floor(SAVE.sc) || 0, 0, STAGES.length); SAVE.stg = clamp(Math.floor(SAVE.stg) || 0, 0, STAGES.length - 1);
 if (cleanKn(SAVE.kn) < 0) SAVE.kn = 0;
+if (!(Number.isInteger(SAVE.col) && SAVE.col >= -1 && SAVE.col < 8)) SAVE.col = -1;
 const persist = noSync => { try { localStorage.setItem(KEY, JSON.stringify(SAVE)); } catch (e) {} if (!noSync) syncSoon(); };
 
 const AU = {ctx:null, noise:null, last:{}, bus:null, rev:null};
@@ -2515,6 +2822,329 @@ function drawItem(g, s, it, time, flashT) {
   g.restore();
 }
 
+/* ===== 라운드기사단 병력 그림(kuDraw)·모양 배지(kuBadge) — art\knights_units.js ===== */
+/* ===================================================================
+   라운드비 야간 방어전 — 라운드기사단 풀플레이트 병력 3종 (canvas 2D, 평문 함수 선언만)
+   인턴 = 경장 기사(열린 투구·짧은 검·작은 둥근 방패)
+   대리 = 중장 기사(풀 투구·할버드·견갑·가슴 문장 겉옷)
+   팀장 = 대형 기사(가장 크고 넓음·그레이트소드·큰 견갑 가시·큰 플룸)
+   - 몸은 중립 강철색, 플레이어 색(col)은 망토·방패·겉옷·플룸·발밑 고리에 순색 그대로.
+   - 모양 배지(shape)로 색 없이도 구분. 팀 깃발(team 0 흰색 / 1 검정)은 등 뒤 깃대 끝.
+   - 이 파일의 모든 이름은 ku 접두어. shadowBlur·그라디언트·텍스트 없음.
+   =================================================================== */
+var KU_INK = "#14141c", KU_ST1 = "#c6d0dd", KU_ST2 = "#8a96ab", KU_SH = "#56627a", KU_HI = "#f5f8fc", KU_SKIN = "#f2c9a6", KU_WOOD = "#8a5a2b", KU_BLADE = "#eef3f9";
+var KU_TOP = { intern: 40, dae: 46, jang: 54 };   // 원점 기준 머리/플룸 꼭대기 높이(px)
+var KU_A = new Float64Array(8);                  // 애니메이션 임시값 (프레임마다 새로 만들지 않는다)
+var KU_STAR = (function () { var a = new Float64Array(20); for (var i = 0; i < 10; i++) { var q = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 0.56 : 1.26; a[i * 2] = Math.cos(q) * r; a[i * 2 + 1] = Math.sin(q) * r + 0.1; } return a; })();
+var KU_HEX = (function () { var a = new Float64Array(12); for (var i = 0; i < 6; i++) { a[i * 2] = Math.cos(i * Math.PI / 3) * 1.1; a[i * 2 + 1] = Math.sin(i * Math.PI / 3) * 1.1; } return a; })();
+var KU_LIGHT = {};                               // 색 → 밝으면 1 (배지 글자색 대비 결정)
+var KU_FAR = { intern: [20, 7, -9, 10, 16.5, 8.2, -12, -37], dae: [22, 7.7, -10, 12, 19.5, 9.4, -15, -43], jang: [27, 9.2, -12, 17, 23, 13, -23, -51] };   // 멀리서: ring rx, ry, 몸 cy, rx, ry, 배지 r, 깃대 x, 깃대 끝
+
+function kuLum(c) { var n = parseInt(c.slice(1), 16); return 0.299 * (n >> 16 & 255) + 0.587 * (n >> 8 & 255) + 0.114 * (n & 255); }
+function kuLight(col) { var v = KU_LIGHT[col]; if (v === undefined) { v = kuLum(col) > 140 ? 1 : 0; KU_LIGHT[col] = v; } return v; }
+(function () { var c = ["#FFE600", "#2F6BFF", "#FFFFFF", "#00D5FF", "#FF2FD2", "#FF8A00", "#9A5BFF", "#8CFF3A"]; for (var i = 0; i < 8; i++) KU_LIGHT[c[i]] = kuLum(c[i]) > 140 ? 1 : 0; })();
+
+/* ---------- 작은 경로 도우미 (beginPath 는 호출하는 쪽에서) ---------- */
+function kuDot(g, x, y, r) { g.moveTo(x + r, y); g.arc(x, y, r, 0, 6.2832); }
+function kuRR(g, x, y, w, h, r) { if (r > w / 2) r = w / 2; if (r > h / 2) r = h / 2; g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+function kuArc(g, cx, cy, r, a0, a1) { g.moveTo(cx + r * Math.cos(a0), cy + r * Math.sin(a0)); g.arc(cx, cy, r, a0, a1); }
+
+/* ---------- 모양 배지: 게임이 아바타·미니맵·구조물에도 재사용 ---------- */
+function kuB(g, shape, x, y, r, fill, line) {   // 상태 복원 없이 바로 그리는 빠른 판 (kuDraw 안에서 사용)
+  var i;
+  g.beginPath();
+  if (shape === "triangle") { var yy = y + .12 * r; g.moveTo(x, yy - 1.1 * r); g.lineTo(x + 1.08 * r, yy + .84 * r); g.lineTo(x - 1.08 * r, yy + .84 * r); g.closePath(); }
+  else if (shape === "square") { var s = .9 * r; g.rect(x - s, y - s, 2 * s, 2 * s); }
+  else if (shape === "diamond") { g.moveTo(x, y - 1.25 * r); g.lineTo(x + 1.08 * r, y); g.lineTo(x, y + 1.25 * r); g.lineTo(x - 1.08 * r, y); g.closePath(); }
+  else if (shape === "star") { g.moveTo(x + KU_STAR[0] * r, y + KU_STAR[1] * r); for (i = 1; i < 10; i++) g.lineTo(x + KU_STAR[i * 2] * r, y + KU_STAR[i * 2 + 1] * r); g.closePath(); }
+  else if (shape === "cross") { var a = .42 * r, L = 1.12 * r; g.moveTo(x - a, y - L); g.lineTo(x + a, y - L); g.lineTo(x + a, y - a); g.lineTo(x + L, y - a); g.lineTo(x + L, y + a); g.lineTo(x + a, y + a); g.lineTo(x + a, y + L); g.lineTo(x - a, y + L); g.lineTo(x - a, y + a); g.lineTo(x - L, y + a); g.lineTo(x - L, y - a); g.lineTo(x - a, y - a); g.closePath(); }
+  else if (shape === "hex") { g.moveTo(x + KU_HEX[0] * r, y + KU_HEX[1] * r); for (i = 1; i < 6; i++) g.lineTo(x + KU_HEX[i * 2] * r, y + KU_HEX[i * 2 + 1] * r); g.closePath(); }
+  else if (shape === "half") { g.arc(x + .5 * r, y, 1.08 * r, 1.5708, 4.7124); g.closePath(); }   // ◖ 왼쪽 반원
+  else g.arc(x, y, 1.04 * r, 0, 6.2832);                                                        // circle (기본)
+  var lw = r * .22 + .5; g.lineJoin = "round"; g.lineWidth = lw < 1.4 ? 1.4 : lw > 2.6 ? 2.6 : lw;
+  if (fill) { g.fillStyle = fill; g.fill(); }
+  g.strokeStyle = line || KU_INK; g.stroke();
+}
+function kuBadge(g, shape, x, y, r, fill, line) { g.save(); kuB(g, shape, x, y, r, fill, line); g.restore(); }
+
+/* ---------- 공통 부품 ---------- */
+// 발밑 고리: 바닥 그림자 + 바깥 굵은 INK 고리 + 안쪽 색 고리(2겹)
+function kuRing(g, rx, ry, col, sh, lo, lc) {
+  g.beginPath(); g.ellipse(0, 14, rx, ry, 0, 0, 6.2832);
+  if (sh) { g.fillStyle = "rgba(0,0,0,.34)"; g.fill(); }
+  g.strokeStyle = KU_INK; g.lineWidth = lo; g.stroke();
+  g.strokeStyle = col; g.lineWidth = lc; g.stroke();
+}
+// 팀 깃발: 등 뒤 깃대 + 삼각 깃발. team 0 = 흰색(INK 외곽), team 1 = 검정(흰 외곽 얇게). L<2 면 깃대+깃발을 한 번에.
+function kuFlag(g, px, top, base, team, wv, L) {
+  g.beginPath();
+  if (L >= 2) { g.moveTo(px, base); g.lineTo(px, top); g.strokeStyle = KU_INK; g.lineWidth = 2.2; g.stroke(); g.beginPath(); }
+  else { g.moveTo(px, base); g.lineTo(px, top); }
+  g.moveTo(px, top); g.lineTo(px - 9.5, top + 4.3 + wv); g.lineTo(px, top + 8.8); g.closePath();
+  if (team) { g.fillStyle = "#050508"; g.strokeStyle = "#fff"; g.lineWidth = 1.5; } else { g.fillStyle = "#fff"; g.strokeStyle = KU_INK; g.lineWidth = 2; }
+  g.fill(); g.stroke();
+}
+function kuCape(g, tw, ty, hw, hy, cs) {
+  g.beginPath(); g.moveTo(-tw, ty); g.lineTo(tw, ty);
+  g.quadraticCurveTo(hw * 1.12, ty + (hy - ty) * .3, hw + cs * .6, hy - 1.5);
+  g.quadraticCurveTo(hw * .5 + cs * .45, hy + 2.8, cs * .3, hy - .3);
+  g.quadraticCurveTo(-hw * .5 + cs * .15, hy + 2.8, -hw + cs * .6, hy - 1.5);
+  g.quadraticCurveTo(-hw * 1.12, ty + (hy - ty) * .3, -tw, ty); g.closePath();
+}
+// th = 애니메이션 위상(라디안). 걷기는 th=t*10+ph*1.7, 서 있기는 th=t*2.4+ph*1.7. 스프라이트 캐시는 th 를 몇 단계로 끊어서 쓴다.
+function kuAnim(th, mv) {
+  if (mv) { var s = Math.sin(th); KU_A[0] = -Math.abs(s) * 2.2; KU_A[1] = s * 3.2; KU_A[2] = s < 0 ? -s * 2.6 : 0; KU_A[3] = s > 0 ? s * 2.6 : 0; KU_A[4] = Math.sin(th + 1.2) * 2.4; KU_A[5] = Math.sin(th - .9) * 2.6; KU_A[6] = s * 1.1; }
+  else { KU_A[0] = Math.sin(th) * .7 - .2; KU_A[1] = 0; KU_A[2] = 0; KU_A[3] = 0; KU_A[4] = Math.sin(th + 1) * .9; KU_A[5] = Math.sin(th + 2) * 1.4; KU_A[6] = Math.sin(th * 2) * 1.1; }
+}
+
+/* ===================================================================
+   인턴 — 경장 기사
+   =================================================================== */
+function kuIntern(g, face, col, shape, team, th, mv, ak, L) {
+  kuAnim(th, mv);
+  var oy = KU_A[0], ls = KU_A[1], lfA = KU_A[2], lfB = KU_A[3], cs = KU_A[4], ps = KU_A[5], hi = L >= 2;
+  kuRing(g, 20, 7, col, hi, 8, 4);
+  kuFlag(g, -12.5, -39, 4, team, KU_A[6], L);
+  kuCape(g, 9.5, -9 + oy, 18.5, 12.5, cs);
+  g.fillStyle = col; g.fill(); g.lineWidth = 2.5; g.strokeStyle = KU_INK; g.stroke();
+  if (hi) {
+    g.lineWidth = 1.3; g.beginPath(); g.moveTo(-13.5, 0 + oy); g.lineTo(-15 + cs * .5, 9); g.moveTo(13.5, 0 + oy); g.lineTo(15 + cs * .5, 9); g.stroke();
+    g.beginPath(); kuRR(g, -7.4 + ls, 4, 6.4, 10.5 - lfA, 2.2); kuRR(g, 1 - ls, 4, 6.4, 10.5 - lfB, 2.2);          // 다리(정강이 갑옷)
+    g.fillStyle = KU_ST2; g.fill(); g.lineWidth = 2.5; g.stroke();
+  }
+  g.translate(ak * 1.6, 0);   // 공격할 때 상체가 앞으로 쏠림
+  g.beginPath();
+  if (!hi) { kuRR(g, -7.4 + ls, 4, 6.4, 10.5 - lfA, 2.2); kuRR(g, 1 - ls, 4, 6.4, 10.5 - lfB, 2.2); kuDot(g, -10.2, -7 + oy, 5); kuDot(g, 10.2, -7 + oy, 5); }
+  kuRR(g, -8.5, -9 + oy, 17, 14, 5); kuRR(g, -9.5, 3 + oy * .5, 19, 5.5, 2.5);                                      // 가슴 + 허리 판
+  g.fillStyle = KU_ST1; g.fill(); g.lineWidth = 2.5; g.strokeStyle = KU_INK; g.stroke();
+  if (hi) {
+    g.beginPath(); g.moveTo(9.5, -4 + oy); g.lineTo(14, 1 + oy); g.strokeStyle = KU_INK; g.lineWidth = 7; g.stroke(); g.strokeStyle = KU_ST2; g.lineWidth = 4.2; g.stroke();   // 검 든 팔
+    g.beginPath(); kuDot(g, -10.2, -7 + oy, 5.2); kuDot(g, 10.2, -7 + oy, 5.2);                                       // 어깨 견갑
+    g.fillStyle = KU_ST1; g.fill(); g.lineWidth = 2.3; g.strokeStyle = KU_INK; g.stroke();
+  }
+  // 투구 깃털
+  g.beginPath(); g.moveTo(-6, -27 + oy); g.quadraticCurveTo(-12 + ps * .3, -32 + oy, -12 + ps, -38.5 + oy); g.quadraticCurveTo(-3 + ps * .3, -39 + oy, 1 + ps * .3, -34 + oy); g.quadraticCurveTo(6 + ps * .2, -33 + oy, 6.5, -28 + oy); g.closePath();
+  g.fillStyle = col; g.fill(); g.lineWidth = 2.4; g.strokeStyle = KU_INK; g.stroke();
+  // 열린 투구(머리) + 얼굴
+  g.beginPath(); g.arc(0, -19 + oy, 10.6, 0, 6.2832); g.fillStyle = KU_ST1; g.fill(); g.lineWidth = 2.6; g.stroke();
+  if (!hi) {   // 중간 단계: 얼굴 살색 + 눈만
+    g.beginPath(); g.ellipse(3.8, -17 + oy, 6, 5.6, 0, 0, 6.2832); g.fillStyle = KU_SKIN; g.fill();
+    g.fillStyle = KU_INK; g.beginPath(); kuDot(g, 2.6, -17.8 + oy, 1.6); kuDot(g, 7, -17.8 + oy, 1.6); g.fill();
+  } else {
+    g.beginPath(); g.ellipse(3.8, -17 + oy, 6, 5.6, 0, 0, 6.2832); g.fillStyle = KU_SKIN; g.fill(); g.lineWidth = 1.8; g.stroke();
+    g.fillStyle = KU_INK; g.beginPath(); kuDot(g, 2.6, -17.8 + oy, 1.4); kuDot(g, 7, -17.8 + oy, 1.4); g.fill();
+    g.lineCap = "round"; g.lineWidth = 2.2; g.strokeStyle = KU_SH; g.beginPath();                                      // 음영
+    kuArc(g, 0, -19 + oy, 8.4, 1.9, 3.0); kuArc(g, 10.2, -7 + oy, 3.3, .3, 1.9); g.moveTo(6.2, -5 + oy); g.lineTo(6.2, 2 + oy); g.stroke();
+    g.lineWidth = 1.6; g.strokeStyle = KU_HI; g.beginPath();                                                           // 하이라이트
+    kuArc(g, 0, -19 + oy, 8.4, 3.7, 4.55); kuArc(g, -10.2, -7 + oy, 3.3, 3.5, 4.6); g.moveTo(-6.2, -6 + oy); g.lineTo(-6.2, -1 + oy); g.stroke();
+    g.lineWidth = 1.3; g.strokeStyle = KU_INK; g.beginPath(); g.moveTo(1, -8 + oy); g.lineTo(1, 3 + oy); g.moveTo(-8.5, -2 + oy); g.lineTo(8.5, -2 + oy); g.stroke();   // 가슴판 이음선
+  }
+  // 작은 둥근 방패 + 모양 배지
+  var sy = 2.6 + oy * .6, bf = kuLight(col) ? KU_INK : "#fff";
+  g.beginPath(); g.arc(-11.8, sy, 9.6, 0, 6.2832); g.fillStyle = col; g.fill(); g.lineWidth = 2.8; g.strokeStyle = KU_INK; g.stroke();
+  g.scale(face, 1); kuB(g, shape, -11.8 * face, sy, 4.4, bf, KU_INK); g.scale(face, 1);        // 반원 배지가 뒤집히지 않게 한 번 더 뒤집는다
+  // 짧은 검 (휘두르기)
+  g.save(); g.translate(14.2 + ak * 1.5, 1.2 + oy); g.rotate(.2 + ak * 1.3);
+  g.beginPath(); g.moveTo(-2.1, -3); g.lineTo(-2.1, -13); g.lineTo(0, -17.5); g.lineTo(2.1, -13); g.lineTo(2.1, -3); g.closePath();
+  g.fillStyle = KU_BLADE; g.fill(); g.lineWidth = 2.2; g.strokeStyle = KU_INK; g.stroke();
+  if (hi) { g.beginPath(); kuRR(g, -4.6, -4.4, 9.2, 2.6, 1); kuRR(g, -1.4, -2.2, 2.8, 6.4, 1); kuDot(g, 0, 4.8, 1.7); g.fillStyle = KU_WOOD; g.fill(); g.lineWidth = 1.8; g.stroke(); }
+  g.restore();
+}
+
+/* ===================================================================
+   대리 — 중장 기사 (풀 투구 + 할버드 + 견갑 + 문장 겉옷)
+   =================================================================== */
+function kuDae(g, face, col, shape, team, th, mv, ak, L) {
+  kuAnim(th, mv);
+  var oy = KU_A[0], ls = KU_A[1], lfA = KU_A[2], lfB = KU_A[3], cs = KU_A[4], ps = KU_A[5], hi = L >= 2;
+  kuRing(g, 22, 7.7, col, hi, 8.5, 4.4);
+  kuFlag(g, -15.5, -45, 5, team, KU_A[6], L);
+  kuCape(g, 11, -11 + oy, 20.5, 13, cs);
+  g.fillStyle = col; g.fill(); g.lineWidth = 2.5; g.strokeStyle = KU_INK; g.stroke();
+  if (hi) {
+    g.lineWidth = 1.3; g.beginPath(); g.moveTo(-15, 0 + oy); g.lineTo(-17 + cs * .5, 10); g.moveTo(15, 0 + oy); g.lineTo(17 + cs * .5, 10); g.stroke();
+    g.beginPath(); kuRR(g, -8.6 + ls, 3, 7.2, 11.5 - lfA, 2.4); kuRR(g, 1.4 - ls, 3, 7.2, 11.5 - lfB, 2.4);
+    g.fillStyle = KU_ST2; g.fill(); g.lineWidth = 2.5; g.stroke();
+    g.beginPath(); kuDot(g, -5 + ls, 10.6 - lfA, 2.7); kuDot(g, 5 - ls, 10.6 - lfB, 2.7);                              // 무릎 보호대
+    g.fillStyle = KU_ST1; g.fill(); g.lineWidth = 1.8; g.stroke();
+  }
+  g.translate(ak * 1.4, 0);
+  g.beginPath();
+  if (!hi) { kuRR(g, -8.6 + ls, 3, 7.2, 11.5 - lfA, 2.4); kuRR(g, 1.4 - ls, 3, 7.2, 11.5 - lfB, 2.4); kuDot(g, -12.2, -9 + oy, 6.2); kuDot(g, 12.2, -9 + oy, 6.2); }
+  kuRR(g, -10, -11 + oy, 20, 16, 5.5); kuRR(g, -11, 2.5 + oy * .5, 22, 5.8, 2.5);
+  g.fillStyle = KU_ST1; g.fill(); g.lineWidth = 2.5; g.strokeStyle = KU_INK; g.stroke();
+  // 문장 겉옷 (플레이어 색) + 모양 배지
+  g.beginPath(); g.moveTo(-6.4, -10 + oy); g.lineTo(6.4, -10 + oy); g.lineTo(5.8, 8.4); g.lineTo(0, 11.4); g.lineTo(-5.8, 8.4); g.closePath();
+  g.fillStyle = col; g.fill(); g.lineWidth = 2.3; g.stroke();
+  if (hi) {
+    g.beginPath(); g.moveTo(12, -6 + oy); g.lineTo(14.8, 0 + oy); g.moveTo(-12, -6 + oy); g.lineTo(-14.2, 1.6 + oy); g.strokeStyle = KU_INK; g.lineWidth = 7.4; g.stroke(); g.strokeStyle = KU_ST2; g.lineWidth = 4.6; g.stroke();   // 두 팔
+    g.beginPath(); kuDot(g, -12.2, -9 + oy, 6.2); kuDot(g, 12.2, -9 + oy, 6.2);                                       // 어깨 견갑
+    g.fillStyle = KU_ST1; g.fill(); g.lineWidth = 2.4; g.strokeStyle = KU_INK; g.stroke();
+  }
+  g.scale(face, 1); kuB(g, shape, 0, -3.2 + oy, 5.3, kuLight(col) ? KU_INK : "#fff", KU_INK); g.scale(face, 1);
+  // 깃털(플룸)
+  g.beginPath(); g.moveTo(-7, -29.5 + oy); g.quadraticCurveTo(-12 + ps * .4, -34 + oy, -14 + ps, -40 + oy); g.quadraticCurveTo(-4 + ps * .5, -40 + oy, -1 + ps * .3, -35.5 + oy); g.quadraticCurveTo(2 + ps * .2, -41.5 + oy, 8 + ps * .2, -38 + oy); g.quadraticCurveTo(10 + ps * .2, -33 + oy, 8, -29.5 + oy); g.closePath();
+  g.fillStyle = col; g.fill(); g.lineWidth = 2.4; g.strokeStyle = KU_INK; g.stroke();
+  // 풀 투구
+  g.beginPath(); kuRR(g, -10, -32 + oy, 20, 21, 8.5); g.fillStyle = KU_ST1; g.fill(); g.lineWidth = 2.6; g.stroke();
+  if (!hi) { g.fillStyle = KU_INK; g.beginPath(); kuRR(g, -4, -24 + oy, 12.6, 4.4, 1.8); g.fill(); }
+  else {
+    g.fillStyle = KU_INK; g.beginPath(); kuRR(g, -4, -24 + oy, 12.6, 4.4, 1.8); kuDot(g, 4.6, -15.8 + oy, .9); kuDot(g, 7.2, -15.8 + oy, .9); kuDot(g, 4.6, -13.2 + oy, .9); kuDot(g, 7.2, -13.2 + oy, .9); g.fill();   // 얼굴창 + 숨구멍
+    g.lineWidth = 1.5; g.strokeStyle = KU_INK; g.beginPath(); g.moveTo(2.4, -31.5 + oy); g.lineTo(2.4, -24 + oy); g.moveTo(2.4, -19.6 + oy); g.lineTo(2.4, -11.6 + oy); g.stroke();
+    g.lineWidth = 2.2; g.strokeStyle = KU_SH; g.beginPath(); g.moveTo(8.2, -28 + oy); g.lineTo(8.2, -26 + oy); g.moveTo(-6.4, -17 + oy); g.lineTo(-6.4, -13.5 + oy); kuArc(g, 12.2, -9 + oy, 4, .3, 1.9); g.moveTo(8, -7 + oy); g.lineTo(8, 1.5 + oy); g.stroke();
+    g.lineWidth = 1.6; g.strokeStyle = KU_HI; g.beginPath(); g.moveTo(-7.4, -27 + oy); g.lineTo(-7.4, -21 + oy); kuArc(g, -12.2, -9 + oy, 4, 3.5, 4.6); g.moveTo(-8, -8 + oy); g.lineTo(-8, -2 + oy); g.stroke();
+  }
+  // 할버드 (찌르기)
+  g.save(); g.translate(14.8 + ak * 7, .5 + oy); g.rotate(.07 + ak * .95);
+  if (hi) { g.beginPath(); g.moveTo(0, 13); g.lineTo(0, -33); g.strokeStyle = KU_INK; g.lineWidth = 4.6; g.stroke(); g.strokeStyle = KU_WOOD; g.lineWidth = 2.6; g.stroke(); }
+  g.beginPath(); g.moveTo(0, -45.5); g.lineTo(3.4, -39); g.lineTo(2.6, -33.5); g.lineTo(-2.6, -33.5); g.lineTo(-3.4, -39); g.closePath();
+  g.moveTo(2.4, -38.5); g.lineTo(8.8, -41); g.quadraticCurveTo(11, -36.5, 8.6, -32.5); g.lineTo(2.4, -33.5); g.closePath();
+  if (!hi) g.rect(-1.3, -33, 2.6, 46);
+  g.fillStyle = KU_BLADE; g.fill(); g.lineWidth = 2.2; g.strokeStyle = KU_INK; g.stroke();
+  g.restore();
+}
+
+/* ===================================================================
+   팀장 — 대형 기사 (그레이트소드 + 가시 견갑 + 큰 플룸)
+   =================================================================== */
+function kuJang(g, face, col, shape, team, th, mv, ak, L) {
+  kuAnim(th, mv);
+  var oy = KU_A[0], ls = KU_A[1], lfA = KU_A[2], lfB = KU_A[3], cs = KU_A[4], ps = KU_A[5], hi = L >= 2;
+  kuRing(g, 27, 9.2, col, hi, 9.5, 5);
+  kuFlag(g, -24.5, -53, 6, team, KU_A[6], L);
+  kuCape(g, 15, -14 + oy, 29, 13, cs * 1.2);
+  g.fillStyle = col; g.fill(); g.lineWidth = 3; g.strokeStyle = KU_INK; g.stroke();
+  if (hi) {
+    g.lineWidth = 1.5; g.beginPath(); g.moveTo(-22, 0 + oy); g.lineTo(-24 + cs * .6, 10); g.moveTo(22, 0 + oy); g.lineTo(24 + cs * .6, 10); g.stroke();
+    g.beginPath(); kuRR(g, -11.7 + ls, 3, 9.4, 11.5 - lfA, 3); kuRR(g, 2.3 - ls, 3, 9.4, 11.5 - lfB, 3);
+    g.fillStyle = KU_ST2; g.fill(); g.lineWidth = 3; g.stroke();
+    g.beginPath(); kuDot(g, -7 + ls, 10.4 - lfA, 3.2); kuDot(g, 7 - ls, 10.4 - lfB, 3.2);
+    g.fillStyle = KU_ST1; g.fill(); g.lineWidth = 2; g.stroke();
+  }
+  g.translate(ak * 1.8, 0);
+  g.beginPath();
+  if (!hi) { kuRR(g, -11.7 + ls, 3, 9.4, 11.5 - lfA, 3); kuRR(g, 2.3 - ls, 3, 9.4, 11.5 - lfB, 3); kuDot(g, -17.5, -12 + oy, 8.4); kuDot(g, 17.5, -12 + oy, 8.4); }
+  kuRR(g, -14, -14 + oy, 28, 20, 7); kuRR(g, -15, 3 + oy * .5, 30, 6.5, 3);
+  g.fillStyle = KU_ST1; g.fill(); g.lineWidth = 3; g.strokeStyle = KU_INK; g.stroke();
+  g.beginPath(); g.moveTo(-8.6, -13 + oy); g.lineTo(8.6, -13 + oy); g.lineTo(8, 10); g.lineTo(0, 13.2); g.lineTo(-8, 10); g.closePath();
+  g.fillStyle = col; g.fill(); g.lineWidth = 2.6; g.stroke();
+  if (hi) {
+    g.beginPath(); g.moveTo(17, -8 + oy); g.lineTo(20, 0 + oy); g.moveTo(-17, -8 + oy); g.lineTo(-20, 3 + oy); g.strokeStyle = KU_INK; g.lineWidth = 9; g.stroke(); g.strokeStyle = KU_ST2; g.lineWidth = 5.8; g.stroke();
+    g.beginPath(); kuDot(g, -17.5, -12 + oy, 8.4); kuDot(g, 17.5, -12 + oy, 8.4);
+    g.moveTo(-12.5, -19 + oy); g.lineTo(-24.5, -14 + oy); g.lineTo(-23, -33 + oy); g.closePath(); g.moveTo(12.5, -19 + oy); g.lineTo(24.5, -14 + oy); g.lineTo(23, -33 + oy); g.closePath();   // 견갑 가시
+    g.fillStyle = KU_ST1; g.fill(); g.lineWidth = 2.8; g.strokeStyle = KU_INK; g.stroke();
+  }
+  g.scale(face, 1); kuB(g, shape, 0, -4 + oy, 7.3, kuLight(col) ? KU_INK : "#fff", KU_INK); g.scale(face, 1);
+  // 큰 플룸 (두 갈래)
+  g.beginPath(); g.moveTo(-10, -38.5 + oy); g.quadraticCurveTo(-15 + ps * .4, -45 + oy, -19 + ps, -52 + oy); g.quadraticCurveTo(-9 + ps * .6, -53 + oy, -4 + ps * .4, -47 + oy);
+  g.quadraticCurveTo(-1 + ps * .3, -54 + oy, 7 + ps * .3, -52.5 + oy); g.quadraticCurveTo(14 + ps * .2, -46 + oy, 11, -38.5 + oy); g.closePath();
+  g.fillStyle = col; g.fill(); g.lineWidth = 2.8; g.strokeStyle = KU_INK; g.stroke();
+  // 대형 투구
+  g.beginPath(); kuRR(g, -13.5, -41 + oy, 27, 29, 10.5); g.fillStyle = KU_ST1; g.fill(); g.lineWidth = 3; g.stroke();
+  if (!hi) { g.fillStyle = KU_INK; g.beginPath(); kuRR(g, -4, -31 + oy, 17, 5, 2); g.fill(); }
+  else {
+    g.fillStyle = KU_INK; g.beginPath(); kuRR(g, -4, -31 + oy, 17, 5, 2); kuDot(g, 5.4, -19.5 + oy, 1.1); kuDot(g, 8.8, -19.5 + oy, 1.1); kuDot(g, 5.4, -16.2 + oy, 1.1); kuDot(g, 8.8, -16.2 + oy, 1.1); g.fill();
+    g.lineWidth = 1.7; g.strokeStyle = KU_INK; g.beginPath(); g.moveTo(3, -40.5 + oy); g.lineTo(3, -31 + oy); g.moveTo(3, -26 + oy); g.lineTo(3, -12.6 + oy); g.stroke();
+    g.lineWidth = 2.4; g.strokeStyle = KU_SH; g.beginPath(); g.moveTo(10.6, -35 + oy); g.lineTo(10.6, -30 + oy); g.moveTo(-9, -22 + oy); g.lineTo(-9, -17 + oy); kuArc(g, 17.5, -12 + oy, 5.4, .3, 1.9); g.moveTo(10.5, -9 + oy); g.lineTo(10.5, 2 + oy); g.stroke();
+    g.lineWidth = 1.8; g.strokeStyle = KU_HI; g.beginPath(); g.moveTo(-10, -36 + oy); g.lineTo(-10, -28 + oy); kuArc(g, -17.5, -12 + oy, 5.4, 3.5, 4.6); g.moveTo(-10.5, -9 + oy); g.lineTo(-10.5, -2 + oy); g.stroke();
+  }
+  // 그레이트소드 (내려찍기)
+  g.save(); g.translate(20 + ak * 2, -1 + oy); g.rotate(.18 + ak * 1.35);
+  g.beginPath(); g.moveTo(-4.2, -9); g.lineTo(-4.2, -38); g.lineTo(0, -47); g.lineTo(4.2, -38); g.lineTo(4.2, -9); g.closePath();
+  if (!hi) kuRR(g, -9.5, -12, 19, 4.4, 1.8);   // 중간 단계에서는 날과 가드를 한 색으로 합친다
+  g.fillStyle = KU_BLADE; g.fill(); g.lineWidth = 2.6; g.strokeStyle = KU_INK; g.stroke();
+  if (hi) {
+    g.beginPath(); kuRR(g, -9.5, -12, 19, 4.4, 1.8); kuRR(g, -2.2, -8, 4.4, 15, 1.5); kuDot(g, 0, 9.5, 3);
+    g.fillStyle = KU_WOOD; g.fill(); g.lineWidth = 2.2; g.stroke();
+    g.lineWidth = 1.3; g.beginPath(); g.moveTo(0, -14); g.lineTo(0, -38); g.stroke();
+  }
+  g.restore();
+}
+
+/* ===================================================================
+   멀리서 (z < 0.55): 발밑 색 고리 + 몸 실루엣 타원 + 모양 배지 + 팀 깃발  (칠하기 8회)
+   =================================================================== */
+function kuFar(g, type, col, shape, team, th, mv) {
+  var F = KU_FAR[type] || KU_FAR.intern;
+  kuRing(g, F[0], F[1], col, 0, 10, 6);
+  g.beginPath(); g.ellipse(0, F[2], F[3], F[4], 0, 0, 6.2832); g.fillStyle = KU_ST1; g.fill(); g.lineWidth = 3; g.strokeStyle = KU_INK; g.stroke();
+  kuB(g, shape, 0, F[2], F[5], col, KU_INK);
+  kuFlag(g, F[6], F[7], F[2] - F[4] + 4, team, Math.sin(th * (mv ? 1 : 2)) * 1.1, 0);
+}
+
+/* ===================================================================
+   직접(벡터) 그리기 — 칠하기 호출: 원거리 8 / 중간 20 / 풀 40 이하
+   =================================================================== */
+function kuDrawV(g, type, x, y, face, col, shape, team, t, ph, z, mv, ak, th0) {   // th0: 위상을 직접 줄 때만(스프라이트 제작용)
+  var L = z < .55 ? 0 : z < .85 ? 1 : 2, th = th0 !== undefined ? th0 : (mv ? t * 10 : t * 2.4) + ph * 1.7;
+  face = face < 0 ? -1 : 1; mv = mv ? 1 : 0; ak = ak > 0 ? (ak > 1 ? 1 : ak) : 0; team = team ? 1 : 0;
+  g.save(); g.translate(x, y); if (face < 0) g.scale(-1, 1);
+  g.lineJoin = "round"; g.lineCap = "round";
+  if (L === 0) kuFar(g, type, col, shape, team, th, mv);
+  else if (type === "jang") kuJang(g, face, col, shape, team, th, mv, ak, L);
+  else if (type === "dae") kuDae(g, face, col, shape, team, th, mv, ak, L);
+  else kuIntern(g, face, col, shape, team, th, mv, ak, L);
+  g.restore();
+}
+
+/* ===================================================================
+   스프라이트 캐시 — 250마리를 매 프레임 직접 그리면 느리므로(획 칠하기가 비쌈),
+   (종류·색·모양·팀·LOD·해상도·동작 프레임)마다 한 번만 오프스크린에 그려 두고 drawImage 로 찍는다.
+   동작은 서 있기 KU_NI 프레임 / 걷기 KU_NW 프레임 / 공격 KU_NA 단계로 끊는다. 좌우는 뒤집어서 쓴다(반원 배지만 별도 보관).
+   KU_CACHE=false 이거나 document 가 없으면 항상 직접 그린다.
+   =================================================================== */
+var KU_CACHE = true, KU_NI = 6, KU_NW = 8, KU_NA = 5, KU_SPR_MAX = 1200, KU_SPR_N = 0;
+var KU_BOX = { intern: [-28, -46, 44, 28], dae: [-31, -52, 72, 29], jang: [-39, -59, 78, 30] };   // 스프라이트가 덮는 영역 x0,y0,x1,y1 (무기 뻗음·깃발·고리 포함)
+var KU_RESB = [.5, .75, 1, 1.5, 2, 2.5];                                                         // 해상도 단계(화면 배율 = z × devicePixelRatio 에 맞춰 고름)
+var KU_SPR = { intern: {}, dae: {}, jang: {} }, KU_COLI = {}, KU_COLN = 0, KU_SHI = { circle: 0, triangle: 1, square: 2, diamond: 3, star: 4, cross: 5, hex: 6, half: 7 };
+
+function kuCacheClear() { KU_SPR = { intern: {}, dae: {}, jang: {} }; KU_SPR_N = 0; }
+function kuMake(type, col, shape, team, L, res, fkey, face) {
+  var b = KU_BOX[type], w = Math.ceil((b[2] - b[0]) * res), h = Math.ceil((b[3] - b[1]) * res), c = document.createElement("canvas"), g, th, mv = 0, ak = 0;
+  c.width = w; c.height = h; g = c.getContext("2d");
+  if (fkey >= 100) { ak = (fkey - 100) / KU_NA; th = 0; } else if (fkey >= 10) { mv = 1; th = (fkey - 10) / KU_NW * 6.2832; } else th = fkey / KU_NI * 6.2832;
+  if (face > 0) g.setTransform(res, 0, 0, res, -b[0] * res, -b[1] * res); else g.setTransform(res, 0, 0, res, b[2] * res, -b[1] * res);   // 왼쪽 보는 판은 영역도 좌우 반대
+  kuDrawV(g, type, 0, 0, face, col, shape, team, 0, 0, L === 0 ? .4 : L === 1 ? .7 : 1, mv, ak, th);
+  return c;
+}
+function kuDraw(g, type, x, y, face, col, shape, team, t, ph, z, mv, ak, mode) {
+  if (!KU_CACHE || mode || typeof document === "undefined") return kuDrawV(g, type, x, y, face, col, shape, team, t, ph, z, mv, ak);
+  var L = z < .55 ? 0 : z < .85 ? 1 : 2, a = z * (window.devicePixelRatio || 1) * .9, ri = 0, res, fkey, th, cn, key, S, e, b, fk, w, h;
+  while (ri < 5 && KU_RESB[ri] < a) ri++;
+  res = KU_RESB[ri];
+  face = face < 0 ? -1 : 1; team = team ? 1 : 0; ak = ak > 0 ? ak : 0;
+  if (ak > .02) fkey = 100 + (ak >= 1 ? KU_NA : Math.ceil(ak * KU_NA));
+  else if (mv) { th = t * 10 + ph * 1.7; th = th - Math.floor(th / 6.2832) * 6.2832; fkey = 10 + Math.floor(th / 6.2832 * KU_NW) % KU_NW; }
+  else { th = t * 2.4 + ph * 1.7; th = th - Math.floor(th / 6.2832) * 6.2832; fkey = Math.floor(th / 6.2832 * KU_NI) % KU_NI; }
+  cn = KU_COLI[col]; if (cn === undefined) cn = KU_COLI[col] = KU_COLN++ & 255;
+  fk = shape === "half" ? face : 1;   // 반원 배지는 뒤집으면 ◗ 가 되므로 좌우별로 따로 만든다
+  key = (((((cn * 8 + (KU_SHI[shape] | 0)) * 2 + team) * 3 + L) * 6 + ri) * 160 + fkey) * 2 + (fk > 0 ? 1 : 0);
+  S = KU_SPR[type] || (type = "intern", KU_SPR.intern);
+  e = S[key];
+  if (e === undefined) {
+    if (KU_SPR_N > KU_SPR_MAX) { kuCacheClear(); S = KU_SPR[type]; }
+    e = S[key] = kuMake(type, col, shape, team, L, res, fkey, fk); KU_SPR_N++;
+  }
+  b = KU_BOX[type]; w = e.width / res; h = e.height / res;
+  if (face === fk) g.drawImage(e, fk > 0 ? x + b[0] : x - b[2], y + b[1], w, h);
+  else g.drawImage(e, x - b[0], y + b[1], -w, h);   // 좌우 반전 (마이너스 너비)
+}
+// 미리 만들어 두기(로딩 화면용): 색·모양 목록(teams = 그 색 주인의 팀 0|1 배열, 같은 길이)으로 3종 × 모든 동작 프레임을 z 배율로 만들어 둔다.
+// maxMs 를 주면 그 시간만 일하고 멈춘다(false 반환) — 다음 프레임에 다시 불러 이어서 만들면 된다. 다 만들었으면 true.
+function kuWarm(cols, shapes, teams, z, maxMs) {
+  if (typeof document === "undefined" || !KU_CACHE) return true;
+  var ty = ["intern", "dae", "jang"], i, k, f, c = { drawImage: function () {} }, t0 = maxMs ? performance.now() : 0, tm;
+  for (i = 0; i < cols.length; i++) for (k = 0; k < 3; k++) {
+    tm = teams ? teams[i] : 0;
+    for (f = 0; f < KU_NI; f++) kuDraw(c, ty[k], 0, 0, 1, cols[i], shapes[i], tm, (f + .5) / KU_NI * 6.2832 / 2.4, 0, z, 0, 0);
+    for (f = 0; f < KU_NW; f++) kuDraw(c, ty[k], 0, 0, 1, cols[i], shapes[i], tm, (f + .5) / KU_NW * 6.2832 / 10, 0, z, 1, 0);
+    for (f = 1; f <= KU_NA; f++) kuDraw(c, ty[k], 0, 0, 1, cols[i], shapes[i], tm, 0, 0, z, 0, f / KU_NA);
+    if (shapes[i] === "half") kuDraw(c, ty[k], 0, 0, -1, cols[i], "half", tm, 0, 0, z, 0, 0);
+    if (maxMs && performance.now() - t0 > maxMs) return false;
+  }
+  return true;
+}
+
 /* ===== UI state ===== */
 const UI = {screen:"title", G:null, W:null, room:null, pickId:null, sel:null, speed:1, paused:false, last:0, raf:0, fx:{p:[], f:[], b:[], r:[]}, shake:0, flash:0, itemFlash:{}, hints:{}, endT:0, ended:false, hudT:0, panelT:0, selHtml:"", heartT:0, doorSnd:0, warnT:0, back:"title"};
 
@@ -2559,12 +3189,17 @@ function buildSelect() {
       <p class="dim small">${esc(r.perk)}</p>
       <div class="rc-stats"><span class="chip">설치 칸 ${r.base + meta.slots}</span><span class="chip">문 x${r.doorMult}</span><span class="chip">동시 공격 ${r.contact}</span><span class="chip">시작 ₩${r.gold + meta.startGold}</span>${r.open ? `<span class="chip" style="color:var(--blue)">문 없는 개방형</span>` : ""}${r.rec ? `<span class="chip tag-rec">처음이라면 추천</span>` : ""}${clear ? `<span class="chip" style="color:var(--mint)">클리어</span>` : best ? `<span class="chip">최고 ${fmtTime(best)}</span>` : ""}</div>
     </button>`; }).join("");
-  $("#s-rp").textContent = fmt(SAVE.rp) + " RP"; buildDiff(); buildMode(); buildKn(); updatePick();
+  $("#s-rp").textContent = fmt(SAVE.rp) + " RP"; buildDiff(); buildMode(); buildKn(); buildCol(); updatePick();
 }
 function buildKn() {
   const row = $("#kn-row"); if (!row) return; const sel = cleanKn(SAVE.kn) >= 0 ? SAVE.kn : 0, K = KNIGHTS[sel];
   row.innerHTML = KNIGHTS.map((k, i) => `<button class="kn-b" role="radio" aria-checked="${i === sel}" data-act="kn-pick" data-i="${i}" title="${k.n} · ${k.r}"><img src="${kSrc(i, true)}" alt="" loading="lazy"><span>${k.n}</span></button>`).join("");
   $("#kn-desc").innerHTML = `<b>${K.n}</b> · ${K.r} — “${esc(K.q)}” <span class="faint">(같이 하는 판에서 같은 기사를 고르면 늦게 들어온 사람은 다른 기사로 바뀌어요)</span>`;
+}
+function buildCol() {
+  const row = $("#col-row"); if (!row) return; const sel = SAVE.col;
+  row.innerHTML = PLAYER_COLORS.map((c, i) => `<button class="col-b" role="radio" aria-checked="${i === sel}" data-act="col-pick" data-i="${i}" title="${c.n} ${PC_GLYPH[c.s]}"><span class="sw" style="background:${c.c};color:${c.c === "#FFFFFF" || c.c === "#FFE600" || c.c === "#8CFF3A" || c.c === "#00D5FF" ? "#14141c" : "#fff"}">${PC_GLYPH[c.s]}</span><span>${c.n}</span></button>`).join("") + `<button class="col-b rnd" role="radio" aria-checked="${sel < 0}" data-act="col-pick" data-i="-1" title="판마다 랜덤"><span class="sw">?</span><span>랜덤</span></button>`;
+  $("#col-desc").innerHTML = sel < 0 ? "판마다 8색 중 하나가 랜덤으로 정해져요." : `<b style="color:${PLAYER_COLORS[sel].c}" class="pcg">${PC_GLYPH[PLAYER_COLORS[sel].s]} ${PLAYER_COLORS[sel].n}</b> · 내 모양은 ${PC_GLYPH[PLAYER_COLORS[sel].s]} 예요. 다른 사람(AI)은 이 색을 피해서 랜덤으로 정해져요.`;
 }
 function buildDiff() {
   const d = DIFFS[SAVE.diff] ? SAVE.diff : "easy"; SAVE.diff = d;
@@ -2593,15 +3228,15 @@ function buildMode() {
   buildPlan(); $("#plan").hidden = m === "td"; $("#cards").hidden = true; $("#pick-bar").hidden = true;
   $("#wn-row").hidden = !(m === "multi" || m === "td"); $("#w-multi-btns").hidden = m !== "multi"; $("#w-td-btns").hidden = m !== "td"; $("#td-opts").hidden = m !== "td"; $("#wf-row").hidden = m === "td"; $("#w-solo-btns").hidden = m !== "solo"; $("#pvp-row").hidden = $("#w-pvp-btns").hidden = m !== "pvp";
   $("#diff-grp").hidden = $("#diff-desc").hidden = m === "solo"; $("#stage-box").hidden = m !== "solo"; if (m === "solo") buildStage();
-  if (m === "pvp") $("#diff-desc").textContent = "AI 난이도 " + DIFFS[SAVE.diff].n + " · 상대 AI의 수당이 x" + PVP_AI_INC[SAVE.diff] + "배예요 · RP x" + DIFFS[SAVE.diff].rp;
+  if (m === "pvp") $("#diff-desc").textContent = "AI 난이도 " + DIFFS[SAVE.diff].n + " · 상대 AI의 수당이 x" + PVP_AI_INC[SAVE.diff] + "배예요 · 본캐릭 방어: " + PVP_AI_DESC[SAVE.diff] + " · RP x" + DIFFS[SAVE.diff].rp;
   $("#wi-title").textContent = m === "multi" ? "다 같이 · 한 층 전체를 지켜요" : m === "pvp" ? "대결 · 유닛으로 상대 팀 방을 무너뜨려요" : "혼자 · 스테이지 D6에서 A1까지";
-  const tail = " 문이 뚫려도 바로 끝나지 않아요: 방 안 설비가 버티는 동안 최후의 항전을 하고, 문을 다시 막을 수도 있어요. 내 캐릭터 둘레 어디든 건물을 짓고(B·숫자 1~6), 전투 유닛(7·8·9)을 뽑아 집결 지점(우클릭)에서 싸우게 하세요. 앉아 있어야 수당이 제대로 들어오고, 걸어 다니면 30%만 들어와요.";
+  const tail = " 문이 뚫려도 바로 끝나지 않아요: 방 안 설비가 버티는 동안 최후의 항전을 하고, 문을 다시 막을 수도 있어요. 내 캐릭터 둘레 어디든 건물을 짓고(B·숫자 1~6), 전투 유닛(7·8·9)을 뽑으면 병력이 알아서 급한 방으로 가서 싸워요(방을 우클릭하면 그 방 지키기). 앉아 있어야 수당이 제대로 들어오고, 걸어 다니면 30%만 들어와요.";
   $("#wi-text").textContent = m === "multi"
     ? "실제 배치도처럼 한 층에 방 5개가 둘러 있어요. 위 배치도에서 층을 고르세요. 시작하면 직접 걸어가서 책상에 앉으면 그 방의 문이 닫혀요. 동료 방의 보조석(방마다 4자리)에 같이 앉거나 달려가 문을 고쳐 줄 수 있고, 쓰러져도 22초 뒤 입구에서 다시 일어나요." + tail
     : m === "pvp"
-    ? "두 팀이 한 층의 위·아래 방을 하나씩 차지해요. 내 팀은 위쪽 방(3F 창고·스튜디오 / 4F 휴게공간·회의실)이고 상대 팀은 아래쪽 방이에요. 전투 유닛(7·8·9)을 뽑아 '총공격!'을 누르면 상대 방 문 앞으로 몰려가 문을 부수고, 문이 뚫리면 안의 설비를 부수며, 상대 방이 모두 무너지면 이겨요. 설비와 소화기는 상대 유닛도 쏘고, 귀신도 가끔 나와요. 수당은 팀원끼리도 각자 따로 쓰고, 2 대 2에서는 '팀 소통' 버튼으로 병력·수당·문 수리를 요청하거나 수당을 보낼 수 있어요(AI 동료는 바로 따라요). 8분 안에 끝나지 않으면 남은 문·설비와 교전 결과로 판정해요. 유닛은 12칸까지 가질 수 있고 수당이 평소보다 빨리 쌓여요. 점수·랭킹은 없고 RP만 받아요."
+    ? "두 팀이 한 층의 위·아래 방을 하나씩 차지해요(맵이 커서 가는 데 시간이 걸려요). 전투 유닛(7·8·9)을 뽑아 지도를 우클릭하면 공격 이동이에요 — 병력이 그 지점으로 가면서 길에 있는 문·건물·병력·본캐릭을 전부 공격하고, 문 앞에서 멈칫하지 않고 문을 부숴요. 적 본캐릭을 우클릭하면 집중 공격하고, '총공격!'은 병력 하나하나가 자기와 가장 가까운 적으로 가요. 상대 방 문이 뚫리면 책상에 앉은 본캐릭도 때릴 수 있고, 뚫린 방에서 본캐릭이 쓰러지면 그 방이 무너져요. 내 본캐릭 둘레에 방벽(6키)을 깔면 상대 병력이 부숴야 지나가요. 복도(중간지대)에 지은 터렛도 적의 문·건물·병력·본캐릭을 전부 쏴요. 방 설비와 복도 건물을 합쳐 1인 100개까지 짓고 병력은 최대 100명까지 늘려요(인사팀 사무실). 돈·업그레이드는 모두 각자 따로예요(2 대 2에서도 '팀 소통'으로 요청하거나 수당을 보내 주는 것만 가능). 8분 안에 끝나지 않으면 남은 문·설비와 교전 결과로 판정해요. 점수·랭킹은 없고 RP만 받아요."
     : "실제 배치도처럼 한 층에 방 5개가 둘러 있어요. 위 배치도에서 층을 고르고 시작하면, 직접 걸어가서 원하는 방의 책상에 앉으세요. 앉은 방의 문이 닫혀요." + tail + " 스테이지를 깰수록 몹과 보스가 달라지고 점수 배율도 올라가요. 점수는 '혼자' 랭킹에 올라가요.";
-  $("#wi-note").textContent = m === "multi" ? "사람 찾기는 최대 1분 기다려요(인원이 다 모이면 바로 시작). 기다리기 싫으면 \"AI와 바로 시작\"을 누르세요." : m === "pvp" ? "지금은 AI와 하는 대결만 있어요. 사람끼리 대결은 나중에 열어요." : "";
+  $("#wi-note").textContent = m === "multi" ? "사람 찾기는 최대 1분 기다려요(인원이 다 모이면 바로 시작). 기다리기 싫으면 \"AI와 바로 시작\"을 누르세요." : m === "pvp" ? "지금은 AI와 하는 대결만 있어요. 사람끼리 대결은 나중에 열어요. 판이 커서 문 사이를 오가려면 병력도 5~8초 걸려요." : "";
   $("#mode-desc").textContent = m === "multi" ? "복도 한 층을 걸어 다니며 자리를 잡고, 서로 도와 새벽까지 버텨요. 점수는 다 같이 랭킹에 올라가요." : m === "pvp" ? "내 팀과 상대 팀이 유닛을 뽑아 서로의 방을 부숴요. AI와 1 대 1 또는 2 대 2예요." : "D6에서 시작해 A1까지 스테이지를 하나씩 깨요. 점수는 혼자 랭킹에 올라가요.";
   $("#sel-title").textContent = m === "multi" ? "같이 버틸까요?" : m === "pvp" ? "한 판 붙어 볼까요?" : "혼자 버텨 볼까요?";
   $("#sel-sub").textContent = "배치도에서 층을 고르고 시작하면, 직접 걸어가서 방을 골라요. 방마다 설치 칸, 문 내구도, 특기가 달라요.";
@@ -2727,7 +3362,7 @@ function consume(ev) {
     case "doorup": burstP((DOOR.x + (e.ox || 0)), (e.dy != null ? e.dy : DOOR.y), 26, {sp:300, up:100, life:.6, size:3, color:"#e8e8e8"}); ring((DOOR.x + (e.ox || 0)), (e.dy != null ? e.dy : DOOR.y), 90, "#fff", .4); sfx("up"); addShake(5); break;
     case "repair": burstP((DOOR.x + (e.ox || 0)), (e.dy != null ? e.dy : DOOR.y), 16, {sp:200, up:80, life:.5, size:3, color:"#9bffd0"}); sfx("up"); break;
     case "deskup": burstP((450 + (e.ox || 0)), (e.dy != null ? e.dy + (e.dr || 1) * (96 - 400) : 96), 18, {sp:260, up:120, life:.6, size:3, color:"#f6c453"}); sfx("up"); break;
-    case "coin": floater(e.x, e.y - 10, "+₩" + e.val, "#ffe27a"); burstP(e.x, e.y, 16, {sp:260, g:300, up:140, life:.6, size:3.5, color:"#ffd84a"}); sfx("coin"); break;
+    case "coin": floater(e.x, e.y - 10, "+₩" + e.val + (e.auto ? " (자동 수령)" : ""), "#ffe27a"); burstP(e.x, e.y, 16, {sp:260, g:300, up:140, life:.6, size:3.5, color:"#ffd84a"}); sfx("coin"); break;
     case "foam": ring((FRONT.x + (e.ox || 0)), (e.fy != null ? e.fy : FRONT.y), 290, "#ffffff", .5); burstP((FRONT.x + (e.ox || 0)), (e.fy != null ? e.fy : FRONT.y), 70, {sp:520, life:.7, size:5, color:"#ffffff"}); UI.flash = .5; addShake(10); sfx("skill"); break;
     case "flash": ring((FRONT.x + (e.ox || 0)), (e.fy != null ? e.fy : FRONT.y), 340, "#fff6b0", .45); UI.flash = Math.max(UI.flash, .35); UI.itemFlash[(e.ri || 0) * 100 + e.i] = .15; sfx("flash", 200); break;
     case "breath": burstP((DOOR.x + (e.ox || 0)), (e.dy != null ? e.dy : DOOR.y) + 20, 40, {sp:380, up:60, life:.7, size:6, color:"#ff7a3d"}); addShake(16); UI.flash = .3; sfx("roar"); banner("불꽃 숨결!", "red"); break;
@@ -2754,7 +3389,7 @@ function hints() {
   if (G.t < 14 && none) msg = "빈 칸(+)을 눌러 전자렌지를 설치하세요 (단축키 1)";
   else if (G.en.length && !H1.door) { msg = "귀신이 문 앞에 모이면 문이 부서져요. 문을 강화(D)하고 위험하면 수리(R)하세요"; if (G.t > 30) H1.door = 1; }
   else if (G.skill.cd <= 0 && G.en.filter(e => e.atk).length >= 3 && !H1.skill) { msg = "필살기 소화기(C)로 문 앞 귀신들을 날려 버리세요"; H1.skill = 1; }
-  else if (G.crates.length && !H1.crate) { msg = "택배 상자를 눌러 수당을 받으세요"; if (G.t > 80) H1.crate = 1; }
+  else if (G.crates.length && !H1.crate) { msg = "도시락 상자를 눌러 먼저 받을 수 있어요. 안 눌러도 12초 뒤에 자동으로 받아져요"; if (G.t > 80) H1.crate = 1; }
   else if (G.deskLv === 1 && G.gold > 70 && !H1.desk) { msg = "책상을 강화(E)하면 수당이 더 빨리 쌓여요"; if (G.t > 40) H1.desk = 1; }
   const el = $("#hint"); if (msg) { el.hidden = false; el.textContent = msg; } else el.hidden = true;
 }
@@ -2937,8 +3572,9 @@ function showResult() {
 }
 
 /* ===== actions ===== */
-function flashSel(ok, why) { if (!ok) { const G = UI.G; toast(why === "gold" ? "수당이 부족해요" : why === "full" ? "빈 칸이 없어요" : why === "max" ? "이미 최고 단계예요" : why === "full2" ? "이미 가득해요" : why === "place" ? "여기엔 지을 수 없어요" : why === "range" ? "점선 원(내 건설 범위) 안에만 지을 수 있어요" : why === "notmine" ? "내 방 안에만 지을 수 있어요" : why === "hallonly" ? "방벽은 복도에 지어요" : why === "roomonly" ? "냉장고·책상은 방 안에만 지어요" : why === "queue" ? "훈련 대기열이 가득 찼어요" : why === "supply" ? "유닛 인원이 가득 찼어요 — 인사팀 사무실(0키)을 지으면 늘어요" : why === "near" ? "다른 건물과 너무 가까워요" : why === "cap" ? "더 지을 수 없어요 (1인 8개)" : why === "noroom" ? "먼저 방에 자리를 잡아요" : why === "breach" ? "문이 뚫려서 고치거나 강화할 수 없어요. 안쪽 설비로 버텨요!" : why === "assist" ? "보조석에서는 방 주인의 수당을 쓸 수 없어요" : why === "team" ? "같은 팀 동료에게만 보낼 수 있어요" : "지금은 할 수 없어요"); sfx("click"); } }
+function flashSel(ok, why) { if (!ok) { const G = UI.G; toast(why === "gold" ? "수당이 부족해요" : why === "full" ? "빈 칸이 없어요" : why === "max" ? "이미 최고 단계예요" : why === "full2" ? "이미 가득해요" : why === "place" ? "여기엔 지을 수 없어요" : why === "range" ? "점선 원(내 건설 범위) 안에만 지을 수 있어요" : why === "notmine" ? "내 방 안에만 지을 수 있어요" : why === "hallonly" ? "방벽은 복도에 지어요" : why === "roomonly" ? "냉장고·책상은 방 안에만 지어요" : why === "queue" ? "훈련 대기열이 가득 찼어요" : why === "supply" ? "유닛 인원이 가득 찼어요 — 인사팀 사무실(0키)을 지으면 늘어요" : why === "near" ? "다른 건물과 너무 가까워요" : why === "cap" ? "더 지을 수 없어요 (방 설비 + 복도 건물 합쳐 1인 100개)" : why === "tcap" ? "이 종류는 더 지을 수 없어요 (책상·냉장고 6개, 조명 8개, 인사팀 14개까지)" : why === "noroom" ? "먼저 방에 자리를 잡아요" : why === "breach" ? "문이 뚫려서 고치거나 강화할 수 없어요. 안쪽 설비로 버텨요!" : why === "assist" ? "보조석에서는 방 주인의 수당을 쓸 수 없어요" : why === "team" ? "같은 팀 동료에게만 보낼 수 있어요" : "지금은 할 수 없어요"); sfx("click"); } }
 const A = {
+  "col-pick": b => { const i = Number(b && b.dataset && b.dataset.i); SAVE.col = Number.isInteger(i) && i >= 0 && i < 8 ? i : -1; persist(true); sfx("click"); buildCol(); },
   "kn-pick": b => { const i = cleanKn(Number(b && b.dataset && b.dataset.i)); if (i < 0) return; SAVE.kn = i; persist(true); sfx("click"); buildKn(); },
   "to-rank": b => { if (b && b.dataset && b.dataset.m) UI.rk = b.dataset.m; const was = UI.screen === "rank"; show("rank"); buildRank(was); },
   "rk-hist": async b => {
@@ -2989,19 +3625,19 @@ const A = {
   wf: b => { SAVE.floor = FLOORS[b.dataset.f] ? b.dataset.f : "4f"; persist(true); buildMode(); sfx("click"); },
   wn: b => { SAVE.players = Number(b.dataset.n) || 4; persist(true); buildMode(); sfx("click"); },
   "w-ai": () => startWorld(worldOpts()),
-  "w-solo": () => startWorld({total:1, humans:[{name:SAVE.nick || "나", meta:metaOf(SAVE.ups), kn:SAVE.kn}], diff:"normal", floor:SAVE.floor, stage:clamp(SAVE.stg, 0, Math.min(SAVE.sc, STAGES.length - 1))}),
+  "w-solo": () => startWorld({total:1, humans:[{name:SAVE.nick || "나", meta:metaOf(SAVE.ups), kn:SAVE.kn, col:SAVE.col}], diff:"normal", floor:SAVE.floor, stage:clamp(SAVE.stg, 0, Math.min(SAVE.sc, STAGES.length - 1))}),
   stg: b => { const k = Number(b.dataset.k); if (!(k <= SAVE.sc)) { toast("앞 스테이지를 클리어하면 열려요"); sfx("click"); return; } SAVE.stg = k; persist(true); buildStage(); sfx("click"); },
   "stage-next": () => { const o = UI.lastWorld; if (!o || o.stage == null) return; const k = Math.min(STAGES.length - 1, o.stage + 1); SAVE.stg = k; persist(true); startWorld({...o, stage:k}); },
   "w-lobby": () => lobbyStart(),
   mode: b => { SAVE.mode = b.dataset.m === "multi" ? "multi" : b.dataset.m === "pvp" ? "pvp" : b.dataset.m === "td" ? "td" : "solo"; persist(true); buildMode(); sfx("click"); },
   pvn: b => { SAVE.pvpn = Number(b.dataset.n) === 2 ? 2 : 1; persist(true); buildMode(); sfx("click"); },
-  "w-pvp": () => startWorld({pvp:true, total:(SAVE.pvpn === 2 ? 4 : 2), humans:[{name:SAVE.nick || "나", meta:metaOf(SAVE.ups), kn:SAVE.kn}], diff:SAVE.diff, floor:SAVE.floor}),
-  "pv-atk": () => {   // 총공격: 집결 지점을 가장 약한 적 방 문 앞으로
+  "w-pvp": () => startWorld({pvp:true, total:(SAVE.pvpn === 2 ? 4 : 2), humans:[{name:SAVE.nick || "나", meta:metaOf(SAVE.ups), kn:SAVE.kn, col:SAVE.col}], diff:SAVE.diff, floor:SAVE.floor}),
+  "pv-atk": () => {   // 총공격: 병력 하나하나가 자기와 가장 가까운 적(문·건물·병력·본캐릭)으로
     const W = UI.W, V = W.V, me = avRow(V, W.me); if (!W || !V || !V.pv || !me || me.home < 0) return;
-    let best = null, bs = 1e9; for (const r of W.lay.rooms) { const st = V.rooms[r.i]; if (!st || st.f || st.sd === me.tm) continue; const s2 = st.br ? -1 : st.dh / Math.max(1, st.dm); if (s2 < bs) { bs = s2; best = r; } }
-    if (!best) { toast("공격할 상대 방이 아직 없어요"); return; }
-    const r = worldAct("rally", {x:best.doorX, y:best.ty(436)}); if (r.ok === false) flashSel(false, r.why); else { toast("총공격! 유닛이 상대 방 문으로 가요"); sfx("warn"); }
+    const r = worldAct("order", {k:"all"}); if (r.ok === false) flashSel(false, r.why); else { toast("총공격! 병력이 각자 가장 가까운 적으로 가요"); sfx("warn"); }
   },
+  "pv-esc": () => { const W = UI.W, V = W.V, me = avRow(V, W.me); if (!W || !V || !V.pv || !me || me.home < 0) return; const r = worldAct("order", {k:"esc"}); if (r.ok === false) flashSel(false, r.why); else { toast("병력이 내 본캐릭 곁을 지켜요"); sfx("click"); } },
+  "rally-auto": () => { const r = worldAct("order", {k:"auto"}); if (r.ok === false) flashSel(false, r.why); else { toast("병력이 알아서 급한 방으로 가요"); sfx("click"); } },
   "pv-req": b => { const r = worldAct("req", {k:b.dataset.k}); if (!r.ok) toast(r.why === "alone" ? "함께하는 동료가 없어요 (2 대 2에서 쓸 수 있어요)" : r.why === "cd" ? "잠시 뒤에 다시 요청할 수 있어요" : "지금은 요청할 수 없어요"); else { toast("요청했어요 — AI 동료는 바로 따라요"); sfx("click"); } },
   "pv-give": b => { const W = UI.W, me = avRow(W.V, W.me), to = me && W.V.av.find(r => r[0] !== W.me && r[12] === me.tm); if (!to) return; const r = worldAct("give", {to:to[0], amt:Number(b.dataset.amt)}); if (!r.ok) flashSel(false, r.why); else { toast(`${W.names[to[0]]}에게 수당 ${b.dataset.amt}을 보냈어요`); sfx("coin"); } },
   "pv-ans": b => {
@@ -3011,8 +3647,8 @@ const A = {
     else { worldAct("go", {x:R.doorX, y:R.ty(440)}); toast("동료 방 문 앞으로 가요. 도착하면 R로 문을 고쳐요"); }
   },
   "pv-def": () => {
-    const W = UI.W, V = W.V, me = avRow(V, W.me); if (!W || !V || !me || me.home < 0) return; const R = W.lay.rooms[me.home];
-    const r = worldAct("rally", {x:R.doorX, y:R.ty(470)}); if (r.ok === false) flashSel(false, r.why); else { toast("유닛이 내 방 문 앞으로 돌아와요"); sfx("click"); }
+    const W = UI.W, V = W.V, me = avRow(V, W.me); if (!W || !V || !me || me.home < 0) return;
+    const r = worldAct("order", {k:"def"}); if (r.ok === false) flashSel(false, r.why); else { toast("병력이 내 방 문 앞으로 돌아와 지켜요"); sfx("click"); }
   },
   buy: b => { const s = SHOP.find(x => x.k === b.dataset.k), lv = SAVE.ups[s.k] || 0; if (lv >= s.max) return; const c = s.cost[lv]; if (SAVE.rp < c) { toast("RP가 부족해요"); return; } SAVE.rp -= c; SAVE.ups[s.k] = lv + 1; persist(); buildShop(); sfx("up"); },
   speed: () => {
@@ -3071,10 +3707,20 @@ document.addEventListener("keydown", e => {
 document.addEventListener("visibilitychange", () => { if (document.hidden && UI.screen === "game" && !UI.W && !UI.G.over && !UI.paused) setPause(true); });
 
 /* ===== 월드 화면: 넓은 층 · 카메라 · 미니맵 · 조작 ===== */
-const AV_COL = ["#6aa8ff", "#ff9a3d", "#6fe0b0", "#f6c453", "#e68ad8", "#9bb0ff", "#ff7a7a"], AV_COL0 = AV_COL.slice(), TEAM_COL = ["#6aa8ff", "#ff7a6a"];
-function setTeamColors(W) {   // 대결: 팀별로 파랑·빨강
-  AV_COL.splice(0, AV_COL.length, ...AV_COL0);
-  if (W.Wd && W.Wd.pvp) { const TC = [["#5aa2ff", "#9bd0ff"], ["#ff6a5a", "#ffa39a"]], seen = [0, 0]; W.Wd.av.forEach(a => { AV_COL[a.id] = TC[a.team][seen[a.team]++ % 2]; }); }
+const AV_COL = PLAYER_COLORS.map(c => c.c), AV_SH = PLAYER_COLORS.map(c => c.s), AV_TM = [0, 0, 0, 0, 0, 0, 0, 0], TEAM_COL = ["#f3f6ff", "#aeb6d6"];   // 이 판의 사람 번호별 색·모양·팀 (setTeamColors 가 판마다 채운다). 팀은 색이 아니라 깃발(흰/검정)과 글자로 구분한다
+function setTeamColors(W) {   // 이 판의 색: 내가 고른 색, AI 는 겹치지 않게 랜덤(startWorld 의 pickColors). 대결에서도 색은 개인 색을 유지하고 팀은 깃발로 따로 보인다
+  const idx = W.col || [], n = W.names.length; AV_COL.length = 0; AV_SH.length = 0; AV_TM.length = 0;
+  for (let k = 0; k < Math.max(8, n); k++) { const c = PLAYER_COLORS[k < n && idx[k] != null ? idx[k] : k % 8]; AV_COL.push(c.c); AV_SH.push(c.s); AV_TM.push(W.Wd && W.Wd.av[k] ? W.Wd.av[k].team : 0); }
+  W.kc = AV_COL.slice(0, n); W.ks = AV_SH.slice(0, n); W.kt = AV_TM.slice(0, n); W.kw = 0; W.upos = {};
+}
+const teamFlagHTML = tm => `<svg class="tflag" viewBox="0 0 14 16" width="14" height="16" role="img" aria-label="${tm ? "검은 깃발 팀" : "흰 깃발 팀"}"><path d="M3 1v14" stroke="#14141c" stroke-width="2.4"/><path d="M3.6 2l9 3.2-9 3.2z" fill="${tm ? "#1b1b22" : "#fff"}" stroke="${tm ? "#fff" : "#14141c"}" stroke-width="1.3" stroke-linejoin="round"/></svg>`;
+function drawPennant(g, x, y, tm) {   // 팀 깃발: 팀0 흰색, 팀1 검정(흰 테두리)
+  g.save(); g.lineWidth = 2.6; g.strokeStyle = INK; g.beginPath(); g.moveTo(x, y + 8); g.lineTo(x, y - 9); g.stroke();
+  g.beginPath(); g.moveTo(x, y - 9); g.lineTo(x + 11, y - 5); g.lineTo(x, y - 1); g.closePath(); g.fillStyle = tm ? "#1b1b22" : "#fff"; g.fill(); g.lineWidth = 1.8; g.strokeStyle = tm ? "#fff" : INK; g.stroke(); g.restore();
+}
+function ownRing(g, x, y, oi, a) {   // 건물 발밑 색 고리(바깥 INK + 안쪽 색) + 모양 배지
+  const k = oi % AV_COL.length, c = AV_COL[k]; g.save(); if (a) g.globalAlpha = a; g.lineWidth = 6; g.strokeStyle = INK; ell(g, x, y, 30, 11); g.stroke(); g.lineWidth = 3; g.strokeStyle = c; g.stroke(); g.restore();
+  kuBadge(g, AV_SH[k], x - 31, y - 3, 6, c, INK);
 }
 const PALETTE = ["micro", "cooler", "fridge", "light", "desk", "wall", "hr"];   // 건설 목록(숫자 1~6, 인사팀 사무실은 0)
 const palLabel = t => t === "wall" ? WALL.n : t === "hr" ? HRB.n : BUILD[t].n;
@@ -3142,10 +3788,11 @@ function makeWorldBG(lay) {
   for (let y = h.T - 14; y <= h.B + 14; y += 60) { g.beginPath(); g.moveTo(h.L - 24, y); g.lineTo(h.R + 24, y); g.stroke(); }
   // 가운데 열린 자리(책상 무리): 실제 배치도의 A~D 구역처럼
   const my = (h.T + h.B) / 2, cx0 = (h.L + h.R) / 2, spots = [-.36, -.12, .12, .36].map(f => cx0 + f * (h.R - h.L));
-  spots.forEach((sx, k) => {
+  for (const oy of (lay.big ? [-250, 0, 250] : [0])) { g.save(); g.translate(0, oy); spots.forEach((sx, k) => {
     for (let r = 0; r < 2; r++) for (let q = 0; q < 3; q++) { rr(g, sx - 84 + q * 58, my - 40 + r * 44, 52, 36, 5); stk(g, "#7a6a50", 2.5); g.fillStyle = "rgba(255,255,255,.14)"; g.fillRect(sx - 80 + q * 58, my - 36 + r * 44, 44, 6); }
     ell(g, sx + 104, my, 14, 14); stk(g, ["#e8553a", "#2f9d73", "#7a5cd6", "#d8a21c"][k], 2.5); g.fillStyle = "#fff"; g.font = "700 14px 'IBM Plex Sans KR',sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("ABCD"[k], sx + 104, my + 1);
   });
+  g.restore(); }
   // 입구와 비상구
   g.fillStyle = "#e8553a"; g.beginPath(); g.moveTo(h.R - 14, my - 18); g.lineTo(h.R - 64, my); g.lineTo(h.R - 14, my + 18); g.closePath(); g.fill(); g.lineWidth = 3; g.strokeStyle = INK; g.stroke();
   g.font = "700 15px 'IBM Plex Sans KR',sans-serif"; g.fillStyle = "#fff"; g.fillText("입구", h.R - 40, my + 34);
@@ -3158,13 +3805,13 @@ function makeWorldBG(lay) {
 function startWorld(opts) {
   if (UI.W) endWorld();
   DPR = Math.min(2, window.devicePixelRatio || 1); UI.lastWorld = opts; UI.lastKind = "world";
-  const diff = opts.diff || SAVE.diff, pvp = !!opts.pvp, floor = FLOORS[opts.floor] ? opts.floor : (FLOORS[SAVE.floor] ? SAVE.floor : "3f"), lay = layoutWorld(floor), humans = opts.humans, total = clamp(Math.max(humans.length, opts.total || 4), 1, 5);
+  const diff = opts.diff || SAVE.diff, pvp = !!opts.pvp, floor = FLOORS[opts.floor] ? opts.floor : (FLOORS[SAVE.floor] ? SAVE.floor : "3f"), lay = layoutWorld(floor, pvp), humans = opts.humans, total = clamp(Math.max(humans.length, opts.total || 4), 1, 5);
   const spec = humans.map(h => ({name:h.name, ai:false, meta:h.meta, team:0}));
   const names = BOT_NAMES.slice().sort(() => Math.random() - .5), base = diff === "easy" ? .5 : (diff === "hard" || diff === "nightmare" || diff === "hell") ? .8 : .65;
   for (let i = 0; spec.length < total; i++) spec.push({name:names[i % names.length].replace(/^AI /, ""), ai:true, skill:clamp(base + (Math.random() - .5) * .3, .3, .95), team:pvp ? (spec.length < total / 2 ? 0 : 1) : 0});
   const seed = opts.seed || 1 + Math.floor(Math.random() * 1e9), Wd = newWorld(spec, diff, seed, true, floor, opts.stage, pvp);
-  const kn = assignKn(humans.map(h => cleanKn(h.kn)), spec.length);
-  const W = {Wd, lay, V:null, me:0, names:spec.map(s => s.name), kn, net:opts.net || null, last:performance.now(), paused:false, evq:[], fi:0, cam:{x:0, y:0, s:1, mode:"follow"}, camCx:0, home:-1, seated:false, keys:new Set(), mvSent:"", bg:null, shadow:null, hudT:0, panelT:0, partyKey:"", roomsKey:"", feedT:0, pos:{}, moving:{}, diff:Wd.sg ? "normal" : diff, sg:Wd.sg, decals:[], spec, seed, floor, pvp};
+  const kn = assignKn(humans.map(h => cleanKn(h.kn)), spec.length), col = pickColors(spec.length, humans.map((h, i) => h.col != null ? h.col : (i === 0 ? SAVE.col : -1)));
+  const W = {Wd, lay, V:null, me:0, names:spec.map(s => s.name), kn, net:opts.net || null, last:performance.now(), paused:false, evq:[], fi:0, cam:{x:0, y:0, s:1, mode:"follow"}, camCx:0, home:-1, seated:false, keys:new Set(), mvSent:"", bg:null, shadow:null, hudT:0, panelT:0, partyKey:"", roomsKey:"", feedT:0, pos:{}, moving:{}, diff:Wd.sg ? "normal" : diff, sg:Wd.sg, decals:[], spec, seed, floor, pvp, col};
   beginWorldUI(W);
   W.timer = setInterval(wTick, 33);
   if (apiOn() && !pvp) getRunId(W, 0);
@@ -3260,6 +3907,7 @@ function wKey(e, down) {
   if (k === "g" && a) { UI.rl = !UI.rl; UI.fb = null; return; }
   if (a && (k === "0" || (Number(k) >= 1 && Number(k) <= 6)) && PALETTE[k === "0" ? 6 : Number(k) - 1]) { const t = PALETTE[k === "0" ? 6 : Number(k) - 1]; UI.fb = UI.fb === t ? null : t; UI.rl = false; return; }
   if (a && UNIT_TYPES[Number(k) - 7]) { A.train({dataset:{t:UNIT_TYPES[Number(k) - 7]}}); return; }
+  if (k === "t") { A["pv-atk"](); return; }   // 대결: T = 총공격
   if (k === "h") { A["w-home"](); return; }
   if (k === "z") { A["w-zoom"](); return; }
   if (k === "q") { A["w-stand"](); return; }
@@ -3275,10 +3923,21 @@ function wPoint(e) {
   const W = UI.W, C = W.cam, rc = $("#cv").getBoundingClientRect();
   return {x:C.x + (e.clientX - rc.left) / rc.width * 900 / C.s, y:C.y + (e.clientY - rc.top) / rc.height * 620 / C.s, nx:(e.clientX - rc.left) / rc.width};
 }
+function issueRally(p) {   // 우클릭·집결 지점 찍기. 대결 = 공격 이동(적 본캐릭을 찍으면 집중 공격), 협동 = 방 지키기/그 지점 지키기
+  const W = UI.W, V = W.V, me = avRow(V, W.me); if (!me) return false;
+  const body = {x:Math.round(p.x), y:Math.round(p.y)}; let foc = null;
+  if (V.pv) for (const row of V.av) { const o = avRow(V, row[0]); if (o && o.tm !== me.tm && !o.dead && Math.hypot(p.x - o.x, p.y - o.y) < 60) { foc = o; break; } }
+  if (foc) body.fa = foc.id;
+  const r = worldAct("rally", body);
+  if (r.ok === false) { toast("거기는 갈 수 없는 곳이에요"); return false; }
+  ring(p.x, p.y, V.pv ? 70 : 50, V.pv ? "#ff5a4a" : "#ffe27a", .7);
+  toast(V.pv ? (foc ? `${W.names[foc.id]} 님의 본캐릭을 집중 공격해요!` : "공격 이동! 가는 길의 문·건물·병력·본캐릭을 전부 공격해요") : (r.room != null ? `${roomName(W, r.room)}을(를) 지켜요` : "집결 지점을 정했어요"));
+  sfx(V.pv ? "warn" : "click"); return true;
+}
 function wClick(e) {
   const W = UI.W, V = W.V; if (!V) return; const a = avRow(V, W.me), p = wPoint(e); if (!a) return;
   if (UI.rl) {
-    const r2 = worldAct("rally", {x:Math.round(p.x), y:Math.round(p.y)}); if (r2.ok === false) flashSel(false, r2.why); else { toast("집결 지점을 정했어요"); sfx("click"); UI.rl = false; } return;
+    if (issueRally(p)) UI.rl = false; return;
   }
   if (UI.fb) {
     const G0 = UI.G; if (G0 && (a.seat >= 0 || a.dead)) for (const c of G0.crates) if (Math.hypot(p.x - c.x, p.y - c.y) < 34) { X("crate", {id:c.id}, () => ({ok:collectCrate(G0, c.id)})); return; }
@@ -3309,7 +3968,7 @@ function bindWorldInput() {
   });
   const up = e => { const W = UI.W; if (!W || !W.drag) return; const d = W.drag; W.drag = null; if (!d.moved && e.type === "pointerup") wClick(e); };
   c.addEventListener("pointerup", up); c.addEventListener("pointermove", e => { const W = UI.W; if (W && UI.fb) W.hover = wPoint(e); });
-  c.addEventListener("contextmenu", e => { e.preventDefault(); const W = UI.W; if (!W || !W.V) return; if (UI.fb || UI.rl) { UI.fb = null; UI.rl = false; return; } const a = avRow(W.V, W.me); if (!a || a.home < 0) return; const p = wPoint(e); const r = worldAct("rally", {x:Math.round(p.x), y:Math.round(p.y)}); if (r.ok === false) flashSel(false, r.why); else toast("집결 지점을 정했어요"); }); c.addEventListener("pointercancel", up);
+  c.addEventListener("contextmenu", e => { e.preventDefault(); const W = UI.W; if (!W || !W.V) return; if (UI.fb || UI.rl) { UI.fb = null; UI.rl = false; return; } const a = avRow(W.V, W.me); if (!a || a.home < 0) return; issueRally(wPoint(e)); }); c.addEventListener("pointercancel", up);
   const mm = $("#mm"), jump = e => { const W = UI.W; if (!W) return; const rc = mm.getBoundingClientRect(), wx = (e.clientX - rc.left) / rc.width * W.lay.W, wy = (e.clientY - rc.top) / rc.height * W.lay.H; W.cam.mode = "free"; W.cam.x = wx - 450 / W.cam.s; W.cam.y = wy - 310 / W.cam.s; };
   let mmd = false; mm.addEventListener("pointerdown", e => { mmd = true; jump(e); try { mm.setPointerCapture(e.pointerId); } catch (er) {} });
   mm.addEventListener("pointermove", e => { if (mmd) jump(e); }); mm.addEventListener("pointerup", () => { mmd = false; });
@@ -3318,7 +3977,7 @@ function bindWorldInput() {
 }
 
 /* ----- 그리기 ----- */
-function drawAvatar(g, row, name, col, time, isMe, moving, kn) {
+function drawAvatar(g, row, name, col, time, isMe, moving, kn, sh, tm) {
   const [id, x, y, hp, seat, fl] = row, dead = fl & 1, face = fl & 16 ? -1 : 1, hurt = fl & 4;
   g.save(); g.translate(x, y); if (fl & 64) g.globalAlpha = .5 + .35 * Math.sin(time * 18);
   g.fillStyle = "rgba(0,0,0,.3)"; ell(g, 0, 15, 15, 5); g.fill();
@@ -3326,7 +3985,7 @@ function drawAvatar(g, row, name, col, time, isMe, moving, kn) {
   const bob = moving ? Math.sin(time * 16) * 2.2 : 0, im = kn >= 0 ? kimg(kn) : null;
   if (im) {   // 라운드기사단 그림(치비). 발밑 고리 색 = 이 사람의 팀·구분 색
     const H = kHeadH(kn, KHEAD_GAME), w = H * im.naturalWidth / im.naturalHeight;
-    g.lineWidth = 3.5; g.strokeStyle = hurt ? "#ff9a9a" : col; ell(g, 0, 15, 18, 6.5); g.stroke();
+    g.lineWidth = 7.5; g.strokeStyle = INK; ell(g, 0, 15, 19, 7); g.stroke(); g.lineWidth = 4; g.strokeStyle = hurt ? "#ff9a9a" : col; g.stroke();
     g.save(); g.translate(0, bob * .8); g.scale(face, 1); g.drawImage(im, -w / 2, 19 - H, w, H); g.restore();
   } else {
     g.lineWidth = 5; g.lineCap = "round"; g.strokeStyle = "#1a1d26"; g.beginPath(); g.moveTo(-5, 10); g.lineTo(-5 + (moving ? Math.sin(time * 16) * 4 : 0), 17); g.moveTo(5, 10); g.lineTo(5 - (moving ? Math.sin(time * 16) * 4 : 0), 17); g.stroke(); g.lineCap = "butt";
@@ -3339,7 +3998,7 @@ function drawAvatar(g, row, name, col, time, isMe, moving, kn) {
   }
   const ny = im ? 19 - kHeadH(kn, KHEAD_GAME) - 7 : -36, ay = im ? ny - 16 : -52;
   if (hp < AV_HP) { g.fillStyle = "rgba(0,0,0,.65)"; g.fillRect(-14, 22, 28, 5); g.fillStyle = hp < 35 ? "#ff5a4a" : "#7ee0a8"; g.fillRect(-14, 22, 28 * Math.max(0, hp / AV_HP), 5); }
-  g.font = "700 12px 'IBM Plex Sans KR',sans-serif"; g.textAlign = "center"; g.lineWidth = 3.5; g.strokeStyle = INK; g.strokeText(name, 0, ny); g.fillStyle = isMe ? "#ffe27a" : "#fff"; g.fillText(name, 0, ny);
+  g.font = "700 12px 'IBM Plex Sans KR',sans-serif"; g.textAlign = "center"; g.lineWidth = 3.5; g.strokeStyle = INK; g.strokeText(name, 0, ny); { const tw = g.measureText(name).width; if (sh) kuBadge(g, sh, -tw / 2 - 10, ny - 4, 6.5, col, INK); if (tm >= 0) drawPennant(g, tw / 2 + 10, ny - 2, tm); } g.fillStyle = isMe ? "#ffe27a" : "#fff"; g.fillText(name, 0, ny);
   if (isMe) { g.fillStyle = "#ffe27a"; g.beginPath(); g.moveTo(-5, ay); g.lineTo(5, ay); g.lineTo(0, ay + 7); g.closePath(); g.fill(); g.lineWidth = 2; g.strokeStyle = INK; g.stroke(); }
   g.restore();
 }
@@ -3370,19 +4029,14 @@ function drawWall(g, x, y) {
   g.save(); g.translate(x, y); g.fillStyle = "rgba(0,0,0,.25)"; ell(g, 0, 20, 30, 8); g.fill();
   rr(g, -30, -6, 60, 28, 5); stk(g, WHITE, 3); g.strokeStyle = OAKD; g.lineWidth = 2; g.strokeRect(-26, -2, 52, 20); rr(g, -22, -22, 44, 18, 4); stk(g, "#d9b27c", 2.5); g.restore();
 }
-function drawUnit(g, u, time) {
-  const t = UNIT_TYPES[u[1]], x = u[2], y = u[3], col = AV_COL[u[5] % AV_COL.length], face = u[6] ? -1 : 1, sc = t === "jang" ? 1.25 : t === "dae" ? .9 : .98;
-  g.save(); g.translate(x, y); g.scale(sc, sc);
-  g.fillStyle = "rgba(0,0,0,.3)"; ell(g, 0, 15, 14, 5); g.fill();
-  g.translate(0, Math.sin(time * 9 + u[0]) * 1.4);
-  rr(g, -10, -8, 20, 20, 7); stk(g, col, 2.5);
-  ell(g, 0, -15, 9, 10); stk(g, "#f1c9a5", 2.5);
-  if (t === "intern") { g.fillStyle = "#ffd24a"; g.beginPath(); g.arc(0, -19, 9, Math.PI, 0); g.fill(); g.lineWidth = 2; g.strokeStyle = INK; g.stroke(); }
-  else if (t === "dae") { g.fillStyle = "#fff"; rr(g, face > 0 ? 7 : -18, -3, 11, 14, 2); g.fill(); g.lineWidth = 2; g.strokeStyle = INK; g.stroke(); g.fillStyle = "#6a7a9a"; g.fillRect(face > 0 ? 9 : -16, 1, 7, 2); g.fillRect(face > 0 ? 9 : -16, 5, 7, 2); }
-  else { rr(g, face > 0 ? 6 : -18, -6, 12, 20, 4); stk(g, "#9bb0c8", 2.5); g.fillStyle = INK; g.beginPath(); g.arc(0, -22, 10, Math.PI * 1.1, Math.PI * 1.9); g.lineWidth = 4; g.strokeStyle = INK; g.stroke(); }
-  g.fillStyle = INK; g.beginPath(); g.arc(face * 3, -15, 1.4, 0, 7); g.fill();
-  g.restore();
-  if (u[4] < 100) drawHpBar(g, {x, y:y + 14}, u[4]);
+function drawUnit(g, u, time, z) {   // u = [id, 종류, x, y, 체력%, 주인, 왼쪽보기, 방금공격]. 풀플레이트 기사(색 = 주인 색, 발밑 고리·방패/겉옷 모양 = 주인 모양, 깃발 = 팀)
+  const W = UI.W, t = UNIT_TYPES[u[1]], id = u[0], x = u[2], y = u[3], oi = u[5] % AV_COL.length, face = u[6] ? -1 : 1;
+  const up = W.upos || (W.upos = {}); let st = up[id]; if (!st) st = up[id] = [x, y, -9, 0, time];
+  const dt = Math.max(0, Math.min(.2, time - st[4])); st[4] = time;
+  if (Math.abs(st[0] - x) + Math.abs(st[1] - y) > .35) st[2] = time; st[0] = x; st[1] = y;
+  const mv = time - st[2] < .3 ? 1 : 0; if (u[7]) st[3] = 1; else st[3] = Math.max(0, st[3] - dt * 4);
+  kuDraw(g, t, x, y, face, AV_COL[oi], AV_SH[oi], AV_TM[oi] || 0, time, id, z, mv, st[3]);
+  if (u[4] < 100 && z >= .5) { const bw = 26, by = y - KU_TOP[t] - 9; g.fillStyle = "rgba(0,0,0,.75)"; g.fillRect(x - bw / 2 - 1, by - 1, bw + 2, 6); g.fillStyle = u[4] > 50 ? "#6fe0b0" : u[4] > 25 ? "#f6c453" : "#ff5a4a"; g.fillRect(x - bw / 2, by, bw * u[4] / 100, 4); }   // 작은 체력 막대(멀리서는 생략)
 }
 function drawHr(g, x, y) {   // 인사팀 사무실: 파티션 칸막이에 초록 + (인원 증가)
   rr(g, x - 27, y - 22, 54, 42, 8); stk(g, "#dfeaf6", 3.5); rr(g, x - 27, y - 22, 54, 12, 6); stk(g, "#5aa2ff", 3);
@@ -3413,15 +4067,15 @@ function wdraw(time) {
       const seatedHere = owner && !owner.dead && owner.seat === i;
       if (!st.f) drawAssistSeat(g, r, st, avs);
       drawDeskAt(g, r.deskX, r.deskY, st.dk, time, !!seatedHere, seatedHere && W.kn ? W.kn[owner.id] : -1);
-      if (seatedHere) { g.strokeStyle = AV_COL[owner.id % AV_COL.length]; g.lineWidth = 3; ell(g, r.deskX, r.deskY + 8, 26, 30); g.stroke(); }
-      st.s.forEach((it, j) => { if (!it || it === -1) return; const ip = {x:it[4], y:it[5]}; drawItem(g, ip, {type:ITYPES[it[0]], lv:it[1], ang:it[2]}, time, UI.itemFlash[i * 100 + j] || 0); if (it[3] != null && it[3] < 100) drawHpBar(g, ip, it[3]); });
-      for (const c of st.cr) { rr(g, c[1] - 30, c[2] - 15, 60, 30, 7); stk(g, OAK, 3); g.fillStyle = "#2a1a00"; g.font = "700 12px 'IBM Plex Sans KR',sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("도시락+" + c[3], c[1], c[2]); }
+      if (seatedHere) { g.lineWidth = 6.5; g.strokeStyle = INK; ell(g, r.deskX, r.deskY + 8, 27, 31); g.stroke(); g.lineWidth = 3.2; g.strokeStyle = AV_COL[owner.id % AV_COL.length]; g.stroke(); kuBadge(g, AV_SH[owner.id % AV_SH.length], r.deskX - 38, r.deskY + 6, 6.5, AV_COL[owner.id % AV_COL.length], INK); }
+      st.s.forEach((it, j) => { if (!it || it === -1) return; const ip = {x:it[4], y:it[5]}; if (st.o >= 0) ownRing(g, ip.x, ip.y + 24, st.o, .95); drawItem(g, ip, {type:ITYPES[it[0]], lv:it[1], ang:it[2]}, time, UI.itemFlash[i * 100 + j] || 0); if (it[3] != null && it[3] < 100) drawHpBar(g, ip, it[3]); });
+      for (const c of st.cr) { rr(g, c[1] - 30, c[2] - 15, 60, 30, 7); stk(g, OAK, 3); g.fillStyle = "#2a1a00"; g.font = "700 12px 'IBM Plex Sans KR',sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("도시락+" + c[3] + (c[4] != null ? " · " + c[4] + "초 뒤 자동" : ""), c[1], c[2]); }
     } else {
       drawDeskAt(g, r.deskX, r.deskY, 1, time, false);
       const tx = "빈 방 · 책상으로 가서 앉기"; g.fillStyle = "rgba(255,255,255,.7)"; g.font = "700 14px 'IBM Plex Sans KR',sans-serif"; g.textAlign = "center"; g.lineWidth = 3; g.strokeStyle = INK; g.strokeText(tx, r.doorX, r.ty(def0(r) + 92)); g.fillText(tx, r.doorX, r.ty(def0(r) + 92));
     }
-    const label = `${r.def.floor} ${r.def.name}` + (V.pv ? (r.side === (me ? me.tm : 0) ? " [우리 팀]" : " [상대 팀]") : "") + (st ? (st.f ? " · 함락" : (st.br ? " · 최후의 항전!" : "") + (owner ? " · " + W.names[owner.id] : "")) : "");
-    g.font = "700 15px 'IBM Plex Sans KR',sans-serif"; g.textAlign = "center"; g.textBaseline = "alphabetic"; g.lineWidth = 4; g.strokeStyle = INK; g.strokeText(label, r.doorX, r.ty(52)); g.fillStyle = st && (st.f || st.br) ? "#ff8a7a" : "#fff"; g.fillText(label, r.doorX, r.ty(52));
+    const label = `${r.def.floor} ${r.def.name}` + (V.pv ? (r.side === (me ? me.tm : 0) ? " [우리 팀]" : " [상대 팀]") : "") + (st ? (st.f ? " · 함락" : (st.br ? " · 최후의 항전!" : "") + (owner ? " · " + PC_GLYPH[AV_SH[owner.id % AV_SH.length]] + " " + W.names[owner.id] : "")) : "");
+    g.font = "700 15px 'IBM Plex Sans KR',sans-serif"; g.textAlign = "center"; g.textBaseline = "alphabetic"; g.lineWidth = 4; g.strokeStyle = INK; g.strokeText(label, r.doorX, r.ty(52)); g.fillStyle = st && (st.f || st.br) ? "#ff8a7a" : "#fff"; g.fillText(label, r.doorX, r.ty(52)); if (V.pv) drawPennant(g, r.doorX + g.measureText(label).width / 2 + 14, r.ty(52) - 3, r.side);
   });
   { const tq = V.tq && V.tq[W.me]; if (me && me.home >= 0 && tq && tq.length && W.lay.rooms[me.home]) {   // 내 방 문 앞: 지금 훈련 중인 유닛의 진행 게이지
     const R0 = W.lay.rooms[me.home], q = tq[0], bx = R0.doorX - 42, by = R0.ty(424) - 4, pc = q[2] ? q[1] / 100 : 0;
@@ -3439,12 +4093,13 @@ function wdraw(time) {
   for (const f of (V.fs || [])) {
     if (f[2] < x0 - 60 || f[2] > x1 + 60 || f[3] < y0 - 80 || f[3] > y1 + 60) continue;
     const t = FREE_TYPES[f[1]], pos = {x:f[2], y:f[3]};
-    g.save(); g.strokeStyle = AV_COL[f[5] % AV_COL.length]; g.lineWidth = 3; g.globalAlpha = .85; ell(g, f[2], f[3] + 24, 32, 12); g.stroke(); g.restore();
+    ownRing(g, f[2], f[3] + 24, f[5], .95);
     if (t === "wall") drawWall(g, f[2], f[3]); else if (t === "hr") drawHr(g, f[2], f[3]); else drawItem(g, pos, {type:t, lv:1, ang:f[6]}, time, 0);
     if (f[4] < 100) drawHpBar(g, pos, f[4]);
   }
-  for (const u of (V.un || [])) if (u[2] > x0 - 40 && u[2] < x1 + 40 && u[3] > y0 - 60 && u[3] < y1 + 60) drawUnit(g, u, time);
-  { const rp = V.rl && V.rl[W.me]; if (rp && !(me && me.dead)) drawFlag(g, rp[0], rp[1], AV_COL[W.me % AV_COL.length], time); }
+  for (const u of (V.un || [])) if (u[2] > x0 - 40 && u[2] < x1 + 40 && u[3] > y0 - 60 && u[3] < y1 + 60) drawUnit(g, u, time, s);
+  { const rp = V.rl && V.rl[W.me]; if (rp && !(me && me.dead)) { drawFlag(g, rp[0], rp[1], AV_COL[W.me % AV_COL.length], time);
+    const od = V.od && V.od[W.me]; if (V.pv && (od === "am" || od === "focus")) { const tx = od === "focus" ? "집중 공격" : "공격 이동"; g.font = "700 13px 'IBM Plex Sans KR',sans-serif"; g.textAlign = "center"; g.textBaseline = "alphabetic"; g.lineWidth = 3.5; g.strokeStyle = INK; g.strokeText(tx, rp[0], rp[1] - 42); g.fillStyle = "#ff8a7a"; g.fillText(tx, rp[0], rp[1] - 42); } } }
   if ((UI.fb || UI.rl) && me) {   // 건설 범위(점선 원)
     const rr0 = brad(me), cc = bcenter(W, me);
     g.save(); g.setLineDash([10, 8]); g.lineWidth = 3; g.strokeStyle = "rgba(255,226,122,.55)"; g.beginPath(); g.arc(cc.x, cc.y, rr0, 0, 7); g.stroke(); g.restore();
@@ -3472,7 +4127,7 @@ function wdraw(time) {
   for (const r of V.rooms) if (r) for (const p of r.pj) { g.fillStyle = "#9fdcff"; g.beginPath(); g.arc(p[0], p[1], 7, 0, 7); g.fill(); g.lineWidth = 2.5; g.strokeStyle = INK; g.stroke(); }
   for (const row of V.av) {
     const a = avs[row[0]]; if (a.seat >= 0 && !a.dead && !a.asst) continue; if (a.x < x0 - 40 || a.x > x1 + 40 || a.y < y0 - 60 || a.y > y1 + 60) continue;
-    drawAvatar(g, row, (a.ai ? "AI " : "") + W.names[a.id], AV_COL[a.id % AV_COL.length], time, a.id === W.me, W.moving[a.id], W.kn ? W.kn[a.id] : -1);
+    drawAvatar(g, row, (a.ai ? "AI " : "") + W.names[a.id], AV_COL[a.id % AV_COL.length], time, a.id === W.me, W.moving[a.id], W.kn ? W.kn[a.id] : -1, AV_SH[a.id % AV_SH.length], V.pv ? AV_TM[a.id % AV_TM.length] : -1);
   }
   for (const b of UI.fx.b) { g.strokeStyle = `rgba(255,236,160,${b.life / .09})`; g.lineWidth = 4; g.beginPath(); g.moveTo(b.x1, b.y1); g.lineTo(b.x2, b.y2); g.stroke(); g.strokeStyle = "rgba(255,255,255,.9)"; g.lineWidth = 1.5; g.stroke(); }
   for (const r of UI.fx.r) { const k = 1 - r.life / r.max; g.strokeStyle = r.color; g.globalAlpha = 1 - k; g.lineWidth = 5 * (1 - k) + 1; g.beginPath(); g.arc(r.x, r.y, r.r * (.25 + .75 * k), 0, 7); g.stroke(); g.globalAlpha = 1; }
@@ -3541,13 +4196,15 @@ function wminimap() {
   });
   for (const r of V.en) { const type = ETYPES[r[1]], boss = type === "mini" || type === "dragon"; g.fillStyle = boss ? "#ff4a3a" : MMC[type] || "#eaf3ff"; const sz = boss ? 6 : 2.4; g.fillRect(r[2] * k - sz / 2, r[3] * k - sz / 2, sz, sz);
     if (boss && !(r[6] & 8) && !r[8]) { const T = lay.rooms[r[7]]; g.strokeStyle = "rgba(255,90,70,.9)"; g.lineWidth = 1.6; g.setLineDash([5, 3]); g.beginPath(); g.moveTo(r[2] * k, r[3] * k); g.lineTo(T.doorX * k, T.ty(500) * k); g.stroke(); g.setLineDash([]); } }
-  for (const r of V.av) { const dead = r[5] & 1; g.fillStyle = dead ? "#777" : AV_COL[r[0] % AV_COL.length]; g.beginPath(); g.arc(r[1] * k, r[2] * k, r[0] === W.me ? 5 : 3.6, 0, 7); g.fill(); if (r[0] === W.me) { g.strokeStyle = "#fff"; g.lineWidth = 1.6; g.stroke(); } }
+  for (const q of (V.fs || [])) { g.fillStyle = AV_COL[q[5] % AV_COL.length]; g.fillRect(q[2] * k - 1.6, q[3] * k - 1.6, 3.2, 3.2); }
+  for (const u of (V.un || [])) { g.fillStyle = AV_COL[u[5] % AV_COL.length]; g.fillRect(u[2] * k - 1.8, u[3] * k - 1.8, 3.6, 3.6); }
+  for (const r of V.av) { const dead = r[5] & 1, kk = r[0] % AV_COL.length; kuBadge(g, AV_SH[kk], r[1] * k, r[2] * k, r[0] === W.me ? 8 : 6.5, dead ? "#777" : AV_COL[kk], r[0] === W.me ? "#fff" : INK); }
   g.strokeStyle = "#fff"; g.lineWidth = 1.6; g.strokeRect(C.x * k, C.y * k, 900 / C.s * k, 620 / C.s * k);
 }
 
 /* ----- 파티 줄·피드·패널·HUD ----- */
 function buildPartyW() {
-  const W = UI.W; $("#party").innerHTML = W.names.map((n, i) => `<div class="pt${i === W.me ? " me" : ""}" data-p="${i}" data-act="w-look" title="눌러서 이 사람 쪽으로 화면 이동"><b><span style="color:${AV_COL[i % AV_COL.length]}">●</span>${W.kn && W.kn[i] >= 0 ? `<img class="pt-k" src="${kSrc(W.kn[i], true)}" alt="">` : ""}<span class="pt-n">${esc(n)}</span><span class="pt-s"></span></b><div class="bar"><i></i></div><div class="bar door" title="문 체력"><i></i></div><small></small></div>`).join("");
+  const W = UI.W; $("#party").innerHTML = W.names.map((n, i) => `<div class="pt${i === W.me ? " me" : ""}" data-p="${i}" data-act="w-look" title="눌러서 이 사람 쪽으로 화면 이동"><b><span class="pcg" style="color:${AV_COL[i % AV_COL.length]}" title="내 색·모양">${PC_GLYPH[AV_SH[i % AV_SH.length]]}</span>${W.pvp ? teamFlagHTML(AV_TM[i % AV_TM.length]) : ""}${W.kn && W.kn[i] >= 0 ? `<img class="pt-k" src="${kSrc(W.kn[i], true)}" alt="">` : ""}<span class="pt-n">${esc(n)}</span><span class="pt-s"></span></b><div class="bar"><i></i></div><div class="bar door" title="문 체력"><i></i></div><small></small></div>`).join("");
   W.partyKey = "";
 }
 function updatePartyW() {
@@ -3580,6 +4237,7 @@ function updatePartyW() {
     else if (f.k === "leave") msg = `${nm} 님이 나가서 AI가 이어받아요`;
     else if (f.k === "rehome") msg = `${nm} 님이 ${rn}(으)로 옮겨 앉았어요`;
     else if (f.k === "req") { msg = `${nm}: ${f.rk === "troops" ? "병력 지원 요청!" : f.rk === "gold" ? "수당 지원 요청!" : "문 수리 요청!"}`; red = true; sfx("warn", 600); }
+    else if (f.k === "snipe") { msg = `${nm} 님의 본캐릭이 쓰러져 ${rn} 방이 무너졌어요!`; red = true; sfx("lose", 400); }
     else if (f.k === "give") msg = `${nm} 님이 ${W.names[f.to]} 님에게 수당 ${f.amt}을 보냈어요`;
     if (msg) { const el = $("#feed"); el.textContent = msg; el.style.color = red ? "#ff8a7a" : "var(--gold)"; W.feedT = 5; }
   }
@@ -3598,7 +4256,7 @@ function buildPanelWorld() {
       ${PALETTE.map((t, i) => `<button class="bi" data-act="fb-pick" data-t="${t}" id="fb-${t}" aria-pressed="false" title="${esc(palDesc(t))}"><span class="k">${t === "hr" ? 0 : i + 1}</span><span><b>${palLabel(t)}</b><span class="d">${palDesc(t)}</span></span><span class="c"></span></button>`).join("")}</div>
     <div class="box" id="bx-units"><h3>전투 유닛 <span class="faint small" id="un-cnt"></span></h3><p class="small dim" id="un-tip">뽑은 유닛은 집결 지점에서 귀신과 싸워요. 지도에서 우클릭(또는 G)으로 집결 지점을 정해요.</p>
       ${UNIT_TYPES.map((t, i) => `<button class="bi" data-act="train" data-t="${t}" id="un-${t}" title="${esc(UNIT[t].d)}"><span class="k">${i + 7}</span><span><b>${UNIT[t].n}</b><span class="d">${UNIT[t].d}</span></span><span class="c"></span></button>`).join("")}
-      <div class="small dim" id="un-q"></div><div class="row" id="pvp-cmds" hidden><button class="btn btn-sm btn-red" data-act="pv-atk">총공격!</button><button class="btn btn-sm" data-act="pv-def">집으로</button></div><div class="row"><button class="btn btn-sm" data-act="rally-pick">집결 지점 정하기 (G)</button></div></div>
+      <div class="small dim" id="un-q"></div><div class="row" id="pvp-cmds" hidden><button class="btn btn-sm btn-red" data-act="pv-atk" title="모든 병력이 자기와 가장 가까운 적(문·건물·병력·본캐릭)으로 가서 공격해요 (T)">총공격! (T)</button><button class="btn btn-sm" data-act="pv-def" title="모든 병력이 내 방 문 앞으로 돌아와 지켜요">집으로</button><button class="btn btn-sm" data-act="pv-esc" title="병력이 내 본캐릭 곁을 지켜요">호위</button></div><div class="row"><button class="btn btn-sm" data-act="rally-pick" id="rally-pick">집결 지점 정하기 (G)</button><button class="btn btn-sm btn-ghost" data-act="rally-auto" id="rally-auto" hidden>자동 지원으로 되돌리기</button></div><div class="small faint" id="un-ord"></div></div>
     <div class="box" id="bx-team" hidden><h3>팀 소통 <span class="faint small">AI 동료는 요청을 바로 따라요</span></h3><div class="row"><button class="btn btn-sm" data-act="pv-req" data-k="troops">병력 지원</button><button class="btn btn-sm" data-act="pv-req" data-k="gold">수당 요청</button><button class="btn btn-sm" data-act="pv-req" data-k="repair">문 수리</button></div><div class="row"><button class="btn btn-sm btn-gold" data-act="pv-give" data-amt="50">동료에게 수당 50</button><button class="btn btn-sm btn-gold" data-act="pv-give" data-amt="100">100</button></div><div id="team-req" style="display:grid;gap:4px"></div></div>
     <div class="box standing-only" id="bx-rooms"><h3>방 고르기</h3><p class="small dim" id="ghost-tip" hidden><b>유령 소화기</b>: 쓰러진 동안 귀신 2마리 이상이 문을 때리는 방에 멀리서 거품을 뿌려요. 문 앞 귀신 모두에게 피해(45+책상 Lv×8)를 주고 4초 느리게 만들며 뒤로 밀어내고 잠깐 기절시켜요. 그 방의 소화기가 충전돼 있어야 하고, 내 쿨다운은 35초예요. 쓰면 '도움' 점수가 올라가요.</p><div id="rooms-list" style="display:grid;gap:6px"></div></div>`);
   p.insertAdjacentHTML("beforeend", photoBoxHTML());
@@ -3611,16 +4269,20 @@ function updatePanelWorld() {
   const fbx = $("#bx-free"); if (fbx) {
     fbx.hidden = !!V.o || (a.dead && a.home < 0); if (fbx.hidden) { UI.fb = null; UI.rl = false; }
     const gG = UI.G, mineN = (V.fs || []).filter(f => f[5] === W.me).length, mineHr = (V.fs || []).filter(f => f[5] === W.me && FREE_TYPES[f[1]] === "hr").length, sl = gG ? gG.slots.filter(q => !q.locked) : [], used = sl.filter(q => q.it).length;
-    $("#fb-cnt").textContent = `방 설비 ${used}/${sl.length} · 복도 건물 ${mineN}/${FREE_CAP}`;
+    $("#fb-cnt").textContent = `구조물 ${used + mineN}/${STRUCT_CAP} (방 설비 ${used} · 복도 건물 ${mineN})`;
     for (const t of PALETTE) { const b = $("#fb-" + t); if (!b) continue; const c = t === "hr" ? hrCost(mineHr) : gG ? palCost(gG, t) : 0; $(".c", b).textContent = gG ? "₩" + fmt(c) : "-"; b.setAttribute("aria-pressed", String(UI.fb === t)); b.setAttribute("aria-disabled", String(!gG || gG.gold < c)); }
     $("#stage").classList.toggle("fb", !!(UI.fb || UI.rl));
-    $("#fb-tip").textContent = "고른 뒤 지도를 눌러 놓아요. 점선 원(내 건설 범위) 안에만 지을 수 있어요. 내 방 안에는 방 설비(칸 수 한도), 복도와 다른 팀 방 안(내 캐릭터가 그 안에 있으면)에는 자유 건물(+25%)을 지어요. 인사팀 사무실(0키)은 유닛 인원을 +8 늘려요. 단축키 B·1~6·0";
+    $("#fb-tip").textContent = "고른 뒤 지도를 눌러 놓아요. 점선 원(내 건설 범위) 안에만 지을 수 있어요. 내 방 안에는 방 설비(칸이 모자라면 새로 늘어요), 복도와 다른 팀 방 안(내 캐릭터가 그 안에 있으면)에는 자유 건물(+25%)을 지어요. 방 설비와 복도 건물을 합쳐 1인 100개까지 지을 수 있어요. 인사팀 사무실(0키)은 유닛 인원을 +10(최대 100) 늘려요. 단축키 B·1~6·0";
     const bn = $("#fb-banner"); bn.hidden = !(UI.fb || UI.rl) || !!V.o; if (UI.rl) $("#fb-bt").textContent = "집결 지점: 지도를 눌러 정해요 (우클릭·Esc 취소)"; else if (UI.fb) $("#fb-bt").textContent = `건설: ${palLabel(UI.fb)} — 초록색일 때 눌러 놓아요 (Shift+클릭 연속 · 우클릭·Esc 취소)`;
   }
   const ubx = $("#bx-units"); if (ubx) {
     ubx.hidden = !!V.o || a.home < 0;
     const mine = (V.un || []).filter(u => u[5] === W.me), tq = (V.tq && V.tq[W.me]) || [], sup = mine.reduce((q, u) => q + UNIT[UNIT_TYPES[u[1]]].sup, 0) + tq.reduce((q, u) => q + UNIT[UNIT_TYPES[u[0]]].sup, 0);
-    const cap = (V.cp && V.cp[W.me]) || UNIT_SUP; $("#un-cnt").textContent = `${sup}/${cap} (최대 ${SUP_MAX})`; { const pc = $("#pvp-cmds"); if (pc) pc.hidden = !V.pv; const ut = $("#un-tip"); if (ut) ut.textContent = V.pv ? "유닛은 집결 지점에서 지켜요. 총공격!을 누르면 상대 방 문 앞으로 몰려가 문을 부숴요. 인원이 모자라면 인사팀 사무실(0키)을 지어요. 수당이 모자라도 눌러 두면 예약돼요." : "뽑은 유닛은 집결 지점에서 귀신과 싸워요. 지도에서 우클릭(또는 G)으로 집결 지점을 정해요. 인원이 모자라면 인사팀 사무실(0키)을 지어요. 수당이 모자라도 눌러 두면 예약돼요."; }
+    const cap = (V.cp && V.cp[W.me]) || UNIT_SUP; $("#un-cnt").textContent = `${sup}/${cap} (최대 ${SUP_MAX})`; { const pc = $("#pvp-cmds"); if (pc) pc.hidden = !V.pv; const od = (V.od && V.od[W.me]) || "";
+      const ut = $("#un-tip"); if (ut) ut.textContent = V.pv ? "우클릭(또는 G 후 클릭) = 공격 이동: 그 지점으로 가면서 길에 있는 문·건물·병력·본캐릭을 전부 공격해요. 적 본캐릭을 우클릭하면 집중 공격! 총공격 = 병력 하나하나가 자기와 가장 가까운 적으로 가요. 집으로 = 내 방 문 앞 방어, 호위 = 내 본캐릭 곁. 방벽(6키)은 상대 병력이 못 지나가요(부숴야 해요). 인원은 인사팀 사무실(0키)로 늘려요(+10, 최대 100)." : "뽑은 병력은 가장 급한 방(귀신이 문을 때리는 방)으로 알아서 가서 싸우고, 조용하면 내 방 안에서 쉬어요. 방이나 방 문 앞을 우클릭하면 그 방 지키기, 복도를 찍으면 그 지점 지키기예요('자동 지원'으로 되돌려요). 인원은 인사팀 사무실(0키)로 늘려요(+10, 최대 100). 수당이 모자라도 눌러 두면 예약돼요.";
+      const rpk = $("#rally-pick"); if (rpk) rpk.textContent = V.pv ? "공격 이동 찍기 (G)" : "집결 지점 정하기 (G)";
+      const ra = $("#rally-auto"); if (ra) ra.hidden = V.pv || !(od === "rp" || od === "room");
+      const uo = $("#un-ord"); if (uo) uo.textContent = "병력 명령: " + (V.pv ? ({am:"공격 이동 중", focus:"본캐릭 집중 공격", all:"총공격(각자 가까운 적)", esc:"호위", def:"내 방 지키기"}[od] || "내 방 지키기") : (od === "room" ? "방 지키기: " + (V.orm && V.orm[W.me] >= 0 ? roomName(W, V.orm[W.me]) : "") : od === "rp" ? "집결 지점 지키기" : "자동 지원 (병력이 급한 방으로 알아서 가요)")); }
     for (const t of UNIT_TYPES) { const b = $("#un-" + t), c = UNIT[t].cost; $(".c", b).textContent = "₩" + c; b.setAttribute("aria-disabled", String(!UI.G || sup + UNIT[t].sup > cap || tq.length >= UNIT_Q)); }
     $("#un-q").innerHTML = tq.length ? `<div class="uq">${tq.map((q, i) => `<div class="uqi${q[2] ? "" : " rsv"}" title="${UNIT[UNIT_TYPES[q[0]]].n}${q[2] ? "" : " (예약 · 수당이 모이면 시작해요)"}"><i style="width:${i === 0 && q[2] ? q[1] : 0}%"></i><b>${UNIT[UNIT_TYPES[q[0]]].n.slice(0, 2)}</b></div>`).join("")}</div>` : "훈련 중인 유닛이 없어요 · 버튼을 계속 눌러 예약해 두세요";
   }
@@ -3673,7 +4335,7 @@ function updateHUDW() {
   $("#h-tl").style.left = clamp(Math.max(0, t) / du * 100, 2, 98) + "%";
   { const pb = $("#pvp-bar"); if (pb) { pb.hidden = !V.pv; if (V.pv) {
     const me2 = avRow(V, W.me), mt = me2 ? me2.tm : 0, T = [0, 1].map(tm => { const rs = V.rooms.filter(q => q && q.sd === tm), live = rs.filter(q => !q.f); return {n:rs.length, live:live.length, dh:live.reduce((q, r) => q + r.dh / Math.max(1, r.dm), 0) / Math.max(1, live.length), un:(V.un || []).filter(u => (V.av[u[5]] || [])[12] === tm).length}; });
-    const part = (tm, label) => `<span style="color:${TEAM_COL[tm]}"><b>${label}</b> 방 ${T[tm].live}/${T[tm].n} · 문 ${Math.round(T[tm].dh * 100)}% · 유닛 ${T[tm].un}</span>`;
+    const part = (tm, label) => `<span>${teamFlagHTML(tm)}<b>${label}</b> 방 ${T[tm].live}/${T[tm].n} · 문 ${Math.round(T[tm].dh * 100)}% · 유닛 ${T[tm].un}</span>`;
     pb.innerHTML = part(mt, "우리 팀") + `<span class="faint">vs</span>` + part(1 - mt, "상대 팀") + `<span class="faint">남은 시간 ${fmtTime(Math.max(0, V.du - Math.max(0, V.t)))}</span>`; } } }
   $("#h-gold").firstChild.nodeValue = "₩" + fmt(G ? G.gold : 0); $("#h-inc").textContent = G ? `+${income(G).toFixed(1)}/초${G.away ? " · 자리 비움 30%" : ""}${G.blackout > 0 ? ` · 정전 수당 절반 ${Math.ceil(G.blackout)}초` : ""}` : "";
   $("#h-inc").style.color = G && (G.away || G.blackout > 0) ? "#ff9a7a" : "";
@@ -3683,6 +4345,7 @@ function updateHUDW() {
 function wframe(ts) {
   if (UI.screen !== "game" || !UI.W) { UI.raf = 0; return; }
   const W = UI.W, dt = Math.min(.1, (ts - UI.last) / 1000); UI.last = ts;
+  if (W.kc && W.kw < 2) { try { if (kuWarm(W.kc, W.ks, W.kt, W.kw ? .45 : 1, 8)) W.kw++; } catch (er) { W.kw = 2; } }   // 병력 스프라이트를 프레임마다 8ms 안에서 미리 만든다
   if (!W.Wd && W.net && performance.now() - (W.snapAt || W.startAt || 0) > 8000 && !(W.V && W.V.o)) { toast("방장과 연결이 끊어졌어요"); endWorld(); buildSelect(); show("select"); UI.raf = 0; return; }
   if (W.V) {
     wInput(dt); camUpdate(dt);
@@ -3722,7 +4385,7 @@ function showPvpResult() {
   const head = win ? "승리! 상대 팀 방을 무너뜨렸다" : draw ? "무승부" : "패배… 우리 방이 무너졌다";
   const sub = V.bt ? "시간이 끝나 남은 문·설비와 교전 결과로 판정했어요." : draw ? "" : win ? "상대 팀의 방이 모두 무너졌어요." : "우리 팀의 방이 모두 무너졌어요.";
   const nm = r => esc(W.names[r.id]) + (r.id === W.me ? (W.names[r.id] === "나" ? "" : " (나)") : (avRow(V, r.id) || {}).ai ? " (AI)" : "");
-  const rows = res.slice().sort((x, y) => (x.tm === mt ? 0 : 1) - (y.tm === mt ? 0 : 1) || y.k - x.k).map(r => `<div class="rk-row w ${r.id === W.me ? "me" : ""}"><div class="rk-n" style="color:${TEAM_COL[r.tm]}">●</div><div style="min-width:0;text-align:left"><div class="rk-nick">${nm(r)} <span class="faint small">${r.tm === mt ? "우리 팀" : "상대 팀"}</span></div><div class="rk-sub">${r.rm ? esc(roomLabel(r.rm)) : "자리 못 잡음"} · ${r.he ? "방이 끝까지 버팀" : r.fa >= 0 ? fmtTime(r.fa) + "에 방 함락" : "방 없음"}${r.dt ? ` · 쓰러짐 ${r.dt}회` : ""}</div></div><div class="rk-sc num" style="font-size:15px">처치 ${fmt(r.k)}</div></div>`).join("");
+  const rows = res.slice().sort((x, y) => (x.tm === mt ? 0 : 1) - (y.tm === mt ? 0 : 1) || y.k - x.k).map(r => `<div class="rk-row w ${r.id === W.me ? "me" : ""}"><div class="rk-n pcg" style="color:${AV_COL[r.id % AV_COL.length]}">${PC_GLYPH[AV_SH[r.id % AV_SH.length]]}</div><div style="min-width:0;text-align:left"><div class="rk-nick">${nm(r)} <span class="faint small">${r.tm === mt ? "우리 팀" : "상대 팀"}</span></div><div class="rk-sub">${r.rm ? esc(roomLabel(r.rm)) : "자리 못 잡음"} · ${r.he ? "방이 끝까지 버팀" : r.fa >= 0 ? fmtTime(r.fa) + "에 방 함락" : "방 없음"}${r.dt ? ` · 쓰러짐 ${r.dt}회` : ""}</div></div><div class="rk-sc num" style="font-size:15px">처치 ${fmt(r.k)}</div></div>`).join("");
   UI.last = {kind:"p", run:{}, score:0, runId:null, done:false, busy:false, msg:""};
   $("#res").innerHTML = `<h2 class="disp" style="color:${win ? "var(--gold)" : draw ? "var(--cream)" : "var(--red)"}">${esc(head)}</h2>
     <p class="dim">대결 · ${esc(FLOORS[W.floor] ? FLOORS[W.floor].name : "")} · AI ${DIFFS[W.diff].n}<br>${esc(sub)}</p>
@@ -3789,14 +4452,14 @@ Object.assign(A, {
   },
 });
 
-const worldOpts = () => ({total:SAVE.players, humans:[{name:SAVE.nick || "나", meta:metaOf(SAVE.ups), kn:SAVE.kn}], diff:SAVE.diff, floor:SAVE.floor});
+const worldOpts = () => ({total:SAVE.players, humans:[{name:SAVE.nick || "나", meta:metaOf(SAVE.ups), kn:SAVE.kn, col:SAVE.col}], diff:SAVE.diff, floor:SAVE.floor});
 
 /* ===== 온라인 다 같이: 로비(약 8초) · P2P(PeerJS) · 모자란 자리는 AI ===== */
 const NET_PREFIX = "rbnd-nd4-L", NET_SLOTS = 4, NET_MAX = 5;
-const NET_CMDS = new Set(["req", "give", "mv", "go", "goSeat", "sit", "stand", "build", "up", "sell", "doorUp", "deskUp", "repair", "skill", "crate", "goAssist", "ghost", "buildAt", "sellAt", "train", "rally"]);
+const NET_CMDS = new Set(["req", "give", "mv", "go", "goSeat", "sit", "stand", "build", "up", "sell", "doorUp", "deskUp", "repair", "skill", "crate", "goAssist", "ghost", "buildAt", "sellAt", "train", "rally", "order"]);
 let LB = null;   // 열려 있는 로비(없으면 null)
 const cleanUps = u => { const o = {}; for (const [k, m] of Object.entries({startGold:5, doorHp:5, income:5, skillCd:5, slots:2})) o[k] = clamp(Math.floor(Number(u && u[k])) || 0, 0, m); return o; };
-const cleanCmd = p => { const o = {}; if (!p || typeof p !== "object") return o; for (const k of ["x", "y", "i", "id", "to", "amt"]) if (Number.isFinite(Number(p[k])) && p[k] !== null) o[k] = Number(p[k]); if (p.i === null) o.i = null; if (typeof p.t === "string" && (Object.prototype.hasOwnProperty.call(BUILD, p.t) || p.t === "wall" || p.t === "hr" || Object.prototype.hasOwnProperty.call(UNIT, p.t))) o.t = p.t; if (typeof o.i === "number") o.i = clamp(Math.floor(o.i), 0, 11); return o; };
+const cleanCmd = p => { const o = {}; if (!p || typeof p !== "object") return o; for (const k of ["x", "y", "i", "id", "to", "amt", "fa"]) if (Number.isFinite(Number(p[k])) && p[k] !== null) o[k] = Number(p[k]); if (p.i === null) o.i = null; if (typeof p.t === "string" && (Object.prototype.hasOwnProperty.call(BUILD, p.t) || p.t === "wall" || p.t === "hr" || Object.prototype.hasOwnProperty.call(UNIT, p.t))) o.t = p.t; if (typeof o.i === "number") o.i = clamp(Math.floor(o.i), 0, 11); if (typeof p.k === "string" && ["auto", "all", "def", "esc", "troops", "gold", "repair"].includes(p.k)) o.k = p.k; return o; };
 
 function loadPeerJS() {
   if (window.Peer) return Promise.resolve();
@@ -3896,9 +4559,9 @@ function lobbyBegin(L) {
   if (L.td) { tdLobbyBegin(L); return; }
   const humans = L.humans.slice(), total = Math.max(SAVE.players, humans.length), online = humans.length > 1;
   lobbyClose(online);
-  startWorld({total, humans:humans.map(h => ({name:h.name, meta:h.meta, kn:h.kn})), diff:SAVE.diff, floor:SAVE.floor, net:online ? L : null});
+  startWorld({total, humans:humans.map(h => ({name:h.name, meta:h.meta, kn:h.kn, col:h.col})), diff:SAVE.diff, floor:SAVE.floor, net:online ? L : null});
   const W = UI.W; L.humans = humans;
-  humans.forEach((h, i) => { if (h.conn) { try { h.conn.send({t:"start", you:i, names:W.names, kn:W.kn, diff:W.diff, floor:W.floor}); } catch (e) {} } });
+  humans.forEach((h, i) => { if (h.conn) { try { h.conn.send({t:"start", you:i, names:W.names, kn:W.kn, col:W.col, diff:W.diff, floor:W.floor}); } catch (e) {} } });
 }
 
 /* ----- 손님 쪽 ----- */
@@ -3951,7 +4614,7 @@ function startWorldClient(L, conn, msg) {
   DPR = Math.min(2, window.devicePixelRatio || 1); UI.lastWorld = {net:true}; UI.lastKind = "world";
   const lay = layoutWorld(FLOORS[msg.floor] ? msg.floor : "4f"), names = Array.isArray(msg.names) ? msg.names.map(n => String(n)) : [];
   const kn = names.map((_, i) => Array.isArray(msg.kn) && cleanKn(msg.kn[i]) >= 0 ? msg.kn[i] : i % KNIGHTS.length);
-  const W = {Wd:null, lay, V:null, me:Number(msg.you) || 0, names, kn, net:L, last:performance.now(), paused:false, evq:[], fi:0, cam:{x:(lay.hall.L + lay.hall.R) / 2 - 450, y:(lay.hall.T + lay.hall.B) / 2 - 310, s:1, mode:"follow"}, camCx:0, camCy:0, home:-1, seated:false, keys:new Set(), mvSent:"", bg:null, shadow:null, hudT:0, panelT:0, partyKey:"", roomsKey:"", feedT:0, pos:{}, moving:{}, diff:DIFFS[msg.diff] ? msg.diff : "normal", floor:FLOORS[msg.floor] ? msg.floor : "4f", snapAt:0, startAt:performance.now(), snapGap:70, pEn:new Map(), pAv:new Map()};
+  const W = {Wd:null, lay, V:null, me:Number(msg.you) || 0, names, kn, col:Array.isArray(msg.col) ? msg.col.map(cleanCol) : undefined, net:L, last:performance.now(), paused:false, evq:[], fi:0, cam:{x:(lay.hall.L + lay.hall.R) / 2 - 450, y:(lay.hall.T + lay.hall.B) / 2 - 310, s:1, mode:"follow"}, camCx:0, camCy:0, home:-1, seated:false, keys:new Set(), mvSent:"", bg:null, shadow:null, hudT:0, panelT:0, partyKey:"", roomsKey:"", feedT:0, pos:{}, moving:{}, diff:DIFFS[msg.diff] ? msg.diff : "normal", floor:FLOORS[msg.floor] ? msg.floor : "4f", snapAt:0, startAt:performance.now(), snapGap:70, pEn:new Map(), pAv:new Map()};
   beginWorldUI(W);
   if (apiOn()) getRunId(W, 0);
 }
@@ -3966,7 +4629,7 @@ function onSnapshot(W, V) {
   if (V.my && W.shadow) {
     const G = W.shadow, m = V.my;
     G.gold = m.g; G.deskLv = m.dk; G.door.lv = m.dl; G.door.hp = m.dh; G.door.max = m.dm; G.door.flash = m.fl ? .1 : 0; G.blackout = m.bo ? 5 : 0; G.away = !!m.aw; G.skill.cd = m.sk[0]; G.skill.max = m.sk[1];
-    m.sl.forEach((s, i) => { const sl = G.slots[i]; if (!sl) return; sl.locked = !!s[0]; if (s[4] != null) { sl.x = s[4]; sl.y = s[5]; } sl.it = s[1] >= 0 ? {type:ITYPES[s[1]], lv:s[2], inv:s[3], ang:-Math.PI / 2, cd:0} : null; });
+    m.sl.forEach((s, i) => { let sl = G.slots[i]; if (!sl) sl = G.slots[i] = {x:s[4], y:s[5], locked:false, it:null}; sl.locked = !!s[0]; if (s[4] != null) { sl.x = s[4]; sl.y = s[5]; } sl.it = s[1] >= 0 ? {type:ITYPES[s[1]], lv:s[2], inv:s[3], ang:-Math.PI / 2, cd:0} : null; });
     const rs = V.rooms[ctx]; G.crates = rs ? rs.cr.map(c => ({id:c[0], x:c[1], y:c[2], val:c[3]})) : [];
   }
   UI.G = ctx >= 0 ? W.shadow : null;
@@ -4542,12 +5205,12 @@ function tdScore(W) { return Math.round((W.stage * 100 + (W.over === "win" ? 200
 /* ===TD_END=== */
 
 /* ===TDUI_START=== 소용돌이 방어전 v2 화면 · 카메라 · 미니맵 · 건설 기사 조작 · 패널 */
-const TD_PC = [{n:"노랑", c:"#FFE600", s:"circle"}, {n:"파랑", c:"#2F6BFF", s:"tri"}, {n:"하양", c:"#FFFFFF", s:"square"}, {n:"하늘", c:"#00D5FF", s:"diamond"}, {n:"자주", c:"#FF2FD2", s:"star"}, {n:"주황", c:"#FF8A00", s:"cross"}, {n:"보라", c:"#9A5BFF", s:"hex"}, {n:"연두", c:"#8CFF3A", s:"ring"}];
+const TD_PC = [{n:"노랑", c:"#FFE600", s:"circle"}, {n:"파랑", c:"#2F6BFF", s:"triangle"}, {n:"하양", c:"#FFFFFF", s:"square"}, {n:"하늘", c:"#00D5FF", s:"diamond"}, {n:"자주", c:"#FF2FD2", s:"star"}, {n:"주황", c:"#FF8A00", s:"cross"}, {n:"보라", c:"#9A5BFF", s:"hex"}, {n:"연두", c:"#8CFF3A", s:"half"}];
 const PCOL = typeof PLAYER_COLORS !== "undefined" ? PLAYER_COLORS : TD_PC;   // 다른 모드와 같은 색 8가지(적록색약에서도 구분되는 진한 색 + 모양)
 const TDU = {W:null, V:null, map:null, mut:null, me:0, diff:"normal", cam:{x:0, y:0, s:.8}, follow:true, sel:null, tuSel:-1, speed:1, paused:false, raf:0, last:0, acc:0, shots:[], rings:[], floats:[], arcs:[], st:{}, ended:false, endT:0, drag:null, keys:new Set(), net:null, names:[], kn:[], fac:[], col:[], tw:[], twById:new Map(), pend:[], evq:[], panelT:0, hover:null, shake:0, coreFlash:0, stageName:"", mm:[], dirSent:"", camT:0, lastPaint:null, fl:{}, pEn:null, snapAt:0, snapGap:70, st0:null};
 const TD_REASON = {gold:"수당이 부족해요", taken:"이미 터렛이 있어요", cell:"여기는 지을 수 없어요 (길 · 전원실 · 바깥)", max:"주문이 너무 많아요", cd:"아직 충전 중이에요", target:"기술을 쓸 곳을 눌러 주세요", maxed:"이미 최대예요", owner:"내 터렛만 만질 수 있어요", phase:"지금은 누를 수 없어요", over:"끝난 판이에요", none:"터렛이 없어요", type:"?", cmd:"?"};
 const TD_SPD = [1, 2, 3];
-const TD_GLYPH = {circle:"●", tri:"▲", square:"■", diamond:"◆", star:"★", cross:"✚", hex:"⬢", ring:"◎"}, tdGlyph = pc => TD_GLYPH[pc.s] || "●";
+const TD_GLYPH = {circle:"●", tri:"▲", triangle:"▲", square:"■", diamond:"◆", star:"★", cross:"✚", hex:"⬢", half:"◖", ring:"◎"}, tdGlyph = pc => TD_GLYPH[pc.s] || "●";
 const tdColOf = i => PCOL[(Math.max(0, TDU.col[i]) || 0) % PCOL.length] || PCOL[0];
 const tdSfx = (n, gap) => { const t = performance.now(); if (t - (TDU.st[n] || 0) < gap) return; TDU.st[n] = t; sfx(n); };
 
@@ -4563,12 +5226,13 @@ const tdRect = (m = 0) => { const [w, h] = tdViewSize(), S = TDU.cam.s; return [
 function tdBadge(g, shape, x, y, r, fill, line) {
   g.beginPath();
   if (shape === "circle") g.arc(x, y, r, 0, 6.2832);
-  else if (shape === "tri") { g.moveTo(x, y - r * 1.15); g.lineTo(x + r * 1.05, y + r * .8); g.lineTo(x - r * 1.05, y + r * .8); g.closePath(); }
+  else if (shape === "tri" || shape === "triangle") { g.moveTo(x, y - r * 1.15); g.lineTo(x + r * 1.05, y + r * .8); g.lineTo(x - r * 1.05, y + r * .8); g.closePath(); }
   else if (shape === "square") g.rect(x - r * .9, y - r * .9, r * 1.8, r * 1.8);
   else if (shape === "diamond") { g.moveTo(x, y - r * 1.2); g.lineTo(x + r, y); g.lineTo(x, y + r * 1.2); g.lineTo(x - r, y); g.closePath(); }
   else if (shape === "star") { for (let i = 0; i < 10; i++) { const a = -1.5708 + i * .6283, rr = i % 2 ? r * .5 : r * 1.2; g.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); } g.closePath(); }
   else if (shape === "cross") { const q = r * .45; g.moveTo(x - q, y - r); g.lineTo(x + q, y - r); g.lineTo(x + q, y - q); g.lineTo(x + r, y - q); g.lineTo(x + r, y + q); g.lineTo(x + q, y + q); g.lineTo(x + q, y + r); g.lineTo(x - q, y + r); g.lineTo(x - q, y + q); g.lineTo(x - r, y + q); g.lineTo(x - r, y - q); g.lineTo(x - q, y - q); g.closePath(); }
   else if (shape === "hex") { for (let i = 0; i < 6; i++) { const a = i * 1.0472; g.lineTo(x + Math.cos(a) * r * 1.1, y + Math.sin(a) * r * 1.1); } g.closePath(); }
+  else if (shape === "half") { g.arc(x, y, r * 1.05, Math.PI / 2, Math.PI * 1.5); g.closePath(); }
   else { g.arc(x, y, r, 0, 6.2832); g.moveTo(x + r * .45, y); g.arc(x, y, r * .45, 0, 6.2832, true); }
   g.fillStyle = fill; g.fill(); g.lineWidth = Math.max(1.5, r * .35); g.strokeStyle = line || "#0a0a14"; g.stroke();
 }
@@ -4944,10 +5608,9 @@ function tdModeText() {
   const box = $("#td-opts"); if (!box) return;
   $("#tdf-seg").innerHTML = TD_FAC.map((x, i) => `<button role="radio" aria-checked="${i === f}" data-act="td-fac" data-f="${i}">${esc(x.n)}</button>`).join("");
   $("#tdm-seg").innerHTML = [["rand", "무작위"], ["vortex", "소용돌이"], ["maze", "미로"]].map(([id, n]) => `<button role="radio" aria-checked="${id === m}" data-act="td-map" data-m="${id}">${n}</button>`).join("");
-  $("#tdc-row").innerHTML = PCOL.map((c, i) => `<button class="tdcb" role="radio" aria-checked="${i === col}" data-act="td-col" data-c="${i}" aria-label="${esc(c.n)}" title="${esc(c.n)}"><canvas width="60" height="60"></canvas></button>`).join("") + `<button class="tdcb rnd" role="radio" aria-checked="${col < 0}" data-act="td-col" data-c="-1">랜덤</button>`;
-  $$("#tdc-row .tdcb canvas").forEach((cv, i) => { const g = cv.getContext("2d"); tdBadge(g, PCOL[i].s, 30, 30, 18, PCOL[i].c, "#0a0a14"); });
   $("#tdf-desc").innerHTML = `<b style="color:${F.col}">${esc(F.n)}</b> · ${esc(F.sub)} — ${esc(F.d)}<br>터렛: ${F.tw.map(t => esc(t.n)).join(" · ")}`;
 }
+const cleanCol = v => Number.isInteger(v) && v >= 0 && v < 8 ? v : -1;
 const TD_NET_CMDS = new Set(["build", "move", "dir", "stop", "sell", "tier", "up", "ready", "skill"]);
 function tdCleanArgs(c, p) {
   const o = {}; p = p && typeof p === "object" ? p : {}; const num = v => (v !== null && v !== "" && Number.isFinite(Number(v))) ? Number(v) : NaN, pos = v => clamp(num(v), -TD_HALF, TD_HALF);
