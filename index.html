@@ -420,12 +420,14 @@ input,textarea{font:inherit;font-size:15px;color:var(--cream);background:var(--b
           <button class="btn btn-red btn-lg" data-act="to-select">출근하기</button>
           <button class="btn btn-lg btn-ghost" data-act="to-shop">사원증 상점 <span class="chip num" id="t-rp"></span></button>
         </div>
+        <div class="row" id="rbx-modes" style="justify-content:center"></div>
         <div class="t-kn" id="t-kn" aria-label="라운드기사단 10명"></div>
         <div class="rd-card" id="rd-card"><button class="rd-th" data-act="road-open" aria-label="로드뷰 투어 열기"><img src="roadview/poster.jpg" alt="" onerror="document.getElementById('rd-card').hidden=true"></button><div><h3>라운드비 로드뷰 투어</h3><p>바닥의 화살표를 눌러 3층 라운지·4층 공유오피스를 직접 걸어 보세요. 2분 영상으로도 볼 수 있어요.</p><div class="row"><button class="btn btn-sm btn-red" data-act="road-open">걸어서 둘러보기</button><button class="btn btn-sm" data-act="road-video">영상으로 보기</button></div></div></div>
         <div class="row" style="justify-content:center"><button class="btn btn-sm" data-act="to-rank">랭킹</button><button class="btn btn-sm" data-act="to-save">이어하기 코드</button><button class="btn btn-sm" data-act="to-gallery">공간 둘러보기</button></div>
         <p class="small faint" id="t-best"></p>
         <div id="t-links"></div>
-        <p class="small faint">PROTOTYPE v2.1 · 혼자(스테이지 22개) · 같이(사람·AI) · 대결(AI) · 소용돌이(자유 건설 터렛 협동) · 클릭·터치로 플레이 · 단축키는 게임 중 패널에 표시돼요</p>
+        <div class="row" id="rbx-extra" style="justify-content:center"></div>
+        <p class="small faint">PROTOTYPE v2.2 · 혼자(스테이지 22개) · 같이(사람·AI) · 대결(AI) · 소용돌이(자유 건설 터렛 협동) · 클릭·터치로 플레이 · 단축키는 게임 중 패널에 표시돼요</p>
       </div>
     </div>
   </section>
@@ -5952,12 +5954,14 @@ const CC_FB = {key:"AIzaSyBjZkuzEClkdheaA3jtbvyI7TiJ4Yl4JKs", pid:"roundb-games"
 const CC_FS = `https://firestore.googleapis.com/v1/projects/${CC_FB.pid}/databases/(default)/documents/saves`;
 const CC_ABC = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";   // 32글자 (헷갈리는 0·1·I·O 뺌) × 16자 = 추측 불가
 const CC_KEYS = ["rp", "ups", "best", "cleared", "runs", "wins", "nick", "diff", "sc", "stg", "sbest", "kn", "col", "td", "tk", "code", "tdf", "tdn", "mode", "players", "floor", "pvpn", "tdHint2", "f3"];   // 기기에 따라 다른 설정(소리·간단히 보기)은 안 옮겨요
-const CC = {busy:false, err:"", msg:"", good:false, conflict:null, pending:null, arm:"", tok:null, tokP:null, last:0, fails:0, next:0, autoAt:0};
+const CC = {busy:false, err:"", msg:"", good:false, conflict:null, pending:null, arm:"", tok:null, tokP:null, last:0, fails:0, next:0, autoAt:0, fill:"", gconf:null, gbusy:false};
 const ccGen = () => { const b = new Uint8Array(16); if (window.crypto && crypto.getRandomValues) crypto.getRandomValues(b); else for (let i = 0; i < 16; i++) b[i] = Math.floor(Math.random() * 256); return Array.from(b, v => CC_ABC[v & 31]).join(""); };
 const ccShow = id => String(id || "").replace(/(.{4})(?=.)/g, "$1-");
 const ccNorm = s => { const t = String(s == null ? "" : s).toUpperCase().replace(/[^A-Z0-9]/g, ""); return t.length === 16 && [...t].every(c => CC_ABC.includes(c)) ? t : ""; };
 const ccLegacy = s => { const t = normCode(s); return /^RB-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(t) ? t : ""; };
-const CC_ERR = {net:"인터넷 연결을 확인해 주세요", timeout:"서버가 느려요. 잠시 뒤 다시 눌러 주세요", nocode:"이 이어하기 코드를 찾을 수 없어요. 다시 확인해 주세요", bad:"저장된 기록을 읽을 수 없어요", server:"서버에 문제가 있어요. 잠시 뒤 다시 시도해 주세요", auth:"서버에 로그인하지 못했어요. 잠시 뒤 다시 시도해 주세요", size:"저장할 기록이 너무 커요"};
+const CC_ERR = {net:"인터넷 연결을 확인해 주세요", timeout:"서버가 느려요. 잠시 뒤 다시 눌러 주세요", nocode:"이 이어하기 코드를 찾을 수 없어요. 다시 확인해 주세요", bad:"저장된 기록을 읽을 수 없어요", server:"서버에 문제가 있어요. 잠시 뒤 다시 시도해 주세요", auth:"서버에 로그인하지 못했어요. 잠시 뒤 다시 시도해 주세요", size:"저장할 기록이 너무 커요",
+  cancel:"구글 로그인 창을 닫았어요. 연동은 하지 않았어요", popup:"팝업이 막혀 있어요. 주소창 옆 팝업 허용을 켜고 다시 눌러 주세요", domain:"이 주소에서는 구글 로그인을 쓸 수 없어요", sdk:"구글 로그인 도구를 불러오지 못했어요. 인터넷을 확인하고 다시 눌러 주세요", gerr:"구글 로그인에 실패했어요. 잠시 뒤 다시 시도해 주세요", inapp:"카카오톡 같은 앱 안 브라우저에서는 구글이 로그인을 막아요. 크롬·사파리 같은 브라우저로 열어 주세요", gstale:"로그인한 지 오래돼서 다시 해야 해요. 처음부터 다시 눌러 주세요", gdeny:"서버가 구글 계정 정보를 받아 주지 않았어요. 잠시 뒤 다시 시도해 주세요"};
+const CC_INAPP = /KAKAOTALK|NAVER\(inapp|FBAN|FBAV|Instagram|DaumApps|; wv\)|Line\//i.test(navigator.userAgent || "");   // 구글은 앱 안 브라우저의 로그인을 막아요
 const ccErrText = c => CC_ERR[c] || `일시적인 문제예요 (${c || "?"}). 잠시 뒤 다시 눌러 주세요`;
 async function ccNet(url, opt, ms) {
   const ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), ms || 15000);
@@ -6017,11 +6021,74 @@ function ccClean(d) {
   if (d.tk && typeof d.tk === "object" && d.tk.t) o.tk = {t:String(d.tk.t).slice(0, 16), nick:cleanNick(d.tk.nick), score:num(d.tk.score, 0, 1e9), w:!!d.tk.w, at:num(d.tk.at, 0, 1e14)};
   return o;
 }
-function ccApply(o, id, rev) {
+function ccApply(o, id, rev, g) {   // g = 이 기록에 연결된 구글 계정 표시({m}) — 코드를 직접 넣어 불러온 경우엔 연결 여부를 모르니 비워요
   for (const k of ["tk", "td", "tdf", "tdn", "pvpn", "tdHint2"]) delete SAVE[k];
   const keepCode = !o.code && SAVE.code;   // 불러온 기록에 랭킹용 예전 코드가 없으면 이 기기의 코드·닉네임을 그대로 둬요
   Object.assign(SAVE, o, keepCode ? {code:SAVE.code, nick:SAVE.nick || o.nick} : {}, {f3:1});
+  if (id !== SAVE.cc || g) { if (g) SAVE.ccG = g; else delete SAVE.ccG; }
   SAVE.cc = id; SAVE.ccRev = rev; SAVE.ccHash = h32(ccPack()); SAVE.ccAt = Date.now(); persist(true);
+}
+/* ===== 구글 계정 연동 (선택) =====
+   구글 계정 번호(uid) ↔ 이어하기 코드 한 쌍을 Firestore users/{uid} 에 저장해, 코드를 몰라도 구글 로그인으로 기록을 찾게 해요.
+   로그인 창은 Firebase 로그인 도구(SDK)가 열어 줘요 — 누를 때만 불러오고, 끝나면 이 기기에서 바로 로그아웃해서 구글 로그인 상태를 남기지 않아요. */
+const CC_SDK = "https://www.gstatic.com/firebasejs/12.6.0/", CC_US = `https://firestore.googleapis.com/v1/projects/${CC_FB.pid}/databases/(default)/documents/users`;
+let ccSdkP = null;
+const ccSdk = () => ccSdkP || (ccSdkP = Promise.all([import(CC_SDK + "firebase-app.js"), import(CC_SDK + "firebase-auth.js")]).then(([a, u]) => {
+  const auth = u.getAuth(a.initializeApp({apiKey:CC_FB.key, authDomain:CC_FB.pid + ".firebaseapp.com", projectId:CC_FB.pid}, "cc-google")); auth.languageCode = "ko"; return {u, auth};
+}).catch(() => { ccSdkP = null; throw {code:"sdk"}; }));
+const ccMask = m => String(m || "").replace(/^(.{1,2}).*(@.*)$/, "$1***$2");
+async function ccGoogle(keepIn) {   // 구글 로그인 창 → {uid, tok, m, t, done()}. keepIn 이면 로그인을 유지(연동 풀기에서 계정 정보를 지울 때), 아니면 바로 로그아웃
+  if (CC_INAPP) throw {code:"inapp"};
+  const {u, auth} = await ccSdk(), pr = new u.GoogleAuthProvider(); pr.setCustomParameters({prompt:"select_account"});
+  let r;
+  try { r = await u.signInWithPopup(auth, pr); }
+  catch (e) { const c = e && e.code; throw {code: c === "auth/popup-closed-by-user" || c === "auth/cancelled-popup-request" || c === "auth/user-cancelled" ? "cancel" : c === "auth/popup-blocked" ? "popup" : c === "auth/unauthorized-domain" ? "domain" : c === "auth/network-request-failed" ? "net" : "gerr", raw:c}; }
+  const g = {uid:r.user.uid, tok:await r.user.getIdToken(), m:ccMask(r.user.email), t:Date.now(), done:async remove => { try { if (remove) await u.deleteUser(r.user); else await u.signOut(auth); } catch (e) { try { await u.signOut(auth); } catch (e2) {} } }};
+  if (!keepIn) await g.done(false);
+  return g;
+}
+async function ccUsers(method, g, code) {
+  if (Date.now() - g.t > 50 * 60000) throw {code:"gstale"};
+  const h = {"Authorization":"Bearer " + g.tok, "Content-Type":"application/json"};
+  if (method === "PATCH") return ccNet(`${CC_US}/${g.uid}?updateMask.fieldPaths=code&updateMask.fieldPaths=updated`, {method, headers:h, body:JSON.stringify({fields:{code:{stringValue:code}, updated:{integerValue:String(Date.now())}}})});
+  return ccNet(`${CC_US}/${g.uid}`, {method, headers:h});
+}
+const ccModal = html => { const s = $("#modal-slot"); if (s) s.innerHTML = html ? `<div class="modal" role="dialog" aria-modal="true" aria-label="구글 계정 안내"><div style="width:min(520px,100%);text-align:left">${html}</div></div>` : ""; };
+function ccConsent(kind) {   // 구글 로그인 창을 열기 전에 어떤 정보가 쓰이는지 먼저 알리고 동의를 받아요
+  CC.ask = kind; if (!CC_INAPP) ccSdk().catch(() => {});   // 읽는 동안 로그인 도구를 미리 받아 둬요
+  const lead = kind === "unlink" ? `<h2 class="disp" style="font-size:24px">구글 연동을 풀까요?</h2><p class="small">이 구글 계정과 이어하기 코드의 연결을 지우고, 이 게임이 구글 로그인 목록에 남긴 내 정보(이메일·이름)도 함께 지워요. 이어하기 코드와 저장된 기록은 그대로예요. 확인을 위해 구글 로그인 창이 한 번 더 열려요.</p>`
+    : `<h2 class="disp" style="font-size:24px">${kind === "resume" ? "구글 계정으로 이어하기" : "구글 계정을 연동할까요?"}</h2><p class="small">${kind === "resume" ? "구글 계정에 연결해 둔 이어하기 기록을 찾아요." : "연동하면 이어하기 코드를 잃어버려도 구글 로그인만으로 이 기록을 이어서 할 수 있어요."}</p>
+      <ul class="small dim" style="margin:6px 0 10px 18px;padding:0;display:grid;gap:4px"><li>구글 로그인 창이 열려요. 로그인과 동의는 구글 화면에서 하고, 비밀번호는 이 게임이 받지 않아요.</li><li>저장되는 것: 구글 계정의 고유 번호와 연결한 이어하기 코드. 구글이 알려 주는 이메일·이름은 구글 로그인 목록(Firebase)에 기록돼요 — 게임 운영자만 볼 수 있고 이 게임은 쓰지 않아요.</li><li>쓰는 곳: 이어하기 코드를 찾아 주는 일에만 써요. 광고나 홍보에는 쓰지 않아요.</li><li>언제든 '연동 풀기'로 지울 수 있어요.</li></ul>`;
+  ccModal(lead + `<div class="row" style="justify-content:center"><button class="btn btn-gold" data-act="cc-consent-yes">${kind === "unlink" ? "풀기 (구글 로그인)" : "동의하고 구글 로그인"}</button><button class="btn" data-act="cc-consent-no">취소</button></div>`);
+}
+async function ccGoogleRun(kind) {
+  if (CC.gbusy) return; CC.gbusy = true; CC.gconf = null; CC.pending = null; CC.fill = "";
+  try {
+    ccSay("구글 로그인 창을 열었어요. 창에서 계정을 골라 주세요…");
+    const g = await ccGoogle(kind === "unlink");
+    if (kind === "unlink") {
+      let ok = false;
+      try { const r = await ccUsers("DELETE", g); ok = r.s === 200 || r.s === 404; } finally { await g.done(ok); }   // 연결을 지운 뒤에만 구글 로그인 목록의 내 정보도 지워요
+      if (!ok) throw {code:"gdeny"};
+      delete SAVE.ccG; persist(true); ccSay("구글 연동을 풀고, 구글 로그인 목록의 내 정보도 지웠어요.", true); sfx("click"); return;
+    }
+    ccSay("구글 계정을 확인하는 중…");
+    const r = await ccUsers("GET", g), gm = {m:g.m, at:Date.now()};
+    if (r.s !== 200 && r.s !== 404) throw {code:"gdeny"};
+    const old = r.s === 200 && r.j && r.j.fields && r.j.fields.code ? ccNorm(r.j.fields.code.stringValue) : "";
+    if (kind === "resume") {
+      if (!old) { ccSay("이 구글 계정에 연결된 기록이 없어요. 기록이 있는 기기에서 '구글 계정 연동'을 먼저 해 주세요."); return; }
+      if (old === SAVE.cc) { SAVE.ccG = gm; persist(true); ccSay("이 기기에서 이미 쓰고 있는 기록이에요.", true); return; }
+      const d = await ccFetchDoc(old); d.g = gm; CC.pending = d; CC.fill = ccShow(old);
+      ccSay(`구글 계정(${g.m})에 연결된 기록을 찾았어요: ${ccSum(d.o)}. 이 기기의 기록(사원증 ${fmt(SAVE.rp)} RP)이 이걸로 바뀌어요. 아래 '정말 불러오기'를 누르면 바꿔요.`); return;
+    }
+    if (!SAVE.cc) throw {code:"server"};
+    if (old === SAVE.cc) { SAVE.ccG = gm; persist(true); ccSay(`이미 연동돼 있어요 (${g.m}).`, true); return; }
+    if (old) { CC.gconf = {g, old, gm}; ccSay(""); return; }   // 이 구글 계정에 다른 코드가 이미 연결돼 있음 → 고르게 함
+    const w = await ccUsers("PATCH", g, SAVE.cc); if (w.s !== 200) throw {code:"gdeny"};
+    SAVE.ccG = gm; persist(true); ccSay(`구글 계정(${g.m})을 연동했어요. 이제 코드를 몰라도 구글 로그인으로 이어서 할 수 있어요.`, true); sfx("up");
+  } catch (e) { ccSay(ccErrText(e && e.code)); }
+  finally { CC.gbusy = false; ccRefresh(); }
 }
 const ccSum = o => `사원증 ${fmt(o.rp)} RP · 혼자 ${o.sc}단계 · ${o.nick ? "닉네임 " + o.nick : "닉네임 없음"}`;
 function ccRefresh() { if (UI.screen === "save") buildSave(); }
@@ -6088,16 +6155,22 @@ function ccBox(keep) {
     : `<p class="dim">${CC.err ? esc(ccErrText(CC.err)) : "아직 저장할 기록이 없어요. 한 판 하고 나면 코드가 알아서 만들어져요. 지금 만들 수도 있어요."}</p><div class="row"><button class="btn btn-gold" data-act="cc-new">이어하기 코드 만들기</button></div>`;
   let conf = "";
   if (CC.conflict) { let sm = ""; try { sm = ccSum(ccClean(JSON.parse(CC.conflict.data))); } catch (e) {} conf = `<div class="box" style="border-color:var(--red)"><h3>다른 기기에 더 새로운 기록이 있어요</h3><p class="small">서버 기록: ${esc(sm)}${CC.conflict.at ? " · " + esc(new Date(CC.conflict.at).toLocaleString("ko-KR")) : ""}<br>이 기기 기록: ${esc(ccSum(ccClean(JSON.parse(ccPack())) || {rp:0, sc:0, nick:""}))}</p><div class="row"><button class="btn btn-sm" data-act="cc-conf-load">서버 기록 불러오기</button><button class="btn btn-sm btn-red" data-act="cc-conf-keep">이 기기 기록으로 덮어쓰기</button></div><p class="small faint">고를 때까지 이 기기는 서버에 저장하지 않아요.</p></div>`; }
-  return `<div class="box"><h3>내 이어하기 코드</h3>${top}
-    <p class="small faint">이 코드를 다른 기기에 입력하면 이어서 할 수 있어요. 소용돌이·미로 기록, 내 기사와 색도 함께 저장돼요. 코드를 아는 사람은 누구나 불러올 수 있으니 남에게 알려 주지 마세요. 잃어버리면 되찾을 수 없으니 적어 두세요.<br>저장되는 건 닉네임·점수·강화 같은 게임 기록뿐이고(구글 Firebase 서버), 이름·연락처 같은 개인정보는 받지 않아요.</p></div>${conf}
+  let gl = "";
+  if (SAVE.cc) gl = CC_INAPP ? `<p class="small faint">구글 계정 연동: ${esc(ccErrText("inapp"))}</p>`
+    : SAVE.ccG ? `<div class="row"><span class="chip" style="color:var(--mint)">구글 연동됨 · ${esc(SAVE.ccG.m || "")}</span><button class="btn btn-sm btn-ghost" data-act="cc-google-unlink">연동 풀기</button></div>`
+    : `<div class="row"><button class="btn btn-sm" data-act="cc-google-link">구글 계정 연동</button><span class="small dim">코드를 잃어버려도 구글 로그인으로 되찾을 수 있어요 (선택)</span></div>`;
+  if (CC.gconf) gl += `<div class="box" style="border-color:var(--gold)"><h3>이 구글 계정에는 다른 기록이 연결돼 있어요</h3><p class="small">구글 계정(${esc(CC.gconf.g.m)})에 다른 이어하기 코드(${esc(ccShow(CC.gconf.old))})가 이미 연결돼 있어요. 어느 쪽을 쓸까요?</p><div class="row"><button class="btn btn-sm" data-act="cc-g-use">그 기록 불러오기</button><button class="btn btn-sm btn-red" data-act="cc-g-replace">이 기기 코드로 바꾸기</button><button class="btn btn-sm btn-ghost" data-act="cc-g-cancel">그만두기</button></div></div>`;
+  return `<div class="box"><h3>내 이어하기 코드</h3>${top}${gl}
+    <p class="small faint">이 코드를 다른 기기에 입력하면 이어서 할 수 있어요. 소용돌이·미로 기록, 내 기사와 색도 함께 저장돼요. 코드를 아는 사람은 누구나 불러올 수 있으니 남에게 알려 주지 마세요. 잃어버리면(구글 연동을 안 했다면) 되찾을 수 없으니 적어 두세요.<br>저장되는 건 닉네임·점수·강화 같은 게임 기록뿐이고(구글 Firebase 서버), 이름·연락처 같은 개인정보는 받지 않아요. 구글 연동은 선택이고, 누를 때 어떤 정보가 쓰이는지 먼저 알려 드려요.</p></div>${conf}
     <div class="box"><h3>코드로 이어하기</h3><div class="row"><input id="cc-in" placeholder="XXXX-XXXX-XXXX-XXXX" maxlength="24" autocomplete="off" aria-label="이어하기 코드" value="${esc(keep)}"><button class="btn" data-act="cc-load" id="cc-load-btn">${pend || (CC.arm && CC.arm === ccLegacy(keep)) ? "정말 불러오기" : "불러오기"}</button></div>
+    ${CC_INAPP ? "" : `<div class="row"><button class="btn btn-sm" data-act="cc-google-resume">구글 계정으로 이어하기</button><span class="small dim">코드를 잃어버렸다면 (연동해 둔 경우)</span></div>`}
     <p class="small dim">예전 저장 코드(RB-XXXX-XXXX)도 여기에 넣으면 돼요.</p>
     <p class="small" id="cc-msg" role="status" style="min-height:20px;color:${CC.good ? "var(--mint)" : "var(--cream)"}">${esc(CC.msg)}</p></div>`;
 }
 const ccBuildSave0 = buildSave;
 buildSave = function (msg) {   // 원래 저장 화면을 '예전 방식'으로 접어 두고, 맨 위에 이어하기 코드를 올려요
   const el = $("#save-body"); if (!el) { ccBuildSave0(msg); return; }
-  const keep = ($("#cc-in") || {}).value || "", was = !!($("#cc-legacy") && $("#cc-legacy").open);
+  const keep = CC.fill || ($("#cc-in") || {}).value || "", was = !!($("#cc-legacy") && $("#cc-legacy").open); CC.fill = "";
   ccBuildSave0(msg);
   el.innerHTML = ccBox(keep) + `<details id="cc-legacy"${was || msg ? " open" : ""}><summary class="small dim" style="cursor:pointer">예전 방식: 랭킹 닉네임용 저장 코드(RB-…) · 서버 없이 옮기기</summary><div style="display:grid;gap:12px;margin-top:10px">${el.innerHTML}</div></details>`;
   if (!SAVE.cc && !CC.busy && !CC.err && ccProgress()) ccCreate();   // 기록이 있는데 코드가 없으면 이 화면을 열 때 알아서 받아요 (새 기기에서 코드를 넣으려고 연 경우엔 안 만들어요)
@@ -6121,11 +6194,27 @@ Object.assign(A, {
         ccSay("확인하는 중…"); const d = await ccFetchDoc(id); CC.pending = d;
         ccSay(`찾았어요: ${ccSum(d.o)}. 이 기기의 기록(사원증 ${fmt(SAVE.rp)} RP)이 이걸로 바뀌어요. 한 번 더 누르면 불러와요.`); return;
       }
-      const d = CC.pending; CC.pending = null; ccApply(d.o, d.id, d.rev); CC.conflict = null; CC.err = ""; CC.msg = ""; ccSay("불러왔어요! " + ccSum(d.o), true); sfx("up");
+      const d = CC.pending; CC.pending = null; ccApply(d.o, d.id, d.rev, d.g); CC.conflict = null; CC.gconf = null; CC.err = ""; CC.msg = ""; ccSay("불러왔어요! " + ccSum(d.o), true); sfx("up");
     } catch (e) { CC.pending = null; ccSay(ccErrText(e && e.code)); }
   },
   "cc-conf-load": () => { const c = CC.conflict; if (!c) return; try { ccApply(ccClean(JSON.parse(c.data)), SAVE.cc, c.rev); CC.conflict = null; CC.err = ""; ccSay("서버 기록을 불러왔어요.", true); sfx("up"); } catch (e) { ccSay(ccErrText("bad")); } },
   "cc-conf-keep": async () => { const c = CC.conflict; if (!c) return; SAVE.ccRev = c.rev; CC.conflict = null; ccSay("저장하는 중…"); const ok = await ccPush(true); ccSay(ok ? "이 기기 기록으로 저장했어요." : ccErrText(CC.err), ok); },
+  "cc-google-link": () => { if (SAVE.cc) { sfx("click"); ccConsent("link"); } },
+  "cc-google-resume": () => { sfx("click"); ccConsent("resume"); },
+  "cc-google-unlink": () => { sfx("click"); ccConsent("unlink"); },
+  "cc-consent-yes": () => { const k = CC.ask; CC.ask = ""; ccModal(""); if (k) ccGoogleRun(k); },   // 동의 → 구글 로그인 창 (누른 바로 그 순간에 열어야 팝업이 안 막혀요)
+  "cc-consent-no": () => { CC.ask = ""; ccModal(""); sfx("click"); },
+  "cc-g-use": async () => {
+    const c = CC.gconf; if (!c) return; CC.gconf = null;
+    try { ccSay("기록을 확인하는 중…"); const d = await ccFetchDoc(c.old); d.g = c.gm; CC.pending = d; CC.fill = ccShow(c.old); ccSay(`찾았어요: ${ccSum(d.o)}. 이 기기의 기록(사원증 ${fmt(SAVE.rp)} RP)이 이걸로 바뀌어요. 아래 '정말 불러오기'를 누르면 바꿔요.`); }
+    catch (e) { ccSay(ccErrText(e && e.code)); }
+  },
+  "cc-g-replace": async () => {
+    const c = CC.gconf; if (!c) return; CC.gconf = null;
+    try { ccSay("연결을 바꾸는 중…"); const w = await ccUsers("PATCH", c.g, SAVE.cc); if (w.s !== 200) throw {code:"gdeny"}; SAVE.ccG = c.gm; persist(true); ccSay(`구글 계정(${c.g.m})을 이 기기의 코드로 바꿔 연동했어요.`, true); sfx("up"); }
+    catch (e) { ccSay(ccErrText(e && e.code)); }
+  },
+  "cc-g-cancel": () => { CC.gconf = null; ccSay("그만뒀어요."); },
 });
 document.addEventListener("input", e => { if (e.target && e.target.id === "cc-in") { CC.pending = null; CC.arm = ""; const b = $("#cc-load-btn"); if (b) b.textContent = "불러오기"; } });
 document.addEventListener("visibilitychange", () => { if (document.hidden) ccTick(true); });
