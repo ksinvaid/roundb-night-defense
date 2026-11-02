@@ -422,10 +422,10 @@ input,textarea{font:inherit;font-size:15px;color:var(--cream);background:var(--b
         </div>
         <div class="t-kn" id="t-kn" aria-label="라운드기사단 10명"></div>
         <div class="rd-card" id="rd-card"><button class="rd-th" data-act="road-open" aria-label="로드뷰 투어 열기"><img src="roadview/poster.jpg" alt="" onerror="document.getElementById('rd-card').hidden=true"></button><div><h3>라운드비 로드뷰 투어</h3><p>바닥의 화살표를 눌러 3층 라운지·4층 공유오피스를 직접 걸어 보세요. 2분 영상으로도 볼 수 있어요.</p><div class="row"><button class="btn btn-sm btn-red" data-act="road-open">걸어서 둘러보기</button><button class="btn btn-sm" data-act="road-video">영상으로 보기</button></div></div></div>
-        <div class="row" style="justify-content:center"><button class="btn btn-sm" data-act="to-rank">랭킹</button><button class="btn btn-sm" data-act="to-save">저장·불러오기</button><button class="btn btn-sm" data-act="to-gallery">공간 둘러보기</button></div>
+        <div class="row" style="justify-content:center"><button class="btn btn-sm" data-act="to-rank">랭킹</button><button class="btn btn-sm" data-act="to-save">이어하기 코드</button><button class="btn btn-sm" data-act="to-gallery">공간 둘러보기</button></div>
         <p class="small faint" id="t-best"></p>
         <div id="t-links"></div>
-        <p class="small faint">PROTOTYPE v2.0 · 혼자(스테이지 22개) · 같이(사람·AI) · 대결(AI) · 소용돌이(자유 건설 터렛 협동) · 클릭·터치로 플레이 · 단축키는 게임 중 패널에 표시돼요</p>
+        <p class="small faint">PROTOTYPE v2.1 · 혼자(스테이지 22개) · 같이(사람·AI) · 대결(AI) · 소용돌이(자유 건설 터렛 협동) · 클릭·터치로 플레이 · 단축키는 게임 중 패널에 표시돼요</p>
       </div>
     </div>
   </section>
@@ -478,7 +478,7 @@ input,textarea{font:inherit;font-size:15px;color:var(--cream);background:var(--b
 
   <section class="scr" id="scr-save" hidden>
     <div class="wrap" style="max-width:720px">
-      <div class="sel-head"><div><h2 class="disp" style="font-size:30px">저장·불러오기</h2><p class="dim small">로그인 없이 저장 코드 하나로 다른 기기에서도 이어서 해요.</p></div>
+      <div class="sel-head"><div><h2 class="disp" style="font-size:30px">이어하기·저장</h2><p class="dim small">로그인 없이 이어하기 코드 하나로 다른 폰·PC에서도 이어서 해요.</p></div>
         <div class="row"><button class="btn btn-sm btn-ghost" data-act="to-title">처음으로</button></div></div>
       <div id="save-body" style="display:grid;gap:12px"></div>
     </div>
@@ -5946,6 +5946,193 @@ Object.assign(A, {
   "road-vclose": () => { const o = rdEl("road-vid"); if (!o) return; const v = rdEl("rd-tour"); v.pause(); o.hidden = true; document.body.style.overflow = ""; },
 });
 /* ===ROAD_END=== */
+
+/* ===CONT_START=== 이어하기 코드 — Firebase 익명 로그인 + Firestore (REST). 소스: 이어하기_소스/cont.js, 게임에 얹는 법: build_cont.py */
+const CC_FB = {key:"AIzaSyBjZkuzEClkdheaA3jtbvyI7TiJ4Yl4JKs", pid:"roundb-games"};   // 웹 앱 설정값은 공개돼도 되는 값 — 접근은 Firestore 보안 규칙이 막아요
+const CC_FS = `https://firestore.googleapis.com/v1/projects/${CC_FB.pid}/databases/(default)/documents/saves`;
+const CC_ABC = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";   // 32글자 (헷갈리는 0·1·I·O 뺌) × 16자 = 추측 불가
+const CC_KEYS = ["rp", "ups", "best", "cleared", "runs", "wins", "nick", "diff", "sc", "stg", "sbest", "kn", "col", "td", "tk", "code", "tdf", "tdn", "mode", "players", "floor", "pvpn", "tdHint2", "f3"];   // 기기에 따라 다른 설정(소리·간단히 보기)은 안 옮겨요
+const CC = {busy:false, err:"", msg:"", good:false, conflict:null, pending:null, arm:"", tok:null, tokP:null, last:0, fails:0, next:0, autoAt:0};
+const ccGen = () => { const b = new Uint8Array(16); if (window.crypto && crypto.getRandomValues) crypto.getRandomValues(b); else for (let i = 0; i < 16; i++) b[i] = Math.floor(Math.random() * 256); return Array.from(b, v => CC_ABC[v & 31]).join(""); };
+const ccShow = id => String(id || "").replace(/(.{4})(?=.)/g, "$1-");
+const ccNorm = s => { const t = String(s == null ? "" : s).toUpperCase().replace(/[^A-Z0-9]/g, ""); return t.length === 16 && [...t].every(c => CC_ABC.includes(c)) ? t : ""; };
+const ccLegacy = s => { const t = normCode(s); return /^RB-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(t) ? t : ""; };
+const CC_ERR = {net:"인터넷 연결을 확인해 주세요", timeout:"서버가 느려요. 잠시 뒤 다시 눌러 주세요", nocode:"이 이어하기 코드를 찾을 수 없어요. 다시 확인해 주세요", bad:"저장된 기록을 읽을 수 없어요", server:"서버에 문제가 있어요. 잠시 뒤 다시 시도해 주세요", auth:"서버에 로그인하지 못했어요. 잠시 뒤 다시 시도해 주세요", size:"저장할 기록이 너무 커요"};
+const ccErrText = c => CC_ERR[c] || `일시적인 문제예요 (${c || "?"}). 잠시 뒤 다시 눌러 주세요`;
+async function ccNet(url, opt, ms) {
+  const ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), ms || 15000);
+  try { const r = await fetch(url, {...opt, signal:ctl.signal}); let j = null; try { j = await r.json(); } catch (e) {} return {s:r.status, j}; }
+  catch (e) { throw {code: e && e.name === "AbortError" ? "timeout" : "net"}; }
+  finally { clearTimeout(tm); }
+}
+/* 익명 로그인: 화면 없이 자동으로 신분증(토큰)만 받아요. 토큰은 이 기기에 저장해 1시간마다 새로 받아요 */
+const ccTokLoad = () => { try { return JSON.parse(localStorage.getItem("roundb.fb.v1") || "null"); } catch (e) { return null; } };
+const ccTokSave = t => { try { localStorage.setItem("roundb.fb.v1", JSON.stringify(t)); } catch (e) {} };
+async function ccToken(fresh) {
+  if (CC.tokP) return CC.tokP;
+  CC.tokP = (async () => {
+    let t = CC.tok || ccTokLoad();
+    if (!fresh && t && t.exp > Date.now() + 60000) { CC.tok = t; return t.idt; }
+    if (t && t.rt) {
+      const r = await ccNet(`https://securetoken.googleapis.com/v1/token?key=${CC_FB.key}`, {method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded"}, body:"grant_type=refresh_token&refresh_token=" + encodeURIComponent(t.rt)});
+      if (r.s === 200 && r.j && r.j.id_token) { t = {idt:r.j.id_token, rt:r.j.refresh_token || t.rt, exp:Date.now() + (Number(r.j.expires_in) || 3600) * 1000, uid:r.j.user_id}; CC.tok = t; ccTokSave(t); return t.idt; }
+    }
+    const r = await ccNet(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${CC_FB.key}`, {method:"POST", headers:{"Content-Type":"application/json"}, body:'{"returnSecureToken":true}'});
+    if (r.s !== 200 || !r.j || !r.j.idToken) throw {code:"auth"};
+    t = {idt:r.j.idToken, rt:r.j.refreshToken, exp:Date.now() + (Number(r.j.expiresIn) || 3600) * 1000, uid:r.j.localId}; CC.tok = t; ccTokSave(t); return t.idt;
+  })();
+  try { return await CC.tokP; } finally { CC.tokP = null; }
+}
+const ccFields = (rev, str) => ({fields:{v:{integerValue:"1"}, rev:{integerValue:String(rev)}, data:{stringValue:str}, updated:{integerValue:String(Date.now())}}});
+async function ccFs(method, id, rev, str, again) {
+  const h = {"Authorization":"Bearer " + await ccToken(again)};
+  let r;
+  if (method === "GET") r = await ccNet(`${CC_FS}/${id}`, {method, headers:h});
+  else {
+    h["Content-Type"] = "application/json";
+    if (method === "POST") r = await ccNet(`${CC_FS}?documentId=${id}`, {method, headers:h, body:JSON.stringify(ccFields(rev, str))});
+    else r = await ccNet(`${CC_FS}/${id}?` + ["v", "rev", "data", "updated"].map(k => "updateMask.fieldPaths=" + k).join("&"), {method:"PATCH", headers:h, body:JSON.stringify(ccFields(rev, str)), keepalive:str.length < 15000});
+  }
+  if (r.s === 401 && !again) return ccFs(method, id, rev, str, true);   // 신분증이 만료됐으면 새로 받아 한 번 더
+  return r;
+}
+/* 저장할 내용: 목록에 있는 항목만 · 불러올 때는 값마다 범위를 다시 검사해서 이상한 값은 걸러요 */
+function ccPack() { const o = {}; for (const k of CC_KEYS) if (SAVE[k] !== undefined) o[k] = SAVE[k]; return JSON.stringify(o); }
+function ccClean(d) {
+  if (!d || typeof d !== "object") return null;
+  const num = (v, a, b) => clamp(Math.floor(Number(v)) || 0, a, b), o = {};
+  o.rp = num(d.rp, 0, 1e6); o.runs = num(d.runs, 0, 1e5); o.wins = num(d.wins, 0, 1e5); o.nick = cleanNick(d.nick); o.diff = DIFFS[d.diff] ? d.diff : "easy";
+  o.sc = num(d.sc, 0, STAGES.length); o.stg = num(d.stg, 0, Math.min(o.sc, STAGES.length - 1));
+  o.ups = {}; o.best = {}; o.cleared = {}; o.sbest = {};
+  for (const s of SHOP) if (d.ups && d.ups[s.k]) o.ups[s.k] = num(d.ups[s.k], 0, s.max);
+  for (const r of ROOMS) { if (d.best && d.best[r.id]) o.best[r.id] = num(d.best[r.id], 0, 600); if (d.cleared && d.cleared[r.id]) o.cleared[r.id] = true; }
+  if (d.sbest) for (const st of STAGES) if (d.sbest[st.k]) o.sbest[st.k] = num(d.sbest[st.k], 0, 1e6);
+  o.kn = cleanKn(d.kn) >= 0 ? d.kn : 0; o.col = Number.isInteger(d.col) && d.col >= -1 && d.col < 8 ? d.col : -1; o.code = ccLegacy(d.code);
+  o.mode = ["solo", "multi", "pvp", "td", "maze"].includes(d.mode) ? d.mode : "solo"; o.floor = FLOORS[d.floor] ? d.floor : "3f"; o.players = [2, 3, 4, 5].includes(d.players) ? d.players : 4;
+  if (d.pvpn === 1 || d.pvpn === 2) o.pvpn = d.pvpn;
+  if (Number.isInteger(d.tdf)) o.tdf = clamp(d.tdf, 0, TD_FAC.length - 1);
+  if (Number.isInteger(d.tdn)) o.tdn = clamp(d.tdn, 1, 5);
+  if (d.tdHint2) o.tdHint2 = 1;
+  if (d.td && typeof d.td === "object") { o.td = {}; for (const k of Object.keys(d.td).slice(0, 12)) { const b = d.td[k]; if (/^(m_)?[a-z]{2,12}$/.test(k) && b && typeof b === "object") o.td[k] = {s:num(b.s, 0, 999), win:num(b.win, 0, 1e5), sc:num(b.sc, 0, 1e9)}; } }
+  if (d.tk && typeof d.tk === "object" && d.tk.t) o.tk = {t:String(d.tk.t).slice(0, 16), nick:cleanNick(d.tk.nick), score:num(d.tk.score, 0, 1e9), w:!!d.tk.w, at:num(d.tk.at, 0, 1e14)};
+  return o;
+}
+function ccApply(o, id, rev) {
+  for (const k of ["tk", "td", "tdf", "tdn", "pvpn", "tdHint2"]) delete SAVE[k];
+  const keepCode = !o.code && SAVE.code;   // 불러온 기록에 랭킹용 예전 코드가 없으면 이 기기의 코드·닉네임을 그대로 둬요
+  Object.assign(SAVE, o, keepCode ? {code:SAVE.code, nick:SAVE.nick || o.nick} : {}, {f3:1});
+  SAVE.cc = id; SAVE.ccRev = rev; SAVE.ccHash = h32(ccPack()); SAVE.ccAt = Date.now(); persist(true);
+}
+const ccSum = o => `사원증 ${fmt(o.rp)} RP · 혼자 ${o.sc}단계 · ${o.nick ? "닉네임 " + o.nick : "닉네임 없음"}`;
+function ccRefresh() { if (UI.screen === "save") buildSave(); }
+function ccSay(t, good) { CC.msg = t; CC.good = !!good; ccRefresh(); }
+const ccProgress = () => SAVE.runs > 0 || SAVE.rp > 0 || SAVE.sc > 0 || !!SAVE.td || !!SAVE.nick;
+function ccBackoff() { CC.fails++; CC.next = Date.now() + Math.min(600000, 30000 * 2 ** Math.min(CC.fails, 5)); }
+async function ccCreate() {   // 새 이어하기 코드를 받아 서버에 첫 기록을 올려요 → 성공 true
+  if (CC.busy || SAVE.cc) return false;
+  CC.busy = true; CC.err = ""; ccRefresh();
+  try {
+    const str = ccPack();
+    for (let i = 0; i < 3; i++) {
+      const id = ccGen(), r = await ccFs("POST", id, 1, str);
+      if (r.s === 200) { SAVE.cc = id; SAVE.ccRev = 1; SAVE.ccHash = h32(str); SAVE.ccAt = Date.now(); persist(true); CC.fails = 0; CC.last = Date.now(); if (UI.screen !== "game") toast("이어하기 코드가 만들어졌어요 (처음 화면 → 이어하기 코드)"); return true; }
+      if (r.s !== 409) throw {code:"server"};
+    }
+    throw {code:"server"};
+  } catch (e) { CC.err = (e && e.code) || "net"; ccBackoff(); return false; }
+  finally { CC.busy = false; ccRefresh(); }
+}
+async function ccCheckConflict() {   // 저장이 거절됐을 때: 서버 기록이 더 새로운지(다른 기기에서 저장함) 확인
+  const g = await ccFs("GET", SAVE.cc);
+  if (g.s === 404) { const str = ccPack(), r = await ccFs("POST", SAVE.cc, 1, str); if (r.s === 200) { SAVE.ccRev = 1; SAVE.ccHash = h32(str); SAVE.ccAt = Date.now(); persist(true); return true; } throw {code:"server"}; }
+  if (g.s !== 200 || !g.j || !g.j.fields) throw {code:"server"};
+  const f = g.j.fields, rev = Number(f.rev && f.rev.integerValue) || 0;
+  if (rev === (SAVE.ccRev | 0)) throw {code:"server"};
+  CC.conflict = {rev, at:Number(f.updated && f.updated.integerValue) || 0, data:f.data && f.data.stringValue || ""};
+  toast("다른 기기에 더 새로운 기록이 있어요. 이어하기 화면에서 골라 주세요."); return false;
+}
+async function ccPush(force) {   // 바뀐 기록을 서버에 올려요 → 성공(또는 바뀐 게 없음) true
+  if (CC.busy || !SAVE.cc || CC.conflict) return false;
+  const str = ccPack(), h = h32(str);
+  if (!force && h === SAVE.ccHash) return true;
+  if (str.length > 28000) { CC.err = "size"; ccRefresh(); return false; }
+  CC.busy = true; CC.err = "";
+  try {
+    const rev = (SAVE.ccRev | 0) + 1, r = await ccFs("PATCH", SAVE.cc, rev, str);
+    if (r.s === 200) { SAVE.ccRev = rev; SAVE.ccHash = h; SAVE.ccAt = Date.now(); persist(true); CC.fails = 0; CC.last = Date.now(); return true; }
+    if (r.s === 400 || r.s === 403 || r.s === 404 || r.s === 409) return await ccCheckConflict();
+    throw {code:"server"};
+  } catch (e) { CC.err = (e && e.code) || "net"; ccBackoff(); return false; }
+  finally { CC.busy = false; ccRefresh(); }
+}
+async function ccFetchDoc(id) {
+  const g = await ccFs("GET", id);
+  if (g.s === 404) throw {code:"nocode"};
+  if (g.s !== 200 || !g.j || !g.j.fields || !g.j.fields.data) throw {code:"server"};
+  let d; try { d = JSON.parse(g.j.fields.data.stringValue); } catch (e) { throw {code:"bad"}; }
+  const o = ccClean(d); if (!o) throw {code:"bad"};
+  return {id, o, rev:Number(g.j.fields.rev && g.j.fields.rev.integerValue) || 1};
+}
+function ccTick(force) {   // 30초마다·화면을 숨길 때·닫을 때 확인: 기록이 바뀌었으면 올리고, 코드가 아직 없으면(플레이 기록이 있을 때) 알아서 받아요
+  if (CC.busy || CC.conflict || Date.now() < CC.next) return;
+  if (!SAVE.cc) { if (ccProgress() && (force || Date.now() - CC.autoAt > 60000)) { CC.autoAt = Date.now(); ccCreate(); } return; }
+  if (force || Date.now() - CC.last > 20000) ccPush(false);
+}
+function ccBox(keep) {
+  const at = SAVE.ccAt ? new Date(SAVE.ccAt).toLocaleString("ko-KR") : "", pend = CC.pending && CC.pending.id === ccNorm(keep);
+  const top = SAVE.cc
+    ? `<div class="row"><b class="disp" style="font-size:clamp(15px,5vw,24px);letter-spacing:.03em;white-space:nowrap">${ccShow(SAVE.cc)}</b><button class="btn btn-sm" data-act="cc-copy">복사</button></div>
+       <p class="small dim">마지막 저장 ${esc(at)} · 기록이 바뀌면 알아서 저장돼요.${CC.err ? ` <span style="color:var(--red)">(${esc(ccErrText(CC.err))})</span>` : ""}</p>
+       <div class="row"><button class="btn btn-sm btn-gold" data-act="cc-save">지금 저장</button></div>`
+    : CC.busy ? `<p class="dim">이어하기 코드를 만드는 중…</p>`
+    : `<p class="dim">${CC.err ? esc(ccErrText(CC.err)) : "아직 저장할 기록이 없어요. 한 판 하고 나면 코드가 알아서 만들어져요. 지금 만들 수도 있어요."}</p><div class="row"><button class="btn btn-gold" data-act="cc-new">이어하기 코드 만들기</button></div>`;
+  let conf = "";
+  if (CC.conflict) { let sm = ""; try { sm = ccSum(ccClean(JSON.parse(CC.conflict.data))); } catch (e) {} conf = `<div class="box" style="border-color:var(--red)"><h3>다른 기기에 더 새로운 기록이 있어요</h3><p class="small">서버 기록: ${esc(sm)}${CC.conflict.at ? " · " + esc(new Date(CC.conflict.at).toLocaleString("ko-KR")) : ""}<br>이 기기 기록: ${esc(ccSum(ccClean(JSON.parse(ccPack())) || {rp:0, sc:0, nick:""}))}</p><div class="row"><button class="btn btn-sm" data-act="cc-conf-load">서버 기록 불러오기</button><button class="btn btn-sm btn-red" data-act="cc-conf-keep">이 기기 기록으로 덮어쓰기</button></div><p class="small faint">고를 때까지 이 기기는 서버에 저장하지 않아요.</p></div>`; }
+  return `<div class="box"><h3>내 이어하기 코드</h3>${top}
+    <p class="small faint">이 코드를 다른 기기에 입력하면 이어서 할 수 있어요. 소용돌이·미로 기록, 내 기사와 색도 함께 저장돼요. 코드를 아는 사람은 누구나 불러올 수 있으니 남에게 알려 주지 마세요. 잃어버리면 되찾을 수 없으니 적어 두세요.<br>저장되는 건 닉네임·점수·강화 같은 게임 기록뿐이고(구글 Firebase 서버), 이름·연락처 같은 개인정보는 받지 않아요.</p></div>${conf}
+    <div class="box"><h3>코드로 이어하기</h3><div class="row"><input id="cc-in" placeholder="XXXX-XXXX-XXXX-XXXX" maxlength="24" autocomplete="off" aria-label="이어하기 코드" value="${esc(keep)}"><button class="btn" data-act="cc-load" id="cc-load-btn">${pend || (CC.arm && CC.arm === ccLegacy(keep)) ? "정말 불러오기" : "불러오기"}</button></div>
+    <p class="small dim">예전 저장 코드(RB-XXXX-XXXX)도 여기에 넣으면 돼요.</p>
+    <p class="small" id="cc-msg" role="status" style="min-height:20px;color:${CC.good ? "var(--mint)" : "var(--cream)"}">${esc(CC.msg)}</p></div>`;
+}
+const ccBuildSave0 = buildSave;
+buildSave = function (msg) {   // 원래 저장 화면을 '예전 방식'으로 접어 두고, 맨 위에 이어하기 코드를 올려요
+  const el = $("#save-body"); if (!el) { ccBuildSave0(msg); return; }
+  const keep = ($("#cc-in") || {}).value || "", was = !!($("#cc-legacy") && $("#cc-legacy").open);
+  ccBuildSave0(msg);
+  el.innerHTML = ccBox(keep) + `<details id="cc-legacy"${was || msg ? " open" : ""}><summary class="small dim" style="cursor:pointer">예전 방식: 랭킹 닉네임용 저장 코드(RB-…) · 서버 없이 옮기기</summary><div style="display:grid;gap:12px;margin-top:10px">${el.innerHTML}</div></details>`;
+  if (!SAVE.cc && !CC.busy && !CC.err && ccProgress()) ccCreate();   // 기록이 있는데 코드가 없으면 이 화면을 열 때 알아서 받아요 (새 기기에서 코드를 넣으려고 연 경우엔 안 만들어요)
+};
+Object.assign(A, {
+  "cc-new": () => { CC.err = ""; CC.msg = ""; ccCreate().then(ok => { if (ok) { ccSay("이어하기 코드를 만들었어요. 꼭 적어 두세요.", true); sfx("up"); } }); },
+  "cc-save": async () => { CC.msg = ""; ccSay("저장하는 중…"); const ok = await ccPush(true); if (ok) { ccSay("저장했어요.", true); sfx("click"); } else ccSay(CC.conflict ? "" : ccErrText(CC.err)); },
+  "cc-copy": async () => { try { await navigator.clipboard.writeText(ccShow(SAVE.cc)); ccSay("코드를 복사했어요.", true); } catch (e) { ccSay("복사가 안 돼요. 코드를 직접 적어 두세요."); } },
+  "cc-load": async () => {
+    const raw = ($("#cc-in") || {}).value, lg = ccLegacy(raw), id = ccNorm(raw);
+    if (lg) {   // 예전 저장 코드(앱스스크립트 서버)
+      if (CC.arm !== lg) { CC.arm = lg; ccSay(`이 기기의 기록(사원증 ${fmt(SAVE.rp)} RP)이 코드의 기록으로 바뀌어요. 한 번 더 누르면 불러와요.`); return; }
+      CC.arm = ""; ccSay("불러오는 중…");
+      try { await cloudPull(lg); ccSay("불러왔어요. 사원증 " + fmt(SAVE.rp) + " RP", true); sfx("up"); } catch (e) { ccSay(errText(e)); }
+      return;
+    }
+    if (!id) { ccSay("코드를 다시 확인해 주세요. 4글자씩 4묶음(16글자)이에요."); return; }
+    if (id === SAVE.cc) { ccSay("이 기기에서 이미 쓰고 있는 코드예요."); return; }
+    try {
+      if (!CC.pending || CC.pending.id !== id) {
+        ccSay("확인하는 중…"); const d = await ccFetchDoc(id); CC.pending = d;
+        ccSay(`찾았어요: ${ccSum(d.o)}. 이 기기의 기록(사원증 ${fmt(SAVE.rp)} RP)이 이걸로 바뀌어요. 한 번 더 누르면 불러와요.`); return;
+      }
+      const d = CC.pending; CC.pending = null; ccApply(d.o, d.id, d.rev); CC.conflict = null; CC.err = ""; CC.msg = ""; ccSay("불러왔어요! " + ccSum(d.o), true); sfx("up");
+    } catch (e) { CC.pending = null; ccSay(ccErrText(e && e.code)); }
+  },
+  "cc-conf-load": () => { const c = CC.conflict; if (!c) return; try { ccApply(ccClean(JSON.parse(c.data)), SAVE.cc, c.rev); CC.conflict = null; CC.err = ""; ccSay("서버 기록을 불러왔어요.", true); sfx("up"); } catch (e) { ccSay(ccErrText("bad")); } },
+  "cc-conf-keep": async () => { const c = CC.conflict; if (!c) return; SAVE.ccRev = c.rev; CC.conflict = null; ccSay("저장하는 중…"); const ok = await ccPush(true); ccSay(ok ? "이 기기 기록으로 저장했어요." : ccErrText(CC.err), ok); },
+});
+document.addEventListener("input", e => { if (e.target && e.target.id === "cc-in") { CC.pending = null; CC.arm = ""; const b = $("#cc-load-btn"); if (b) b.textContent = "불러오기"; } });
+document.addEventListener("visibilitychange", () => { if (document.hidden) ccTick(true); });
+window.addEventListener("pagehide", () => ccTick(true));
+setInterval(() => { if (!document.hidden) ccTick(); }, 30000);
+setTimeout(() => ccTick(), 5000);
+/* ===CONT_END=== */
 
 /* ===== boot ===== */
 bindWorldInput();
