@@ -3062,7 +3062,7 @@ function toast(msg) {
 }
 
 /* ===== 서버: 랭킹·저장 (구글 앱스스크립트) ===== */
-let API_URL = "https://script.google.com/macros/s/AKfycbyD_Py0YU6uKczivkdgNAkHy1SxYZizCu1DhbwOlOAnMxhjT2jjwB_6X7BcN3S4a0Ks9w/exec";   // 서버를 배포한 뒤 웹 앱 주소를 여기에 넣어요. 비어 있으면 랭킹·저장은 꺼진 채로 게임만 돼요
+let API_URL = "https://script.google.com/macros/s/AKfycbxoe1F-2la6QLld6VLO-RJoY6CCm11dGWc3ecbO8WHnYSwRzfCr7QqTHipVZ2OFynTjwA/exec";   // 서버를 배포한 뒤 웹 앱 주소를 여기에 넣어요. 비어 있으면 랭킹·저장은 꺼진 채로 게임만 돼요
 const apiOn = () => !!API_URL;
 async function api(action, body, ms) {
   if (!API_URL) throw {code:"off"};
