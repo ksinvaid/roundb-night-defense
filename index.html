@@ -1272,6 +1272,116 @@ html:has(#scr-pv2:not([hidden])),body:has(#scr-pv2:not([hidden])){overflow:hidde
   .lrd-gold{font-size:13px;padding:2px 5px;border-width:1.5px}
 }
 /* ===FIXC_END=== */
+/* ===LNC_START=== 오늘 뭐 먹지? (신당역 밥집) — 첫 화면 입구 버튼 + 밥집 화면 */
+.lnc-row{width:100%;margin-top:-4px}
+.lnc-entry{appearance:none;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;width:min(100%,440px);box-sizing:border-box;text-align:left;cursor:pointer;padding:9px 14px;border:2px solid var(--orange);border-radius:16px;background:linear-gradient(135deg,rgba(255,154,61,.28),rgba(24,30,59,.95) 72%);color:var(--cream);box-shadow:0 4px 0 var(--ink),0 0 26px rgba(255,154,61,.2);transition:transform .08s,filter .12s,box-shadow .08s}
+.lnc-entry:hover{filter:brightness(1.12)}
+.lnc-entry:active{transform:translateY(2px);box-shadow:0 2px 0 var(--ink)}
+.lnc-bowl{display:grid;place-items:center;width:58px;height:50px}
+.lnc-steam path{animation:lncsteam 2.6s ease-in-out infinite}
+.lnc-steam path:nth-child(2){animation-delay:-.9s}.lnc-steam path:nth-child(3){animation-delay:-1.7s}
+@keyframes lncsteam{0%,100%{opacity:.2;transform:translateY(3px)}50%{opacity:1;transform:translateY(-2px)}}
+.lnc-et{display:grid;gap:2px;min-width:0}
+.lnc-et b{font-size:24px;line-height:1.1;color:var(--cream);text-shadow:0 2px 0 rgba(0,0,0,.45)}
+.lnc-et span{font-size:13px;color:var(--dim);line-height:1.35;word-break:keep-all}
+.lnc-new{color:#2a1a00;background:var(--gold);border-color:var(--gold)}
+@media (max-width:400px){.lnc-entry{gap:9px;padding:8px 11px}.lnc-et b{font-size:21px}.lnc-et span{font-size:12px}.lnc-bowl{width:46px}.lnc-bowl svg{width:44px;height:38px}}
+
+#scr-lunch{background:radial-gradient(ellipse at 50% -10%,rgba(255,154,61,.14),rgba(11,14,29,0) 55%),var(--bg)}
+.lnc-wrap{max-width:980px}
+.lnc-box{margin-bottom:12px;gap:10px}
+.lnc-fr{display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap}
+.lnc-fr>span{flex:none;width:34px;padding-top:7px}
+.lnc-fg{display:flex;gap:6px;flex-wrap:wrap;flex:1;min-width:0}
+.lnc-fb{appearance:none;display:inline-flex;align-items:center;gap:6px;border:2px solid var(--ink);background:var(--card2);color:var(--dim);font-weight:700;font-size:13px;padding:6px 12px;border-radius:99px;cursor:pointer;box-shadow:0 2px 0 var(--ink);white-space:nowrap}
+.lnc-fb:hover{filter:brightness(1.15)}
+.lnc-fb:active{transform:translateY(1px);box-shadow:0 1px 0 var(--ink)}
+.lnc-fb[aria-checked="true"],.lnc-fb[aria-pressed="true"]{background:var(--gold);color:#2a1a00}
+.lnc-ic{flex:none;display:inline-block;vertical-align:-2px}
+
+.lnc-stage{display:grid;gap:12px;justify-items:center;padding:8px 0 2px}
+.lnc-reel{width:min(100%,560px);box-sizing:border-box;text-align:center;padding:12px 16px 16px;border:3px solid var(--ink);border-radius:18px;background:linear-gradient(180deg,#252d62,#181e3b);box-shadow:0 5px 0 var(--ink),inset 0 0 0 2px rgba(246,196,83,.38);display:grid;gap:2px;min-height:88px;align-content:center;overflow:hidden}
+.lnc-reel small{color:var(--gold);font-weight:700;font-size:13px}
+.lnc-reel b{font-size:clamp(26px,6.4vw,40px);line-height:1.18;color:var(--cream);word-break:keep-all;text-wrap:balance;text-shadow:0 3px 0 rgba(0,0,0,.45)}
+.lnc-reel.spin b{animation:lncflick .09s linear infinite}
+@keyframes lncflick{0%{transform:translateY(-4px);opacity:.75}100%{transform:translateY(4px);opacity:1}}
+.lnc-reel.done b{animation:lncpop .5s cubic-bezier(.2,1.6,.4,1)}
+@keyframes lncpop{0%{transform:scale(.7);opacity:.25}100%{transform:none;opacity:1}}
+.lnc-ctl{display:grid;gap:6px;justify-items:center}
+.lnc-go{min-width:190px;font-size:22px;padding:12px 30px}
+
+.lnc-cardbox{margin-bottom:12px}
+.lnc-empty{display:grid;gap:4px;justify-items:center;text-align:center;padding:18px 14px;border:2px dashed var(--line2);border-radius:16px;color:var(--cream)}
+.lnc-cd{display:grid;grid-template-columns:minmax(180px,300px) minmax(0,1fr);gap:16px;background:var(--card);border:2px solid var(--line2);border-radius:16px;padding:12px;box-shadow:0 6px 0 rgba(0,0,0,.35)}
+.lnc-cardbox.pop .lnc-cd{animation:lncpop .45s cubic-bezier(.2,1.4,.4,1)}
+.lnc-ph{position:relative;aspect-ratio:1;border-radius:12px;overflow:hidden;border:2.5px solid var(--ink);background:#10142a}
+.lnc-ph img{width:100%;height:100%;object-fit:cover;display:block}
+.lnc-no{display:none;position:absolute;inset:0;place-items:center}
+.lnc-ph.no .lnc-no{display:grid}
+.lnc-nb{position:absolute;left:8px;top:8px;min-width:32px;height:32px;padding:0 6px;box-sizing:border-box;display:grid;place-items:center;border:2.5px solid var(--cream);border-radius:50%;font:700 16px var(--f-body);color:#14141c}
+.lnc-ci{display:grid;gap:8px;align-content:start;min-width:0}
+.lnc-cat{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:13px;color:var(--dim)}
+.lnc-ci h3{font-family:var(--f-display);font-weight:400;font-size:clamp(25px,5vw,34px);line-height:1.15;color:var(--cream);letter-spacing:.3px;word-break:keep-all;text-wrap:balance}
+.lnc-menu{margin:0;color:var(--cream);font-size:15px}
+.lnc-ch{display:flex;gap:6px;flex-wrap:wrap}
+.lnc-dist{color:#2a1a00;background:var(--gold);border-color:var(--gold)}
+.lnc-tip{margin:0;font-size:15px;color:var(--cream);line-height:1.6;background:rgba(255,255,255,.05);border-left:4px solid var(--orange);padding:8px 12px;border-radius:0 10px 10px 0}
+.lnc-act{gap:8px}
+#scr-lunch a.btn{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;text-decoration:none}   /* 폰 공통 CSS 의 .btn 최소 높이가 링크 버튼에선 padding 을 더해 키가 커지던 것을 바로잡아요 */
+.lnc-act a{color:var(--cream)}
+.lnc-act a.btn-red{color:#fff}
+@media (max-width:640px){.lnc-cd{grid-template-columns:minmax(0,1fr)}.lnc-ph{width:min(100%,340px);margin:0 auto}}
+
+.lnc-mapw{border:2.5px solid var(--ink);border-radius:14px;overflow-x:auto;overflow-y:hidden;background:#10142a;-webkit-overflow-scrolling:touch}
+.lnc-svg{display:block;width:100%;height:auto;touch-action:pan-x pan-y}
+@media (max-width:620px){.lnc-svg{min-width:560px}}
+.lnc-hint{display:none}
+@media (max-width:620px){.lnc-hint{display:block}}
+.lnc-ring{font:700 12px var(--f-body);fill:rgba(246,196,83,.85)}
+.lnc-road{font:700 13px var(--f-body);fill:#a9b8f2}
+.lnc-st-t{font:700 14px var(--f-body);fill:#14141c}
+.lnc-me{font:700 16px var(--f-body);fill:#faf6ee;paint-order:stroke;stroke:#0b0e1d;stroke-width:5px;stroke-linejoin:round}
+.lnc-pin{cursor:pointer;outline:none}
+.lnc-pin:focus-visible .lnc-hit{stroke:#f6c453;stroke-width:3}
+.lnc-pin.off{opacity:.26}
+.lnc-num{font:700 17px var(--f-body);fill:#14141c;pointer-events:none}
+.lnc-num.two{font-size:14.5px}
+.lnc-lb{font:700 14px var(--f-body);fill:#faf6ee;paint-order:stroke;stroke:#0b0e1d;stroke-width:5px;stroke-linejoin:round;pointer-events:none}
+.lnc-lb.sel,.lnc-pin:hover .lnc-lb{fill:#f6c453}
+.lnc-lb.sel{font-size:15px}
+.lnc-halo{animation:lnchalo 1.4s ease-in-out infinite}
+@keyframes lnchalo{50%{stroke-opacity:.3}}
+.lnc-lg{display:flex;flex-wrap:wrap;gap:6px 16px;padding:10px 4px 0;font-size:13px;color:var(--dim)}
+.lnc-lg span{display:inline-flex;align-items:center;gap:6px}
+
+.lnc-gh{margin:14px 0 8px;font-size:14px;font-weight:700;color:var(--cream);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.lnc-gh:first-child{margin-top:0}
+.lnc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:8px}
+.lnc-li{appearance:none;display:grid;grid-template-columns:64px minmax(0,1fr);gap:10px;text-align:left;align-items:center;padding:7px;border:2px solid var(--line);border-radius:12px;background:var(--card2);color:var(--cream);cursor:pointer;transition:border-color .12s,transform .08s}
+.lnc-li:hover{border-color:var(--gold)}
+.lnc-li:active{transform:translateY(1px)}
+.lnc-li.sel{border-color:var(--gold);background:#2a3270}
+.lnc-th{position:relative;display:block;width:64px;height:64px;border-radius:10px;overflow:hidden;border:2px solid var(--ink);background:#10142a}
+.lnc-th img{width:100%;height:100%;object-fit:cover;display:block}
+.lnc-th b{position:absolute;left:3px;top:3px;min-width:22px;height:22px;box-sizing:border-box;border-radius:50%;display:grid;place-items:center;font:700 12px var(--f-body);color:#14141c;border:2px solid var(--cream)}
+.lnc-ck{position:absolute;right:2px;bottom:2px;width:22px;height:22px;box-sizing:border-box;border-radius:50%;background:var(--cream);color:#14141c;font:700 13px/18px var(--f-body);font-style:normal;text-align:center;border:2px solid var(--ink)}
+.lnc-lt{display:grid;gap:1px;min-width:0}
+.lnc-lt>b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lnc-lt .small{display:flex;align-items:center;gap:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.lnc-sh{display:grid;gap:2px}
+.lnc-sh>b{font-size:16px}
+.lnc-sl{display:flex;flex-wrap:wrap;gap:10px;margin-top:4px}
+.lnc-sp{position:relative;display:grid;place-items:center;width:44px;height:44px;border:2px dashed var(--line2);border-radius:50%;opacity:.72}
+.lnc-sp i{position:absolute;bottom:-7px;right:-5px;font:700 11px/1.4 var(--f-body);font-style:normal;background:var(--card);border:1.5px solid var(--line2);border-radius:99px;padding:0 5px;color:var(--dim)}
+.lnc-sp.on{border:2.5px solid var(--gold);opacity:1;background:rgba(246,196,83,.2)}
+.lnc-sp em{position:absolute;top:-5px;left:-5px;width:17px;height:17px;border-radius:50%;background:var(--gold);color:#2a1a00;font:700 11px/17px var(--f-body);font-style:normal;text-align:center}
+.lnc-foot{display:grid;gap:10px;justify-items:center;text-align:center;margin:4px 0 20px}
+.lnc-foot p{max-width:720px}
+.lnc-foot a.btn{color:var(--cream)}
+.lnc-foot a.btn-red{color:#fff}
+@media (prefers-reduced-motion:reduce){.lnc-steam path,.lnc-halo,.lnc-reel.spin b,.lnc-reel.done b,.lnc-cardbox.pop .lnc-cd{animation:none}}
+/* ===LNC_END=== */
 </style>
 
 <div id="app">
@@ -1294,7 +1404,7 @@ html:has(#scr-pv2:not([hidden])),body:has(#scr-pv2:not([hidden])){overflow:hidde
         <div id="t-links"></div>
         <div class="row" id="rbx-extra" style="justify-content:center"></div>
         <div class="rd-card ttl-road" id="rd-card"><button class="rd-th" data-act="road-open" aria-label="로드뷰 투어 열기"><img src="roadview/poster.jpg" alt="" onerror="document.getElementById('rd-card').hidden=true"></button><div class="ttl-rd-t"><h3>라운드비 로드뷰 투어</h3><p>3층 라운지·4층 공유오피스를 걸어서 둘러보세요</p></div><div class="row ttl-rd-b"><button class="btn btn-sm btn-red" data-act="road-open">걸어서 둘러보기</button><button class="btn btn-sm" data-act="road-video">영상으로 보기</button></div></div>
-        <p class="small faint">PROTOTYPE v2.4 · 혼자(스테이지 22개) · 같이(사람·AI) · 대결(AI) · 소용돌이(자유 건설 터렛 협동) · 클릭·터치로 플레이 · 단축키는 게임 중 패널에 표시돼요</p>
+        <p class="small faint">PROTOTYPE v2.5 · 혼자(스테이지 22개) · 같이(사람·AI) · 대결(AI) · 소용돌이(자유 건설 터렛 협동) · 클릭·터치로 플레이 · 단축키는 게임 중 패널에 표시돼요</p>
       </div>
     </div>
   </section>
@@ -1455,6 +1565,23 @@ html:has(#scr-pv2:not([hidden])),body:has(#scr-pv2:not([hidden])){overflow:hidde
         <div class="row" id="brd-top"></div>
       </div>
       <div id="brd-body"></div>
+    </div>
+  </section>
+
+  <section class="scr" id="scr-lunch" hidden>
+    <div class="wrap lnc-wrap">
+      <div class="sel-head"><div><h2 class="disp" style="font-size:30px">오늘 뭐 먹지?</h2><p class="dim small">라운드비에서 걸어서 갈 수 있는 신당역 밥집 <span id="lnc-nlist">14곳</span>이에요. 점심 고르다 점심시간이 끝나기 전에, 뽑기부터 돌려 보세요!</p></div>
+        <div class="row"><button class="btn btn-sm btn-ghost" data-act="to-title">처음으로</button></div></div>
+      <div class="box lnc-box" id="lnc-top"></div>
+      <div class="lnc-cardbox" id="lnc-card"></div>
+      <div class="box lnc-box"><h3>밥집 지도 · 개념도</h3><p class="small dim">라운드비를 가운데 두고 그렸어요. 핀을 누르면 위 카드에 가게 정보가 나와요. 점선 원은 라운드비에서의 직선 거리예요.</p><p class="small faint lnc-hint">지도를 옆으로 밀어서 볼 수 있어요.</p><div class="lnc-mapw" id="lnc-map"></div><div id="lnc-leg"></div><p class="small faint">※ 네이버지도 캡처로 어림해 그린 개념도예요. 실제 길·거리와 다를 수 있어요.</p></div>
+      <div class="box lnc-box"><h3>가까운 순 목록</h3><div id="lnc-list"></div></div>
+      <div class="box lnc-box" id="lnc-stamp"></div>
+      <div class="lnc-foot">
+        <p class="small faint">거리는 네이버지도 캡처로 어림한 직선값(±10%)이고, 걷는 시간은 길 따라 1.2배·분당 100m로 어림한 값이에요. 가격·영업시간·휴무는 가기 전에 네이버지도에서 꼭 확인해 주세요. 라운드비 유튜브 '근처 밥집' 시리즈에서 직접 가 본 가게들이에요.</p>
+        <div class="row" style="justify-content:center"><a class="btn btn-sm btn-red" href="https://blog.naver.com/roundboffice/224462283903" target="_blank" rel="noopener noreferrer">밥집 지도·리스트 글 보기</a><a class="btn btn-sm" href="https://youtube.com/shorts/5aTb7KNhTEo" target="_blank" rel="noopener noreferrer">밥집 로드 영상 보기</a></div>
+        <div id="lnc-links"></div>
+      </div>
     </div>
   </section>
 
@@ -16570,6 +16697,286 @@ window.rbxFixBFirst = function () {
   if (!wrap()) { let n = 0; const iv = setInterval(() => { if (wrap() || ++n > 120) clearInterval(iv); }, 250); }
 })();
 /* ===FIXB_END=== */
+
+/* ===LNC_START=== 오늘 뭐 먹지? — 라운드비 근처 신당역 밥집 14곳 (뽑기 · 개념도 지도 · 거리별 목록 · 가 봤어요 도장)
+   게임 규칙·점수와는 상관없는 안내 화면이에요. 가게 정보는 아래 LNC_SHOPS 한 곳만 고치면 돼요.
+     · 새 가게: 줄 하나 추가(pos = 라운드비에서 [동쪽 m, 남쪽 m] 어림값, 사진은 img/lunch/NN.jpg)
+     · 영상이 공개되면: 그 가게의 yt 에 ["버튼 글", "유튜브 쇼츠 ID"] 를 더하기
+   분류는 색 5가지 + 모양(●■▲◆✚)을 같이 써요(적록색약 시뮬레이션으로 쌍별 색차 확인한 색). 전역 이름은 lnc 접두사. */
+const lncEng = (function () {
+"use strict";
+const LNC_KEY = "roundb.lunch.v1";
+const CATS = {
+  rice:   {k:"rice",   n:"밥·백반",       c:"#F4A592", s:"circle"},
+  noodle: {k:"noodle", n:"면·국물",       c:"#6EC3F4", s:"square"},
+  mix:    {k:"mix",    n:"중식·일식·양식", c:"#7C9CFF", s:"tri"},
+  meat:   {k:"meat",   n:"고기·회식",     c:"#1F9D55", s:"dia"},
+  snack:  {k:"snack",  n:"분식·떡볶이",   c:"#F2DC4B", s:"plus"}
+};
+const OFF_WALK = "도보 2분 · 199m (2026.10.29 네이버지도 도보 길찾기 기준)";
+const LNC_SHOPS = [
+  {n:1,  name:"다락솥 신당본점", short:"다락솥", menu:"솥밥 전문점", food:"노른자 톡 솥밥", cat:"rice", pos:[90, -21], off:"", q:"다락솥 신당본점",
+   yt:[["영상 보기", "kDor8gxAGXU"]], tip:"노른자를 톡 터뜨려 슥슥 비벼 먹는 솥밥이에요. 마무리는 누룽지까지! 주문은 테이블 태블릿으로 간편하게 해요."},
+  {n:2,  name:"고향 엄마손 생바지락 칼국수", short:"고향 엄마손", menu:"칼국수·만두", food:"얼큰 vs 맑은 칼국수", cat:"noodle", pos:[338, -69], off:"신당역 4번 출구에서 98m", q:"고향 엄마손 생바지락 칼국수 신당",
+   yt:[["영상 보기", "91-4x8gmNB4"]], tip:"얼큰한 국물과 맑은 국물, 고르다 지쳐서 둘 다 시켰어요."},
+  {n:3,  name:"마복림할머니집", short:"마복림할머니집", menu:"신당동 즉석떡볶이", food:"즉석떡볶이 + 라면 사리", cat:"snack", pos:[112, 159], off:"", q:"마복림할머니집 신당",
+   yt:[["영상 보기", "8jIejBOnhT8"]], tip:"신당동 떡볶이 골목의 즉석떡볶이예요. 라면 사리에 주먹밥까지!"},
+  {n:4,  name:"백송 신당", short:"백송", menu:"육회비빔밥", food:"나갈 땐 추억의 쫀드기", cat:"rice", pos:[-29, 10], off:"", q:"백송 신당",
+   yt:[["영상 보기", "Zb_iIOYJVlw"], ["누룽지 왕갈비탕 영상", "BSdbOWJsGno"]], tip:"육회비빔밥을 슥슥 비벼 먹고, 나갈 땐 추억의 쫀드기를 챙겨 주세요. 누룽지가 들어 있는 왕갈비탕도 있어요."},
+  {n:5,  name:"The 92 산들바다", short:"산들바다", menu:"돈가스 전문점", food:"김치나베", cat:"mix", pos:[182, -32], off:"신당역 8번 출구에서 18m", q:"산들바다 신당",
+   yt:[["영상 보기", "lgjnCtzxzcQ"]], tip:"돈가스에 김치찌개가 만난 김치나베예요. 보글보글 국물 속에 돈가스가 숨어 있어요."},
+  {n:6,  name:"부해헌", short:"부해헌", menu:"중식당", food:"짬뽕·짜장·군만두", cat:"mix", pos:[447, -131], off:"신당역 1번 출구에서 26m", q:"부해헌 신당",
+   yt:[["영상 보기", "uIO1LSriNpM"]], tip:"짬뽕, 짜장, 군만두까지 먹어 본 중식당이에요. 네이버 평점 4.96이었어요(2026년 10월 20일 확인 기준)."},
+  {n:7,  name:"마루분식", short:"마루분식", menu:"분식", food:"알밥·김치볶음밥·라면", cat:"snack", pos:[-11, 9], off:"", q:"마루분식 신당",
+   yt:[["영상 보기", "q7GSyLnzkjQ"]], tip:"알밥, 김치볶음밥, 라면에 참치주먹밥까지. 열흘 동안 세 번 갔던 분식집이에요."},
+  {n:8,  name:"메트로삼겹살", short:"메트로삼겹살", menu:"돼지고기구이", food:"점심 삼겹살 한 판", cat:"meat", pos:[291, -113], off:"신당역 12번 출구에서 46m", q:"메트로삼겹살 신당",
+   yt:[["영상 보기", "QcbETwI5vUc"]], tip:"저녁엔 고깃집인데 점심엔 한 판 가득 나와요."},
+  {n:9,  name:"주양도새기 신당", short:"주양도새기", menu:"제주 돼지 고기집", food:"제주 돼지 회식", cat:"meat", pos:[520, -120], off:"", q:"주양도새기 신당",
+   yt:[["영상 보기", "rjEzvnMNIBE"]], tip:"두툼한 제주 돼지고기를 구워 먹는 회식 장소예요."},
+  {n:10, name:"쿄오모라멘", short:"쿄오모라멘", menu:"일본식 라멘", food:"진한 국물 라멘", cat:"noodle", pos:[101, 115], off:"", q:"쿄오모라멘 신당",
+   yt:[["영상 보기", "c8wSGHMRj-k"]], tip:"국물이 진한 일본식 라멘이에요. 다 먹고 남은 국물엔 밥 투하가 국룰!"},
+  {n:11, name:"신당백반", short:"신당백반", menu:"백반·한식뷔페", food:"먹을 만큼 담는 한식뷔페", cat:"rice", pos:[80, 131], off:"", q:"신당백반",
+   yt:[["영상 보기", "d_7qWRGfutk"]], tip:"먹고 싶은 만큼 담는 한식뷔페예요. 꿀팁은 딱 하나, 먹을 만큼만 담기."},
+  {n:12, name:"중화일식 피우", short:"피우", menu:"볶음밥·면요리·카레라이스", food:"유린기 볶음밥", cat:"mix", pos:[83, 105], off:"", q:"중화일식 피우 신당",
+   yt:[["영상 보기", "dkc3AZogcNE"]], tip:"볶음밥, 면요리, 카레라이스를 파는 집이에요. 혼밥하기 좋았고, 리뷰를 쓰면 메론소다를 준다고 안내돼 있었어요(촬영 당시 안내 기준이라 바뀔 수 있어요)."},
+  {n:13, name:"긴자료코 신당점", short:"긴자료코", menu:"경양식 돈까스", food:"데미글라스 소스·밥 무료 추가", cat:"mix", pos:[165, 73], off:OFF_WALK, q:"긴자료코 신당점",
+   yt:[["영상 보기", "Ty6j-dm11Dc"]], tip:"데미글라스 소스 경양식 돈까스예요. 키오스크로 미리 주문하고, 장국·김치·물은 셀프, 밥은 부족하면 무료로 더 줘요."},
+  {n:14, name:"가장특별한해장국", short:"가장특별한해장국", menu:"선지·양·소고기 해장국", food:"다데기는 따로 · 간장통 꿀팁", cat:"noodle", pos:[169, 104], off:OFF_WALK, q:"가장특별한해장국 신당",
+   yt:[], tip:"선지, 양, 소고기가 들어간 든든한 해장국이에요. 다데기는 따로 나오는데 많이 넣으면 많이 매워요. 식탁 간장통은 뚜껑 고무 부분을 꾹 눌러야 나옵니다."}
+];
+for (const s of LNC_SHOPS) {   // 거리: 직선 10m 단위 어림 · 걷는 시간: 길 따라 1.2배, 분당 100m (네이버 도보 199m = 2분과 같은 비율)
+  const d = Math.hypot(s.pos[0], s.pos[1]); s.dist = Math.round(d / 10) * 10; s.walk = Math.max(1, Math.round(d * 1.2 / 100));
+  s.grp = s.dist <= 100 ? "near" : s.dist <= 250 ? "mid" : "far"; s.photo = "img/lunch/" + String(s.n).padStart(2, "0") + ".jpg";
+}
+const SHOP = {}; for (const s of LNC_SHOPS) SHOP[s.n] = s;
+const GRP = {near:"코앞 · 라운드비에서 100m 안", mid:"걸어서 2분대 · 100~250m", far:"조금 멀리 · 300m 넘게"};
+const DISTS = [["all", "전체"], ["near", "코앞 (100m 안)"], ["mid", "걸어서 2분대"], ["far", "조금 멀리 (300m~)"]];
+const STATION = {x:213, y:-58}, LINE2 = [[-175, -6], [224, -58], [420, -91], [620, -125]];
+const VB = {x:-175, y:-190, w:765, h:420};
+
+/* ----- 상태 ( '가 봤어요' 도장은 이 브라우저에만 저장해요 ) ----- */
+const ST = {cat:"all", dist:"all", skip:false, sel:0, vis:{}, spin:0, tm:0, last:0, clrArm:false};
+function load() {
+  try { const o = JSON.parse(localStorage.getItem(LNC_KEY) || "null"); if (o && typeof o === "object") { ST.skip = !!o.skip; ST.last = SHOP[o.last] ? o.last : 0; for (const n of (Array.isArray(o.vis) ? o.vis : [])) if (SHOP[n]) ST.vis[n] = 1; } } catch (e) {}
+}
+function save() { try { localStorage.setItem(LNC_KEY, JSON.stringify({skip:ST.skip, last:ST.last, vis:Object.keys(ST.vis).map(Number)})); } catch (e) {} }
+const visCount = () => Object.keys(ST.vis).length;
+
+/* ----- 필터 · 뽑기 ----- */
+const matchF = s => (ST.cat === "all" || s.cat === ST.cat) && (ST.dist === "all" || s.grp === ST.dist);
+const pool = () => LNC_SHOPS.filter(s => matchF(s) && !(ST.skip && ST.vis[s.n]));
+function pickOne(list, avoid) { const l = list.length > 1 ? list.filter(s => s.n !== avoid) : list; return l[Math.floor(Math.random() * l.length)] || null; }
+
+/* ----- 모양 아이콘 (색 + 모양을 같이 써서 색을 못 가려도 구분돼요) ----- */
+function shapeSVG(k, cx, cy, r, extra) {
+  cx = +cx; cy = +cy;   // 문자열 좌표가 들어와도 덧셈이 글자 이어붙이기가 되지 않게
+  const c = CATS[k], f = `fill="${c.c}"`, e = extra || "";
+  switch (c.s) {
+    case "circle": return `<circle cx="${cx}" cy="${cy}" r="${r}" ${f} ${e}/>`;
+    case "square": return `<rect x="${cx - r * .9}" y="${cy - r * .9}" width="${r * 1.8}" height="${r * 1.8}" rx="${r * .22}" ${f} ${e}/>`;
+    case "tri": return `<polygon points="${cx},${cy - r * 1.1} ${cx + r * 1.08},${cy + r * .82} ${cx - r * 1.08},${cy + r * .82}" stroke-linejoin="round" ${f} ${e}/>`;
+    case "dia": return `<polygon points="${cx},${cy - r * 1.18} ${cx + r * 1.18},${cy} ${cx},${cy + r * 1.18} ${cx - r * 1.18},${cy}" stroke-linejoin="round" ${f} ${e}/>`;
+    default: { const a = r * .42, b = r * 1.05; return `<polygon points="${cx - a},${cy - b} ${cx + a},${cy - b} ${cx + a},${cy - a} ${cx + b},${cy - a} ${cx + b},${cy + a} ${cx + a},${cy + a} ${cx + a},${cy + b} ${cx - a},${cy + b} ${cx - a},${cy + a} ${cx - b},${cy + a} ${cx - b},${cy - a} ${cx - a},${cy - a}" stroke-linejoin="round" ${f} ${e}/>`; }
+  }
+}
+const icon = (k, px) => `<svg class="lnc-ic" width="${px || 14}" height="${px || 14}" viewBox="-14 -14 28 28" aria-hidden="true">${shapeSVG(k, 0, 0, 10, `stroke="#14141c" stroke-width="2.4"`)}</svg>`;
+const walkTxt = s => `걸어서 약 ${s.walk}분`;
+
+/* ----- 지도: 핀 + 이름표를 하나의 상자로 보고 서로·라운드비·신당역·길 이름과 겹치지 않게 표시 위치를 계산(결정적: 같은 데이터면 늘 같은 모양).
+   원래 위치와 멀어진 핀은 얇은 선으로 진짜 위치에 이어 줘요. ----- */
+const FS = 14, GAP = 5, PR = 17;
+const fixedBoxes = () => {
+  const f = [{x1:-36, y1:-36, x2:36, y2:66}, {x1:STATION.x - 17, y1:STATION.y - 18, x2:STATION.x + 119, y2:STATION.y + 16}, {x1:VB.x + 2, y1:-48, x2:-58, y2:-6}];   // 라운드비(아이콘·글자), 신당역 표지, 퇴계로 글자
+  for (const r of [100, 200, 300, 400, 500]) { const a = 20 * Math.PI / 180, x = r * Math.cos(a), y = r * Math.sin(a); f.push({x1:x - 22, y1:y - 13, x2:x + 22, y2:y + 6}); }   // 거리 눈금 글자
+  return f;
+};
+const pinBox = p => p.side === "r" ? {x1:p.x - PR, x2:p.x + 21 + p.w, y1:p.y - 19, y2:p.y + 19} : {x1:p.x - 21 - p.w, x2:p.x + PR, y1:p.y - 19, y2:p.y + 19};
+function layoutPins() {
+  const P = LNC_SHOPS.map(s => { const d = Math.hypot(s.pos[0], s.pos[1]), k = d < 60 ? 80 / Math.max(d, 1) : 1;   // 라운드비 바로 옆 가게는 바깥쪽에서 출발(아이콘을 가로지르는 선을 피해요)
+    return {s, tx:s.pos[0], ty:s.pos[1], x:s.pos[0] * k, y:s.pos[1] * k, w:s.short.length * FS * .98 + 8, side:s.pos[0] < 40 ? "l" : "r"}; }), F = fixedBoxes();
+  const ovl = (a, b) => { const dx = Math.min(a.x2, b.x2) - Math.max(a.x1, b.x1) + GAP, dy = Math.min(a.y2, b.y2) - Math.max(a.y1, b.y1) + GAP; return dx > 0 && dy > 0 ? {dx, dy} : null; };
+  for (let it = 0; it < 700; it++) {
+    for (const p of P) {
+      let r = pinBox(p);   // 지도 밖으로 나가면 이름표를 반대쪽으로
+      if (r.x2 > VB.x + VB.w - 4) p.side = "l"; else if (r.x1 < VB.x + 4) p.side = "r";
+      p.x = Math.max(VB.x + 24, Math.min(VB.x + VB.w - 24, p.x)); p.y = Math.max(VB.y + 26, Math.min(VB.y + VB.h - 26, p.y));
+    }
+    for (let i = 0; i < P.length; i++) {
+      const a = P[i], ra = pinBox(a);
+      for (const f of F) {
+        const o = ovl(ra, f); if (!o) continue;
+        const cx = (ra.x1 + ra.x2) / 2 - (f.x1 + f.x2) / 2, cy = (ra.y1 + ra.y2) / 2 - (f.y1 + f.y2) / 2;
+        if (o.dx < o.dy) a.x += cx >= 0 ? o.dx : -o.dx; else a.y += cy >= 0 ? o.dy : -o.dy;
+      }
+      for (let j = i + 1; j < P.length; j++) {
+        const b = P[j], rb = pinBox(b), o = ovl(ra, rb); if (!o) continue;
+        const cx = (ra.x1 + ra.x2) / 2 - (rb.x1 + rb.x2) / 2 || (i - j) * .01, cy = (ra.y1 + ra.y2) / 2 - (rb.y1 + rb.y2) / 2 || (i - j) * .01;
+        if (o.dx < o.dy) { const m = o.dx / 2 * (cx >= 0 ? 1 : -1); a.x += m; b.x -= m; } else { const m = o.dy / 2 * (cy >= 0 ? 1 : -1); a.y += m; b.y -= m; }
+      }
+    }
+    for (const a of P) { a.x += (a.tx - a.x) * .02; a.y += (a.ty - a.y) * .02; }
+  }
+  return P;
+}
+let PINS = null;
+function mapHTML() {
+  if (!PINS) PINS = layoutPins();
+  const sel = ST.sel ? PINS.find(p => p.s.n === ST.sel) : null;
+  let g = `<svg class="lnc-svg" viewBox="${VB.x} ${VB.y} ${VB.w} ${VB.h}" role="group" aria-label="라운드비를 가운데 두고 그린 신당역 밥집 개념도"><defs><pattern id="lnc-grid" width="50" height="50" patternUnits="userSpaceOnUse"><path d="M50 0H0V50" fill="none" stroke="rgba(120,135,190,.13)" stroke-width="1"/></pattern></defs>`;
+  g += `<rect x="${VB.x}" y="${VB.y}" width="${VB.w}" height="${VB.h}" fill="#10142a"/><rect x="${VB.x}" y="${VB.y}" width="${VB.w}" height="${VB.h}" fill="url(#lnc-grid)"/>`;
+  for (const r of [100, 200, 300, 400, 500]) {
+    const ang = 20 * Math.PI / 180, lx = r * Math.cos(ang), ly = r * Math.sin(ang);
+    g += `<circle cx="0" cy="0" r="${r}" fill="none" stroke="rgba(246,196,83,.32)" stroke-width="1.6" stroke-dasharray="6 6"/><text class="lnc-ring" x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle">${r}m</text>`;
+  }
+  g += `<polyline points="${LINE2.map(p => p.join(",")).join(" ")}" fill="none" stroke="#2e3870" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/><polyline points="${LINE2.map(p => p.join(",")).join(" ")}" fill="none" stroke="#9fb0ee" stroke-width="2.2" stroke-dasharray="14 8"/>`;
+  g += `<line x1="${STATION.x}" y1="${VB.y}" x2="${STATION.x}" y2="${VB.y + VB.h}" stroke="rgba(246,196,83,.55)" stroke-width="2.4" stroke-dasharray="3 7"/>`;
+  g += `<text class="lnc-road" x="-168" y="-18" transform="rotate(-7.5 -168 -18)">퇴계로 · 2호선</text><text class="lnc-road" x="${STATION.x + 6}" y="${VB.y + 18}">6호선</text>`;
+  g += `<g><circle cx="${STATION.x}" cy="${STATION.y}" r="11" fill="#faf6ee" stroke="#14141c" stroke-width="3"/><rect x="${STATION.x + 14}" y="${STATION.y - 14}" width="102" height="26" rx="8" fill="#faf6ee" stroke="#14141c" stroke-width="2.4"/><text class="lnc-st-t" x="${STATION.x + 65}" y="${STATION.y + 5}" text-anchor="middle">신당역 2·6</text></g>`;
+  if (sel) g += `<line x1="0" y1="0" x2="${sel.x.toFixed(1)}" y2="${sel.y.toFixed(1)}" stroke="#f6c453" stroke-width="3" stroke-dasharray="7 6"/>`;
+  g += `<g aria-hidden="true"><circle cx="0" cy="0" r="30" fill="#e8553a" stroke="#faf6ee" stroke-width="3.5"/><rect x="-11" y="-14" width="22" height="26" rx="2" fill="#faf6ee"/><g fill="#e8553a"><rect x="-7" y="-10" width="5" height="5"/><rect x="2" y="-10" width="5" height="5"/><rect x="-7" y="-1" width="5" height="5"/><rect x="2" y="-1" width="5" height="5"/></g><rect x="-3" y="6" width="6" height="6" fill="#e8553a"/></g><text class="lnc-me" x="0" y="52" text-anchor="middle">라운드비</text>`;
+  for (const p of PINS) if (Math.hypot(p.x - p.tx, p.y - p.ty) > 7) g += `<line x1="${p.tx}" y1="${p.ty}" x2="${p.x.toFixed(1)}" y2="${p.y.toFixed(1)}" stroke="rgba(250,246,238,.55)" stroke-width="1.6"/><circle cx="${p.tx}" cy="${p.ty}" r="3.2" fill="#faf6ee"/>`;
+  for (const p of PINS) {
+    const s = p.s, on = matchF(s), isSel = ST.sel === s.n, x = p.x.toFixed(1), y = p.y.toFixed(1), lx = (p.side === "r" ? p.x + 21 : p.x - 21).toFixed(1), la = p.side === "r" ? "start" : "end";
+    g += `<g class="lnc-pin${on ? "" : " off"}${isSel ? " sel" : ""}${ST.vis[s.n] ? " vis" : ""}" data-act="lnc-pick" data-n="${s.n}" role="button" tabindex="0" aria-label="${s.n}번 ${esc(s.name)}, ${esc(s.menu)}, ${CATS[s.cat].n}, 약 ${s.dist}미터${ST.vis[s.n] ? ", 가 본 곳" : ""}">`;
+    g += `<circle class="lnc-hit" cx="${x}" cy="${y}" r="27" fill="transparent"/>${isSel ? `<circle class="lnc-halo" cx="${x}" cy="${y}" r="26" fill="none" stroke="#f6c453" stroke-width="4.5"/>` : ""}`;
+    g += shapeSVG(s.cat, x, y, 16, `stroke="#faf6ee" stroke-width="3"`);
+    g += `<text class="lnc-num${s.n > 9 ? " two" : ""}" x="${x}" y="${(p.y + 6.2).toFixed(1)}" text-anchor="middle">${s.n}</text>`;
+    if (ST.vis[s.n]) g += `<circle cx="${(p.x + 14).toFixed(1)}" cy="${(p.y - 14).toFixed(1)}" r="8.5" fill="#faf6ee" stroke="#14141c" stroke-width="2.2"/><path d="M${(p.x + 10).toFixed(1)} ${(p.y - 14).toFixed(1)}l3 3 5-6" fill="none" stroke="#14141c" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>`;
+    g += `<text class="lnc-lb${isSel ? " sel" : ""}" x="${lx}" y="${(p.y + 5).toFixed(1)}" text-anchor="${la}">${esc(s.short)}</text></g>`;
+  }
+  return g + `</svg>`;
+}
+
+/* ----- 화면 조각들 ----- */
+function chipsHTML(kind, list, cur) {
+  return list.map(([v, t, ico]) => `<button type="button" class="lnc-fb" role="radio" aria-checked="${v === cur}" data-act="lnc-${kind}" data-v="${v}">${ico || ""}${esc(t)}</button>`).join("");
+}
+function topHTML() {
+  const cats = [["all", "전체"], ...Object.values(CATS).map(c => [c.k, c.n, icon(c.k, 15)])], n = pool().length;
+  return `<div class="lnc-fr"><span class="small dim">종류</span><div class="lnc-fg" role="radiogroup" aria-label="종류">${chipsHTML("cat", cats, ST.cat)}</div></div>
+    <div class="lnc-fr"><span class="small dim">거리</span><div class="lnc-fg" role="radiogroup" aria-label="거리">${chipsHTML("dist", DISTS, ST.dist)}</div></div>
+    <div class="lnc-fr"><span class="small dim">옵션</span><div class="lnc-fg"><button type="button" class="lnc-fb" aria-pressed="${ST.skip}" data-act="lnc-skip">${ST.skip ? "✓ " : ""}가 본 곳은 빼고 뽑기</button></div></div>
+    <div class="lnc-stage"><div class="lnc-reel" id="lnc-reel" role="status" aria-live="polite"><small id="lnc-reel-s">오늘의 점심은…</small><b class="disp" id="lnc-reel-t">${n ? "무엇일까요?" : "조건을 바꿔 보세요"}</b></div>
+      <div class="lnc-ctl"><button type="button" class="btn btn-red btn-lg lnc-go" id="lnc-go" data-act="lnc-draw"${n ? "" : ` aria-disabled="true"`}>뽑기!</button><span class="small dim" id="lnc-cnt">${n ? `조건에 맞는 곳 ${n}곳 중에서 뽑아요` : "조건에 맞는 곳이 없어요"}</span></div></div>`;
+}
+function cardHTML() {
+  const s = SHOP[ST.sel];
+  if (!s) return `<div class="lnc-empty"><b>뽑기를 누르거나 지도·목록에서 가게를 골라 보세요</b><span class="small dim">가게를 누르면 메뉴·거리·영상·네이버지도 링크가 여기에 나와요.</span></div>`;
+  const c = CATS[s.cat], v = !!ST.vis[s.n];
+  const yts = (s.yt || []).map(([t, id], i) => `<a class="btn btn-sm${i ? "" : " btn-red"}" href="https://youtube.com/shorts/${id}" target="_blank" rel="noopener noreferrer">${esc(t)}</a>`).join("") || `<span class="chip">영상은 준비 중이에요</span>`;
+  return `<article class="lnc-cd" aria-label="${esc(s.name)}"><div class="lnc-ph"><img src="${s.photo}" alt="${esc(s.name)}의 ${esc(s.food)}" width="480" height="480" onerror="this.parentNode.classList.add('no');this.remove()"><span class="lnc-no" aria-hidden="true">${icon(s.cat, 56)}</span><b class="lnc-nb" style="background:${c.c}">${s.n}</b></div>
+    <div class="lnc-ci"><div class="lnc-cat">${icon(s.cat, 16)}<span>${c.n}</span></div><h3 class="disp">${esc(s.name)}</h3><p class="lnc-menu"><b>${esc(s.menu)}</b> · ${esc(s.food)}</p>
+      <div class="lnc-ch"><span class="chip lnc-dist">라운드비에서 약 ${s.dist}m</span><span class="chip">${walkTxt(s)}</span></div>${s.off ? `<p class="small faint">확인된 거리: ${esc(s.off)}</p>` : ""}
+      <p class="lnc-tip">${esc(s.tip)}</p>
+      <div class="row lnc-act">${yts}<a class="btn btn-sm" href="https://map.naver.com/p/search/${encodeURIComponent(s.q)}" target="_blank" rel="noopener noreferrer">네이버지도에서 보기</a><button type="button" class="btn btn-sm${v ? " btn-gold" : ""}" data-act="lnc-visit" data-n="${s.n}" aria-pressed="${v}">${v ? "✓ 가 봤어요" : "가 봤어요 도장 찍기"}</button></div></div></article>`;
+}
+function listHTML() {
+  let h = ""; const all = LNC_SHOPS.slice().sort((a, b) => a.dist - b.dist || a.n - b.n);
+  for (const g of ["near", "mid", "far"]) {
+    const rows = all.filter(s => s.grp === g && matchF(s)); if (!rows.length) continue;
+    h += `<h4 class="lnc-gh">${GRP[g]} <span class="chip">${rows.length}곳</span></h4><div class="lnc-grid">` + rows.map(s => {
+      const c = CATS[s.cat];
+      return `<button type="button" class="lnc-li${ST.sel === s.n ? " sel" : ""}" data-act="lnc-pick" data-n="${s.n}" aria-label="${s.n}번 ${esc(s.name)}, ${esc(s.menu)}, 약 ${s.dist}미터${ST.vis[s.n] ? ", 가 본 곳" : ""}"><span class="lnc-th"><img src="${s.photo}" alt="" loading="lazy" width="64" height="64" onerror="this.remove()"><b style="background:${c.c}">${s.n}</b>${ST.vis[s.n] ? `<i class="lnc-ck" aria-hidden="true">✓</i>` : ""}</span><span class="lnc-lt"><b>${esc(s.short)}</b><span class="small dim">${esc(s.menu)}</span><span class="small faint">${icon(s.cat, 12)} 약 ${s.dist}m · ${s.walk}분</span></span></button>`;
+    }).join("") + `</div>`;
+  }
+  return h || `<p class="small dim">조건에 맞는 곳이 없어요. 종류·거리를 바꿔 보세요.</p>`;
+}
+function stampHTML() {
+  const n = visCount(), full = n === LNC_SHOPS.length;
+  return `<div class="lnc-sh"><b>내 밥집 도장 ${n}/${LNC_SHOPS.length}</b><span class="small dim">${full ? "밥집 로드 완주! 신당역 밥집 14곳을 모두 가 보셨어요." : n ? "가 본 곳에 도장을 찍어 두면 뽑기에서 빼고 돌릴 수 있어요." : "가게 카드에서 '가 봤어요'를 누르면 도장이 찍혀요."}</span></div>
+    <div class="lnc-sl">${LNC_SHOPS.map(s => `<span class="lnc-sp${ST.vis[s.n] ? " on" : ""}" title="${esc(s.short)}${ST.vis[s.n] ? " · 가 봤어요" : ""}">${icon(s.cat, 22)}<i>${s.n}</i>${ST.vis[s.n] ? `<em aria-hidden="true">✓</em>` : ""}</span>`).join("")}</div>
+    ${n ? `<div class="row" style="margin-top:8px"><button type="button" class="btn btn-sm btn-ghost" data-act="lnc-clear">${ST.clrArm ? "정말 도장을 모두 지울까요? 한 번 더 누르면 지워져요" : "도장 모두 지우기"}</button></div>` : ""}`;
+}
+function legendHTML() {
+  return `<div class="lnc-lg">${Object.values(CATS).map(c => `<span>${icon(c.k, 15)} ${c.n}</span>`).join("")}</div>`;
+}
+function cntUpdate() {
+  const n = pool().length, c = $("#lnc-cnt"), g = $("#lnc-go");
+  if (c) c.textContent = n ? `조건에 맞는 곳 ${n}곳 중에서 뽑아요` : "조건에 맞는 곳이 없어요";
+  if (g) { if (n) g.removeAttribute("aria-disabled"); else g.setAttribute("aria-disabled", "true"); }
+}
+function drawAll(keepReel) {
+  const set = (id, h) => { const e = $("#" + id); if (e) e.innerHTML = h; };
+  if (!keepReel) set("lnc-top", topHTML());
+  else cntUpdate();
+  set("lnc-links", linksHTML());
+  set("lnc-card", cardHTML()); set("lnc-map", mapHTML()); set("lnc-leg", legendHTML()); set("lnc-list", listHTML()); set("lnc-stamp", stampHTML());
+  const e = $("#lnc-nlist"); if (e) e.textContent = LNC_SHOPS.length + "곳";
+}
+
+/* ----- 뽑기 연출: 이름이 빠르게 넘어가다 느려지며 멈춰요 (움직임 줄이기 설정이면 바로 결과) ----- */
+const reduced = () => { try { return window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return false; } };
+function stopSpin() { clearTimeout(ST.tm); ST.spin = 0; const r = $("#lnc-reel"); if (r) r.classList.remove("spin"); }
+function land(s) {
+  ST.sel = s.n; ST.last = s.n; save(); stopSpin();
+  const r = $("#lnc-reel"), t = $("#lnc-reel-t"), sm = $("#lnc-reel-s");
+  if (t) t.textContent = s.name; if (sm) sm.textContent = "오늘의 점심은!";
+  if (r) { r.classList.remove("done"); void r.offsetWidth; r.classList.add("done"); }
+  drawAll(true); sfx("coin");
+  const card = $("#lnc-card"); if (card) { card.classList.remove("pop"); void card.offsetWidth; card.classList.add("pop"); }
+}
+function draw() {
+  if (ST.spin) return; const list = pool();
+  if (!list.length) { toast("조건에 맞는 곳이 없어요. 종류·거리를 바꿔 보세요"); sfx("click"); return; }
+  const fin = pickOne(list, ST.last);
+  if (reduced()) { land(fin); return; }
+  const N = 16, seq = []; let prev = 0;
+  for (let i = 0; i < N - 1; i++) { const o = pickOne(list.length > 1 ? list : LNC_SHOPS, prev); seq.push(o); prev = o.n; }
+  seq.push(fin); ST.spin = 1; const r = $("#lnc-reel"), t = $("#lnc-reel-t"), sm = $("#lnc-reel-s");
+  if (r) { r.classList.remove("done"); r.classList.add("spin"); } if (sm) sm.textContent = "고르는 중…";
+  let i = 0;
+  const step = () => {
+    if (UI.screen !== "lunch") { stopSpin(); return; }
+    const s = seq[i]; if (t) t.textContent = s.name; if (i < N - 1) sfx("click");
+    if (i >= N - 1) { land(s); return; }
+    const k = i / (N - 1); i++; ST.tm = setTimeout(step, 50 + 330 * k * k * k);
+  };
+  step();
+}
+
+/* ----- 첫 화면 입구 버튼 · 클릭 처리 ----- */
+const ENTRY = `<button type="button" class="lnc-entry" id="lnc-entry" data-act="lnc-open" aria-label="오늘 뭐 먹지? 라운드비 근처 신당역 밥집 ${LNC_SHOPS.length}곳 뽑기와 지도">
+  <span class="lnc-bowl" aria-hidden="true"><svg viewBox="0 0 56 48" width="52" height="44"><g class="lnc-steam" fill="none" stroke="#faf6ee" stroke-width="3" stroke-linecap="round"><path d="M18 4c-3 3 3 5 0 9"/><path d="M28 2c-3 3 3 6 0 10"/><path d="M38 4c-3 3 3 5 0 9"/></g><path d="M5 22h46c0 12-9 21-23 21S5 34 5 22z" fill="#f6c453" stroke="#14141c" stroke-width="3" stroke-linejoin="round"/><path d="M5 22h46" stroke="#14141c" stroke-width="3" stroke-linecap="round"/><path d="M13 29c3 6 9 9 15 9" fill="none" stroke="#fff7d6" stroke-width="2.4" stroke-linecap="round" opacity=".8"/></svg></span>
+  <span class="lnc-et"><b class="disp">오늘 뭐 먹지?</b><span>라운드비 근처 밥집 ${LNC_SHOPS.length}곳 · 뽑기 · 지도</span></span><span class="chip lnc-new">NEW</span></button>`;
+function mountEntry() {
+  if ($("#lnc-entry")) return;
+  const host = $("#rbx-modes"); const wrap = document.createElement("div"); wrap.className = "row lnc-row"; wrap.id = "rbx-lunch"; wrap.style.justifyContent = "center"; wrap.innerHTML = ENTRY;
+  if (host && host.parentNode) host.parentNode.insertBefore(wrap, host.nextSibling); else { const t = $(".t-in"); if (t) t.appendChild(wrap); }
+}
+function openLunch() {
+  load(); ST.clrArm = false; drawAll(false); show("lunch"); sfx("click");
+}
+function pick(n) {
+  const s = SHOP[n]; if (!s) return; stopSpin(); ST.sel = s.n; ST.last = s.n; save(); sfx("click");
+  const t = $("#lnc-reel-t"), sm = $("#lnc-reel-s"); if (t) t.textContent = s.name; if (sm) sm.textContent = "골라 본 곳";
+  drawAll(true);
+  const card = $("#lnc-card"); if (card) { card.classList.remove("pop"); void card.offsetWidth; card.classList.add("pop"); card.scrollIntoView({behavior:reduced() ? "auto" : "smooth", block:"start"}); }
+}
+function refilter() {
+  stopSpin(); ST.clrArm = false;
+  const keep = ST.sel && !matchF(SHOP[ST.sel]) ? 0 : ST.sel; ST.sel = keep; drawAll(false); sfx("click");
+}
+Object.assign(A, {
+  "lnc-open": openLunch,
+  "lnc-draw": () => draw(),
+  "lnc-cat": b => { if (ST.cat === b.dataset.v) return; ST.cat = b.dataset.v; refilter(); },
+  "lnc-dist": b => { if (ST.dist === b.dataset.v) return; ST.dist = b.dataset.v; refilter(); },
+  "lnc-skip": () => { ST.skip = !ST.skip; save(); refilter(); },
+  "lnc-pick": b => pick(Number(b.dataset.n)),
+  "lnc-visit": b => { const n = Number(b.dataset.n); if (!SHOP[n]) return; if (ST.vis[n]) delete ST.vis[n]; else ST.vis[n] = 1; save(); sfx(ST.vis[n] ? "coin" : "click"); drawAll(true); const sm = $("#lnc-reel-s"); if (sm && ST.vis[n]) sm.textContent = "도장 쾅!"; },
+  "lnc-clear": () => { if (!ST.clrArm) { ST.clrArm = true; drawAll(true); return; } ST.vis = {}; ST.clrArm = false; save(); sfx("click"); drawAll(false); }
+});
+document.addEventListener("keydown", e => {   // 지도 핀은 키보드(Enter·Space)로도 골라요
+  const p = e.target && e.target.closest && e.target.closest(".lnc-pin"); if (!p || (e.key !== "Enter" && e.key !== " ")) return;
+  e.preventDefault(); pick(Number(p.dataset.n));
+});
+const lncBuildTitle0 = buildTitle;
+buildTitle = function () { lncBuildTitle0.apply(this, arguments); mountEntry(); };   // 첫 화면을 다시 그릴 때마다 입구 버튼이 있는지 확인해요
+mountEntry();
+return {SHOPS:LNC_SHOPS, CATS, ST, pool, draw, pick, openLunch, layoutPins, matchF, load, save, mapHTML, cardHTML};
+})();
+window.lncDbg = lncEng;
+/* ===LNC_END=== */
 
 /* ===== boot ===== */
 bindWorldInput();
