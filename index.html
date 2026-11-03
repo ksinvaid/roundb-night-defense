@@ -22117,7 +22117,17 @@ async function onbIssue() {
 async function onbResumeCode() {
   const o = ID.onb, m = $id("onb-rmsg"), say = (t, cls) => { if (m) { m.textContent = t; m.className = "idp-msg " + (cls || ""); } }; if (!o) return;
   const id = typeof ccNorm === "function" ? ccNorm(($id("onb-code") || {}).value) : ""; if (!id) { say("코드를 다시 확인해 주세요. 4글자씩 4묶음(16글자)이에요.", "bad"); return; }
-  if (id === SAVE.cc) { say("이 기기에서 이미 쓰는 코드예요.", "warn"); return; }
+  if (id === SAVE.cc) {   // 이 기기가 이미 이 코드를 쓰는데 사원증만 없는 경우(폰에서 사원증을 받은 뒤 이 기기를 열었을 때): 서버 기록을 다시 받아 사원증을 가져온다
+    say("이 기기에 연결된 코드예요. 서버에서 사원증을 찾는 중…");
+    try {
+      const d = await ccFetchDoc(id);
+      if (!(d.o && d.o.id)) { say("이 코드의 서버 기록에는 사원증이 아직 없어요. 사원증이 있는 폰에서 게임을 열어 '이어하기 코드 → 지금 저장'을 누른 뒤 다시 눌러 주세요. 급하면 위에서 닉네임을 정하고 '다음'으로 새 사원증을 받아도 돼요.", "warn"); return; }
+      if ((SAVE.rp | 0) > (d.o.rp | 0) && o.armCode !== id) { o.armCode = id; say(`이 기기의 기록(${fmt(SAVE.rp)} RP)이 서버 기록(${fmt(d.o.rp)} RP)보다 앞서 있어요. 한 번 더 누르면 서버 기록(사원증 포함)으로 바꿔요.`, "warn"); return; }
+      ccApply(d.o, d.id, d.rev, d.g); CC.conflict = null; CC.err = ""; CC.msg = ""; persist(true);
+      if (!curId() && ID.onb) say("사원증을 읽지 못했어요. 폰에서 '지금 저장'을 다시 눌러 주세요.", "bad");
+    } catch (e) { say(ccErrText(e && e.code), "bad"); }
+    return;
+  }
   if (typeof ccProgress === "function" && ccProgress() && o.armCode !== id) { o.armCode = id; say(`이 기기의 기록(사원증 ${fmt(SAVE.rp)} RP)이 코드의 기록으로 바뀌어요. 한 번 더 누르면 불러와요.`, "warn"); return; }
   say("불러오는 중…");
   try { const d = await ccFetchDoc(id); ccApply(d.o, d.id, d.rev, d.g); if (!curId() && ID.onb) { ID.onb.nick = BD.nickFix(SAVE.nick); ID.onb.kn = knSafe(SAVE.kn); ID.onb.step = 1; ID.onb.resume = false; ID.onb.chk = {nick: "", state: "idle"}; onbRender(); const mm = $id("onb-msg"); if (mm) mm.textContent = "기록을 불러왔어요. 사원증만 새로 발급받으면 돼요."; } }
@@ -34079,7 +34089,22 @@ async function doResume(P) {
   const mine = await (async () => { try { return await me(); } catch (e) { return {uid: ""}; } })(), X = P.uid, g = gOf(P), rec = await mapRead(g);
   const plan = LGP.resumePlan({isNew: false, X, A: mine.uid, rec, local: SAVE.cc || "", progress: hasProgress()});
   if (plan === "norec") { ccSay(errText("norec")); return; }
-  if (plan === "already") { markLinked(P.m); ccSay("이 기기에서 이미 쓰고 있는 기록이에요.", true); return; }
+  if (plan === "already") {
+    markLinked(P.m);
+    if (!SAVE.id) {   // 사원증 없이 이 기록을 이미 쓰는 중(폰에서 받은 사원증이 이 기기엔 아직 없다): 서버 기록에서 사원증을 가져온다
+      ccSay("구글 계정을 확인했어요. 서버에서 사원증을 찾는 중…");
+      const d = await ccFetchDoc(rec);
+      if (!(d.o && d.o.id)) { ccSay("이 구글 계정에 연결된 기록에는 사원증이 아직 없어요. 사원증이 있는 폰에서 게임을 열어 '이어하기 코드 → 지금 저장'을 누른 뒤 다시 눌러 주세요."); return; }
+      if ((SAVE.rp | 0) > (d.o.rp | 0)) {
+        const ok = await pickAsk({title: "서버 기록으로 바꿀까요?", body: `<div class="lg-cmp"><div class="lg-cmp-i"><b>서버 기록 (사원증 있음)</b><p>${H(sum(d.o))}</p></div><div class="lg-cmp-i"><b>지금 이 기기의 기록</b><p>${H(localSum())}</p></div></div><p class="lg-lead">이 기기의 기록이 더 앞서 있어요. 서버 기록으로 바꾸면 <b>이 기기의 기록은 사라져요.</b></p>`,
+          buttons: [{id: "load", label: "서버 기록으로 바꾸기 (사원증을 가져와요)", cls: "btn-gold"}, {id: "cancel", label: "그만두기", cls: "btn-ghost"}]});
+        if (ok !== "load") { ccSay("그만뒀어요. 아무것도 바꾸지 않았어요."); return; }
+      }
+      ccApply(d.o, d.id, d.rev); CC.conflict = null; CC.err = ""; CC.msg = ""; persist(true);
+      reloadSoon("구글 계정의 사원증을 불러왔어요!"); return;
+    }
+    ccSay("이 기기에서 이미 쓰고 있는 기록이에요.", true); return;
+  }
   if (plan === "switch") { adopt(P.tok); markLinked(P.m); reloadSoon("구글 계정으로 돌아왔어요!"); return; }
   const d = await ccFetchDoc(rec);
   if (plan === "ask") {
