@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<link rel="icon" href="data:,">
+<title>라운드비 4층 공유오피스 · 메타버스 투어</title>
+<style>
+  :root { --yellow:#ffd93d; --ink:#1b1b1f; --card:rgba(255,255,255,.94); }
+  * { box-sizing: border-box; }
+  html, body { margin:0; height:100%; overflow:hidden; background:#dff3ff; font-family:'Pretendard','Malgun Gothic',system-ui,sans-serif; color:var(--ink); touch-action:none; -webkit-user-select:none; user-select:none; }
+  canvas { display:block; }
+  #hud-title { position:fixed; left:14px; top:12px; font-weight:800; letter-spacing:.5px; font-size:15px; background:var(--card); padding:8px 12px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,.12); }
+  #hud-title small { display:block; font-weight:600; font-size:11px; color:#666; margin-top:2px; letter-spacing:0; }
+  #cta { position:fixed; right:14px; top:12px; background:var(--yellow); color:var(--ink); font-weight:800; font-size:14px; padding:10px 14px; border-radius:12px; text-decoration:none; box-shadow:0 2px 10px rgba(0,0,0,.15); }
+  #minimap { position:fixed; right:14px; bottom:14px; width:132px; background:#fff; border-radius:12px; padding:4px; box-shadow:0 2px 10px rgba(0,0,0,.18); }
+  #minimap .wrap { position:relative; }
+  #minimap img { width:100%; display:block; border-radius:8px; }
+  #dot { position:absolute; width:11px; height:11px; margin:-5.5px 0 0 -5.5px; border-radius:50%; background:#ff3b30; border:2px solid #fff; box-shadow:0 0 0 2px rgba(255,59,48,.35); }
+  #zone { position:fixed; left:50%; bottom:18px; transform:translateX(-50%) translateY(20px); opacity:0; transition:.25s; background:var(--card); border-radius:16px; padding:12px 18px; min-width:220px; max-width:min(86vw,420px); text-align:center; box-shadow:0 4px 18px rgba(0,0,0,.18); pointer-events:none; }
+  #zone.on { opacity:1; transform:translateX(-50%) translateY(0); }
+  #zone b { font-size:17px; display:block; }
+  #zone span { font-size:13px; color:#555; }
+  #hint { position:fixed; left:14px; bottom:14px; font-size:12px; color:#333; background:rgba(255,255,255,.8); padding:6px 10px; border-radius:10px; }
+  #intro { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:linear-gradient(160deg,#fff7cc,#ffe27a 55%,#ffd23f); z-index:10; text-align:center; padding:24px; }
+  #intro .box { max-width:420px; }
+  #intro h1 { font-size:30px; margin:0 0 6px; font-weight:900; letter-spacing:-.5px; }
+  #intro .tag { display:inline-block; background:#fff; border-radius:999px; padding:4px 12px; font-weight:800; font-size:12px; margin-bottom:14px; }
+  #intro p { margin:6px 0; font-size:15px; line-height:1.5; }
+  #intro button { margin-top:20px; font:inherit; font-weight:800; font-size:18px; padding:14px 30px; border:0; border-radius:14px; background:var(--ink); color:#fff; cursor:pointer; }
+  #intro .keys { font-size:13px; color:#5a4a00; margin-top:16px; }
+  #joy { position:fixed; left:22px; bottom:56px; width:110px; height:110px; border-radius:50%; background:rgba(255,255,255,.35); border:2px solid rgba(0,0,0,.15); display:none; }
+  #joy i { position:absolute; left:50%; top:50%; width:46px; height:46px; margin:-23px 0 0 -23px; border-radius:50%; background:rgba(255,255,255,.9); box-shadow:0 2px 8px rgba(0,0,0,.25); }
+  @media (pointer:coarse) { #joy { display:block; } #hint { display:none; } }
+</style>
+</head>
+<body>
+<div id="hud-title"><img src="assets/logo.png" alt="ROUNDB" style="height:20px;display:block"><small>4F 공유오피스 · 걸어다니며 둘러보세요</small></div>
+<a id="cta" href="tel:0222528766">📞 문의 02-2252-8766</a>
+<div id="zone"><b id="zt"></b><span id="zs"></span></div>
+<div id="hint">이동 WASD·방향키 · 시점 마우스 드래그 · 확대 휠 · 의자 가까이 가면 E = 앉기</div>
+<div id="minimap"><div class="wrap"><img src="assets/floorplan4.png" alt="4층 배치도"><div id="dot"></div></div></div>
+<div id="joy"><i></i></div>
+<div id="intro">
+  <div class="box">
+    <img src="assets/logo.png" alt="ROUNDB" style="height:44px;display:block;margin:0 auto 14px">
+    <div class="tag">MANAGER 🐥</div>
+    <h1>라운드비 4층<br>공유오피스 투어</h1>
+    <p>신당역 1분 · 동대문 3분</p>
+    <p>삐약매니저와 함께 A~D구역, 휴게공간,<br>회의실까지 직접 걸어서 둘러보세요.</p>
+    <button id="start">입장하기</button>
+    <div class="keys">PC: WASD / 방향키로 이동 · 드래그로 시점 돌리기<br>모바일: 왼쪽 조이스틱 · 오른쪽 화면 드래그</div>
+  </div>
+</div>
+<script type="module" src="main.js"></script>
+</body>
+</html>
