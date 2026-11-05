@@ -54,10 +54,18 @@ h2{font-size:clamp(22px,4vw,30px);margin:0 0 6px;letter-spacing:-.6px;font-weigh
 .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
 .tab,.chip{min-height:42px;padding:0 16px;border-radius:999px;border:2px solid var(--line);background:var(--card);color:var(--ink);font:700 14px/1 inherit;cursor:pointer}
 .tab[aria-pressed=true],.chip[aria-pressed=true]{background:var(--navy);border-color:var(--navy);color:#fff}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(230px,46%),1fr));gap:12px}
-@media (max-width:520px){.grid{gap:10px}.ph span{padding:8px 10px 10px;font-size:13px}}
+.car{position:relative}
+.grid{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding:2px 2px 12px}
+.grid::-webkit-scrollbar{display:none}
+.grid .ph{flex:0 0 min(80%,340px);scroll-snap-align:start}
+.arw{position:absolute;top:calc(50% - 46px);z-index:3;width:56px;height:56px;border-radius:50%;border:3px solid #1b1b1f;background:var(--gold);color:#1b1b1f;font:900 30px/1 inherit;padding:0 0 3px;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.35)}
+.arw.pv{left:-8px}.arw.nx{right:-8px}
+.arw:hover{background:#ffd264}.arw:focus-visible{outline:3px solid var(--teal);outline-offset:3px}
+.arw[disabled]{opacity:.3;cursor:default;box-shadow:none}
+.cnt{text-align:center;color:var(--mut);font-size:14px;font-weight:700;margin:2px 0 0}
+@media (max-width:520px){.grid{gap:10px}.grid .ph{flex-basis:78%}.ph span{padding:8px 10px 10px;font-size:13px}.arw{width:48px;height:48px;font-size:26px;top:calc(50% - 40px)}.arw.pv{left:-4px}.arw.nx{right:-4px}}
 .ph{padding:0;border:0;background:var(--card);border-radius:var(--r);overflow:hidden;text-align:left;cursor:pointer;box-shadow:0 1px 0 var(--line),0 6px 18px rgba(0,0,0,.06)}
-.ph img{width:100%;aspect-ratio:4/3;object-fit:cover}
+.ph img{width:100%;aspect-ratio:1/1;object-fit:cover}
 .ph span{display:block;padding:10px 14px 12px;font-weight:700;font-size:14px;color:var(--ink)}
 .plans{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
 @media (max-width:640px){.plans{grid-template-columns:1fr}}
@@ -149,7 +157,12 @@ footer{padding:28px 0 96px;color:var(--mut);font-size:13px}
   <div class="seg" role="group" aria-label="보기 방식"><button type="button" id="sp1" aria-pressed="true">📷 사진</button><button type="button" id="sp2" aria-pressed="false">🗺️ 배치도</button></div>
   <div id="photos">
     <div class="tabs" id="tabs" role="group" aria-label="공간 분류"></div>
-    <div class="grid" id="grid"></div>
+    <div class="car">
+      <button type="button" class="arw pv" id="gpv" aria-label="이전 사진" disabled>‹</button>
+      <div class="grid" id="grid" tabindex="0" aria-label="공간 사진 (좌우로 넘겨 보세요)"></div>
+      <button type="button" class="arw nx" id="gnx" aria-label="다음 사진">›</button>
+    </div>
+    <p class="cnt" id="gcnt" aria-live="polite"></p>
   </div>
   <div id="plansBox" hidden>
     <div class="plans">
@@ -348,14 +361,24 @@ var PLANS=[{src:"plan3f.jpg",t:"3F 라운지 배치도"},{src:"plan4f.jpg",t:"4F
 var GS=["전체","스튜디오","라운지·열린 공간","좌석·업무","회의·세미나","시설·입구","오는 길"],cur="전체",view=[],li=0;
 function drawTabs(){var tb=$("#tabs");tb.innerHTML="";GS.forEach(function(g){var b=document.createElement("button");b.type="button";b.className="tab";var n=g==="전체"?SHOTS.length:SHOTS.filter(function(s){return s.g===g}).length;b.textContent=g+" "+n;b.setAttribute("aria-pressed",String(g===cur));b.onclick=function(){cur=g;drawTabs();drawGrid()};tb.appendChild(b)})}
 function drawGrid(){var gr=$("#grid");gr.innerHTML="";var list=SHOTS.filter(function(s){return cur==="전체"||s.g===cur});
-  list.forEach(function(s,i){var b=document.createElement("button");b.type="button";b.className="ph";b.innerHTML='<img loading="lazy" src="'+s.src+'" alt="'+s.t+'"><span>'+s.t+'</span>';b.onclick=function(){openLb(list,i)};gr.appendChild(b)})}
+  list.forEach(function(s,i){var b=document.createElement("button");b.type="button";b.className="ph";b.innerHTML='<img loading="lazy" src="'+s.src+'" alt="'+s.t+'"><span>'+s.t+'</span>';b.onclick=function(){openLb(list,i)};gr.appendChild(b)});gr.style.scrollBehavior="auto";gr.scrollLeft=0;gr.style.scrollBehavior="";if(window.upd)upd();setTimeout(function(){if(typeof upd==="function")upd()},0)}
 function openLb(list,i){view=list;li=(i+view.length)%view.length;var s=view[li];$("#lbi").src=s.src;$("#lbi").alt=s.t;$("#lbt").textContent=s.t+(view.length>1?"  ("+(li+1)+"/"+view.length+")":"");$("#lb").classList.add("on");$("#lb .cl").focus()}
 function closeLb(){$("#lb").classList.remove("on")}
 $("#lb .cl").onclick=closeLb;$("#lb .nx").onclick=function(){openLb(view,li+1)};$("#lb .pv").onclick=function(){openLb(view,li-1)};
 $("#lb").onclick=function(e){if(e.target.id==="lb")closeLb()};
 document.addEventListener("keydown",function(e){if(!$("#lb").classList.contains("on"))return;if(e.key==="Escape")closeLb();else if(e.key==="ArrowRight")openLb(view,li+1);else if(e.key==="ArrowLeft")openLb(view,li-1)});
 [].forEach.call(document.querySelectorAll(".plan"),function(b){b.onclick=function(){openLb(PLANS,+b.dataset.p)}});
-drawTabs();drawGrid();
+/* 좌우 넘기기 버튼 + 스와이프(스크롤 스냅) */
+function step(){var gr=$("#grid"),f=gr.querySelector(".ph");return f?f.getBoundingClientRect().width+12:300}
+function upd(){var gr=$("#grid"),n=gr.children.length,st=step(),first=Math.min(n,Math.round(gr.scrollLeft/st)+1),vis=Math.max(1,Math.floor(gr.clientWidth/st+.25)),last=Math.min(n,first+vis-1);
+  $("#gpv").disabled=gr.scrollLeft<4;$("#gnx").disabled=gr.scrollLeft>=gr.scrollWidth-gr.clientWidth-4;
+  $("#gcnt").textContent=n?(first===last?first:first+"–"+last)+" / "+n+"장 · 좌우로 넘겨 보세요":""}
+function go(d){var gr=$("#grid");gr.scrollBy({left:d*Math.max(step(),Math.round(gr.clientWidth*.8)),behavior:"smooth"})}
+$("#gpv").onclick=function(){go(-1)};$("#gnx").onclick=function(){go(1)};
+$("#grid").addEventListener("scroll",function(){clearTimeout(upd.t);upd.t=setTimeout(upd,60)},{passive:true});
+$("#grid").addEventListener("keydown",function(e){if(e.key==="ArrowRight"){go(1);e.preventDefault()}else if(e.key==="ArrowLeft"){go(-1);e.preventDefault()}});
+addEventListener("resize",upd);
+drawTabs();drawGrid();upd();
 
 /* ── 오시는 길 ── */
 $("#map").href="https://map.naver.com/p/search/"+encodeURIComponent(ADDR);
