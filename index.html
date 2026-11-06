@@ -2306,6 +2306,47 @@ html.kc-rail #scr-shop .wrap{padding-bottom:72px}
   #scr-lobby .lb-life .lb-lc>.lb-life-extra>*{width:22px!important;height:22px!important}
   #scr-lobby .lb-life .lb-lc>.lb-life-extra>* svg{width:12px!important;height:12px!important}
 }
+/* Compact life shortcuts and game rails */
+.lb-life{grid-template-columns:repeat(6,minmax(0,1fr))}
+.lb-life .lb-lc-go{min-height:68px;padding:8px 27px 8px 9px;flex-direction:row;gap:8px;text-align:left}
+.lb-life .lb-lc-ic{width:34px;height:34px;border-radius:10px}
+.lb-life .lb-lc-ic svg{width:21px;height:21px}
+.lb-life .lb-lc-tx{justify-items:start}
+.lb-life .lb-lc-tx b{font-size:14px}
+.lb-life .lb-lc-tx em{font-size:11px}
+.lb-life .lb-lc[data-life="tour"] .lb-lc-go{padding-bottom:40px}
+.lb-tour-floors{position:absolute;bottom:5px;left:7px;right:7px;display:flex;gap:5px}
+.lb-tour-floors a{flex:1;display:grid;place-items:center;min-height:29px;border:1px solid #888bc2;border-radius:8px;color:#fff;background:#212851;font:700 12px system-ui,sans-serif;text-decoration:none}
+.lb-tour-floors a:hover,.lb-tour-floors a:focus-visible{background:#414a88}
+.lb-map-layout{min-height:0;flex:1 1 auto;display:grid;grid-template-columns:1fr;grid-template-rows:minmax(370px,1fr) auto auto;gap:8px}
+.lb-map-layout .lb-stage{grid-row:1;min-height:370px}
+.lb-game-rail{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.lb-game-shortcut{width:100%;min-height:50px;padding:7px 9px;display:grid;gap:2px;align-content:center;text-align:left;border:1px solid #5d6399;border-radius:11px;background:#242b52;color:#fff;cursor:pointer}
+.lb-game-shortcut strong{font-size:13px;line-height:1.15}
+.lb-game-shortcut small{font-size:11px;color:#e3e6ff;line-height:1.25}
+.lb-game-shortcut:hover,.lb-game-shortcut:focus-visible{background:#384475;outline:2px solid var(--gold);outline-offset:1px}
+@media(min-width:1200px) and (min-height:620px){
+  .lb-map-layout{grid-template-columns:minmax(140px,1fr) minmax(0,5.5fr) minmax(140px,1fr);grid-template-rows:minmax(0,1fr)}
+  .lb-map-layout .lb-stage{grid-area:1/2;min-height:0}
+  .lb-game-rail{grid-template-columns:1fr;align-content:center}
+  .lb-game-rail:first-child{grid-area:1/1}
+  .lb-game-rail:last-child{grid-area:1/3}
+}
+@media(max-width:1199px),(max-height:619px){
+  #scr-lobby:not([hidden]){overflow-y:auto}
+  .lb-root{height:auto;min-height:100%}
+  .lb-map-layout .lb-stage{height:clamp(370px,57dvh,640px)}
+}
+@media(max-width:760px){
+  .lb-life{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .lb-life .lb-lc-go{min-height:62px;padding:6px 18px 6px 5px;gap:4px}
+  .lb-life .lb-lc-tx b{font-size:11px}
+  .lb-life .lb-lc-ic{width:24px;height:24px}
+  .lb-life .lb-lc-ic svg{width:16px;height:16px}
+  .lb-life .lb-lc[data-life="tour"] .lb-lc-go{padding-bottom:48px}
+  .lb-tour-floors a{min-height:40px}
+  .lb-game-rail{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
 #scr-lobby .lb-life .lb-lc>.lb-life-extra .pm-t{display:none!important}   /* 생활 카드 안 복사 버튼은 아이콘만(글자는 title·aria-label) */
 
 /* ===DFX_CSS=== 방어전 개선: 기사 설명 카드 · 내 기사 패널 · 기사 강화 칸. 색만으로 구분하지 않는다: 패시브 ◆ / 액티브 ★ / 다른 모드 ● 글자 + 모양 */
@@ -3777,6 +3818,13 @@ html[data-lowfx="1"]{scroll-behavior:auto}
       </header>
       <!-- 생활 메뉴 = 이 게임의 존재 이유(공간 홍보). 카드마다 data-life="lunch|gallery|road" + 빈 .lb-life-extra 자리(홍보 링크 담당이 '링크' 버튼을 붙인다) — lobby.js 가 채운다 -->
       <div class="lb-life" id="lb-life" role="group" aria-label="라운드비 공간 바로 가기: 오늘 뭐 먹지, 공간 둘러보기, 로드뷰 투어"></div>
+      <div class="lb-map-layout">
+        <div class="lb-game-rail" role="group" aria-label="게임 바로가기 1">
+          <button type="button" class="lb-game-shortcut" data-game-spot="3f-storage"><strong>던전 인 라운드비</strong><small>기사와 함께 던전 100층 도전</small></button>
+          <button type="button" class="lb-game-shortcut" data-game-spot="3f-studio"><strong>LORD 영주전</strong><small>영지를 넓히고 용 사냥</small></button>
+          <button type="button" class="lb-game-shortcut" data-game-spot="3f-desks"><strong>서바이버</strong><small>몰려오는 공실 귀신 버티기</small></button>
+          <button type="button" class="lb-game-shortcut" data-game-spot="3f-ac"><strong>소용돌이·미로</strong><small>터렛을 지어 길목 방어</small></button>
+        </div>
       <div class="lb-stage" id="lb-stage">
         <canvas id="lb-cv" role="img" aria-label="라운드비 3층과 4층 배치도 로비. 방향키나 WASD로 내 기사를 걷게 하고, 방 이름표를 누르면 순간이동해서 바로 들어가요. 오른쪽 떠 있는 버튼으로 게임 목록·메뉴·채팅·내 정보를 열어요."></canvas>
         <div class="lb-ov" id="lb-ov"></div>
@@ -3804,6 +3852,13 @@ html[data-lowfx="1"]{scroll-behavior:auto}
             </div>
           </div>
         </aside>
+      </div>
+        <div class="lb-game-rail" role="group" aria-label="게임 바로가기 2">
+          <button type="button" class="lb-game-shortcut" data-game-spot="4f-conf"><strong>야간 방어전</strong><small>새벽 6시까지 사무실 방어</small></button>
+          <button type="button" class="lb-game-shortcut" data-game-spot="4f-lounge"><strong>땅따먹기</strong><small>한 바퀴 돌아 내 땅 넓히기</small></button>
+          <button type="button" class="lb-game-shortcut" data-game-spot="4f-wall"><strong>대결</strong><small>유닛을 보내 상대 팀 방 공략</small></button>
+          <button type="button" class="lb-game-shortcut" data-game-spot="4f-ac"><strong>로봇대전</strong><small>컨베이어에 로봇 올려 대결</small></button>
+        </div>
       </div>
       <div class="lb-sheet" id="lb-sheet" hidden></div>
     </div>
@@ -26760,7 +26815,7 @@ const UTIL = {
 };
 const LIFE_FALLBACK = {lunch: "lnc-open", gallery: "to-gallery", road: "road-open"};
 /* 4차: 화면 맨 위 '생활 메뉴' 메인 카드 줄(이 게임의 존재 이유 = 공간 홍보). 카드마다 data-life + 빈 .lb-life-extra 자리(홍보 링크 담당이 '링크' 버튼을 붙인다) */
-const LIFE = [{id: "intro", url: "intro/", name: "라운드비 소개", sub: "사진·배치도·주차·문의", ic: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 10.5 12 4l8 6.5V20H4z\"/><path d=\"M9.5 20v-5.5h5V20\"/></svg>"}, {id: "seats", url: "https://roundb-seat-board-hyunwoo.roundb-metaverse.workers.dev/share", name: "4층 좌석 현황", sub: "사용 중인 자리와 빈자리 확인", ic: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\"><rect x=\"4\" y=\"4\" width=\"16\" height=\"16\" rx=\"2\"/><path d=\"M12 4v16M4 12h16\"/></svg>"}, {id: "gallery", sp: "3f-desk", sub: "라운드비 공간 사진 보기"}, {id: "road", sp: "4f-desk", sub: "걸어서 3·4층 투어"}, {id: "tour", url: "https://roundb-metaverse.roundb-metaverse.workers.dev/", name: "3D 투어", sub: "걸어 다니며 4층·3층", ic: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 3 20 7.5v9L12 21l-8-4.5v-9z\"/><path d=\"M12 12 20 7.5M12 12 4 7.5M12 12v9\"/></svg>"}, {id: "lunch", sp: "4f-pantry", sub: "신당역 밥집 뽑기·지도"}];
+const LIFE = [{id: "intro", url: "intro/", name: "라운드비 소개", sub: "사진·배치도·주차·문의", ic: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 10.5 12 4l8 6.5V20H4z\"/><path d=\"M9.5 20v-5.5h5V20\"/></svg>"}, {id: "seats", url: "https://roundb-seat-board-hyunwoo.roundb-metaverse.workers.dev/share", name: "4층 좌석 현황", sub: "사용 중인 자리와 빈자리 확인", ic: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\"><rect x=\"4\" y=\"4\" width=\"16\" height=\"16\" rx=\"2\"/><path d=\"M12 4v16M4 12h16\"/></svg>"}, {id: "gallery", sp: "3f-desk", sub: "라운드비 공간 사진 보기"}, {id: "road", sp: "4f-desk", sub: "걸어서 3·4층 투어"}, {id: "tour", url: "https://roundb-metaverse.roundb-metaverse.workers.dev/?floor=3", name: "3D 투어", sub: "층별 공간 둘러보기", ic: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 3 20 7.5v9L12 21l-8-4.5v-9z\"/><path d=\"M12 12 20 7.5M12 12 4 7.5M12 12v9\"/></svg>"}, {id: "lunch", sp: "4f-pantry", sub: "신당역 밥집 뽑기·지도"}];
 
 /* 방(스팟) ↔ 게임·시설 연결표 — README 의 표와 같아요. 좌표는 map_data.json */
 const BIND = {
@@ -27808,7 +27863,7 @@ function renderLife() {
   const box = el("lb-life"); if (!box) return;
   if (!lifeBuilt) {
     lifeBuilt = true;
-    box.innerHTML = LIFE.map(L => `<div class="lb-lc" data-life="${L.id}" data-sp="${L.sp || ""}"${L.url ? ` data-url="${L.url}"` : ""}><button type="button" class="lb-lc-go"></button><span class="lb-life-extra" data-life-extra="${L.id}"></span></div>`).join("");
+    box.innerHTML = LIFE.map(L => `<div class="lb-lc" data-life="${L.id}" data-sp="${L.sp || ""}"${L.url ? ` data-url="${L.url}"` : ""}><button type="button" class="lb-lc-go"></button><span class="lb-life-extra" data-life-extra="${L.id}"></span>${L.id === "tour" ? `<div class="lb-tour-floors"><a href="${L.url}" target="_blank" rel="noopener" aria-label="3층 3D 투어">3층</a><a href="https://roundb-metaverse.roundb-metaverse.workers.dev/" target="_blank" rel="noopener" aria-label="4층 3D 투어">4층</a></div>` : ""}</div>`).join("");
     try { const x = nx(); if (x && x.bus) x.bus.emit("lobby:life", {el: box}); document.dispatchEvent(new CustomEvent("lobby:life-ready", {detail: {el: box}})); } catch (e) {}
   }
   for (const L of LIFE) {
@@ -28113,6 +28168,8 @@ function init() {
     const pp = e.target.closest("[data-pp]"); if (pp && !pp.disabled) onPerson(pp.dataset.pp);
   });
   scr.addEventListener("click", e => {
+    const gameShortcut = e.target.closest("[data-game-spot]");
+    if (gameShortcut) { enterFromUI(SPOT_BY[gameShortcut.dataset.gameSpot]); return; }
     const fb = e.target.closest(".lb-fb"); if (fb) { togglePanel(fb.dataset.pn); return; }
     if (e.target.closest("[data-panel='close']")) { closePanel(); return; }
     const lc = e.target.closest(".lb-lc-go"); if (lc) { if (!lc.disabled) { const cd = lc.closest(".lb-lc"); if (cd.dataset.url) { try { window.open(cd.dataset.url, "_blank", "noopener"); } catch (er) { location.href = cd.dataset.url; } } else enterFromUI(SPOT_BY[cd.dataset.sp]); } return; }
