@@ -35101,12 +35101,13 @@ function updatePlayer(G, dt, inp) {
   else if (P.dash) {
     const D_ = P.dash; D_.t += dt; const k = Math.min(dt, D_.dur - (D_.t - dt)); P.vx = D_.dx * D_.speed; P.vy = D_.dy * D_.speed; moveBody(M, P, P.vx * dt, P.vy * dt, PLAYER_R - 1, false, false);
     nearMobs(G, P.x, P.y, 70, m => { if (!D_.hit.includes(m.id) && hyp(m.x - P.x, m.y - P.y) < m.r + 26) { D_.hit.push(m.id); if (D_.mul) hitMob(G, m, D_.mul, D_.o); } });
+    if (P.bx || P.by) D_.t = D_.dur;
     if (D_.dodge) {   // 5차: 대시는 벽·기둥에 막히고, 앞을 막은 적도 통과하지 못한다(뒤·옆의 적은 상관없음)
       if (P.bx || P.by) D_.t = D_.dur; else nearMobs(G, P.x, P.y, 80, m => { if (m.ghost) return; const mx = m.x - P.x, my = m.y - P.y; if (mx * D_.dx + my * D_.dy > 0 && hyp(mx, my) < m.cr + PLAYER_R + 3) D_.t = D_.dur; });
       if (rand() < .9) fxP(G, P.x, P.y + 6, "#d7ecff", 1, 30, .28, 7); if (G.fx.length < 400) G.fx.push({x: P.x, y: P.y, t: 0, max: .24, kind: 3, face: P.face});   /* 잔상 */
     }
     if (rand() < .6) fxP(G, P.x, P.y, D_.col || "#ffffff", 1, 30, .25, 5);
-    if (D_.t >= D_.dur) { P.dash = null; P.vx *= .3; P.vy *= .3; if (P.remote && !D_.dodge && G.cur) { forceHero(G, G.cur); G.cur.rp = {x: P.x, y: P.y}; } }   /* A13: 스킬 돌진(방장만 계산)이 끝났다 → 손님이 따라 옮기게 강제 번호 */
+    if (D_.t >= D_.dur) { P.dash = null; P.vx *= .3; P.vy *= .3; if (P.remote && !D_.dodge && G.cur) { forceHero(G, G.cur); G.cur.dashEpoch = G.cur.fe; } }   /* A13: 스킬 돌진(방장만 계산)이 끝났다 → 손님이 따라 옮기게 강제 번호 */
   } else {
     const tvx = ix * sp, tvy = iy * sp, acc = P.ice ? 1.8 : 16, kk = Math.min(1, acc * dt); P.vx += (tvx - P.vx) * kk; P.vy += (tvy - P.vy) * kk;
     let cvx = 0, cvy = 0; if (sf >= SF.CR && sf <= SF.CU) { const v = 95; if (sf === SF.CR) cvx = v; else if (sf === SF.CL) cvx = -v; else if (sf === SF.CD) cvy = v; else cvy = -v; }
@@ -35141,6 +35142,7 @@ function updatePlayer(G, dt, inp) {
     let aim = skillTarget;
     const bossOnly = G.cur.idx === 0 ? G.opt.bossOnlyMove !== false : G.cur.bossOnlyMove !== false;
     if (e.kind === "dash" && bossOnly) {
+      if (il > .1 || !bossRoomHeroes(G).includes(G.cur)) continue;
       aim = G.boss;
       if (G.bs.state !== "fight" || !aim || aim.dead || aim.inv > 0 ||
           (aim.participants && !aim.participants.has(G.cur)) || !los(M, P.x, P.y, aim.x, aim.y)) continue;
@@ -35633,7 +35635,7 @@ function bossTrigger(G) {
   w.eligible = inside.map(h => h.idx);
   w.n = inside.length;
   w.of = aliveHeroes(G).length;
-  if (w.waiting && w.n === w.of && !G.ropes?.length) startBoss(G);
+  if (G.party && w.n === w.of && !G.ropes?.length) startBoss(G);
 }
 function startBoss(G) {
   const participants = bossRoomHeroes(G); if (!participants.length || G.bs.state !== "idle") return;
@@ -37700,7 +37702,7 @@ function sendSnap(S, g) {
   const sn = {t: "s", q: ++S.q, sp: V.spd, T: Math.round(G.t * 1000) / 1000, F: G.floor, C: G.combo | 0};
   sn.H = G.hs.map(h => { const p = h.P, st = stOf(G, h), dead = overOf(G, h) === "dead"; return [h.idx, r1(p.x), r1(p.y), r1(p.vx), r1(p.vy), r1(p.ang * 100), (dead ? 1 : 0) | (p.dash ? 2 : 0) | (p.inv > 0 ? 4 : 0) | (p.stun > 0 ? 8 : 0) | (p.hit > 0 ? 16 : 0) | (h.forced ? 32 : 0) | (p.face < 0 ? 64 : 0) | (p.shield > 0 ? 128 : 0), r1(h.char.hp), r1(st ? st.hpMax : 100), r1(p.shield || 0), h.char.lv | 0, h.char.k | 0, r1((p.swing || 0) * 100), r1((dead ? h.reviveP || 0 : 0) * 100)]; });
   for (const h of G.hs) if (h.forced) h.forced = 0;
-  const me = g.P; sn.me = {idx: g.idx, pull: !!G.ropes?.some(r => r.hero === g), q: g.iseq | 0, fe: g.fe | 0, sk: me.sk.map(s => [r1(s.cd * 10) / 10, r1((s.max || 1) * 10) / 10]), dc: r1(me.dashCd * 100) / 100, dm: r1((me.dashMax || 2.5) * 100) / 100, pc: r1(Math.max(0, g.potCd || 0) * 10) / 10, st: r1((me.stun || 0) * 100) / 100, sl: r1((me.slow || 0) * 100) / 100, sw: r1((me.swingA == null ? me.ang : me.swingA) * 100), bs: bfSpd(g), bf: me.buffs.map(b => [b.id, r1(b.t * 10) / 10, b.col || "", b.name || ""]).slice(0, 6)};
+  const me = g.P; sn.me = {idx: g.idx, sd: !!(me.dash && !me.dash.dodge), de: g.dashEpoch, pull: !!G.ropes?.some(r => r.hero === g), q: g.iseq | 0, fe: g.fe | 0, sk: me.sk.map(s => [r1(s.cd * 10) / 10, r1((s.max || 1) * 10) / 10]), dc: r1(me.dashCd * 100) / 100, dm: r1((me.dashMax || 2.5) * 100) / 100, pc: r1(Math.max(0, g.potCd || 0) * 10) / 10, st: r1((me.stun || 0) * 100) / 100, sl: r1((me.slow || 0) * 100) / 100, sw: r1((me.swingA == null ? me.ang : me.swingA) * 100), bs: bfSpd(g), bf: me.buffs.map(b => [b.id, r1(b.t * 10) / 10, b.col || "", b.name || ""]).slice(0, 6)};
   const ms = []; for (const m of G.mobs) { if (m.dead || m.boss || !near(m.x, m.y, m.r)) continue; ms.push(m); }
   if (ms.length > 90) { ms.sort((a, b) => (a.x - P.x) * (a.x - P.x) + (a.y - P.y) * (a.y - P.y) - ((b.x - P.x) * (b.x - P.x) + (b.y - P.y) * (b.y - P.y))); ms.length = 90; }
   sn.M = ms.map(m => { const fl = (m.face < 0 ? 1 : 0) | (m.flash > 0 ? 2 : 0) | (m.lunge > 0 ? 4 : 0) | (m.stunT > 0 ? 8 : 0) | (m.slowT > 0 ? 16 : 0) | (m.burn ? 32 : 0) | (m.elite ? 64 : 0) | (m.evt ? 128 : 0) | (m.fly ? 256 : 0) | ((m.aff === "swift" ? 1 : m.aff === "steel" ? 2 : m.aff === "blast" ? 3 : 0) << 9) | (m.hd ? 2048 : 0); const a = [m.id, r1(m.x), r1(m.y), Math.max(1, Math.ceil(100 * m.hp / m.hpMax)), fl, dno(m.def), r1(m.r)]; if ((m.alpha != null && m.alpha < 1) || m.tele) { a.push(m.alpha != null && m.alpha < 1 ? r1(m.alpha * 100) : 100); if (m.tele) a.push(teleOf(m.tele, m, id)); } return a; });
@@ -37764,8 +37766,15 @@ function guestFrame(dt, inp, locked) {
   if (inp.potion && D().quickPotion && core.potionCount(G) <= 0) S.pend.e &= ~2;
   const multiplier = dgn.speedRate(S.spd);
   const stepBudget = Math.ceil(8 * multiplier);
-  S.acc += dt * multiplier; let n = 0; if (S.corr) { const kc = Math.min(1, dt * 7), cx = S.corr.x * kc, cy = S.corr.y * kc; P.x += cx; P.y += cy; S.corr.x -= cx; S.corr.y -= cy; if (Math.abs(S.corr.x) + Math.abs(S.corr.y) < .6) S.corr = null; }
-  if (G.ropePull) S.acc = 0;
+  S.acc += dt * multiplier; let n = 0;
+  if (S.corr && (S.skillDash || Math.hypot(inp.mx, inp.my) < .1)) {
+    const kc = Math.min(1, dt * (S.skillDash ? 19 : 5)), cx = S.corr.x * kc, cy = S.corr.y * kc;
+    const x = P.x, y = P.y;
+    core.H.moveBody(G.M, P, cx, cy, core.PLAYER_R - 1, false, false);
+    S.corr.x -= P.x - x; S.corr.y -= P.y - y;
+    if (Math.abs(S.corr.x) + Math.abs(S.corr.y) < .6 || P.bx || P.by) S.corr = null;
+  }
+  if (G.ropePull || S.skillDash) S.acc = 0;
   while (S.acc >= STEP && n < stepBudget) { core.heroMove(G, STEP, Object.assign({}, inp, {dash: n === 0 ? inp.dash : false})); S.acc -= STEP; n++; } if (n >= stepBudget) S.acc = 0;   /* A13-6: 프레임이 끊겨도(0.1초 한도) 이동을 덜 버린다(5→8스텝) */
   G.t += dt * multiplier; G.runT += dt * multiplier; if (!G.cine) G.playT += dt * multiplier; core.updateFx(G, dt); core.nearest(G);
   interpMirror(S, dt);
@@ -37800,18 +37809,25 @@ function applySnap(S, sn) {
     const idx = a[0], me = idx === (sn.me?.idx ?? S.myIdx);
     if (me) S.myIdx = idx;
     if (me && sn.me) {
-      /* A13-6/7 보정: 방장이 보낸 내 위치는 '내가 그때 보낸 위치(입력 번호 q)'를 따라간 것이라 지연만큼 늦다. 예전처럼 현재 위치와 직접 비교(>110px 이면 스냅)하면 지연·지터만으로 순간이동/뒤로 끌려갔다.
-         → ① 방장이 진짜로 옮겼을 때(강제 번호 fe 가 바뀜 · 첫 스냅샷 · 층 바뀜)만 스냅 ② 그 밖에는 '내가 q 번에 있던 위치'와 비교해 차이(err)가 64px 넘으면 그만큼을 부드럽게 보정, 420px 넘으면 한 번에 보정(상대값)
-         ③ 대시 중·방금 보정한 직후(q ≤ corrSeq)에는 비교하지 않는다. */
-      const P = G.P, fe = sn.me.fe | 0, forced = fe !== S.fe || S.firstSnap !== sn.F; S.firstSnap = sn.F;
+      const P = G.P, fe = sn.me.fe | 0, newFloor = S.firstSnap !== sn.F;
+      const forced = fe !== S.fe || newFloor, dashEnd = !newFloor && fe !== S.fe && sn.me.de === fe;
+      S.firstSnap = sn.F;
       G.ropePull = !!sn.me.pull;
-      if (forced || G.ropePull) { P.x = P.px = a[1]; P.y = P.py = a[2]; P.vx = a[3]; P.vy = a[4]; S.fe = fe; S.corr = null; S.hist.clear(); S.corrSeq = S.seq; S.rc.snap++; }
-      else if (!(a[6] & 2) && !P.dash && (sn.me.q | 0) > S.corrSeq) {
-        const hp = S.hist.get(sn.me.q | 0);
-        if (hp) { const ex = a[1] - hp.x, ey = a[2] - hp.y, err = Math.hypot(ex, ey);
-          if (err > 420) { P.x += ex; P.y += ey; P.px = P.x; P.py = P.y; S.corr = null; S.corrSeq = S.seq; S.rc.big++; }
-          else if (err > 64) { S.corr = {x: ex, y: ey}; S.corrSeq = S.seq; S.rc.smooth++; } }
-        else if (Math.hypot(a[1] - P.x, a[2] - P.y) > 700) { P.x = P.px = a[1]; P.y = P.py = a[2]; S.corr = null; S.corrSeq = S.seq; S.rc.big++; }   // 오래 끊겼다 돌아옴(기록이 없다): 아주 멀 때만
+      S.skillDash = !!sn.me.sd;
+      if ((forced && !dashEnd) || G.ropePull) {
+        P.x = P.px = a[1]; P.y = P.py = a[2]; P.vx = a[3]; P.vy = a[4];
+        S.fe = fe; S.corr = null; S.hist.clear(); S.corrSeq = S.seq; S.rc.snap++;
+      } else if (S.skillDash || dashEnd) {
+        S.fe = fe; S.corr = {x: a[1] - P.x, y: a[2] - P.y}; S.corrSeq = S.seq;
+      } else if (!(a[6] & 2) && !P.dash && (sn.me.q | 0) > S.corrSeq) {
+        const reported = S.hist.get(sn.me.q | 0);
+        if (reported) {
+          const ex = a[1] - reported.x, ey = a[2] - reported.y, err = Math.hypot(ex, ey);
+          if (err > 64) {
+            const scale = Math.min(1, 80 / err);
+            S.corr = {x: ex * scale, y: ey * scale}; S.corrSeq = S.seq; S.rc.smooth++;
+          }
+        }
       }
       G.char.hp = a[7]; P.shield = a[9]; P.ang = a[5] / 100; P.inv = a[6] & 4 ? .3 : 0; P.hit = a[6] & 16 ? .2 : 0; P.swing = a[12] / 100; P.swingA = sn.me.sw / 100; const wasDead = G.over === "dead", dead = !!(a[6] & 1);
       P.stun = sn.me.st; P.slow = sn.me.sl; P.dashCd = sn.me.dc; P.dashMax = sn.me.dm; G.potCd = sn.me.pc; if (G.bf) G.bf.spd = sn.me.bs || 0;
