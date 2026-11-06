@@ -3125,6 +3125,11 @@ html:has(#scr-dungeon:not([hidden])),body:has(#scr-dungeon:not([hidden])){overfl
 .dgn-sk .cd{position:absolute;inset:0;background:conic-gradient(rgba(5,6,15,.78) var(--p,0%),transparent 0);pointer-events:none}
 .dgn-sk .cdn{position:absolute;inset:0;display:none;place-items:center;font:800 17px/1 var(--f-body);text-shadow:0 2px 0 #000,0 0 5px #000}
 .dgn-sk.cool .cdn{display:grid}
+.dgn-sk[data-k]:not(.atk):not(.dash):not(.pot){touch-action:none}
+.dgn-sk[data-auto="on"]::after,.dgn-sk[data-auto="off"]::after{position:absolute;right:2px;top:2px;border-radius:4px;padding:1px 3px;font:800 9px/1.3 var(--f-body);z-index:3;pointer-events:none}
+.dgn-sk[data-auto="on"]::after{content:"자동";background:#f6cd68;color:#21192c}
+.dgn-sk[data-auto="off"]::after{content:"수동";background:#262b44;color:#fff}
+.dgn-follow-btn{white-space:nowrap;flex:none}
 .dgn-sk.empty{opacity:.45;border-style:dashed}
 .dgn-sk.rdy{border-color:#ffd966}
 .dgn-sk.fl{animation:dgnfl .35s}
@@ -35136,7 +35141,8 @@ function updatePlayer(G, dt, inp) {
     s.id = bar[i] || null;
     if (!s.id || s.cd > 0 || G.cine || G.over) continue;
     if (inp.cast?.[i]) { castSkill(G, i, inp, ang, meta); continue; }
-    if (!skillTarget || P.dash) continue;
+    const autoSlot = G.cur.idx === 0 ? G.opt.autoSlots?.[s.id] !== false : ((G.cur.autoMask ?? 255) & (1 << i)) !== 0;
+    if (!autoSlot || !skillTarget || P.dash) continue;
     const e = D().effectOf(c, s.id);
     if (!e) continue;
     let aim = skillTarget;
@@ -35866,10 +35872,34 @@ function unwrapSave(str) { const d = D(); if (typeof str !== "string" || !str) r
 
 /* ================= 자동 플레이 봇(시험·개발용) ================= */
 function navField(G, tx, ty) {
-  const M = G.M, key = tx + "," + ty; if (G._nav && G._nav.key === key && G.t - G._nav.t < 1.5) return G._nav.d; const W = M.W, si = ty * W + tx;
-  const dist = G._nav && G._nav.key === key ? G._nav.d : new Int16Array(M.W * M.H); dist.fill(-1); const q = new Int32Array(M.W * M.H); let h = 0, t = 0; dist[si] = 0; q[t++] = si;
-  while (h < t) { const c = q[h++], x = c % W, y = (c / W) | 0; for (let k = 0; k < 8; k++) { const dx = DX8[k], dy = DY8[k], nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= W || ny >= M.H) continue; const j = ny * W + nx; if (dist[j] >= 0) continue; if (M.type[j] === T.WALL || M.type[j] === T.PILLAR || M.type[j] === T.SHELF || M.type[j] === T.DESK || M.type[j] === T.PIT || M.type[j] === T.PART) continue; if (dx && dy) { const a = y * W + nx, b = ny * W + x; if ([T.WALL, T.PILLAR, T.SHELF, T.DESK, T.PIT, T.PART].includes(M.type[a]) || [T.WALL, T.PILLAR, T.SHELF, T.DESK, T.PIT, T.PART].includes(M.type[b])) continue; } dist[j] = dist[c] + 1; q[t++] = j; } }
-  G._nav = {key, d: dist, t: G.t}; return dist;
+  const M = G.M, key = tx + "," + ty; if (G._nav && G._nav.map === M && G._nav.key === key && G.t - G._nav.t < .3) return G._nav.d; const W = M.W, si = ty * W + tx;
+  const dist = G._nav && G._nav.map === M && G._nav.key === key ? G._nav.d : new Int16Array(M.W * M.H); dist.fill(-1); const q = new Int32Array(M.W * M.H); let h = 0, t = 0; dist[si] = 0; q[t++] = si;
+  while (h < t) { const c = q[h++], x = c % W, y = (c / W) | 0; for (let k = 0; k < 8; k++) { const dx = DX8[k], dy = DY8[k], nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= W || ny >= M.H) continue; const j = ny * W + nx; if (dist[j] >= 0) continue; if (dgnMap.solidI(M, j)) continue; if (dx && dy) { const a = y * W + nx, b = ny * W + x; if (dgnMap.solidI(M, a) || dgnMap.solidI(M, b)) continue; } dist[j] = dist[c] + 1; q[t++] = j; } }
+  G._nav = {key, map: M, d: dist, t: G.t}; return dist;
+}
+function followDirection(G, target) {
+  const P = G.P, M = G.M;
+  if (!M || G.over || G.cine || G.ropePull) return [0, 0];
+  const distance = hyp(target.x - P.x, target.y - P.y);
+  if (distance <= 62) return [0, 0];
+  const direction = (x, y) => { const dx = x - P.x, dy = y - P.y, d = hyp(dx, dy) || 1; return [dx / d, dy / d]; };
+  if (los(M, P.x, P.y, target.x, target.y)) {
+    const [dx, dy] = direction(target.x, target.y);
+    if (!boxSolid(M, P.x + dx * 22, P.y + dy * 22, PLAYER_R - 1, false, false)) return [dx, dy];
+  }
+  const tx = Math.floor(P.x / TILE), ty = Math.floor(P.y / TILE), W = M.W;
+  const gx = Math.floor(target.x / TILE), gy = Math.floor(target.y / TILE);
+  if (gx < 0 || gy < 0 || gx >= W || gy >= M.H || tx < 0 || ty < 0 || tx >= W || ty >= M.H) return [0, 0];
+  const field = navField(G, gx, gy);
+  let best = field[ty * W + tx], next = null;
+  for (let i = 0; i < 8; i++) {
+    const dx = DX8[i], dy = DY8[i], x = tx + dx, y = ty + dy;
+    if (x < 0 || y < 0 || x >= W || y >= M.H || dgnMap.solidI(M, y * W + x)) continue;
+    if (dx && dy && (dgnMap.solidI(M, ty * W + x) || dgnMap.solidI(M, y * W + tx))) continue;
+    const cost = field[y * W + x];
+    if (cost >= 0 && cost < best) { best = cost; next = [(x + .5) * TILE, (y + .5) * TILE]; }
+  }
+  return next ? direction(...next) : [0, 0];
 }
 function botInput(G) {
   const P = G.P, M = G.M, inp = {mx: 0, my: 0, aim: null, atk: true, cast: Array(8).fill(false), interact: false, potion: false}; if (G.over) return inp;
@@ -35902,7 +35932,7 @@ function botInput(G) {
 const randHero = G => { const al = aliveHeroes(G); return al.length ? al[(rand() * al.length) | 0] : G.hs[0]; };
 const H = {randHero, aliveHeroes, isDead, bind, withHero, rayLen, beamLen, beamEnd, inView, D, shotE, hurtPlayer, spawnMob, fxP, fxRing, fxText, shakeIt, boxSolid, moveBody, los, blockedAt, tilePos, tileOf, nearestMob, emit, sfx, hitMob, killMob, adiff, ELEM, mobSize, MAX_MOBS, bossDefeated, unstick, weightedDef};
 return {heroMove, nearest, setupTown, openFloor, updateFx, bind, withHero, addHero, removeHero, reviveHero, allDead, aliveHeroes, isDead, dmin, partyLock, setPartyMul, ackDrop, reveal, collect, mkFlow, newP, MAX_HEROES, HF, REVIVE_AUTO, REVIVE_HOLD, REVIVE_R, spreadHeroes,
-  forceHero, HORDE, startHorde, updateHorde, setPartySize: (G, n) => { G.partySize = cl(n | 0 || 1, 1, 8); setPartyMul(G); return G.partySize; }, DASH, startDodge, travelAnswer, placeArrival, rayLen, beamLen, DCFG, initCount, skMeta, create, enterFloor, step, respawn, refreshStats, usePotion, potionCount, interact, travel, clearedNextPortal, nextFloorNow, botInput, wrapSave, unwrapSave, packExtra, unpackExtra, openMax, isOpen, openFloor, evtNextDelay, evtPickFloor, updateEvent, EVT_MIN, EVT_MAX, EVT_EXPIRE, spikeState, healPlayer, basicOf, hitMob, rarOf, H, X, TILE, PLAYER_R, mobSize, altarRematch, openChest, gainXp, spawnPack, spawnMob, startBoss, bossChoice, ropeFollow, tileOf, nearestMob, SPIKE_PER};
+  forceHero, HORDE, startHorde, updateHorde, setPartySize: (G, n) => { G.partySize = cl(n | 0 || 1, 1, 8); setPartyMul(G); return G.partySize; }, DASH, startDodge, travelAnswer, placeArrival, rayLen, beamLen, DCFG, initCount, skMeta, create, enterFloor, step, respawn, refreshStats, usePotion, potionCount, interact, travel, clearedNextPortal, nextFloorNow, followDirection, botInput, wrapSave, unwrapSave, packExtra, unpackExtra, openMax, isOpen, openFloor, evtNextDelay, evtPickFloor, updateEvent, EVT_MIN, EVT_MAX, EVT_EXPIRE, spikeState, healPlayer, basicOf, hitMob, rarOf, H, X, TILE, PLAYER_R, mobSize, altarRematch, openChest, gainXp, spawnPack, spawnMob, startBoss, bossChoice, ropeFollow, tileOf, nearestMob, SPIKE_PER};
 })();
 
 /* dungeon_boss.js — 던전 인 라운드비: 보스 패턴·디자인표(10층마다 고유 보스, 중간 층은 변주).
@@ -36419,8 +36449,8 @@ function dgSfx(name) {
 }
 
 /* ================= 설정 · 저장 ================= */
-function loadOpt() { try { const o = JSON.parse(lsGet(LS.opt) || "{}"); if (o && typeof o === "object") { V.opt.auto = typeof o.auto === "boolean" ? o.auto : null; V.opt.autoSkill = o.autoSkill === true; V.opt.bossOnlyMove = o.bossOnlyMove !== false; V.opt.zoom = [.85, 1, 1.2].includes(o.zoom) ? o.zoom : 1; V.opt.spd = o.speedVersion === 2 && [1, 2, 3].includes(o.spd) ? o.spd : 1; V.spd = V.opt.spd; V.opt.autoSave = [0, 30, 60].includes(o.autoSave) ? o.autoSave : 60; } } catch (e) {} }
-function saveOpt() { lsSet(LS.opt, JSON.stringify({auto: V.opt.auto, autoSkill: !!V.opt.autoSkill, bossOnlyMove: V.opt.bossOnlyMove !== false, zoom: V.opt.zoom, spd: V.opt.spd, speedVersion: 2, autoSave: V.opt.autoSave})); }
+function loadOpt() { try { const o = JSON.parse(lsGet(LS.opt) || "{}"); if (o && typeof o === "object") { V.opt.auto = typeof o.auto === "boolean" ? o.auto : null; V.opt.autoSkill = o.autoSkill === true; V.opt.autoSlots = o.autoSlots && typeof o.autoSlots === "object" ? o.autoSlots : {}; V.opt.bossOnlyMove = o.bossOnlyMove !== false; V.opt.zoom = [.85, 1, 1.2].includes(o.zoom) ? o.zoom : 1; V.opt.spd = o.speedVersion === 2 && [1, 2, 3].includes(o.spd) ? o.spd : 1; V.spd = V.opt.spd; V.opt.autoSave = [0, 30, 60].includes(o.autoSave) ? o.autoSave : 60; } } catch (e) {} }
+function saveOpt() { lsSet(LS.opt, JSON.stringify({auto: V.opt.auto, autoSkill: !!V.opt.autoSkill, autoSlots: V.opt.autoSlots || {}, bossOnlyMove: V.opt.bossOnlyMove !== false, zoom: V.opt.zoom, spd: V.opt.spd, speedVersion: 2, autoSave: V.opt.autoSave})); }
 const getMeta = () => { try { const o = JSON.parse(lsGet(LS.meta) || "{}"); return {cur: o.cur == null ? -1 : o.cur, rev: o.rev | 0, synced: o.synced | 0}; } catch (e) { return {cur: -1, rev: 0, synced: 0}; } };
 const setMeta = m => lsSet(LS.meta, JSON.stringify(m));
 function readSlot(k) { const s = lsGet(LS.slot(k)); if (!s) return null; try { const o = JSON.parse(s); return o && typeof o.d === "string" ? o : null; } catch (e) { return null; } }
@@ -36897,6 +36927,8 @@ function hud(dt) {
   for (const el of els) {
     const k = el.dataset.k; if (k === "atk") continue; if (k === "dash") { const cdv = P.dashCd > 0; el.classList.toggle("cool", cdv); el.classList.toggle("rdy", !cdv); el.querySelector(".cd").style.setProperty("--p", cdv ? (P.dashCd / Math.max(.1, P.dashMax)) * 100 + "%" : "0%"); setT(el.querySelector(".cdn"), cdv ? P.dashCd.toFixed(1) : ""); continue; } if (k === "pot") { const n = core.potionCount(G); setT("dgn-potn", String(n)); el.classList.toggle("empty", n <= 0 || G.potCd > 0); continue; }
     const i = +k, s = P.sk[i], id = s.id || null, empty = !id, ek = id || (c.sp > 0 ? "~sp" : ""); if (el._id !== ek) { el._id = ek; const mt = id ? meta[id] : null; let kind = "empty"; try { const e = id ? D().effectOf(c, id) : null; if (e && SKI[e.kind]) kind = e.kind; } catch (e) {} el.innerHTML = `<span class="kh">${i + 1}</span>${svgI(SKI[kind])}<span class="nm">${esc(mt ? mt.name : (c.sp > 0 ? "K 배우기" : "비었음"))}</span><span class="cd"></span><span class="cdn"></span>`; }
+    el.dataset.auto = empty ? "" : (G.opt.autoSkill && G.opt.autoSlots?.[id] !== false ? "on" : "off");
+    if (id) el.title = "눌러 사용 · 위로 드래그하면 자동 · 아래로 드래그하면 수동";
     el.classList.toggle("empty", empty); const cool = s.cd > 0 && !empty; el.classList.toggle("cool", cool); el.classList.toggle("rdy", !cool && !empty); if (cool) { el.querySelector(".cd").style.setProperty("--p", (s.cd / Math.max(.1, s.max)) * 100 + "%"); setT(el.querySelector(".cdn"), s.cd >= 10 ? String(Math.ceil(s.cd)) : s.cd.toFixed(1)); } else el.querySelector(".cd").style.setProperty("--p", "0%");
   }
   syncAutoSkill(G);
@@ -36934,10 +36966,10 @@ function partyRows(G) {
 }
 function partyHud(G) {
   const NT = V.net, box = $("#dgn-pty"); if (!box) return; const rows = partyRows(G), host = NT.role === "host";
-  const sig = rows.map(r => [r.idx, r.name, r.k, r.lv, Math.round(r.hp / Math.max(1, r.hpMax) * 20), r.dead ? 1 : 0, r.rdy].join(":")).join("|") + "|" + (host ? 1 : 0) + "|" + (V.pOpen ? 1 : 0) + "|" + (V.pReady ? 1 : 0);
+  const sig = rows.map(r => [r.idx, r.name, r.k, r.lv, Math.round(r.hp / Math.max(1, r.hpMax) * 20), r.dead ? 1 : 0, r.rdy].join(":")).join("|") + "|" + (host ? 1 : 0) + "|" + (V.pOpen ? 1 : 0) + "|" + (V.pReady ? 1 : 0) + "|" + (V.followName || "");
   if (sig !== V.pSig) {
     V.pSig = sig; const cap = NT.cap || 4;
-    box.innerHTML = `<div class="dgn-ph"><b>파티 ${rows.length}/${cap}${V.net?.code ? " · " + esc(V.net.code) : ""}</b><span class="dgn-pbs">${host ? "" : `<button class="dgn-pb${V.pReady ? " on" : ""}" data-act="dgp-ready" aria-pressed="${!!V.pReady}" title="파티장에게 준비됐다고 알려요">${V.pReady ? "✓ " : ""}준비</button>`}<button class="dgn-pb" data-act="dgp-invite" aria-label="친구 초대" title="친구·접속자 초대 (작은 창)">＋</button><button class="dgn-pb" data-act="dgp-chat" aria-label="파티 채팅" title="파티 채팅">채팅</button><button class="dgn-pb" data-act="dgp-fold" aria-label="접기">${V.pOpen === false ? "▾" : "▴"}</button></span></div>` + (V.pOpen === false ? "" : rows.map(r => `<div class="dgn-pr${r.me ? " me" : ""}${r.dead ? " dead" : ""}"><img src="${kSrc(r.k, true)}" alt="" width="30" height="30"><div class="dgn-pm"><div class="dgn-pn" title="${esc(kn(r.k).n)} · ${esc(roleOf(r.k))}"><b>${r.idx + 1}P</b> ${esc(r.name || "")}${r.idx === 0 ? ' <em>★파티장</em>' : ""} <small>Lv ${r.lv | 0}</small>${r.dead ? ' <em class="x">✚ 쓰러짐</em>' : ""}${!r.me && r.idx !== 0 && r.rdy ? ' <em class="ok">✓준비</em>' : ""}</div><div class="dgn-pb2"><i style="width:${Math.round(cl(r.hp / Math.max(1, r.hpMax), 0, 1) * 100)}%"></i></div></div>${host && !r.me ? `<button class="dgn-pk" data-act="dgp-kick" data-n="${r.net}" aria-label="${esc(r.name)} 내보내기" title="내보내기">✕</button>` : ""}</div>`).join(""));
+    box.innerHTML = `<div class="dgn-ph"><b>파티 ${rows.length}/${cap}${V.net?.code ? " · " + esc(V.net.code) : ""}</b><span class="dgn-pbs">${host ? "" : `<button class="dgn-pb${V.pReady ? " on" : ""}" data-act="dgp-ready" aria-pressed="${!!V.pReady}" title="파티장에게 준비됐다고 알려요">${V.pReady ? "✓ " : ""}준비</button>`}<button class="dgn-pb" data-act="dgp-invite" aria-label="친구 초대" title="친구·접속자 초대 (작은 창)">＋</button><button class="dgn-pb" data-act="dgp-chat" aria-label="파티 채팅" title="파티 채팅">채팅</button><button class="dgn-pb" data-act="dgp-fold" aria-label="접기">${V.pOpen === false ? "▾" : "▴"}</button></span></div>` + (V.pOpen === false ? "" : rows.map(r => `<div class="dgn-pr${r.me ? " me" : ""}${r.dead ? " dead" : ""}"><img src="${kSrc(r.k, true)}" alt="" width="30" height="30"><div class="dgn-pm"><div class="dgn-pn" title="${esc(kn(r.k).n)} · ${esc(roleOf(r.k))}"><b>${r.idx + 1}P</b> ${esc(r.name || "")}${r.idx === 0 ? ' <em>★파티장</em>' : ""} <small>Lv ${r.lv | 0}</small>${r.dead ? ' <em class="x">✚ 쓰러짐</em>' : ""}${!r.me && r.idx !== 0 && r.rdy ? ' <em class="ok">✓준비</em>' : ""}</div><div class="dgn-pb2"><i style="width:${Math.round(cl(r.hp / Math.max(1, r.hpMax), 0, 1) * 100)}%"></i></div></div>${!r.me && !r.dead ? `<button type="button" class="dgn-pb dgn-follow-btn${V.followName === r.name ? " on" : ""}" data-act="dgp-follow" data-name="${esc(r.name)}" aria-pressed="${V.followName === r.name}">${V.followName === r.name ? "따라가는 중" : "따라가기"}</button>` : ""}${host && !r.me ? `<button class="dgn-pk" data-act="dgp-kick" data-n="${r.net}" aria-label="${esc(r.name)} 내보내기" title="내보내기">✕</button>` : ""}</div>`).join(""));
   }
   const sp = $("#dgn-spec"), dead = G.over === "dead";
   if (sp) { if (dead) { let left = 0; if (NT.role === "host") left = Math.max(0, core.REVIVE_AUTO - (G.t - (G.hs[0].deadAt || 0))); else left = Math.max(0, core.REVIVE_AUTO - (performance.now() - (NT.deadAt || performance.now())) / 1000); const wipe = G.wipe; sp.hidden = false; const msg = wipe ? "전멸했어요… 잠시 뒤 모두 마을에서 일어나요" : `✚ 쓰러졌어요 — 동료가 곁에 2.5초 서 있으면 일어나요 · 자동 부활 ${Math.ceil(left)}초`; if (sp._m !== msg) { sp._m = msg; sp.innerHTML = `<span>${esc(msg)}</span> <button class="dgn-btn dgn-tiny" data-act="dgn-ask">나가기</button>`; } else { const sx = sp.firstElementChild; if (sx && sx.textContent !== msg) sx.textContent = msg; } } else { sp.hidden = true; sp._m = ""; } }
@@ -36987,7 +37019,25 @@ function bindInput() {
   $("#dgn-sks").addEventListener("pointerdown", e => {
     const b = e.target.closest(".dgn-sk"); if (!b) return; e.preventDefault(); if (V.ui) return; const k = b.dataset.k;
     if (k === "atk") { V.atk = true; try { b.setPointerCapture(e.pointerId); } catch (er) {} const up = () => { V.atk = false; b.removeEventListener("pointerup", up); b.removeEventListener("pointercancel", up); }; b.addEventListener("pointerup", up); b.addEventListener("pointercancel", up); }
-    else if (k === "pot") V.potQ = true; else if (k === "dash") V.dashQ = true; else { const i = +k; V.castQ[i] = 1; b.classList.remove("fl"); void b.offsetWidth; }
+    else if (k === "pot") V.potQ = true;
+    else if (k === "dash") V.dashQ = true;
+    else {
+      const i = +k, x = e.clientX, y = e.clientY, pointer = e.pointerId;
+      b.setPointerCapture(pointer);
+      const stop = event => {
+        if (event.pointerId !== pointer) return;
+        b.removeEventListener("pointerup", stop);
+        b.removeEventListener("pointercancel", stop);
+        b.removeEventListener("lostpointercapture", stop);
+        if (event.type !== "pointerup" || V.ui) return;
+        const dx = event.clientX - x, dy = event.clientY - y;
+        if (Math.abs(dy) >= 18 && Math.abs(dy) >= Math.abs(dx)) setSlotAuto(i, dy < 0);
+        else if (Math.hypot(dx, dy) < 18) V.castQ[i] = 1;
+      };
+      b.addEventListener("pointerup", stop);
+      b.addEventListener("pointercancel", stop);
+      b.addEventListener("lostpointercapture", stop);
+    }
   });
   $("#dgn-use").addEventListener("pointerdown", e => { e.preventDefault(); V.useQ = true; });
   /* 가상 조이스틱: 왼쪽 아래 어디든 눌러서 끌기 */
@@ -37006,6 +37056,20 @@ function syncAutoSkill(G) {
   const move = $("#dgn-auto-move"), bossOnly = G.opt.bossOnlyMove !== false;
   move.setAttribute("aria-pressed", String(bossOnly));
   setT(move, bossOnly ? "이동 스킬: 보스전만" : "이동 스킬: 모든 적");
+}
+function setSlotAuto(slot, enabled) {
+  const G = V.G;
+  if (!G) return;
+  const d = D(), id = d.bar(G.char)[slot];
+  if (!id) return;
+  const slots = G.opt.autoSlots ||= {};
+  if (enabled) delete slots[id]; else slots[id] = false;
+  V.opt.autoSlots = slots;
+  if (enabled) G.opt.autoSkill = V.opt.autoSkill = true;
+  saveOpt();
+  syncAutoSkill(G);
+  if (V.net?.role === "guest") dgnNet.syncAutoSkill();
+  note((d.skillById(id)?.n || "스킬") + (enabled ? " · 자동사용 켜짐" : " · 수동 사용"), "info", null, 1800);
 }
 function toggleAutoSkill() {
   const G = V.G;
@@ -37031,6 +37095,13 @@ function toggleAuto() { const G = V.G; G.opt.auto = !G.opt.auto; V.opt.auto = G.
 function buildInput() {
   if (V.bot && V.G) { V.castQ.fill(0); return core.botInput(V.G); }   // 시험용 자동 플레이(콘솔에서 dgn.V.bot = true)
   const k = V.keys; let mx = (k.d || k.ArrowRight ? 1 : 0) - (k.a || k.ArrowLeft ? 1 : 0), my = (k.s || k.ArrowDown ? 1 : 0) - (k.w || k.ArrowUp ? 1 : 0); mx += V.joy.x; my += V.joy.y;
+  if (V.followName && V.net && V.G) {
+    if (Math.hypot(mx, my) > .15 || V.dashQ) V.followName = "";
+    else {
+      const friend = others(V.G).find(h => h.name === V.followName && !h.dead);
+      if (friend) [mx, my] = core.followDirection(V.G, friend.P);
+    }
+  }
   const inp = {mx, my, aim: worldAim(), atk: V.atk || V.atkKey, cast: V.castQ.map(Boolean), interact: V.useQ, potion: V.potQ, dash: V.dashQ};
   V.castQ.fill(0); V.useQ = false; V.potQ = false; V.dashQ = false; return inp;
 }
@@ -37256,7 +37327,7 @@ function startGame(k, fresh) { const L = loadChar(k, fresh); if (L) beginRun(L.c
 function beginRun(char, extra, o) {
   o = o || {}; const d = D(), k = char.k;
   if (d.setChar) d.setChar(char); else d.char = char;
-  const G = V.G = core.create(char, {auto: V.opt.auto != null ? V.opt.auto : true, autoSkill: !!V.opt.autoSkill, bossOnlyMove: V.opt.bossOnlyMove !== false}); core.unpackExtra(G, extra); G.autoTravel = false; V.sess = {t0: performance.now(), played: false}; V.bestSeen = char.floorBest | 0; V.lastSig = ""; V.autoT = 0;
+  const G = V.G = core.create(char, {auto: V.opt.auto != null ? V.opt.auto : true, autoSkill: !!V.opt.autoSkill, autoSlots: V.opt.autoSlots || {}, bossOnlyMove: V.opt.bossOnlyMove !== false}); core.unpackExtra(G, extra); G.autoTravel = false; V.sess = {t0: performance.now(), played: false}; V.bestSeen = char.floorBest | 0; V.lastSig = ""; V.autoT = 0;
   G.opt.auto = V.opt.auto != null ? V.opt.auto : true; V.camInit = false;
   let f = 1; if (extra && extra.last && core.isOpen(char, extra.last)) f = extra.last; if (G.x.last) f = core.isOpen(char, G.x.last) ? G.x.last : 1; if (o.floor) f = o.floor;
   const face = $("#dgn-face"); face.style.backgroundImage = `url(${kSrc(k, true)})`;
@@ -37268,7 +37339,7 @@ function leave() {
   const G = V.G; if (V.net) { try { dgnNet.leave(); } catch (e) {} }
   if (G) { saveNow("exit", true); rankSubmit(true); const real = (performance.now() - V.sess.t0) / 1000, secs = G.playT;   /* 4차: 판 시간은 게임 시간 기준(배속 반영) — 너무 짧게 들어갔다 나온 건 실시간도 20초는 넘어야 */ if (V.sess.played && secs >= 60 && real >= 20) grantRp(false, G.char.floorBest | 0, secs); gameEnd(false); }
   try { if (D() && D().ui && D().ui.close) D().ui.close(); } catch (e) {}
-  V.G = null; V.ui = null; V.tr = null; V.menuOpen = false; V.net = null; V.pReady = false; try { for (const id of ["#dgp-sheet", "#dgp-say", "#dgp-hl"]) $(id)?.remove(); } catch (e) {} try { $("#dgn-pty").innerHTML = ""; $("#dgn-spec").hidden = true; } catch (e) {} visitorTag(); $("#dgn-hud").hidden = true; V.keys = {}; V.atk = false; V.chunks.clear(); try { $("#dgn-conf").hidden = true; V._conf = null; for (const k in OVS) $("#" + OVS[k]).hidden = true; } catch (e) {}
+  V.G = null; V.ui = null; V.tr = null; V.menuOpen = false; V.net = null; V.followName = ""; V.pReady = false; try { for (const id of ["#dgp-sheet", "#dgp-say", "#dgp-hl"]) $(id)?.remove(); } catch (e) {} try { $("#dgn-pty").innerHTML = ""; $("#dgn-spec").hidden = true; } catch (e) {} visitorTag(); $("#dgn-hud").hidden = true; V.keys = {}; V.atk = false; V.chunks.clear(); try { $("#dgn-conf").hidden = true; V._conf = null; for (const k in OVS) $("#" + OVS[k]).hidden = true; } catch (e) {}
 }
 Object.assign(A, {
   "dgn-open": () => open(),
@@ -37297,6 +37368,13 @@ Object.assign(A, {
     if (!code || V.net.kicked) return;
     A["dgn-exit"]();
     dgnNet.joinByCode(code, {k});
+  },
+  "dgp-follow": b => {
+    if (!V.net || !V.G || V.G.over) return;
+    const name = b.dataset.name;
+    V.followName = V.followName === name ? "" : name;
+    partyHud(V.G);
+    note(V.followName ? V.followName + " 님 따라가는 중" : "따라가기를 멈췄어요", "info", null, 1800);
   },
   "dgp-chat": () => {
     const old = $("#dgp-say");
@@ -37612,7 +37690,7 @@ function hostSay(S, idx, message) {
 function hostMsg(S, m, from) {
   if (!m || typeof m !== "object") return; const G = S.G; if (!G) return;
   if (m.t === "bg") { const r = bigRecv(S, from, m); if (r) hostBig(S, from, r); return; }
-  const h = S.byNet[from]; if (m.t === "nextFloor" && h && m.floor === G.floor) { core.nextFloorNow(G, h); return; } if (m.t === "rope" && h && m.floor === G.floor) { core.ropeFollow(G, h); return; } if (m.t === "autoSkill" && h) { h.autoSkill = m.on === true; h.bossOnlyMove = m.bossOnlyMove !== false; return; } if (m.t === "bossChoice" && h && m.floor === G.floor) { core.bossChoice(G, h, !!m.wait); return; } if (m.t === "say" && h) { hostSay(S, h.idx, m.s); return; } if (m.t === "i") { if (h) hostInput(S, h, m); return; }
+  const h = S.byNet[from]; if (m.t === "nextFloor" && h && m.floor === G.floor) { core.nextFloorNow(G, h); return; } if (m.t === "rope" && h && m.floor === G.floor) { core.ropeFollow(G, h); return; } if (m.t === "autoSkill" && h) { h.autoSkill = m.on === true; h.autoMask = Number.isInteger(m.am) ? m.am & 255 : 255; h.bossOnlyMove = m.bossOnlyMove !== false; return; } if (m.t === "bossChoice" && h && m.floor === G.floor) { core.bossChoice(G, h, !!m.wait); return; } if (m.t === "say" && h) { hostSay(S, h.idx, m.s); return; } if (m.t === "i") { if (h) hostInput(S, h, m); return; }
   if (m.t === "ack" && h) { core.ackDrop(G, m.id | 0, !!m.ok); return; }
   if (m.t === "rdy") { S.ready[from] = m.v ? 1 : 0; sendRoster(S); return; }
   if (m.t === "pong") return;
@@ -37645,7 +37723,7 @@ function hostInput(S, h, m) {
   h.iseq = m.n | 0;   /* A13-6/7: 입력 번호(스냅샷이 되돌려 줌) · 강제 번호 — 손님이 아직 모르는 옛 위치 보고는 무시한다(방장이 영웅을 직접 옮긴 뒤 옛 좌표로 걸어 돌아가던 것) */
   if (Number.isFinite(x) && Number.isFinite(y) && x > 0 && y > 0 && x < M.W * TILE && y < M.H * TILE && (m.fe | 0) >= (h.fe | 0)) h.rp = {x, y};
   const q = h.inp || (h.inp = idle()), f = m.f | 0, c = m.c | 0, e = m.e | 0;
-  q.mx = cl(+m.mx || 0, -1, 1); q.my = cl(+m.my || 0, -1, 1); q.atk = !!(f & 1); h.auto = !!(f & 2); h.autoSkill = !!(f & 16); h.bossOnlyMove = !(f & 32); q.aim = (f & 8) && Number.isFinite(+m.ax) && Number.isFinite(+m.ay) ? {x: +m.ax, y: +m.ay} : null;
+  q.mx = cl(+m.mx || 0, -1, 1); q.my = cl(+m.my || 0, -1, 1); q.atk = !!(f & 1); h.auto = !!(f & 2); h.autoSkill = !!(f & 16); h.autoMask = Number.isInteger(m.am) ? m.am & 255 : 255; h.bossOnlyMove = !(f & 32); q.aim = (f & 8) && Number.isFinite(+m.ax) && Number.isFinite(+m.ay) ? {x: +m.ax, y: +m.ay} : null;
   for (let i = 0; i < 8; i++) if (c & (1 << i)) q.cast[i] = true; if (e & 1) q.interact = true; if (e & 2) q.potion = true; if (e & 4) q.dash = true;
   if (Array.isArray(m.vw) && m.vw.length === 2) h.view = {hw: cl(+m.vw[0] || 420, 200, 900), hh: cl(+m.vw[1] || 280, 150, 700)};
 }
@@ -37785,10 +37863,13 @@ function guestFrame(dt, inp, locked) {
   // 장비·스킬이 바뀌면 방장 사본도 갱신
   S.gearT = (S.gearT || 0) + dt; if (S.gearT > 1.2 && !V.menuOpen) { S.gearT = 0; const sg = sigOfChar(G.char); if (sg && sg !== S.sentGear) { S.sentGear = sg; bigSend(S, 1, "g", D().save(G.char)); } }
 }
+function skillAutoMask(G) {
+  return D().bar(G.char).reduce((mask, id, i) => mask | (id && G.opt.autoSlots?.[id] !== false ? 1 << i : 0), 0);
+}
 function sendInput(S, inp) {
   const G = S.G, P = G.P; const vw = [r1(V.w / (2 * V.zoom)), r1(V.h / (2 * V.zoom))], vws = vw[0] + "," + vw[1];
   S.seq = (S.seq + 1) | 0; S.hist.set(S.seq, {x: P.x, y: P.y}); if (S.hist.size > 240) S.hist.delete(S.hist.keys().next().value);
-  const m = {t: "i", n: S.seq, fl: G.floor, fe: S.fe | 0, x: r1(P.x * 10) / 10, y: r1(P.y * 10) / 10, mx: r2(inp.mx || 0), my: r2(inp.my || 0), f: (inp.atk ? 1 : 0) | (G.opt.auto ? 2 : 0) | (G.opt.autoSkill ? 16 : 0) | (G.opt.bossOnlyMove === false ? 32 : 0) | (inp.aim ? 8 : 0), c: S.pend.c, e: S.pend.e};
+  const m = {t: "i", n: S.seq, fl: G.floor, fe: S.fe | 0, x: r1(P.x * 10) / 10, y: r1(P.y * 10) / 10, mx: r2(inp.mx || 0), my: r2(inp.my || 0), f: (inp.atk ? 1 : 0) | (G.opt.auto ? 2 : 0) | (G.opt.autoSkill ? 16 : 0) | (G.opt.bossOnlyMove === false ? 32 : 0) | (inp.aim ? 8 : 0), am: skillAutoMask(G), c: S.pend.c, e: S.pend.e};
   if (inp.aim) { m.ax = r1(inp.aim.x); m.ay = r1(inp.aim.y); } if (vws !== S.vwSent) { m.vw = vw; S.vwSent = vws; }
   S.pend.c = 0; S.pend.e = 0; try { S.sess.send(m); } catch (e) {}
 }
@@ -38024,7 +38105,7 @@ return {N, ADV, S: () => N.S, active: () => !!N.S, visitor, soloContinue, role: 
       bigSend(S, 1, "g", D().save(S.G.char));
       S.sentGear = gear;
     }
-    safe(() => S.sess.send({t: "autoSkill", on: !!S.G.opt.autoSkill, bossOnlyMove: S.G.opt.bossOnlyMove !== false}));
+    safe(() => S.sess.send({t: "autoSkill", on: !!S.G.opt.autoSkill, am: skillAutoMask(S.G), bossOnlyMove: S.G.opt.bossOnlyMove !== false}));
   },
   bossChoice(wait) {
     const S = N.S;
