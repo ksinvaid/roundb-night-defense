@@ -73,7 +73,8 @@
       <header><strong>${name}</strong><span data-hud></span><button type="button" data-action="exit">로비로</button></header>
       <div class="brawl-controls">
         <button type="button" data-action="solo">AI와 플레이</button><button type="button" data-action="host">온라인 방 만들기</button>
-        <input data-code maxlength="6" aria-label="초대 코드" placeholder="초대 코드"><button type="button" data-action="join">참가</button>
+        <label class="arena-public"><input type="checkbox" data-public> 공개방</label>
+      <input data-code maxlength="6" aria-label="초대 코드" placeholder="초대 코드"><button type="button" data-action="join">참가</button>
         <button type="button" data-action="start" hidden>온라인 시작</button>
       </div>
       <p data-message role="status">${fps?"5대5 · 20점 선승 · 3분":"2인 5팀 · 마지막까지 생존 · 2분"}</p>
@@ -355,7 +356,7 @@
           state=nextState;draw();
         }
       });
-      if(role==="host")room.host();else room.join($("[data-code]").value);
+      if(role==="host")room.host({listed: $("[data-public]").checked});else room.join($("[data-code]").value);
     }
     canvas.addEventListener("pointerdown",event=>{
       if(!state||state.done)return;
@@ -411,7 +412,8 @@
       send();
     },true);
     window.addEventListener("blur",()=>{keys.clear();fire=false;if(dialog.open)send();});
-    dialog.addEventListener("click",event=>{
+    window.roundbRooms?.register(id, code => { dialog.showScreen(); $("[data-code]").value = code; connect("guest"); });
+  dialog.addEventListener("click",event=>{
       const key=event.target.closest("button")?.dataset.action;
       if(key==="exit")dialog.close();
       else if(key==="solo"){disconnect();begin();}

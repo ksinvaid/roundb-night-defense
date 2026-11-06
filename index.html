@@ -3831,6 +3831,10 @@ html[data-lowfx="1"]{scroll-behavior:auto}
       </header>
       <!-- 생활 메뉴 = 이 게임의 존재 이유(공간 홍보). 카드마다 data-life="lunch|gallery|road" + 빈 .lb-life-extra 자리(홍보 링크 담당이 '링크' 버튼을 붙인다) — lobby.js 가 채운다 -->
       <div class="lb-life" id="lb-life" role="group" aria-label="라운드비 공간 바로 가기: 오늘 뭐 먹지, 공간 둘러보기, 로드뷰 투어"></div>
+      <div class="lb-room-strip" aria-label="서버 매칭과 공개방">
+        <button type="button" class="btn btn-sm" id="lb-match-status">서버 매칭 현황</button>
+        <button type="button" class="btn btn-sm" id="lb-room-list">전체 방 보기</button>
+      </div>
       <div class="lb-map-layout">
         <div class="lb-game-rail" role="group" aria-label="게임 바로가기 1">
           <button type="button" class="lb-game-shortcut" data-game-spot="3f-storage"><strong>던전 인 라운드비</strong><small>기사와 함께 던전 150층 도전</small></button>
@@ -41790,8 +41794,10 @@ try { const kp = window.knx && knx.start && knx.start(); if (kp && kp.catch) kp.
 </script>
 
 <link rel="stylesheet" href="brawl.css?v=full3">
-<script src="arena-room.js?v=full3"></script>
-<script src="brawl.js?v=full3"></script>
-<script src="blood.js?v=full3"></script>
+<link rel="stylesheet" href="server-rooms.css?v=1">
+<script src="server-rooms.js?v=1"></script>
+<script src="arena-room.js?v=rooms1"></script>
+<script src="brawl.js?v=rooms1"></script>
+<script src="blood.js?v=rooms1"></script>
 <link rel="stylesheet" href="shooters.css?v=full3">
-<script src="shooters.js?v=full3"></script>
+<script src="shooters.js?v=rooms1"></script>

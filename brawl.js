@@ -14,6 +14,7 @@
       <button type="button" data-close>로비로</button></header>
     <div class="brawl-controls"><button type="button" data-room="solo">혼자 하기</button>
       <button type="button" data-room="host">방 만들기</button>
+      <label class="arena-public"><input type="checkbox" data-public> 공개방</label>
       <input data-code maxlength="6" placeholder="초대 코드" aria-label="초대 코드">
       <button type="button" data-room="join">참가</button>
       <button type="button" data-room="start" hidden>온라인 시작</button></div>
@@ -457,7 +458,7 @@
         dialog.querySelector("[data-restart]").hidden = true;
       }
     });
-    if (role === "host") room.host();
+    if (role === "host") room.host({listed: dialog.querySelector("[data-public]").checked});
     else room.join(dialog.querySelector("[data-code]").value);
   }
   canvas.addEventListener("pointerdown", event => {
@@ -487,6 +488,7 @@
     if (pressed.delete(event.key.toLowerCase()) && role === "guest") room?.input(direction());
   }, true);
   window.addEventListener("blur", () => { pressed.clear(); if (role === "guest") room?.input(direction()); });
+  window.roundbRooms?.register("brawl", code => { dialog.showScreen(); dialog.querySelector("[data-code]").value = code; connect("guest"); });
   dialog.addEventListener("click", event => {
     const button = event.target.closest("button");
     if (!button) return;

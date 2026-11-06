@@ -1,7 +1,14 @@
 (() => {
   window.createArenaRoom = function createArenaRoom(mode, callbacks) {
     const peers = new Map();
-    let peer, guest, timeout, code, role = "", ended = false;
+    let peer, guest, timeout, code, role = "", ended = false, listed = false;
+    const advertise = () => {
+      if (listed && code) window.roundbRooms?.advertise(mode, code, peers.size + 1);
+    };
+    const unlist = () => {
+      if (listed && code) window.roundbRooms?.unlist(mode, code);
+      listed = false;
+    };
     const roomId = value => "roundb-arena-v1-" + mode + "-" + value;
     const send = (connection, message) => {
       if (connection?.open) connection.send(message);
@@ -9,6 +16,7 @@
     function close() {
       if (ended) return;
       ended = true;
+      unlist();
       clearTimeout(timeout);
       peer?.destroy();
       peers.clear();
@@ -27,14 +35,15 @@
       return peer;
     }
     return {
-      async host() {
+      async host(options = {}) {
+        listed = options.listed === true;
         role = "host";
         try { await loadPeerJS(); } catch { return fail("온라인 연결을 불러오지 못했어요."); }
         if (ended) return;
         code = Array.from(crypto.getRandomValues(new Uint8Array(6)), value => "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[value % 32]).join("");
         const host = startPeer(roomId(code));
         if (!host) return;
-        host.on("open", () => { clearTimeout(timeout); callbacks.ready(0, code); });
+        host.on("open", () => { clearTimeout(timeout); callbacks.ready(0, code); advertise(); });
         host.on("connection", connection => {
           let slot = -1;
           connection.on("open", () => {
@@ -42,13 +51,13 @@
             if (slot < 0) { send(connection,{type:"full"}); setTimeout(() => connection.close(),500); return; }
             peers.set(slot,connection);
             send(connection,{type:"welcome",slot});
-            callbacks.join(slot);
+            callbacks.join(slot); advertise();
           });
           connection.on("data", message => {
             if (slot >= 1 && message?.type === "input") callbacks.input(slot,message.value);
           });
           connection.on("close", () => {
-            if (slot >= 1 && peers.get(slot) === connection) { peers.delete(slot); callbacks.leave(slot); }
+            if (slot >= 1 && peers.get(slot) === connection) { peers.delete(slot); callbacks.leave(slot); advertise(); }
           });
         });
       },
@@ -73,7 +82,7 @@
         });
       },
       input(value) { if (role === "guest") send(guest,{type:"input",value}); },
-      publish(value) { if (role === "host") for (const connection of peers.values()) send(connection,{type:"state",value}); },
+      publish(value) { if (role === "host") { unlist(); for (const connection of peers.values()) send(connection,{type:"state",value}); } },
       close
     };
   };

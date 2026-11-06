@@ -1,0 +1,14 @@
+.lb-room-strip { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+.lb-room-strip button { min-height: 38px; }
+.lb-server-dialog { width: min(540px, calc(100% - 24px)); max-height: 85dvh; overflow: auto; padding: 16px; border: 1px solid #b99655; border-radius: 14px; background: #191e37; color: #fff5dc; }
+.lb-server-dialog::backdrop { background: #080b19cc; }
+.lb-server-dialog header, .lb-server-dialog nav, .lb-server-list li { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.lb-server-dialog h2 { margin: 0; font-size: 20px; }
+.lb-server-dialog nav { justify-content: flex-start; flex-wrap: wrap; margin-top: 12px; }
+.lb-server-dialog [aria-pressed="true"] { background: #f6cd68; color: #181526; }
+.lb-server-status { margin: 12px 0 8px; color: #e5e6fa; font-size: 13px; }
+.lb-server-list { display: grid; gap: 6px; padding: 0; margin: 0; }
+.lb-server-list li { list-style: none; background: #272e50; border-radius: 8px; padding: 8px 10px; }
+.lb-server-list small { display: block; margin-top: 2px; color: #e1e4f7; }
+.arena-public { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.arena-public input { min-height: auto; }

@@ -20,6 +20,7 @@
     <div class="brawl-controls">
       <select data-rule aria-label="경기 방식"><option value="hour">무한 생산 · 1시간</option><option value="elim">본진 섬멸전</option></select>
       <button type="button" data-play>혼자 하기</button><button type="button" data-host>방 만들기</button>
+      <label class="arena-public"><input type="checkbox" data-public> 공개방</label>
       <input data-code maxlength="6" placeholder="초대 코드" aria-label="초대 코드">
       <button type="button" data-join>참가</button><button type="button" data-start hidden>온라인 시작</button>
     </div>
@@ -281,9 +282,10 @@
         draw();
       }
     });
-    if(role==="host")room.host();
+    if(role==="host")room.host({listed: $("[data-public]").checked});
     else room.join($("[data-code]").value);
   }
+  window.roundbRooms?.register("blood", code => { dialog.showScreen(); $("[data-code]").value = code; connect("guest"); });
   dialog.addEventListener("click",event=>{
     const button=event.target.closest("button");
     if(!button)return;
