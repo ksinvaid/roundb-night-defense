@@ -78,3 +78,26 @@
     };
   };
 })();
+
+// A game owns the viewport while its screen is active.
+window.roundbArenaScreen = function (screen) {
+  screen.hidden = true;
+  screen.setAttribute("aria-label", "게임 화면");
+  screen.tabIndex = -1;
+  let previousFocus;
+  Object.defineProperty(screen, "open", {get: () => !screen.hidden});
+  screen.showScreen = () => {
+    if (screen.open) return;
+    previousFocus = document.activeElement;
+    screen.hidden = false;
+    document.body.classList.add("rb-arena-active");
+    screen.focus();
+  };
+  screen.close = () => {
+    if (!screen.open) return;
+    screen.hidden = true;
+    document.body.classList.remove("rb-arena-active");
+    screen.dispatchEvent(new Event("close"));
+    previousFocus?.focus();
+  };
+};

@@ -12,8 +12,9 @@
   const bases = Array.from({length:10}, (_,i) => ({
     x:190+(i%5)*480, y:i<5?145:1355
   }));
-  const dialog = document.createElement("dialog");
+  const dialog = document.createElement("section");
   dialog.className = "brawl blood";
+  window.roundbArenaScreen(dialog);
   dialog.innerHTML = `
     <header><strong>진화 블러드</strong><span data-hud></span><button type="button" data-exit>로비로</button></header>
     <div class="brawl-controls">
@@ -294,6 +295,6 @@
     if(button.dataset.command)command=button.dataset.command;
   });
   dialog.addEventListener("close",disconnect);
-  games.register({id:"blood",name:"진화 블러드",tag:"드론 지휘 · 처치로 진화하는 자동 생산 전투",kind:"main",open:()=>dialog.showModal()});
+  games.register({id:"blood",name:"진화 블러드",tag:"드론 지휘 · 처치로 진화하는 자동 생산 전투",kind:"main",open:()=>dialog.showScreen()});
   document.querySelector("[data-open-blood]").addEventListener("click",()=>games.open("blood"));
 })();

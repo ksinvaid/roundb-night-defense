@@ -1,13 +1,3 @@
-.brawl {
-  width: min(1450px, 96vw);
-  max-height: 96dvh;
-  padding: 12px;
-  color: #fff8e7;
-  background: #161b36;
-  border: 2px solid #b99852;
-  border-radius: 14px;
-}
-.brawl::backdrop { background: #080b19db; }
 .brawl header, .brawl-controls, .brawl-result {
   display: flex;
   align-items: center;
@@ -51,3 +41,19 @@
 .brawl-result { padding: 8px; background: #39304a; }
 .brawl-result[hidden] { display: none; }
 .lb-brawl-launch { flex: none; align-self: flex-start; }
+
+body.rb-arena-active { overflow: hidden; }
+section.brawl {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  padding: 12px;
+  color: #fff8e7;
+  background: #161b36;
+}
+section.brawl[hidden] { display: none; }
+section.brawl canvas { flex: 1 0 40dvh; height: auto; min-height: 0; }

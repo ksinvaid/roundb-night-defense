@@ -3,11 +3,12 @@
   const games = window.knx?.games;
   if (!lobby || !games) return;
   const floors = ["3f", "4f"];
-  const duration = 90;
-  const worldScale = 1.25;
+  const duration = 180;
+  const worldScale = 1.8;
   const strikeRange = 115;
-  const dialog = document.createElement("dialog");
+  const dialog = document.createElement("section");
   dialog.className = "brawl";
+  window.roundbArenaScreen(dialog);
   dialog.innerHTML = `
     <header><strong>라운드비 대난투</strong><span data-status></span>
       <button type="button" data-close>로비로</button></header>
@@ -82,14 +83,14 @@
       const floor = floors[Math.floor(id / 5)];
       const point = spawn(floor, id % 5);
       return {id, image, name:KNIGHTS[id].n, floor, x:point.x, y:point.y,
-        hp:145, cooldown:0, travel:0, flash:0, dash:0, route:[], repath:0,
+        hp:260, cooldown:0, travel:0, flash:0, dash:0, route:[], repath:0,
         skills:[0,0,0,0], boost:0, shield:0, stun:0, kills:0, summon:null, orbit:null};
     });
     player = fighters[selected];
     for (const input of remote.values()) Object.assign(input,{x:0,y:0,attack:false,route:null});
     result.hidden = true;
     dialog.querySelector("[data-restart]").hidden = false;
-    if (!dialog.open) dialog.showModal();
+    if (!dialog.open) dialog.showScreen();
     frame = requestAnimationFrame(tick);
   }
   function move(actor, x, y, speed, dt) {
@@ -108,7 +109,7 @@
     const target = enemies(actor,basic.range || strikeRange)[0];
     if (!target) return;
     actor.cooldown = 1 / (basic.rate || 1.5);
-    flash(actor,basic.range || strikeRange,"#ffd26c",target);
+    flash(actor,basic.range || strikeRange,"#ffd26c",target,basic.kind);
     damage(actor,target,Math.round(10*(basic.mul || 1)));
   }
   function enemies(actor,range) {
@@ -116,9 +117,9 @@
     return fighters.filter(other => other !== actor && other.hp && other.floor === actor.floor &&
       distance(other)<=range && hasClearStrike(actor,other)).sort((a,b)=>distance(a)-distance(b));
   }
-  function flash(actor,range,color,target) {
+  function flash(actor,range,color,target,kind) {
     actor.flash = .3;
-    actor.effect = {range,color,x:target?.x,y:target?.y};
+    actor.effect = {range,color,kind,x:target?.x,y:target?.y};
   }
   function damage(actor,target,amount) {
     const protection = target.shield > 0 ? .65 : 1;
@@ -148,7 +149,7 @@
       return;
     }
     if (support) {
-      if (effect.heal || effect.kind==="heal") actor.hp=Math.min(145,actor.hp+24);
+      if (effect.heal || effect.kind==="heal") actor.hp=Math.min(260,actor.hp+24);
       actor.shield = effect.shield || effect.kind==="shield" ? 4 : actor.shield;
       actor.boost = 5;
     }
@@ -307,24 +308,49 @@
         ctx.strokeStyle="#c7a6ff"; ctx.lineWidth=2;
         ctx.beginPath(); ctx.arc(x,y,actor.orbit.range*scale/worldScale,0,Math.PI*2); ctx.stroke();
       }
-      if (actor.flash > 0) {
-        ctx.strokeStyle = actor.effect?.color || "#fff087";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        if (actor.effect?.x != null) {
-          ctx.moveTo(x,y-15);
-          ctx.lineTo(left+(actor.effect.x/worldScale-map.view[0])*scale,top+(actor.effect.y/worldScale-map.view[1])*scale-15);
-        } else ctx.arc(x,y,(actor.effect?.range || strikeRange)*scale/worldScale,0,Math.PI*2);
-        ctx.stroke();
-      }
+      const effect = actor.effect;
+      const dx = effect?.x == null ? 1 : effect.x - actor.x;
+      const dy = effect?.y == null ? 0 : effect.y - actor.y;
+      const facing = Math.atan2(dy, dx);
+      const attack = Math.min(1, actor.flash * 5);
       if (actor.image.complete && actor.image.naturalWidth) {
         const w = size * actor.image.naturalWidth / actor.image.naturalHeight;
-        ctx.drawImage(actor.image, x-w/2, y-size, w, size);
+        ctx.save();
+        ctx.translate(x + Math.cos(facing) * attack * 9, y + Math.sin(facing) * attack * 9);
+        ctx.rotate(Math.cos(facing) * attack * .22);
+        ctx.drawImage(actor.image, -w/2, -size, w, size);
+        ctx.restore();
+      }
+      if (attack > 0) {
+        const reach = effect?.x == null ? size : Math.max(size * .7, Math.hypot(dx, dy) * scale / worldScale);
+        ctx.save();
+        ctx.translate(x, y - size * .42);
+        ctx.rotate(facing);
+        ctx.globalAlpha = attack;
+        ctx.strokeStyle = effect?.color || "#fff087";
+        ctx.shadowColor = ctx.strokeStyle;
+        ctx.shadowBlur = 14;
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(reach * .25, -size * .35);
+        if (effect?.kind === "proj") {
+          ctx.moveTo(reach * (1 - attack), 0);
+          ctx.lineTo(reach, 0);
+        } else {
+          ctx.quadraticCurveTo(reach * .82, -size * .48, reach, size * .15);
+        }
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = ctx.strokeStyle;
+        for (let i = 0; i < 5; i++) {
+          ctx.fillRect(reach * (.7 + i * .09) + (1 - attack) * 18, (i - 2) * 6, 3, 2);
+        }
+        ctx.restore();
       }
       ctx.fillStyle = "#20213a";
       ctx.fillRect(x-18, y+2, 36, 5);
       ctx.fillStyle = actor === player ? "#ffe06b" : "#e85c76";
-      ctx.fillRect(x-18, y+2, 36 * actor.hp / 145, 5);
+      ctx.fillRect(x-18, y+2, 36 * actor.hp / 260, 5);
       ctx.font = "bold 11px system-ui";
       ctx.textAlign = "center";
       ctx.lineWidth = 3;
@@ -344,7 +370,7 @@
     const alive = fighters.filter(actor => actor.hp);
     const text = hud(player,alive.length);
     if (text !== lastStatus) { status.textContent = text; lastStatus = text; }
-    const done = (!role && !player.hp) || alive.length <= 1 || elapsed >= duration;
+    const done = alive.length <= 1 || elapsed >= duration;
     if (role === "host" && (done || now-lastSend >= 70)) {
       lastSend = now;
       room.publish({roundId,elapsed,done,humans:remote.size+1,fighters:fighters.map(({x,y,hp,floor,flash,effect,skills,kills,summon,orbit,place})=>({x,y,hp,floor,flash,effect,skills,kills,summon,orbit,place}))});
@@ -383,7 +409,7 @@
       result.hidden = false;
   }
   function lobbyMenu() {
-    if (!dialog.open) dialog.showModal();
+    if (!dialog.open) dialog.showScreen();
     roomStatus.textContent = "혼자 시작하거나 초대 코드로 함께 플레이하세요.";
   }
   function disconnect() {

@@ -66,8 +66,9 @@
   }
   const portraits=Array.from({length:10},(_,i)=>{const img=new Image();img.src=kSrc(i,false);return img;});
   function create(id,name,fps) {
-    const dialog=document.createElement("dialog");
+    const dialog=document.createElement("section");
     dialog.className="brawl rb-shooter";
+    window.roundbArenaScreen(dialog);
     dialog.innerHTML=`
       <header><strong>${name}</strong><span data-hud></span><button type="button" data-action="exit">로비로</button></header>
       <div class="brawl-controls">
@@ -421,7 +422,7 @@
       else if(["reload","frag","smoke","flash"].includes(key))send(key);
     });
     dialog.addEventListener("close",disconnect);
-    games.register({id,name,tag:fps?"라운드비 4층 5대5 FPS":"손전등과 전리품 · 2인 5팀",kind:"main",open:()=>dialog.showModal()});
+    games.register({id,name,tag:fps?"라운드비 4층 5대5 FPS":"손전등과 전리품 · 2인 5팀",kind:"main",open:()=>dialog.showScreen()});
   }
   create("night-beam","암전 순찰",false);
   create("office-strike","라운드비 돌입전",true);

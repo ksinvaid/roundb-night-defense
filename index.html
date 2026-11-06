@@ -3332,6 +3332,12 @@ html.dgn-party-on .dgn-notes{top:calc(74px + 150px + env(safe-area-inset-top,0px
   html.dgn-touch .dgn-sk.dash{grid-column:3;grid-row:2;width:52px;height:52px}
   html.dgn-touch .dgn-sk.atk{grid-column:4;grid-row:2;width:68px;height:68px}
 }
+html.dgn-touch .dgn-sks{grid-template-columns:repeat(4,auto);gap:5px}
+html.dgn-touch .dgn-sks .dgn-sk{grid-column:auto;grid-row:auto;width:clamp(42px,12vw,55px);height:clamp(42px,12vw,55px)}
+html.dgn-touch .dgn-sks .atk{grid-column:4;grid-row:3}
+html.dgn-touch .dgn-sks .dash{grid-column:1;grid-row:3}
+html.dgn-touch .dgn-sks .pot{grid-column:2;grid-row:3}
+html.dgn-touch .dgn-use{bottom:calc(190px + env(safe-area-inset-bottom,0px))}
 /* ===DGN_CSS_END=== */
 /* ===== 문의·게임평 2차: 공지 · 자동 비공개 (접두사 brd) — 색만으로 구분하지 않고 아이콘+글자, 테두리 모양(실선/점선)을 함께 씀 ===== */
 .brd-ic{width:14px;height:14px;flex:none;vertical-align:-2px}
@@ -32007,8 +32013,8 @@ const D = dgr._d = dgr._d || {};
 /* 액티브: A(id,이름,설명,쿨다운(초),필요 레벨,랭크당 SP,효과(1랭크),랭크당 증가분,선행[id,랭크])
    패시브: P(id,이름,설명,필요 레벨,랭크당 SP,능력치(랭크당 증가),선행)
    효과 단위: 거리 px(캐릭터 반지름 ≈16 기준), 시간 초. 배율(mul)은 공격력 × 배율. */
-const A = (id, n, d, cd, lv, sp, eff, up, req) => ({id, n, d, type: "active", max: 5, cost: sp, cd, reqLv: lv, req: req ? {id: req[0], rank: req[1]} : null, effect: eff, up: up || {}});
-const P = (id, n, d, lv, sp, mods, req) => ({id, n, d, type: "passive", max: 5, cost: sp, cd: 0, reqLv: lv, req: req ? {id: req[0], rank: req[1]} : null, effect: null, mods});
+const A = (id, n, d, cd, lv, sp, eff, up, req) => ({id, n, d, type: "active", max: 10, cost: sp, cd, reqLv: lv, req: req ? {id: req[0], rank: req[1]} : null, effect: eff, up: up || {}});
+const P = (id, n, d, lv, sp, mods, req) => ({id, n, d, type: "passive", max: 10, cost: sp, cd: 0, reqLv: lv, req: req ? {id: req[0], rank: req[1]} : null, effect: null, mods});
 
 D.K = [
   {i: 0, k: "seoa", n: "서아", cls: "근위검사", role: "균형형 근접", tag: "검 하나로 앞장서는 기사단장. 베기·돌격·명령으로 전장을 이끈다.",
@@ -32794,8 +32800,8 @@ dgr.emit = emit;
 const touch = c => { if (c) c._sd = 1; return c; };
 dgr.touch = touch;
 /* 5차: 스킬 포인트 — 시작 5, 레벨업마다 2~40레벨 5점(옛: 시작 2·레벨당 1+10레벨마다 +1), 41~100레벨 2점, 101레벨 이상 10레벨마다 1점. 합계 Lv40 = 200 (기사 한 명 스킬 전부 5랭크 = 195) */
-const spGain = l => l <= 40 ? 5 : l <= 100 ? 2 : (l % 10 === 0 ? 1 : 0);
-function spEarned(lv, start) { lv = Math.max(1, lv | 0); let n = (start == null ? CFG.startSp : start); n += 5 * (Math.min(lv, 40) - 1); if (lv > 40) n += 2 * (Math.min(lv, 100) - 40); if (lv > 100) n += Math.floor(lv / 10) - 10; return n; }
+const spGain = l => l <= 40 ? 5 : l <= 100 ? 2 : 1;
+function spEarned(lv, start) { lv = Math.max(1, lv | 0); let n = (start == null ? CFG.startSp : start); n += 5 * (Math.min(lv, 40) - 1); if (lv > 40) n += 2 * (Math.min(lv, 100) - 40); if (lv > 100) n += lv - 100; return n; }
 dgr.spGain = spGain;
 function spSpent(c) { let n = 0; for (const id in c.skills) { const s = SKILLS[id]; if (s) n += s.def.cost * c.skills[id]; } return n; }
 dgr.spEarned = spEarned; dgr.spSpent = spSpent;
@@ -32840,13 +32846,13 @@ dgr.resetSkills = function (c, cost) {
 };
 function fillBar(c) {
   const act = KN[c.k].skills.filter(s => s.type === "active");
-  const bar = c.bar && c.bar.length === 4 ? c.bar : [null, null, null, null];
-  for (let i = 0; i < 4; i++) { const id = bar[i]; if (id && (SKILLS[id] && SKILLS[id].k === c.k && dgr.skillRank(c, id) > 0)) continue; bar[i] = null; }
+  const bar = Array.from({length: 8}, (_, i) => c.bar?.[i] || null);
+  for (let i = 0; i < 8; i++) { const id = bar[i]; if (id && (SKILLS[id] && SKILLS[id].k === c.k && dgr.skillRank(c, id) > 0)) continue; bar[i] = null; }
   for (const s of act) if (dgr.skillRank(c, s.id) > 0 && bar.indexOf(s.id) < 0) { const j = bar.indexOf(null); if (j >= 0) bar[j] = s.id; }
   c.bar = bar; return bar;
 }
 dgr.bar = c => fillBar(c).slice();
-dgr.setBar = function (c, slot, id) { fillBar(c); if (slot < 0 || slot > 3) return false; if (id && dgr.skillRank(c, id) < 1) return false; const o = c.bar.indexOf(id); if (id && o >= 0) c.bar[o] = c.bar[slot]; c.bar[slot] = id || null; emit("change", c); return true; };
+dgr.setBar = function (c, slot, id) { fillBar(c); if (slot < 0 || slot > 7) return false; if (id && dgr.skillRank(c, id) < 1) return false; const o = c.bar.indexOf(id); if (id && o >= 0) c.bar[o] = c.bar[slot]; c.bar[slot] = id || null; emit("change", c); return true; };
 const INTK = {count: 1, hits: 1, pierce: 1, chain: 1};
 function effRank(def, rank) {
   const e = Object.assign({}, def.effect), up = def.up || {};
@@ -33512,11 +33518,11 @@ dgr.load = function (str) {
   c.lv = int(o.l, 1, CFG.cap, 1); c.xp = int(o.x, 0, 1e12, 0); if (c.lv >= CFG.cap) c.xp = 0; else c.xp = Math.min(c.xp, Math.max(0, xpNeed(c.lv) - 1));
   c.gold = int(o.g, 0, 1e12, 0); c.floorBest = int(o.fb, 0, 150, 0); c.floorsOpen = int(o.fo, 1, 150, 1); c.floorsOpen = Math.max(c.floorsOpen, Math.min(150, c.floorBest + 1));
   c.kills = int(o.kl, 0, 1e9, 0); c.playSec = int(o.ps, 0, 1e9, 0);
-  c.skills = {}; if (Array.isArray(o.sk)) for (const e of o.sk) { const id = e && e[0], r = int(e && e[1], 0, 5, 0); if (SKILLS[id] && SKILLS[id].k === k && r > 0) c.skills[id] = Math.min(r, SKILLS[id].def.max); }
+  c.skills = {}; if (Array.isArray(o.sk)) for (const e of o.sk) { const id = e && e[0], r = int(e && e[1], 0, 10, 0); if (SKILLS[id] && SKILLS[id].k === k && r > 0) c.skills[id] = Math.min(r, SKILLS[id].def.max); }
   const earned = spEarned(c.lv); let spent = spSpent(c);
   if (spent > earned) { c.skills = {}; spent = 0; }
   c.sp = o.spv >= 2 ? clamp(int(o.s, 0, 9999, 0), 0, earned - spent) : Math.max(0, earned - spent);   /* 5차: 옛 저장은 새 스킬 포인트 규칙으로 다시 계산(더 받는다) */
-  c.bar = Array.isArray(o.b) ? o.b.slice(0, 4).map(x => (typeof x === "string" && SKILLS[x] && SKILLS[x].k === k) ? x : null) : [null, null, null, null]; while (c.bar.length < 4) c.bar.push(null);
+  c.bar = Array.isArray(o.b) ? o.b.slice(0, 8).map(x => (typeof x === "string" && SKILLS[x] && SKILLS[x].k === k) ? x : null) : [null, null, null, null]; while (c.bar.length < 8) c.bar.push(null);
   for (const s of SLOTS) c.eq[s] = null;
   if (o.e && typeof o.e === "object") for (const s of SLOTS) { const it = o.e[s] ? decItem(o.e[s]) : null; if (it && slotType(s) === it.t) c.eq[s] = it; }
   c.inv = new Array(CFG.invSize).fill(null);
@@ -33817,7 +33823,7 @@ function skillCard(c, s) {
   const btn = maxed ? `<button class="dgr-btn sm" disabled>최대</button>` : `<button class="dgr-btn sm ${q.ok ? "gold" : ""}" data-a="learn" data-id="${s.id}" ${q.ok ? "" : "disabled"} aria-label="${E(s.n)} ${rank ? "올리기" : "배우기"}">${rank ? "＋ 올리기" : "＋ 배우기"} (${s.cost}P)</button>`;
   const nums = (rank ? cur : nxt).map(t => `<span>${E(t)}</span>`).join("");
   return `<div class="${cls}"><div class="ic">${dgr.skillIcon(s, 28)}</div><div><h4>${E(s.n)} ${pips(rank, s.max)} <span class="dgr-chip">${s.type === "active" ? "액티브" : "패시브"}</span></h4></div>${btn}
-    <div class="desc">${E(s.d)}</div>${s.type === "active" && rank ? `<div class="dgr-slots" role="group" aria-label="단축키 칸">칸 ${[0, 1, 2, 3].map(i => `<button class="dgr-btn sm ${dgr.bar(c)[i] === s.id ? "gold" : ""}" data-a="bar" data-id="${s.id}" data-s="${i}" aria-pressed="${dgr.bar(c)[i] === s.id}">${i + 1}${dgr.bar(c)[i] === s.id ? " ✔" : ""}</button>`).join("")}</div>` : ""}<div class="num" aria-label="${rank ? "현재" : "1랭크"} 효과">${nums}</div>${rank && !maxed ? `<div class="num dgr-dim"><small>다음 랭크:</small> ${nxt.map(t => `<span>${E(t)}</span>`).join("")}</div>` : ""}${req.join("")}</div>`;
+    <div class="desc">${E(s.d)}</div>${s.type === "active" && rank ? `<div class="dgr-slots" role="group" aria-label="단축키 칸">칸 ${[0, 1, 2, 3, 4, 5, 6, 7].map(i => `<button class="dgr-btn sm ${dgr.bar(c)[i] === s.id ? "gold" : ""}" data-a="bar" data-id="${s.id}" data-s="${i}" aria-pressed="${dgr.bar(c)[i] === s.id}">${i + 1}${dgr.bar(c)[i] === s.id ? " ✔" : ""}</button>`).join("")}</div>` : ""}<div class="num" aria-label="${rank ? "현재" : "1랭크"} 효과">${nums}</div>${rank && !maxed ? `<div class="num dgr-dim"><small>다음 랭크:</small> ${nxt.map(t => `<span>${E(t)}</span>`).join("")}</div>` : ""}${req.join("")}</div>`;
 }
 function tabSkills(c) {
   const K = KN[c.k], act = K.skills.filter(s => s.type === "active"), pas = K.skills.filter(s => s.type === "passive"), spent = dgr.spSpent(c);
@@ -34682,7 +34688,7 @@ function aliveHeroes(G) { const o = []; for (const h of G.hs) if (!isDead(G, h))
 function allDead(G) { for (const h of G.hs) if (!isDead(G, h)) return false; return true; }
 /* x,y 에서 가장 가까운 (살아 있는) 영웅까지의 거리 — 몹 배치·습격 거리 계산용. 다 죽었으면 아무 영웅 */
 function dmin(G, x, y) { let b = 1e9, any = 1e9; for (const h of G.hs) { const d = hyp(h.P.x - x, h.P.y - y); if (d < any) any = d; if (!isDead(G, h) && d < b) b = d; } return b < 1e9 ? b : any; }
-function newP() { return {x: 0, y: 0, px: 0, py: 0, vx: 0, vy: 0, r: PLAYER_R, face: 1, ang: 0, atkT: 0, castT: 0, swing: 0, inv: 0, hurtT: 0, stun: 0, slow: 0, shield: 0, dash: null, buffs: [], sk: [{cd: 0, max: 1}, {cd: 0, max: 1}, {cd: 0, max: 1}, {cd: 0, max: 1}], walk: 0, psn: 0, psnT: 0, ice: false, sticky: false, move: 0, aimAng: 0, hit: 0, dashCd: 0, dashMax: DASH.cd}; }
+function newP() { return {x: 0, y: 0, px: 0, py: 0, vx: 0, vy: 0, r: PLAYER_R, face: 1, ang: 0, atkT: 0, castT: 0, swing: 0, inv: 0, hurtT: 0, stun: 0, slow: 0, shield: 0, dash: null, buffs: [], sk: Array.from({length: 8}, () => ({cd: 0, max: 1})), walk: 0, psn: 0, psnT: 0, ice: false, sticky: false, move: 0, aimAng: 0, hit: 0, dashCd: 0, dashMax: DASH.cd}; }
 const newBf = () => ({atk: 0, def: 0, spd: 0, atkSpd: 0, crit: 0, lifesteal: 0, cdr: 0, reflect: 0, invuln: 0});
 const mkFlow = M => M ? {dist: new Int16Array(M.W * M.H), q: new Int32Array(M.W * M.H), tx: -1, ty: -1, t: -9} : null;
 function mkHero(G, idx, o) {
@@ -35099,11 +35105,11 @@ function updatePlayer(G, dt, inp) {
   /* 기본 공격 */
   P.atkT -= dt; if (P.castT > 0) P.castT -= dt; if (P.swing > 0) P.swing -= dt;
   const b = G.basic, brange = b.kind === "cone" ? (b.range || 90) + 10 : (b.range || 480) * .9;
-  const want = inp.atk || (autoOn && nearestMob(G, P.x, P.y, brange, m => !m.ghost && inView(G, m.x, m.y)));
-  if (want && P.atkT <= 0 && !G.cine && !P.dash && !G.over) { basicAttack(G, ang); }
+  const target = (inp.atk || autoOn) && nearestMob(G, P.x, P.y, brange, m => los(M, P.x, P.y, m.x, m.y));
+  if (target && P.atkT <= 0 && !G.cine && !P.dash && !G.over) { const aim = Math.atan2(target.y - P.y, target.x - P.x); P.face = target.x < P.x ? -1 : 1; basicAttack(G, aim); }
   /* 스킬 */
   const meta = skMeta(G), bar = (() => { try { return D().bar(c) || []; } catch (e) { return []; } })();
-  for (let i = 0; i < 4; i++) { const s = P.sk[i]; if (s.cd > 0) s.cd -= dt; s.id = bar[i] || null; if (inp.cast && inp.cast[i] && s.id && s.cd <= 0 && !G.cine && !G.over) castSkill(G, i, inp, ang, meta); else if (inp.cast && inp.cast[i] && s.id && s.cd > 0) {} }
+  for (let i = 0; i < 8; i++) { const s = P.sk[i]; if (s.cd > 0) s.cd -= dt; s.id = bar[i] || null; if (inp.cast && inp.cast[i] && s.id && s.cd <= 0 && !G.cine && !G.over) castSkill(G, i, inp, ang, meta); else if (inp.cast && inp.cast[i] && s.id && s.cd > 0) {} }
   /* 자연 회복(약하게) · 마을 회복 */
   G.regenT += dt; if (G.regenT >= .5) { G.regenT = 0; const inTown = M.townRect && P.x / TILE >= M.townRect.x && P.x / TILE < M.townRect.x + M.townRect.w && P.y / TILE >= M.townRect.y && P.y / TILE < M.townRect.y + M.townRect.h; healPlayer(G, (st.hpMax * (inTown ? .08 : .004) + (st.regen || 0) * .5) * (P.psn > 0 ? 0 : 1), false);   /* QA-C: K2 초당 회복(regen) */ }
   /* 물약 · 상호작용은 step 에서 */
@@ -35639,7 +35645,7 @@ function updateSpawns(G, dt) {
 }
 
 /* ================= 한 스텝 ================= */
-const NOINP = {mx: 0, my: 0, aim: null, atk: false, cast: [false, false, false, false], interact: false, potion: false};
+const NOINP = {mx: 0, my: 0, aim: null, atk: false, cast: Array(8).fill(false), interact: false, potion: false};
 function step(G, dt, inp) {   // inp = 영웅 0 의 입력. 손님 영웅은 h.inp(네트워크가 채움)·h.rp(보고한 위치)
   inp = inp || NOINP; if (!G.M) return; const hs = G.hs; if (G.cur !== hs[0]) bind(G, hs[0]);
   if (allDead(G)) {   // 솔로: 쓰러짐(UI 가 '마을에서 일어나기'를 부른다) · 파티: 전멸 → 6초 뒤 전원 마을에서
@@ -35670,7 +35676,7 @@ function step(G, dt, inp) {   // inp = 영웅 0 의 입력. 손님 영웅은 h.i
   if (!G.cine) { updateSpawns(G, dt); updateHorde(G, dt); updateEvent(G, dt); }
   if (Math.floor(G.t * 4) !== Math.floor((G.t - dt) * 4)) reveal(G);
   updateFx(G, dt);
-  for (let i = 1; i < hs.length; i++) { const q = hs[i].inp; if (q) { q.cast = [false, false, false, false]; q.interact = false; q.potion = false; q.dash = false; } }   // 손님의 한 번짜리 입력(스킬·상호작용·물약·대시)은 한 번만 쓴다
+  for (let i = 1; i < hs.length; i++) { const q = hs[i].inp; if (q) { q.cast = Array(8).fill(false); q.interact = false; q.potion = false; q.dash = false; } }   // 손님의 한 번짜리 입력(스킬·상호작용·물약·대시)은 한 번만 쓴다
 }
 function updateFx(G, dt) {
   let w = 0; for (const f of G.fx) { f.t += dt; if (f.kind === 0) { f.x += f.vx * dt; f.y += f.vy * dt; f.vy += f.g * dt; f.vx *= .97; } if (f.t < f.max) G.fx[w++] = f; } G.fx.length = w;
@@ -35694,7 +35700,7 @@ function navField(G, tx, ty) {
   G._nav = {key, d: dist, t: G.t}; return dist;
 }
 function botInput(G) {
-  const P = G.P, M = G.M, inp = {mx: 0, my: 0, aim: null, atk: true, cast: [false, false, false, false], interact: false, potion: false}; if (G.over) return inp;
+  const P = G.P, M = G.M, inp = {mx: 0, my: 0, aim: null, atk: true, cast: Array(8).fill(false), interact: false, potion: false}; if (G.over) return inp;
   const c = G.char; if (c.hp < G.st.hpMax * .4 && potionCount(G) > 0 && G.potCd <= 0) inp.potion = true;
   let goal = null; const boss = G.boss && !G.boss.dead ? G.boss : null;
   if (G.near && G.near.kind === "chest") inp.interact = true;
@@ -35714,7 +35720,7 @@ function botInput(G) {
     }
   }
   if (tg) inp.aim = {x: tg.x, y: tg.y}; else if (boss) inp.aim = {x: boss.x, y: boss.y};
-  for (let i = 0; i < 4; i++) if (G.P.sk[i].id && G.P.sk[i].cd <= 0 && (tg || boss) && Math.random() < .3) inp.cast[i] = true;
+  for (let i = 0; i < 8; i++) if (G.P.sk[i].id && G.P.sk[i].cd <= 0 && (tg || boss) && Math.random() < .3) inp.cast[i] = true;
   /* 적 투사체·구역 피하기 */
   if (!G.nodge) for (const b of G.ep) { const dx = P.x - b.x, dy = P.y - b.y; if (dx * dx + dy * dy < 90 * 90 && (b.vx * dx + b.vy * dy) < 0) { const l = hyp(dx, dy) || 1; inp.mx += dx / l * .8; inp.my += dy / l * .8; } }
   if (!G.nodge) for (const z of G.zones) if (z.own === "e" && !z.fired && z.kind === "circle") { const dx = P.x - z.x, dy = P.y - z.y, d = hyp(dx, dy); if (d < z.r + 34) { inp.mx += dx / (d || 1) * 1.5; inp.my += dy / (d || 1) * 1.5; } }
@@ -36177,7 +36183,7 @@ const dgn = (() => {
 const TILE = dgnMap.TILE, T = dgnMap.T, SF = dgnMap.SF, TAU = Math.PI * 2, STEP = 1 / 60, INK = "#14141c";
 const core = dgnCore, R = dgnR, D = () => window.dgr;
 const cl = (v, a, b) => v < a ? a : v > b ? b : v, hyp = Math.hypot;
-const V = {ready: false, G: null, ui: null, raf: 0, last: 0, acc: 0, keys: {}, mouse: {x: 0, y: 0, t: -99}, atk: false, atkKey: false, castQ: [0, 0, 0, 0], useQ: false, potQ: false, dashQ: false, joy: {id: -1, x: 0, y: 0, ox: 0, oy: 0}, touch: false, dpr: 1, w: 800, h: 600, zoom: 1, cam: {x: 0, y: 0}, chunks: new Map(), res: 1, tr: null, notes: new Map(), hudT: 0, amb: [], spr: {}, pool: [], dl: [], mmSeen: null, mmC: null, selK: -1, lastSave: 0, sess: {t0: 0, played: false}, noSave: false, fps: 0, fpsA: 0, fpsN: 0, ftimes: [], spd: 1, opt: {auto: null, zoom: 1, spd: 1, autoSave: 60}, lastSig: "", rst: null, evtPill: null, evtBanner: 0, shown: {}, flick: 0, flickT: 0, nearKey: "", lastHp: 0, lowHp: false, flAnim: 0};
+const V = {ready: false, G: null, ui: null, raf: 0, last: 0, acc: 0, keys: {}, mouse: {x: 0, y: 0, t: -99}, atk: false, atkKey: false, castQ: Array(8).fill(0), useQ: false, potQ: false, dashQ: false, joy: {id: -1, x: 0, y: 0, ox: 0, oy: 0}, touch: false, dpr: 1, w: 800, h: 600, zoom: 1, cam: {x: 0, y: 0}, chunks: new Map(), res: 1, tr: null, notes: new Map(), hudT: 0, amb: [], spr: {}, pool: [], dl: [], mmSeen: null, mmC: null, selK: -1, lastSave: 0, sess: {t0: 0, played: false}, noSave: false, fps: 0, fpsA: 0, fpsN: 0, ftimes: [], spd: 1, opt: {auto: null, zoom: 1, spd: 1, autoSave: 60}, lastSig: "", rst: null, evtPill: null, evtBanner: 0, shown: {}, flick: 0, flickT: 0, nearKey: "", lastHp: 0, lowHp: false, flAnim: 0};
 const LS = {slot: k => "rbn.dg.s." + k, meta: "rbn.dg.meta", opt: "rbn.dg.opt", bak: k => "rbn.dg.bak." + k, cbak: "rbn.dg.cbak"};   /* bak: 처음부터 다시 직전 백업(자동 저장이 건드리지 않는 별도 칸) · cbak: 저장 충돌에서 덮어쓰이는 쪽 백업 */
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
 const lsSet = (k, v) => { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } };
@@ -36350,7 +36356,7 @@ function build() {
       <div class="dgn-sks" id="dgn-sks">
         <button class="dgn-sk dash" id="dgn-dash" data-k="dash" aria-label="대시 (Space)"><span class="kh">␣</span>${svgI(SKI.dash)}<span class="nm">대시</span><span class="cd"></span><span class="cdn"></span></button>
         <button class="dgn-sk pot" id="dgn-pot" data-k="pot" aria-label="물약 (Q)"><span class="kh">Q</span>${svgI(SKI.pot)}<span class="cnt" id="dgn-potn">0</span></button>
-        <button class="dgn-sk s0" data-k="0"></button><button class="dgn-sk s1" data-k="1"></button><button class="dgn-sk s2" data-k="2"></button><button class="dgn-sk s3" data-k="3"></button>
+        ${Array.from({length: 8}, (_, i) => `<button class="dgn-sk s${i}" data-k="${i}"></button>`).join("")}
         <button class="dgn-sk atk" id="dgn-atk" data-k="atk" aria-label="공격">${svgI(SKI.atk)}</button>
       </div>
     </div>
@@ -36439,6 +36445,19 @@ function render(al, dt) {
       case 9: drawOther(g, o, t, px(o.P.px, o.P.x, al), px(o.P.py, o.P.y, al)); break;
       case 3: drawAlly(g, o, t); break; case 4: R.drawChest(g, o, t, o.x, o.y); break;
       case 5: R.drawNpc(g, o, t, o.x, o.y, sprite(o.k)); break;
+    }
+  }
+  if (V.net?.bubbles) {
+    const self = V.net.role === "guest" ? V.net.myIdx : 0;
+    for (const [idx, bubble] of V.net.bubbles) {
+      if (bubble.until < performance.now()) { V.net.bubbles.delete(idx); continue; }
+      const body = idx === self ? P : others(G).find(hero => hero.idx === idx)?.P;
+      if (!body) continue;
+      const x = px(body.px, body.x, al), y = px(body.py, body.y, al) - 70;
+      g.save(); g.font = "bold 13px sans-serif"; g.textAlign = "center";
+      const width = Math.min(290, g.measureText(bubble.text).width + 16);
+      g.fillStyle = "#161427"; g.fillRect(x - width / 2, y - 17, width, 24);
+      g.fillStyle = "#fff"; g.fillText(bubble.text, x, y, width - 12); g.restore();
     }
   }
   /* 5. 투사체 · 빔 · 궤도 · 충격파 · 번개 */
@@ -36618,7 +36637,7 @@ function mmDraw(cv, view) {   // view = {cx, cy, tiles} 보이는 칸 수
 }
 
 /* ================= HUD ================= */
-let hudCache = {}; const NOCAST = [false, false, false, false];
+let hudCache = {}; const NOCAST = Array(8).fill(false);
 const setT = (id, txt) => { const el = typeof id === "string" ? $("#" + id) : id; if (el && el._t !== txt) { el._t = txt; el.textContent = txt; } };
 function skName(id, meta) { const m = meta[id]; return m ? m.name : ""; }
 function hud(dt) {
@@ -36635,7 +36654,7 @@ function hud(dt) {
     el.classList.toggle("empty", empty); const cool = s.cd > 0 && !empty; el.classList.toggle("cool", cool); el.classList.toggle("rdy", !cool && !empty); if (cool) { el.querySelector(".cd").style.setProperty("--p", (s.cd / Math.max(.1, s.max)) * 100 + "%"); setT(el.querySelector(".cdn"), s.cd >= 10 ? String(Math.ceil(s.cd)) : s.cd.toFixed(1)); } else el.querySelector(".cd").style.setProperty("--p", "0%");
   }
   const atk = $("#dgn-atk"); if (atk) atk.classList.toggle("act", V.atk || !!G.opt.auto);
-  { const sb = $("#dgn-spd"); if (sb) { setT("dgn-spd-t", "×" + V.spd); sb.classList.toggle("on", V.spd > 1); } }
+  { const sb = $("#dgn-spd"); if (sb) { const speed = V.net?.role === "guest" ? V.net.spd || 1 : V.spd; setT("dgn-spd-t", "×" + speed); sb.classList.toggle("on", speed > 1); } }
   { const bb = $("#dgn-bagbd"); if (bb) { let fr = 99; try { fr = D().invFree(c); } catch (e) {} const low = fr < 10; bb.hidden = !low; if (low) setT(bb, fr <= 0 ? "가득!" : fr + "칸"); } }   /* 4차: 가방이 거의 차면 가방 단추에 남은 칸(글자)을 띄운다 */
   /* 상호작용 */
   const nr = G.near, use = $("#dgn-use"), altHold = !!nr && nr.kind === "altar" && G.t - (G.bossDownT == null ? -99 : G.bossDownT) < 1.5; const key = (nr ? nr.kind + ":" + nr.label : "") + (altHold ? ":hold" : ""); if (key !== V.nearKey) { V.nearKey = key; use.hidden = !nr || !!V.ui || altHold; use.classList.toggle("alt", !!nr && nr.kind === "altar"); if (nr) $("#dgn-use-t").textContent = nr.label; }   /* 5차: 제단(보스 다시 부르기)은 작은 보조 단추, 보스를 잡은 뒤 1.5초는 숨김 */
@@ -36663,7 +36682,7 @@ function partyHud(G) {
   const sig = rows.map(r => [r.idx, r.name, r.k, r.lv, Math.round(r.hp / Math.max(1, r.hpMax) * 20), r.dead ? 1 : 0, r.rdy].join(":")).join("|") + "|" + (host ? 1 : 0) + "|" + (V.pOpen ? 1 : 0) + "|" + (V.pReady ? 1 : 0);
   if (sig !== V.pSig) {
     V.pSig = sig; const cap = NT.cap || 4;
-    box.innerHTML = `<div class="dgn-ph"><b>파티 ${rows.length}/${cap}</b><span class="dgn-pbs">${host ? "" : `<button class="dgn-pb${V.pReady ? " on" : ""}" data-act="dgp-ready" aria-pressed="${!!V.pReady}" title="파티장에게 준비됐다고 알려요">${V.pReady ? "✓ " : ""}준비</button>`}<button class="dgn-pb" data-act="dgp-invite" aria-label="친구 초대" title="친구·접속자 초대 (작은 창)">＋</button><button class="dgn-pb" data-act="dgp-chat" aria-label="파티 채팅" title="파티 채팅">채팅</button><button class="dgn-pb" data-act="dgp-fold" aria-label="접기">${V.pOpen === false ? "▾" : "▴"}</button></span></div>` + (V.pOpen === false ? "" : rows.map(r => `<div class="dgn-pr${r.me ? " me" : ""}${r.dead ? " dead" : ""}"><img src="${kSrc(r.k, true)}" alt="" width="30" height="30"><div class="dgn-pm"><div class="dgn-pn" title="${esc(kn(r.k).n)} · ${esc(roleOf(r.k))}"><b>${r.idx + 1}P</b> ${esc(r.name || "")}${r.idx === 0 ? ' <em>★파티장</em>' : ""} <small>Lv ${r.lv | 0}</small>${r.dead ? ' <em class="x">✚ 쓰러짐</em>' : ""}${!r.me && r.idx !== 0 && r.rdy ? ' <em class="ok">✓준비</em>' : ""}</div><div class="dgn-pb2"><i style="width:${Math.round(cl(r.hp / Math.max(1, r.hpMax), 0, 1) * 100)}%"></i></div></div>${host && !r.me ? `<button class="dgn-pk" data-act="dgp-kick" data-n="${r.net}" aria-label="${esc(r.name)} 내보내기" title="내보내기">✕</button>` : ""}</div>`).join(""));
+    box.innerHTML = `<div class="dgn-ph"><b>파티 ${rows.length}/${cap}${V.net?.code ? " · " + esc(V.net.code) : ""}</b><span class="dgn-pbs">${host ? "" : `<button class="dgn-pb${V.pReady ? " on" : ""}" data-act="dgp-ready" aria-pressed="${!!V.pReady}" title="파티장에게 준비됐다고 알려요">${V.pReady ? "✓ " : ""}준비</button>`}<button class="dgn-pb" data-act="dgp-invite" aria-label="친구 초대" title="친구·접속자 초대 (작은 창)">＋</button><button class="dgn-pb" data-act="dgp-chat" aria-label="파티 채팅" title="파티 채팅">채팅</button><button class="dgn-pb" data-act="dgp-fold" aria-label="접기">${V.pOpen === false ? "▾" : "▴"}</button></span></div>` + (V.pOpen === false ? "" : rows.map(r => `<div class="dgn-pr${r.me ? " me" : ""}${r.dead ? " dead" : ""}"><img src="${kSrc(r.k, true)}" alt="" width="30" height="30"><div class="dgn-pm"><div class="dgn-pn" title="${esc(kn(r.k).n)} · ${esc(roleOf(r.k))}"><b>${r.idx + 1}P</b> ${esc(r.name || "")}${r.idx === 0 ? ' <em>★파티장</em>' : ""} <small>Lv ${r.lv | 0}</small>${r.dead ? ' <em class="x">✚ 쓰러짐</em>' : ""}${!r.me && r.idx !== 0 && r.rdy ? ' <em class="ok">✓준비</em>' : ""}</div><div class="dgn-pb2"><i style="width:${Math.round(cl(r.hp / Math.max(1, r.hpMax), 0, 1) * 100)}%"></i></div></div>${host && !r.me ? `<button class="dgn-pk" data-act="dgp-kick" data-n="${r.net}" aria-label="${esc(r.name)} 내보내기" title="내보내기">✕</button>` : ""}</div>`).join(""));
   }
   const sp = $("#dgn-spec"), dead = G.over === "dead";
   if (sp) { if (dead) { let left = 0; if (NT.role === "host") left = Math.max(0, core.REVIVE_AUTO - (G.t - (G.hs[0].deadAt || 0))); else left = Math.max(0, core.REVIVE_AUTO - (performance.now() - (NT.deadAt || performance.now())) / 1000); const wipe = G.wipe; sp.hidden = false; const msg = wipe ? "전멸했어요… 잠시 뒤 모두 마을에서 일어나요" : `✚ 쓰러졌어요 — 동료가 곁에 2.5초 서 있으면 일어나요 · 자동 부활 ${Math.ceil(left)}초`; if (sp._m !== msg) { sp._m = msg; sp.innerHTML = `<span>${esc(msg)}</span> <button class="dgn-btn dgn-tiny" data-act="dgn-ask">나가기</button>`; } else { const sx = sp.firstElementChild; if (sx && sx.textContent !== msg) sx.textContent = msg; } } else { sp.hidden = true; sp._m = ""; } }
@@ -36688,7 +36707,7 @@ function bindInput() {
     if (V.ui) { if (V.ui === "map" && (k === "m" || k === "M")) closeOv(); if (V.ui === "floors" && k === "Tab") { e.preventDefault(); closeOv(); } if (V.ui === "death" && (k === "Enter" || k === " ")) { e.preventDefault(); A["dgn-revive"](); } return; }
     if (D() && D().ui && D().ui.isOpen && D().ui.isOpen()) { if (k === "i" || k === "k" || k === "c") { try { D().ui.close(); } catch (er) {} } return; }
     V.keys[k] = true; if (["w", "a", "s", "d", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " ", "Tab"].includes(k)) e.preventDefault();
-    if (k >= "1" && k <= "4") V.castQ[+k - 1] = 1; else if (k === "e" || k === "Enter") V.useQ = true; else if (k === "q") V.potQ = true; else if (k === "i") openMenu("inv"); else if (k === "k") openMenu("skills"); else if (k === "c") openMenu("char"); else if (k === "m") A["dgn-map"](); else if (k === "Tab") A["dgn-floors"](); else if (k === "f") { toggleAuto(); } else if (k === "x") A["dgn-spd"](); else if (k === " ") V.dashQ = true; else if (k === "j") V.atkKey = true;
+    if (k >= "1" && k <= "8") V.castQ[+k - 1] = 1; else if (k === "e" || k === "Enter") V.useQ = true; else if (k === "q") V.potQ = true; else if (k === "i") openMenu("inv"); else if (k === "k") openMenu("skills"); else if (k === "c") openMenu("char"); else if (k === "m") A["dgn-map"](); else if (k === "Tab") A["dgn-floors"](); else if (k === "f") { toggleAuto(); } else if (k === "x") A["dgn-spd"](); else if (k === " ") V.dashQ = true; else if (k === "j") V.atkKey = true;
   });
   document.addEventListener("keyup", e => { const k = e.key.length === 1 ? e.key.toLowerCase() : e.key; delete V.keys[k]; if (k === "j") V.atkKey = false; });
   window.addEventListener("blur", () => { V.keys = {}; V.atk = false; V.atkKey = false; });
@@ -36714,10 +36733,10 @@ function bindInput() {
 function worldAim() { const m = V.mouse; if (!m.on || V.touch || performance.now() - m.t > 5000) return null; const z = V.zoom; m.wx = V.cam.x + (m.x - V.w / 2) / z; m.wy = V.cam.y + (m.y - V.h / 2) / z; return {x: m.wx, y: m.wy}; }
 function toggleAuto() { const G = V.G; G.opt.auto = !G.opt.auto; V.opt.auto = G.opt.auto; saveOpt(); note(G.opt.auto ? "자동 공격 켬 (F)" : "자동 공격 끔 (F)", "info"); }
 function buildInput() {
-  if (V.bot && V.G) { V.castQ[0] = V.castQ[1] = V.castQ[2] = V.castQ[3] = 0; return core.botInput(V.G); }   // 시험용 자동 플레이(콘솔에서 dgn.V.bot = true)
+  if (V.bot && V.G) { V.castQ.fill(0); return core.botInput(V.G); }   // 시험용 자동 플레이(콘솔에서 dgn.V.bot = true)
   const k = V.keys; let mx = (k.d || k.ArrowRight ? 1 : 0) - (k.a || k.ArrowLeft ? 1 : 0), my = (k.s || k.ArrowDown ? 1 : 0) - (k.w || k.ArrowUp ? 1 : 0); mx += V.joy.x; my += V.joy.y;
-  const inp = {mx, my, aim: worldAim(), atk: V.atk || V.atkKey, cast: [!!V.castQ[0], !!V.castQ[1], !!V.castQ[2], !!V.castQ[3]], interact: V.useQ, potion: V.potQ, dash: V.dashQ};
-  V.castQ[0] = V.castQ[1] = V.castQ[2] = V.castQ[3] = 0; V.useQ = false; V.potQ = false; V.dashQ = false; return inp;
+  const inp = {mx, my, aim: worldAim(), atk: V.atk || V.atkKey, cast: V.castQ.map(Boolean), interact: V.useQ, potion: V.potQ, dash: V.dashQ};
+  V.castQ.fill(0); V.useQ = false; V.potQ = false; V.dashQ = false; return inp;
 }
 
 /* ================= 겹침 창 · 메뉴 ================= */
@@ -36751,7 +36770,7 @@ function openAsk() {
   openOv("ask");
 }
 function setSpeed(v) {   // 배속 1·2·3 — 설정으로 기억한다
-  v = v === 2 || v === 3 ? v : 1; V.spd = V.opt.spd = v; saveOpt(); V.acc = 0; try { note(v > 1 ? "배속 ×" + v + " (X로 바꿔요)" : "배속 ×1 — 보통 속도", "info", null, 1800); } catch (e) {} dgSfx("dgUi");
+  v = v === 2 || v === 3 ? v : 1; if (V.net?.role === "guest") { note("파티 배속은 방장이 바꿀 수 있어요.", "info"); return; } V.spd = V.opt.spd = v; saveOpt(); V.acc = 0; try { note(v > 1 ? "배속 ×" + v + " (X로 바꿔요)" : "배속 ×1 — 보통 속도", "info", null, 1800); } catch (e) {} dgSfx("dgUi");
 }
 function openPause() {
   const G = V.G, ov = $("#dgn-pau"); const muted = typeof SAVE !== "undefined" && SAVE.mute;
@@ -36821,7 +36840,7 @@ function openInviteSheet() {   // 방 창(rbxRoom)의 '친구·접속자 초대'
 }
 function hostLostDialog() {   // 손님: 방장 연결이 끊겼다 — 혼자 이어서 하거나 나간다
   if ($("#dgp-hl")) return; const d = document.createElement("div"); d.id = "dgp-hl"; d.className = "dgp-sheet";
-  d.innerHTML = `<div class="dgp-sbox"><h3>파티장과 연결이 끊겼어요</h3><p class="dgp-n">지금까지의 경험치·장비는 이미 내 기록에 저장돼 있어요. 같은 층에서 <b>혼자 이어서</b> 할 수 있어요(몹은 새로 채워져요).</p><div class="dgn-row"><button class="dgn-big gold" data-act="dgp-solo">혼자 이어서 하기</button><button class="dgn-big ghost" data-act="dgn-exit">나가기</button></div></div>`; document.body.appendChild(d);
+  d.innerHTML = `<div class="dgp-sbox"><h3>${V.net?.kicked ? "파티장이 내보냈어요" : "파티장과 연결이 끊겼어요"}</h3><p class="dgp-n">지금까지의 경험치·장비는 이미 내 기록에 저장돼 있어요. 같은 층에서 <b>혼자 이어서</b> 할 수 있어요(몹은 새로 채워져요).</p><div class="dgn-row">${V.net?.code && !V.net.kicked ? `<button class="dgn-big gold" data-act="dgp-rejoin">같은 방 다시 들어가기</button>` : ""}<button class="dgn-big gold" data-act="dgp-solo">혼자 이어서 하기</button><button class="dgn-big ghost" data-act="dgn-exit">나가기</button></div></div>`; document.body.appendChild(d);
 }
 /* 5차: '처음부터 다시' 는 눈에 안 띄는 '위험 구역'(기본 접힘)에 두고 3단계 확인 + 직전 자동 백업 + 24시간 되돌리기 */
 function bakInfo(key) { try { const o = JSON.parse(lsGet(key) || "null"); if (!o || typeof o.d !== "string" || Date.now() - o.t > 86400000) return null; const u = core.unwrapSave(o.d); return u ? {o, lv: u.char.lv | 0, best: u.char.floorBest | 0, k: u.char.k, left: Math.max(1, Math.ceil((86400000 - (Date.now() - o.t)) / 3600000))} : null; } catch (e) { return null; } }
@@ -36939,19 +36958,19 @@ function startGame(k, fresh) { const L = loadChar(k, fresh); if (L) beginRun(L.c
 function beginRun(char, extra, o) {
   o = o || {}; const d = D(), k = char.k;
   if (d.setChar) d.setChar(char); else d.char = char;
-  const G = V.G = core.create(char, {auto: V.opt.auto != null ? V.opt.auto : V.touch}); core.unpackExtra(G, extra); G.autoTravel = false; V.sess = {t0: performance.now(), played: false}; V.bestSeen = char.floorBest | 0; V.lastSig = ""; V.autoT = 0;
-  G.opt.auto = V.opt.auto != null ? V.opt.auto : V.touch; V.camInit = false;
+  const G = V.G = core.create(char, {auto: V.opt.auto != null ? V.opt.auto : true}); core.unpackExtra(G, extra); G.autoTravel = false; V.sess = {t0: performance.now(), played: false}; V.bestSeen = char.floorBest | 0; V.lastSig = ""; V.autoT = 0;
+  G.opt.auto = V.opt.auto != null ? V.opt.auto : true; V.camInit = false;
   let f = 1; if (extra && extra.last && core.isOpen(char, extra.last)) f = extra.last; if (G.x.last) f = core.isOpen(char, G.x.last) ? G.x.last : 1; if (o.floor) f = o.floor;
   const face = $("#dgn-face"); face.style.backgroundImage = `url(${kSrc(k, true)})`;
   $("#dgn-hud").hidden = false; closeOv(); V.last = performance.now(); V.acc = 0; if (!o.mirror) { core.enterFloor(G, f, o.party ? "party" : "start"); sprite(k); for (const n of G.npcs) sprite(n.k); } else { sprite(k); for (let i = 0; i < 10; i++) sprite(i); }
   const m = getMeta(); m.cur = k; setMeta(m); V.lastSave = 0; if (!o.mirror) saveNow("start", true); visitorTag();
-  if (!o.party) note(V.touch ? "왼쪽 화면을 끌어 이동 · 오른쪽 버튼으로 공격·스킬·대시(회피)" : "WASD 이동 · 마우스 공격 · Space 대시(회피) · 1~4 스킬 · E 상호작용 · I 가방", "info", null, 7000); if (G.char.sp > 0) note("스킬 포인트가 남아 있어요 (K)", "good", null, 5000);
+  if (!o.party) note(V.touch ? "왼쪽 화면을 끌어 이동 · 오른쪽 버튼으로 공격·스킬·대시(회피)" : "WASD 이동 · 가까운 적 자동 공격 · Space 대시(회피) · 1~8 스킬 · E 상호작용 · I 가방", "info", null, 7000); if (G.char.sp > 0) note("스킬 포인트가 남아 있어요 (K)", "good", null, 5000);
 }
 function leave() {
   const G = V.G; if (V.net) { try { dgnNet.leave(); } catch (e) {} }
   if (G) { saveNow("exit", true); rankSubmit(true); const real = (performance.now() - V.sess.t0) / 1000, secs = G.playT;   /* 4차: 판 시간은 게임 시간 기준(배속 반영) — 너무 짧게 들어갔다 나온 건 실시간도 20초는 넘어야 */ if (V.sess.played && secs >= 60 && real >= 20) grantRp(false, G.char.floorBest | 0, secs); gameEnd(false); }
   try { if (D() && D().ui && D().ui.close) D().ui.close(); } catch (e) {}
-  V.G = null; V.ui = null; V.tr = null; V.menuOpen = false; V.net = null; V.pReady = false; try { const pp = $("#dgp-sheet"); if (pp) pp.remove(); } catch (e) {} try { $("#dgn-pty").innerHTML = ""; $("#dgn-spec").hidden = true; } catch (e) {} visitorTag(); $("#dgn-hud").hidden = true; V.keys = {}; V.atk = false; V.chunks.clear(); try { $("#dgn-conf").hidden = true; V._conf = null; for (const k in OVS) $("#" + OVS[k]).hidden = true; } catch (e) {}
+  V.G = null; V.ui = null; V.tr = null; V.menuOpen = false; V.net = null; V.pReady = false; try { for (const id of ["#dgp-sheet", "#dgp-say", "#dgp-hl"]) $(id)?.remove(); } catch (e) {} try { $("#dgn-pty").innerHTML = ""; $("#dgn-spec").hidden = true; } catch (e) {} visitorTag(); $("#dgn-hud").hidden = true; V.keys = {}; V.atk = false; V.chunks.clear(); try { $("#dgn-conf").hidden = true; V._conf = null; for (const k in OVS) $("#" + OVS[k]).hidden = true; } catch (e) {}
 }
 Object.assign(A, {
   "dgn-open": () => open(),
@@ -36975,7 +36994,24 @@ Object.assign(A, {
   "dgp-inv": b => { try { Promise.resolve(knx.fr.invite(b.dataset.no)).then(r => toast(r && r.ok ? "파티 초대를 보냈어요" : (r && r.msg) || "초대를 보내지 못했어요")); } catch (e) { toast("초대를 보낼 수 없어요"); } },
   "dgp-friends": () => { try { knx.id.openFriends(); } catch (e) { toast("친구 목록을 열 수 없어요"); } },
   "dgp-invite": () => openInviteSheet(),
-  "dgp-chat": () => { try { knx.chat.open("room"); } catch (e) {} },
+  "dgp-rejoin": () => {
+    const code = V.net?.code, k = V.G?.char.k;
+    if (!code || V.net.kicked) return;
+    A["dgn-exit"]();
+    dgnNet.joinByCode(code, {k});
+  },
+  "dgp-chat": () => {
+    const old = $("#dgp-say");
+    if (old) { old.querySelector("input").focus(); return; }
+    const form = document.createElement("form");
+    form.id = "dgp-say";
+    form.className = "dgp-sheet";
+    form.innerHTML = '<div class="dgp-sbox"><h3>파티 채팅</h3><input name="message" maxlength="48" aria-label="파티 메시지" required><button class="dgn-btn" type="submit">보내기</button><button class="dgn-btn" type="button">닫기</button></div>';
+    form.addEventListener("submit", e => { e.preventDefault(); dgnNet.say(form.elements.message.value); form.remove(); });
+    form.querySelector('[type="button"]').addEventListener("click", () => form.remove());
+    document.body.append(form);
+    form.elements.message.focus();
+  },
   "dgp-srvchat": () => { try { knx.chat.open("server"); } catch (e) { toast("채팅을 열 수 없어요"); } },
   "dgp-fold": () => { V.pOpen = V.pOpen === false ? true : false; V.pSig = ""; },
   "dgp-kick": b => { const G = V.G; if (!G || !V.net || V.net.role !== "host") return; const n = +b.dataset.n, h = G.hs.find(x => x.net === n); if (!h) return; if (!confirm(h.name + " 님을 파티에서 내보낼까요?")) return; dgnNet.kick(n); },
@@ -37036,7 +37072,7 @@ function open() {
 function ensureLoop() { if (!V.raf) { V.last = performance.now(); V.raf = requestAnimationFrame(frame); } }
 
 /* ================= 메인 루프 ================= */
-const idleInp = () => ({mx: 0, my: 0, aim: null, atk: false, cast: [false, false, false, false], interact: false, potion: false, dash: false});
+const idleInp = () => ({mx: 0, my: 0, aim: null, atk: false, cast: Array(8).fill(false), interact: false, potion: false, dash: false});
 
 /* ================= A13-4/10: 오류 방어 — 예외 하나로 화면이 로비로 튕기지 않게 ================= */
 const ERRLOG = {win: [], shown: 0, seen: {}};
@@ -37075,7 +37111,7 @@ function frameCore(now, viaWorker) {   // viaWorker: 방장 탭이 가려졌을 
   let dt = Math.min(.1, Math.max(0, (now - V.last) / 1000)); V.last = now; if (document.hidden && !viaWorker) return; if (V.relayout && !viaWorker) layout();
   if (!viaWorker) { V.fpsA += dt; V.fpsN++; if (V.fpsA >= 1) { V.fps = V.fpsN / V.fpsA; V.fpsA = 0; V.fpsN = 0; if (V.G && !V.ui && !V.tr && V.fps < 42 && V.fps > 4 && (V.dprCap || 9) > 1) { V.slowN = (V.slowN | 0) + 1; if (V.slowN >= 3) { V.slowN = 0; V.dprCap = (V.dprCap || (V.touch ? 1.75 : 2)) > 1.3 ? 1.25 : 1; V.relayout = true; } } else V.slowN = 0; } }   // 느리면 해상도를 한 단계씩 낮춘다
   const G = V.G; if (G) {
-    const menuUp = !!(V.menuOpen || (D() && D().ui && D().ui.isOpen && D().ui.isOpen())), locked = !!V.ui || menuUp, paused = NT ? false : locked, spd = NT ? 1 : V.spd;
+    const menuUp = !!(V.menuOpen || (D() && D().ui && D().ui.isOpen && D().ui.isOpen())), locked = !!V.ui || menuUp, paused = NT ? false : locked, spd = V.spd;
     if (NT && NT.role === "guest") {
       dgnNet.guestFrame(dt, buildInput(), locked);
       if (G.ev.length) { const evs = G.ev.slice(); G.ev.length = 0; for (const e of evs) handleEv(e); }
@@ -37136,7 +37172,7 @@ const cl = (v, a, b) => v < a ? a : v > b ? b : v, r1 = Math.round, r2 = v => Ma
 const MODE = "dg1", KEY = "dungeon", MAXP = 4, SNAP_HZ = 12, SNAP_HZ_MAX = 16, SNAP_CHARS = 12500, IN_HZ = 20, BIG = 4600;
 const N = {S: null, hooks: {}, stats: {maxMsg: 0, snaps: 0, bytes: 0, maxSnap: 0}};
 const knxOn = () => typeof knx !== "undefined" && knx;
-const idle = () => ({mx: 0, my: 0, aim: null, atk: false, cast: [false, false, false, false], interact: false, potion: false, dash: false});
+const idle = () => ({mx: 0, my: 0, aim: null, atk: false, cast: Array(8).fill(false), interact: false, potion: false, dash: false});
 const safe = (f, d) => { try { return f(); } catch (e) { try { ui().err("net", e); } catch (x) { console.error("[dgn] net", e); } return d; } };   /* A13-4/10: 예전엔 예외를 삼켜서 원인을 알 수 없었다 → 기록(console.error + localStorage roundb.dg.err) */
 const nowMs = () => performance.now();
 const ui = () => dgn.X;   // dungeon.js 가 내놓은 화면 도구(note·banner·handleEv …)
@@ -37195,7 +37231,7 @@ function advStart(info) {
     const R = safe(() => rbxRoom.dbg().room, null); if (!R || R.closed) { advStop(); return; }
     const Sx = N.S, late = !!(R.started && Sx && Sx.role === "host" && Sx.late && Sx.G); if (R.started && !late) { advStop(); return; }   /* A13-8: 도중 합류가 되는 파티는 시작 뒤에도 '모집 중' 으로 광고(현재 층·인원) */
     const n = late ? Sx.G.hs.length : 1 + (R.guests ? R.guests.filter(g => !g.gone).length : 0), code = R.code; if (!code) return;
-    const tag = advTagOf(code, late ? Sx.G.floor : info.floor, n, late ? MAXP : info.cap); if (tag !== ADV.rec) advSet(tag);
+    const tag = advTagOf(code, late ? Sx.G.floor : info.floor, n, late ? Sx.cap : info.cap); if (tag !== ADV.rec) advSet(tag);
   };
   advTimer = setInterval(tick, 1500); tick();
 }
@@ -37227,17 +37263,17 @@ function lateJoinInstall(S) {
     if (m.t === "hello") {
       if (conn._g) return; const Sx = N.S;
       if (R.closed || !Sx || Sx !== S || !S.G) { raw(conn, {t: "closed"}); later(conn); return; }
-      if (S.G.hs.length >= MAXP) { raw(conn, {t: "full", why: "full"}); later(conn); return; }
+      if (S.G.hs.length >= S.cap || R.guests.filter(g => !g.gone).length + 1 >= S.cap) { raw(conn, {t: "full", why: "full"}); later(conn); return; }
       let nm = String(m.name == null ? "" : m.name).replace(/[<>&"'\u0000-\u001f]/g, "").trim().slice(0, 12) || "손님", dup = 2; const base = nm.slice(0, 10), taken = () => [R.me.name].concat(R.guests.filter(g => !g.gone).map(g => g.info.name)).includes(nm); while (taken()) nm = base + dup++;
       const kn = Number.isInteger(+m.kn) && +m.kn >= 0 && +m.kn <= 9 ? +m.kn : 0, g = {conn, info: {name: nm, kn, col: -1}, idx: R.guests.length + 1, gone: false}; conn._g = g; R.guests.push(g);
       S.names[g.idx] = nm; const roster = rosterOf();
       raw(conn, {t: "room", roster, you: g.idx, code: R.code, left: -1, max: R.max, min: R.min}); raw(conn, {t: "start", you: g.idx, roster, code: R.code});
     } else if (m.t === "bye") drop(conn);
-    else if (m.t === "m" && conn._g && R.sess) R.sess._deliver(m.d, conn._g.idx);
+    else if (m.t === "m" && conn._g && !conn._g.gone && R.sess) R.sess._deliver(m.d, conn._g.idx);
   };
   R.peer.removeAllListeners("connection");
   R.peer.on("connection", conn => { conn.on("data", m => safe(() => data(conn, m))); conn.on("close", () => drop(conn)); conn.on("error", () => drop(conn)); });
-  S.late = true; S.cap = MAXP;
+  S.late = true;
 }
 function sendNote(S, text, kind, except) { for (const g of S.guests) if (g.net !== except) send(S, g.net, {t: "nt", s: text, k: kind || "info"}); }
 
@@ -37252,10 +37288,21 @@ function hostBegin(sess, info) {
   safe(() => { if (window.rbxMig) rbxMig.start(MODE); });
   safe(() => lateJoinInstall(S));
 }
+function showPartyBubble(S, idx, message) {
+  const text = String(message || "").trim().slice(0, 48);
+  if (!text || !Number.isInteger(idx)) return;
+  (S.bubbles ||= new Map()).set(idx, {text, until: nowMs() + 5000});
+}
+function hostSay(S, idx, message) {
+  const text = String(message || "").trim().slice(0, 48);
+  if (!text) return;
+  showPartyBubble(S, idx, text);
+  for (const guest of S.guests) send(S, guest.net, {t: "say", i: idx, s: text});
+}
 function hostMsg(S, m, from) {
   if (!m || typeof m !== "object") return; const G = S.G; if (!G) return;
   if (m.t === "bg") { const r = bigRecv(S, from, m); if (r) hostBig(S, from, r); return; }
-  const h = S.byNet[from]; if (m.t === "i") { if (h) hostInput(S, h, m); return; }
+  const h = S.byNet[from]; if (m.t === "say" && h) { hostSay(S, h.idx, m.s); return; } if (m.t === "i") { if (h) hostInput(S, h, m); return; }
   if (m.t === "ack" && h) { core.ackDrop(G, m.id | 0, !!m.ok); return; }
   if (m.t === "rdy") { S.ready[from] = m.v ? 1 : 0; sendRoster(S); return; }
   if (m.t === "pong") return;
@@ -37270,9 +37317,11 @@ function hostBig(S, from, r) {
     h.net = from; h.inp = idle(); h.rp = null; h.view = {hw: 420, hh: 280}; h.evq = []; h.fxq = []; h.lastIn = nowMs(); h.rep = rep; h.xn = r.x || 0; u.hp = h.st.hpMax; h.char.hp = h.st.hpMax;
     const ally = G.hs.find(x => x !== h && !core.isDead(G, x)) || G.hs[0], hub = ally.P; h.P.x = h.P.px = hub.x + 26 * h.idx;   /* A13-8: 도중 합류도 살아 있는 동료 옆에 */ h.P.y = h.P.py = hub.y + 12; h.P.inv = 1.6; h.rp = {x: h.P.x, y: h.P.y};
     for (let k = 0; k < 14 && core.H.boxSolid(G.M, h.P.x, h.P.y, 13, false, false); k++) { const a = k * .9; h.P.x = h.P.px = hub.x + Math.cos(a) * (30 + k * 3); h.P.y = h.P.py = hub.y + Math.sin(a) * (30 + k * 3); }
+    if (core.H.boxSolid(G.M, h.P.x, h.P.y, 13, false, false)) { h.P.x = h.P.px = hub.x; h.P.y = h.P.py = hub.y; }
+    h.fe = 1; h.rp = null;
     S.byNet[from] = h; S.guests.push(h); G.partySize = G.hs.length; core.setPartyMul(G);
     ui().note((h.name || nm) + " 님이 파티에 들어왔어요" + (rep.changed ? " (장비 " + rep.changed + "곳 조정됨)" : ""), "good", null, 4200);
-    send(S, from, {t: "wel", n: G.floor, hs: G.hs.length}); sendNote(S, (h.name || nm) + " 님이 파티에 들어왔어요", "good", from); sendRoster(S); ui().partyChanged();
+    send(S, from, {t: "wel", idx: h.idx, n: G.floor, hs: G.hs.length}); sendNote(S, (h.name || nm) + " 님이 파티에 들어왔어요", "good", from); sendRoster(S); ui().partyChanged();
   } else {   // g: 장비·스킬을 바꿨다 — 사본을 갈아 끼운다(체력 비율은 유지)
     const h = S.byNet[from]; if (!h) return; const c = h.char, hpf = c.hp / Math.max(1, h.st.hpMax);
     for (const k of Object.keys(c)) if (!(k in u)) delete c[k]; Object.assign(c, u); c._sd = 1; h.stT = 0; h.rep = rep; if (!(c.hp > 0)) c.hp = 1;
@@ -37281,11 +37330,12 @@ function hostBig(S, from, r) {
 }
 function hostInput(S, h, m) {
   const x = +m.x, y = +m.y; h.lastIn = nowMs(); const M = S.G.M; if (!M) return;
+  if (m.fl !== S.G.floor || (m.fe | 0) !== (h.fe | 0) || (m.n | 0) <= (h.iseq || 0)) return;
   h.iseq = m.n | 0;   /* A13-6/7: 입력 번호(스냅샷이 되돌려 줌) · 강제 번호 — 손님이 아직 모르는 옛 위치 보고는 무시한다(방장이 영웅을 직접 옮긴 뒤 옛 좌표로 걸어 돌아가던 것) */
   if (Number.isFinite(x) && Number.isFinite(y) && x > 0 && y > 0 && x < M.W * TILE && y < M.H * TILE && (m.fe | 0) >= (h.fe | 0)) h.rp = {x, y};
   const q = h.inp || (h.inp = idle()), f = m.f | 0, c = m.c | 0, e = m.e | 0;
   q.mx = cl(+m.mx || 0, -1, 1); q.my = cl(+m.my || 0, -1, 1); q.atk = !!(f & 1); h.auto = !!(f & 2); q.aim = (f & 8) && Number.isFinite(+m.ax) && Number.isFinite(+m.ay) ? {x: +m.ax, y: +m.ay} : null;
-  for (let i = 0; i < 4; i++) if (c & (1 << i)) q.cast[i] = true; if (e & 1) q.interact = true; if (e & 2) q.potion = true; if (e & 4) q.dash = true;
+  for (let i = 0; i < 8; i++) if (c & (1 << i)) q.cast[i] = true; if (e & 1) q.interact = true; if (e & 2) q.potion = true; if (e & 4) q.dash = true;
   if (Array.isArray(m.vw) && m.vw.length === 2) h.view = {hw: cl(+m.vw[0] || 420, 200, 900), hh: cl(+m.vw[1] || 280, 150, 700)};
 }
 function hostLeave(S, idx) {
@@ -37337,10 +37387,10 @@ function sendSnap(S, g) {
   const G = S.G, P = g.P, v = g.view || {hw: 420, hh: 280}, mg = S.hz < 10 ? 40 : 140, hw = v.hw + mg, hh = v.hh + mg, dict = mkDict(), id = dict.id, M = G.M; if (!M) return;
   const near = (x, y, m) => Math.abs(x - P.x) < hw + m && Math.abs(y - P.y) < hh + m;
   const defs = (G.info && G.info.mobPool || []).concat([G.info && G.info.bossId || ""]); const dno = d => { const i = defs.indexOf(d && d.id); return i < 0 ? 0 : i; };
-  const sn = {t: "s", q: ++S.q, T: Math.round(G.t * 1000) / 1000, F: G.floor, C: G.combo | 0};
+  const sn = {t: "s", q: ++S.q, sp: V.spd, T: Math.round(G.t * 1000) / 1000, F: G.floor, C: G.combo | 0};
   sn.H = G.hs.map(h => { const p = h.P, st = stOf(G, h), dead = overOf(G, h) === "dead"; return [h.idx, r1(p.x), r1(p.y), r1(p.vx), r1(p.vy), r1(p.ang * 100), (dead ? 1 : 0) | (p.dash ? 2 : 0) | (p.inv > 0 ? 4 : 0) | (p.stun > 0 ? 8 : 0) | (p.hit > 0 ? 16 : 0) | (h.forced ? 32 : 0) | (p.face < 0 ? 64 : 0) | (p.shield > 0 ? 128 : 0), r1(h.char.hp), r1(st ? st.hpMax : 100), r1(p.shield || 0), h.char.lv | 0, h.char.k | 0, r1((p.swing || 0) * 100), r1((dead ? h.reviveP || 0 : 0) * 100)]; });
   for (const h of G.hs) if (h.forced) h.forced = 0;
-  const me = g.P; sn.me = {q: g.iseq | 0, fe: g.fe | 0, sk: me.sk.map(s => [r1(s.cd * 10) / 10, r1((s.max || 1) * 10) / 10]), dc: r1(me.dashCd * 100) / 100, dm: r1((me.dashMax || 2.5) * 100) / 100, pc: r1(Math.max(0, g.potCd || 0) * 10) / 10, st: r1((me.stun || 0) * 100) / 100, sl: r1((me.slow || 0) * 100) / 100, sw: r1((me.swingA == null ? me.ang : me.swingA) * 100), bs: bfSpd(g), bf: me.buffs.map(b => [b.id, r1(b.t * 10) / 10, b.col || "", b.name || ""]).slice(0, 6)};
+  const me = g.P; sn.me = {idx: g.idx, q: g.iseq | 0, fe: g.fe | 0, sk: me.sk.map(s => [r1(s.cd * 10) / 10, r1((s.max || 1) * 10) / 10]), dc: r1(me.dashCd * 100) / 100, dm: r1((me.dashMax || 2.5) * 100) / 100, pc: r1(Math.max(0, g.potCd || 0) * 10) / 10, st: r1((me.stun || 0) * 100) / 100, sl: r1((me.slow || 0) * 100) / 100, sw: r1((me.swingA == null ? me.ang : me.swingA) * 100), bs: bfSpd(g), bf: me.buffs.map(b => [b.id, r1(b.t * 10) / 10, b.col || "", b.name || ""]).slice(0, 6)};
   const ms = []; for (const m of G.mobs) { if (m.dead || m.boss || !near(m.x, m.y, m.r)) continue; ms.push(m); }
   if (ms.length > 90) { ms.sort((a, b) => (a.x - P.x) * (a.x - P.x) + (a.y - P.y) * (a.y - P.y) - ((b.x - P.x) * (b.x - P.x) + (b.y - P.y) * (b.y - P.y))); ms.length = 90; }
   sn.M = ms.map(m => { const fl = (m.face < 0 ? 1 : 0) | (m.flash > 0 ? 2 : 0) | (m.lunge > 0 ? 4 : 0) | (m.stunT > 0 ? 8 : 0) | (m.slowT > 0 ? 16 : 0) | (m.burn ? 32 : 0) | (m.elite ? 64 : 0) | (m.evt ? 128 : 0) | (m.fly ? 256 : 0) | ((m.aff === "swift" ? 1 : m.aff === "steel" ? 2 : m.aff === "blast" ? 3 : 0) << 9) | (m.hd ? 2048 : 0); const a = [m.id, r1(m.x), r1(m.y), Math.max(1, Math.ceil(100 * m.hp / m.hpMax)), fl, dno(m.def), r1(m.r)]; if ((m.alpha != null && m.alpha < 1) || m.tele) { a.push(m.alpha != null && m.alpha < 1 ? r1(m.alpha * 100) : 100); if (m.tele) a.push(teleOf(m.tele, m, id)); } return a; });
@@ -37385,8 +37435,10 @@ const sigOfChar = c => safe(() => D().save(c).replace(/"h":\d+/, '"h":0'), "");
 function guestMsg(S, m) {
   if (!m || typeof m !== "object") return;
   if (m.t === "s") { S.inq.push(m); if (S.inq.length > 6) S.inq.splice(0, S.inq.length - 3); return; }
-  if (m.t === "ro") { S.roster = m.L || []; S.myIdx = m.you | 0; S.sel = m.sel | 0 || 1; S.hostFloor = m.fl | 0; ui().partyChanged(); return; }
-  if (m.t === "wel") { return; }
+  if (m.t === "ro") { S.roster = m.L || []; S.myIdx = m.you | 0; S.sel = m.sel | 0 || 1; S.hostFloor = m.fl | 0; S.cap = m.cap || S.cap; ui().partyChanged(); return; }
+  if (m.t === "wel") { S.myIdx = m.idx; return; }
+  if (m.t === "kick") { S.kicked = true; S.hostLost = true; safe(() => S.sess.close()); ui().hostLostDialog(); return; }
+  if (m.t === "say") { showPartyBubble(S, m.i, m.s); return; }
   if (m.t === "nt") { ui().note(String(m.s || "").slice(0, 60), m.k === "good" || m.k === "warn" ? m.k : "info", null, 4200); return; }
   if (m.t === "no") { ui().note(m.why || "파티에 들어가지 못했어요", "warn", null, 5000); return; }
   if (m.t === "ping") { try { S.sess.send({t: "pong", n: m.n}); } catch (e) {} return; }
@@ -37395,12 +37447,13 @@ function guestMsg(S, m) {
 function guestFrame(dt, inp, locked) {
   const S = N.S, G = S.G; if (!S || S.role !== "guest" || !G) return; const hero = G.hs[0], P = G.P;
   while (S.inq.length) applySnap(S, S.inq.shift());
-  if (!G.M) return;
+  if (S.hostLost || !G.M || S.myIdx < 0 || S.firstSnap !== G.floor) return;
   if (locked) inp = idle();
-  S.pend.c |= (inp.cast[0] ? 1 : 0) | (inp.cast[1] ? 2 : 0) | (inp.cast[2] ? 4 : 0) | (inp.cast[3] ? 8 : 0); S.pend.e |= (inp.interact ? 1 : 0) | (inp.potion ? 2 : 0) | (inp.dash ? 4 : 0);
+  S.pend.c |= inp.cast.reduce((bits, pressed, i) => bits | (pressed ? 1 << i : 0), 0); S.pend.e |= (inp.interact ? 1 : 0) | (inp.potion ? 2 : 0) | (inp.dash ? 4 : 0);
   if (inp.potion && D().quickPotion && core.potionCount(G) <= 0) S.pend.e &= ~2;
-  S.acc += dt; let n = 0; if (S.corr) { const kc = Math.min(1, dt * 7), cx = S.corr.x * kc, cy = S.corr.y * kc; P.x += cx; P.y += cy; S.corr.x -= cx; S.corr.y -= cy; if (Math.abs(S.corr.x) + Math.abs(S.corr.y) < .6) S.corr = null; }
-  while (S.acc >= STEP && n < 8) { core.heroMove(G, STEP, Object.assign({}, inp, {dash: n === 0 ? inp.dash : false})); S.acc -= STEP; n++; } if (n >= 8) S.acc = 0;   /* A13-6: 프레임이 끊겨도(0.1초 한도) 이동을 덜 버린다(5→8스텝) */
+  const stepBudget = 8 * (S.spd || 1);
+  S.acc += dt * (S.spd || 1); let n = 0; if (S.corr) { const kc = Math.min(1, dt * 7), cx = S.corr.x * kc, cy = S.corr.y * kc; P.x += cx; P.y += cy; S.corr.x -= cx; S.corr.y -= cy; if (Math.abs(S.corr.x) + Math.abs(S.corr.y) < .6) S.corr = null; }
+  while (S.acc >= STEP && n < stepBudget) { core.heroMove(G, STEP, Object.assign({}, inp, {dash: n === 0 ? inp.dash : false})); S.acc -= STEP; n++; } if (n >= stepBudget) S.acc = 0;   /* A13-6: 프레임이 끊겨도(0.1초 한도) 이동을 덜 버린다(5→8스텝) */
   G.t += dt; G.runT += dt; G.playT += dt; core.updateFx(G, dt); core.nearest(G);
   interpMirror(S, dt);
   S.sendAcc += dt; const edge = S.pend.c || S.pend.e;
@@ -37413,12 +37466,15 @@ function guestFrame(dt, inp, locked) {
 function sendInput(S, inp) {
   const G = S.G, P = G.P; const vw = [r1(V.w / (2 * V.zoom)), r1(V.h / (2 * V.zoom))], vws = vw[0] + "," + vw[1];
   S.seq = (S.seq + 1) | 0; S.hist.set(S.seq, {x: P.x, y: P.y}); if (S.hist.size > 240) S.hist.delete(S.hist.keys().next().value);
-  const m = {t: "i", n: S.seq, fe: S.fe | 0, x: r1(P.x * 10) / 10, y: r1(P.y * 10) / 10, mx: r2(inp.mx || 0), my: r2(inp.my || 0), f: (inp.atk ? 1 : 0) | (G.opt.auto ? 2 : 0) | (inp.aim ? 8 : 0), c: S.pend.c, e: S.pend.e};
+  const m = {t: "i", n: S.seq, fl: G.floor, fe: S.fe | 0, x: r1(P.x * 10) / 10, y: r1(P.y * 10) / 10, mx: r2(inp.mx || 0), my: r2(inp.my || 0), f: (inp.atk ? 1 : 0) | (G.opt.auto ? 2 : 0) | (inp.aim ? 8 : 0), c: S.pend.c, e: S.pend.e};
   if (inp.aim) { m.ax = r1(inp.aim.x); m.ay = r1(inp.aim.y); } if (vws !== S.vwSent) { m.vw = vw; S.vwSent = vws; }
   S.pend.c = 0; S.pend.e = 0; try { S.sess.send(m); } catch (e) {}
 }
 /* 방장 → 손님 스냅샷 적용 */
 function applySnap(S, sn) {
+  if ((sn.q | 0) <= (S.appliedQ || 0)) return;
+  S.appliedQ = sn.q | 0;
+  S.spd = cl(sn.sp | 0, 1, 3);
   const G = S.G, d = D(), dc = sn.Dc || []; const now = nowMs(); S.snapGap = cl(S.snapGap * .8 + (now - S.lastSnapAt) / 1000 * .2, .04, .3); S.lastSnapAt = now;
   const col = i => dc[i];
   for (const e of sn.V || []) guestEvent(S, e);   // 이벤트 먼저(층 바뀜이 스냅샷보다 앞서므로)
@@ -37428,12 +37484,13 @@ function applySnap(S, sn) {
   /* 영웅 */
   const others = []; const seen = new Set();
   for (const a of sn.H) {
-    const idx = a[0], me = S.myIdx >= 0 ? idx === S.myIdx : false;
-    if (me) {
+    const idx = a[0], me = idx === (sn.me?.idx ?? S.myIdx);
+    if (me) S.myIdx = idx;
+    if (me && sn.me) {
       /* A13-6/7 보정: 방장이 보낸 내 위치는 '내가 그때 보낸 위치(입력 번호 q)'를 따라간 것이라 지연만큼 늦다. 예전처럼 현재 위치와 직접 비교(>110px 이면 스냅)하면 지연·지터만으로 순간이동/뒤로 끌려갔다.
          → ① 방장이 진짜로 옮겼을 때(강제 번호 fe 가 바뀜 · 첫 스냅샷 · 층 바뀜)만 스냅 ② 그 밖에는 '내가 q 번에 있던 위치'와 비교해 차이(err)가 64px 넘으면 그만큼을 부드럽게 보정, 420px 넘으면 한 번에 보정(상대값)
          ③ 대시 중·방금 보정한 직후(q ≤ corrSeq)에는 비교하지 않는다. */
-      const P = G.P, fe = sn.me.fe | 0, forced = (a[6] & 32) || fe !== S.fe || S.firstSnap !== sn.F; S.firstSnap = sn.F;
+      const P = G.P, fe = sn.me.fe | 0, forced = fe !== S.fe || S.firstSnap !== sn.F; S.firstSnap = sn.F;
       if (forced) { P.x = P.px = a[1]; P.y = P.py = a[2]; P.vx = a[3]; P.vy = a[4]; S.fe = fe; S.corr = null; S.hist.clear(); S.corrSeq = S.seq; S.rc.snap++; }
       else if (!(a[6] & 2) && !P.dash && (sn.me.q | 0) > S.corrSeq) {
         const hp = S.hist.get(sn.me.q | 0);
@@ -37444,7 +37501,7 @@ function applySnap(S, sn) {
       }
       G.char.hp = a[7]; P.shield = a[9]; P.ang = a[5] / 100; P.inv = a[6] & 4 ? .3 : 0; P.hit = a[6] & 16 ? .2 : 0; P.swing = a[12] / 100; P.swingA = sn.me.sw / 100; const wasDead = G.over === "dead", dead = !!(a[6] & 1);
       P.stun = sn.me.st; P.slow = sn.me.sl; P.dashCd = sn.me.dc; P.dashMax = sn.me.dm; G.potCd = sn.me.pc; if (G.bf) G.bf.spd = sn.me.bs || 0;
-      const bar5 = safe(() => D().bar(G.char) || [], []); for (let i = 0; i < 4; i++) { const s = P.sk[i]; s.cd = sn.me.sk[i][0]; s.max = sn.me.sk[i][1]; s.id = bar5[i] || null; /* A13-5: 손님 화면은 updatePlayer 를 안 돌려 s.id 가 영영 null → HUD 가 '비었음'·쿨 표시 없음이었다 */ } P.buffs = (sn.me.bf || []).map(b => ({id: b[0], t: b[1], col: b[2], name: b[3]}));
+      const bar5 = safe(() => D().bar(G.char) || [], []); for (let i = 0; i < 8; i++) { const s = P.sk[i]; s.cd = (sn.me.sk[i]?.[0] ?? 0); s.max = (sn.me.sk[i]?.[1] ?? 1); s.id = bar5[i] || null; /* A13-5: 손님 화면은 updatePlayer 를 안 돌려 s.id 가 영영 null → HUD 가 '비었음'·쿨 표시 없음이었다 */ } P.buffs = (sn.me.bf || []).map(b => ({id: b[0], t: b[1], col: b[2], name: b[3]}));
       if (dead && !wasDead) { G.over = "dead"; S.deadAt = nowMs(); ui().handleEv({t: "death", floor: G.floor, party: true}); } else if (!dead && wasDead) { G.over = null; ui().closeDeath(); }
       S.reviveP = a[13] / 100; S.hostHp = a[7];
     } else { seen.add(idx); let o = S.others.get(idx); if (!o) { o = {idx, P: {x: a[1], y: a[2], px: a[1], py: a[2], vx: 0, vy: 0, face: 1, ang: 0, move: 0, walk: 0, swing: 0, inv: 0, hit: 0, buffs: [], shield: 0, dash: null, hurtT: 0}, tx: a[1], ty: a[2], k: a[11], lv: a[10], hp: a[7], hpMax: a[8], dead: false, name: (S.roster.find(r => r[0] === idx) || [])[1] || "기사", reviveP: 0}; S.others.set(idx, o); }
@@ -37574,7 +37631,7 @@ function migResume(ck, ctl) {   // 내가 새 방장: 내 캐릭터로 새 월�
 function migAdopt(ctl) {   // 나는 손님: 새 방장과의 연결로 갈아 끼우고 영웅 정보를 다시 보낸다
   const S = N.S; if (!S) return; S.hostLost = false; S.mig = null; S.ended = false;
   const conn = ctl.conn; S.sess = {role: "guest", me: S.me, send(m) { safe(() => conn.send({t: "m", d: m})); }, sendTo(i, m) { safe(() => conn.send({t: "m", d: m})); }, guestConn: () => conn, close() { safe(() => conn.close()); safe(() => ctl.peer.destroy()); }, peer: ctl.peer, mode: KEY, names: () => S.names};
-  conn.on("data", m => { if (m && m.t === "m") safe(() => guestMsg(S, m.d)); }); conn.on("close", () => safe(() => guestHostLost(S))); S.inq = []; S.lastSnapAt = nowMs(); S.myIdx = -1;
+  conn.on("data", m => { if (m && m.t === "m") safe(() => guestMsg(S, m.d)); }); conn.on("close", () => safe(() => guestHostLost(S))); S.inq = []; S.appliedQ = 0; S.firstSnap = 0; S.lastSnapAt = nowMs(); S.myIdx = -1;
   bigSend(S, 1, "hi", D().save(S.G.char)); S.sentGear = sigOfChar(S.G.char); ui().note("새 파티장에게 다시 연결됐어요", "good", null, 4000);
 }
 
@@ -37620,6 +37677,11 @@ function installEntry() {
 
 return {N, ADV, S: () => N.S, active: () => !!N.S, visitor, soloContinue, role: () => N.S && N.S.role, openRoom, joinByCode, entPoll, ENT, advSet, advTagOf, ADV_RE, route, hostPost, guestFrame, leave, sendRoster, installEntry, hostBegin, guestBegin, applySnap, mirrorEnter, hostMsg, guestMsg, sendSnap, bigSend, bigRecv, myNo, knxOn,
   setReady(v) { const S = N.S; if (S && S.role === "guest") safe(() => S.sess.send({t: "rdy", v: v ? 1 : 0})); },
+  say(message) {
+    const S = N.S; if (!S || S.hostLost) return;
+    if (S.role === "host") hostSay(S, 0, message);
+    else safe(() => S.sess.send({t: "say", s: String(message).slice(0, 48)}));
+  },
   kick(netIdx) { const S = N.S; if (!S || S.role !== "host") return; safe(() => { const c = S.sess.hostConns().find(x => x.idx === netIdx); if (c) { send(S, netIdx, {t: "kick"}); setTimeout(() => safe(() => c.conn.close()), 300); } }); },
   advStop};
 })();
@@ -39912,7 +39974,7 @@ window.pmDbg = {PM, IT, IDS, linkOf, textOf, allText, base, fillLobbyExtras, dec
       {g: "📦", t: "상자와 진화", x: "엘리트·보스를 잡으면 **상자**가 나와요. 무기를 8레벨까지 키우고 **짝 패시브**가 있으면 상자에서 **진화**해요!", tip: "도시락은 체력 회복, 자석은 소품을 한꺼번에 끌어와요. 보스는 **노란 점선 경고** 뒤에 공격해요."}]},
     {id: "dungeon", name: "던전 인 라운드비", sub: "기사단 RPG · 150층", ic: "🗡️", cards: [
       {g: "🎯", t: "이 게임은요", x: "기사 한 명을 키워 **150층**까지 올라가요. 층마다 몹을 잡고 **보스**를 쓰러뜨리면 **포털**이 열려 다음 층으로 갈 수 있어요.", tip: "시작 화면의 **온라인 파티** 탭에서 같이 할 수도 있어요."},
-      {g: "🕹️", t: "움직이기 · 싸우기", x: "움직이면서 마우스(또는 버튼)로 공격하고, 스킬과 대시로 위기를 넘겨요.", pc: "**WASD**·방향키 이동 · **마우스 클릭**(또는 **J**) 공격 · **Space** 대시 · **1~4** 스킬 · **E**/**Enter** 상호작용 · **Q** 포션", ph: "왼쪽 **조이스틱**으로 이동, 오른쪽 아래 버튼으로 **대시 · 스킬 1~4 · 포션**"},
+      {g: "🕹️", t: "움직이기 · 싸우기", x: "사정거리 안의 가까운 적을 기본 공격하고, 스킬과 대시로 위기를 넘겨요.", pc: "**WASD**·방향키 이동 · **마우스 클릭**(또는 **J**) 공격 · **Space** 대시 · **1~8** 스킬 · **E**/**Enter** 상호작용 · **Q** 포션", ph: "왼쪽 **조이스틱**으로 이동, 오른쪽 아래 버튼으로 **대시 · 스킬 1~8 · 포션**"},
       {g: "🎒", t: "키우기", x: "장비를 끼고 스킬을 올려 점점 강해져요. 열기 쉬운 창은 이래요.", pc: "**I** 가방 · **K** 스킬 · **C** 캐릭터 · **M** 지도 · **Tab** 층 선택 · **F** 자동 공격 켜기/끄기 · **X** 배속", ph: "위쪽 **가방 · 스킬 · 층** 버튼, ×1 으로 배속"},
       {g: "⚠️", t: "알아 둘 것", x: "층에 도착하면 시작 포털은 잠깐(약 2.5초) 작동하지 않아요. **이전 층으로 돌아가는 포털**은 확인 창이 떠요.", tip: "나가기는 화면 오른쪽 위 근처 **나가기** 버튼이에요(확인 창이 한 번 떠요)."}]},
     {id: "robot", name: "로봇대전", sub: "컨베이어 대결", ic: "🤖", cards: [
@@ -41496,9 +41558,9 @@ setTimeout(prefetchRank, 1200);   // 랭킹 화면이 바로 뜨도록 미리 �
 try { const kp = window.knx && knx.start && knx.start(); if (kp && kp.catch) kp.catch(e => console.error('knx.start', e)); } catch (e) { console.error('knx.start', e); }   /* ===SHELL_BOOT=== */
 </script>
 
-<link rel="stylesheet" href="brawl.css?v=arena2">
-<script src="arena-room.js?v=arena2"></script>
-<script src="brawl.js?v=arena2"></script>
-<script src="blood.js?v=arena2"></script>
-<link rel="stylesheet" href="shooters.css?v=1">
-<script src="shooters.js?v=1"></script>
+<link rel="stylesheet" href="brawl.css?v=full3">
+<script src="arena-room.js?v=full3"></script>
+<script src="brawl.js?v=full3"></script>
+<script src="blood.js?v=full3"></script>
+<link rel="stylesheet" href="shooters.css?v=full3">
+<script src="shooters.js?v=full3"></script>
