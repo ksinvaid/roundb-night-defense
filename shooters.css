@@ -1,0 +1,12 @@
+.rb-shooter .rb-shooter-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 8px;
+}
+.rb-shooter-buttons button { touch-action: none; }
+.rb-shooter canvas { background: #111727; }
+@media (max-width: 600px) {
+  .rb-shooter canvas { height: 44dvh; }
+  .rb-shooter-buttons button { flex: 1 0 17%; min-height: 44px; }
+}

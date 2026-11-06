@@ -3825,6 +3825,7 @@ html[data-lowfx="1"]{scroll-behavior:auto}
           <button type="button" class="lb-game-shortcut" data-game-spot="3f-desks"><strong>서바이버</strong><small>몰려오는 공실 귀신 버티기</small></button>
           <button type="button" class="lb-game-shortcut" data-game-spot="3f-ac"><strong>소용돌이·미로</strong><small>터렛을 지어 길목 방어</small></button>
           <button type="button" class="lb-game-shortcut" data-open-brawl><strong>⚔ 대난투</strong><small>기사 10인전 · 스킬 4개</small></button>
+          <button type="button" class="lb-game-shortcut" data-shooter="night-beam"><strong>암전 순찰</strong><small>손전등 전술전 · 2인 5팀</small></button>
         </div>
       <div class="lb-stage" id="lb-stage">
         <canvas id="lb-cv" role="img" aria-label="라운드비 3층과 4층 배치도 로비. 방향키나 WASD로 내 기사를 걷게 하고, 방 이름표를 누르면 순간이동해서 바로 들어가요. 오른쪽 떠 있는 버튼으로 게임 목록·메뉴·채팅·내 정보를 열어요."></canvas>
@@ -3860,6 +3861,7 @@ html[data-lowfx="1"]{scroll-behavior:auto}
           <button type="button" class="lb-game-shortcut" data-game-spot="4f-wall"><strong>대결</strong><small>유닛을 보내 상대 팀 방 공략</small></button>
           <button type="button" class="lb-game-shortcut" data-game-spot="4f-ac"><strong>로봇대전</strong><small>컨베이어에 로봇 올려 대결</small></button>
           <button type="button" class="lb-game-shortcut" data-open-blood><strong>◉ 진화 블러드</strong><small>자동 생산 · 드론 지휘</small></button>
+          <button type="button" class="lb-game-shortcut" data-shooter="office-strike"><strong>라운드비 돌입전</strong><small>4층 공유오피스 · 3D 5대5</small></button>
         </div>
       </div>
       <div class="lb-sheet" id="lb-sheet" hidden></div>
@@ -41498,3 +41500,5 @@ try { const kp = window.knx && knx.start && knx.start(); if (kp && kp.catch) kp.
 <script src="arena-room.js?v=arena2"></script>
 <script src="brawl.js?v=arena2"></script>
 <script src="blood.js?v=arena2"></script>
+<link rel="stylesheet" href="shooters.css?v=1">
+<script src="shooters.js?v=1"></script>
