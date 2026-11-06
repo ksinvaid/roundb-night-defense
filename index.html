@@ -3341,9 +3341,8 @@ html.dgn-touch .dgn-sks .pot{grid-column:2;grid-row:3}
 html.dgn-touch .dgn-use{bottom:calc(190px + env(safe-area-inset-bottom,0px))}
 .dgn-callout{position:absolute;left:50%;top:96px;transform:translateX(-50%);z-index:8;max-width:76%;padding:8px 14px;border:1px solid #f4cd75;border-radius:10px;background:#201a32;color:#fff4d4;font-weight:800;text-align:center;overflow-wrap:anywhere;pointer-events:none}
 .dgn-callout.dgn-autostate{top:145px}
-.dgn-auto-controls{position:absolute;left:50%;bottom:calc(80px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:flex;gap:6px;z-index:6;pointer-events:auto}
+.dgn-auto-controls{display:grid;gap:5px;justify-items:end;pointer-events:auto}
 .dgn-auto-controls button{min-height:42px;font-size:13px;white-space:nowrap;padding:6px 10px}
-html.dgn-touch .dgn-auto-controls{left:auto;right:calc(10px + env(safe-area-inset-right,0px));bottom:calc(176px + env(safe-area-inset-bottom,0px));transform:none}
 html.dgn-touch .dgn-use{bottom:calc(232px + env(safe-area-inset-bottom,0px))}
 .dgn-auto-controls button[aria-pressed="true"]{background:#f6cd68;color:#16142a}
 /* ===DGN_CSS_END=== */
@@ -36492,7 +36491,9 @@ function build() {
         <button class="dgn-ib" data-act="dgn-floors" aria-label="층 선택">${svgI(ICO.stairs)}<span>층</span></button>
         <button class="dgn-ib" data-act="dgn-pause" aria-label="메뉴 (Esc)">${svgI(ICO.menu)}</button></div>
         <div class="dgn-mmw" data-act="dgn-map" role="button" aria-label="지도 (M)"><canvas class="dgn-mm" id="dgn-mm" width="224" height="224"></canvas><div class="dgn-bh" id="dgn-bh" aria-live="off"></div></div>
-        <div class="dgn-sys"><button class="dgn-ib spd" id="dgn-spd" data-act="dgn-spd" aria-label="배속 (X)" title="배속 1·1.15·1.3배 (X)"><b id="dgn-spd-t">×1</b></button><button class="dgn-ib exit" data-act="dgn-ask" aria-label="나가기" title="나가기 (진행은 자동 저장)">${svgI(ICO.exit)}<span>나가기</span></button></div></div>
+        <div class="dgn-sys"><button class="dgn-ib spd" id="dgn-spd" data-act="dgn-spd" aria-label="배속 (X)" title="배속 1·1.15·1.3배 (X)"><b id="dgn-spd-t">×1</b></button><button class="dgn-ib exit" data-act="dgn-ask" aria-label="나가기" title="나가기 (진행은 자동 저장)">${svgI(ICO.exit)}<span>나가기</span></button></div>
+        <div class="dgn-auto-controls" aria-label="스킬 자동사용 설정"><button type="button" class="dgn-btn" id="dgn-autoskill" aria-pressed="false">스킬 자동사용 꺼짐</button><button type="button" class="dgn-btn" id="dgn-auto-move" aria-pressed="true" title="자동 이동 스킬을 보스에게만 사용해요. 직접 사용은 언제든 가능해요.">이동 스킬: 보스만</button></div>
+      </div>
     </div>
     <div class="dgn-pty" id="dgn-pty" aria-label="파티"></div><div class="dgn-spec dgn-pill" id="dgn-spec" hidden></div><div class="dgn-bw dgn-pill" id="dgn-bw" hidden><span id="dgn-bw-label"></span><button class="dgn-btn" data-act="dgn-boss-now">지금 바로 도전</button><button class="dgn-btn" data-act="dgn-boss-wait">파티원 기다리기</button><button class="dgn-btn" data-act="dgn-rope">밧줄로 따라가기</button></div>
     <div class="dgn-callout" id="dgn-shout" role="status" hidden></div><div class="dgn-callout dgn-autostate" id="dgn-autostate" role="status" hidden></div><div class="dgn-notes" id="dgn-notes" aria-live="polite"></div><div class="dgn-saved" id="dgn-saved" aria-live="polite"></div>
@@ -36503,7 +36504,6 @@ function build() {
     <div class="dgn-joy" id="dgn-joy"><div class="dgn-jb" id="dgn-jb"><i id="dgn-jk"></i></div></div><div class="dgn-joyhint">이동</div>
     <div class="dgn-bot">
       <button class="dgn-use" id="dgn-use" hidden><kbd>E</kbd><span id="dgn-use-t">열기</span></button>
-      <div class="dgn-auto-controls" aria-label="스킬 자동사용 설정"><button type="button" class="dgn-btn" id="dgn-autoskill" aria-pressed="false">스킬 자동사용 꺼짐</button><button type="button" class="dgn-btn" id="dgn-auto-move" aria-pressed="true" title="자동 이동 스킬을 보스에게만 사용해요. 직접 사용은 언제든 가능해요.">이동 스킬: 보스만</button></div>
       <div class="dgn-sks" id="dgn-sks">
         <button class="dgn-sk dash" id="dgn-dash" data-k="dash" aria-label="대시 (Space)"><span class="kh">␣</span>${svgI(SKI.dash)}<span class="nm">대시</span><span class="cd"></span><span class="cdn"></span></button>
         <button class="dgn-sk pot" id="dgn-pot" data-k="pot" aria-label="물약 (Q)"><span class="kh">Q</span>${svgI(SKI.pot)}<span class="cnt" id="dgn-potn">0</span></button>
