@@ -3341,7 +3341,7 @@ html.dgn-touch .dgn-sks .pot{grid-column:2;grid-row:3}
 html.dgn-touch .dgn-use{bottom:calc(190px + env(safe-area-inset-bottom,0px))}
 .dgn-callout{position:absolute;left:50%;top:96px;transform:translateX(-50%);z-index:8;max-width:76%;padding:8px 14px;border:1px solid #f4cd75;border-radius:10px;background:#201a32;color:#fff4d4;font-weight:800;text-align:center;overflow-wrap:anywhere;pointer-events:none}
 .dgn-callout.dgn-autostate{top:145px}
-#dgn-autoskill{position:absolute;left:50%;bottom:calc(80px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);pointer-events:auto;min-height:42px;font-size:14px;white-space:nowrap;padding:6px 14px}
+#dgn-autoskill{position:absolute;left:50%;bottom:calc(80px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);pointer-events:auto;z-index:6;min-height:42px;font-size:14px;white-space:nowrap;padding:6px 14px}
 html.dgn-touch #dgn-autoskill{left:auto;right:calc(10px + env(safe-area-inset-right,0px));bottom:calc(176px + env(safe-area-inset-bottom,0px));transform:none}
 html.dgn-touch .dgn-use{bottom:calc(225px + env(safe-area-inset-bottom,0px))}
 #dgn-autoskill[aria-pressed="true"]{background:#f6cd68;color:#16142a}
@@ -15358,7 +15358,6 @@ function build() {
   try { V.touch = matchMedia("(pointer: coarse)").matches; } catch (e) { V.touch = false; }
   V.zoom = V.touch ? 1 : 1;
   bindInput();
-  $("#dgn-autoskill").addEventListener("click", toggleAutoSkill);
   try { new ResizeObserver(() => { V.relayout = true; }).observe(sec); } catch (e) { window.addEventListener("resize", () => { V.relayout = true; }); }
   document.addEventListener("visibilitychange", () => { if (document.hidden && V.phase === "play") pause(true); });
   V.ready = true;
@@ -34854,9 +34853,9 @@ function weightedDef(G, pred) {
 function tilePos(M, i) { return {x: (i % M.W + .5) * TILE, y: ((i / M.W) | 0) * TILE + TILE / 2}; }
 function enterFloor(G, n, how) {
   n = cl(Math.round(n) || 1, 1, 150); const d = D(), prevFloor = G.floor; if (G.cur !== G.hs[0]) bind(G, G.hs[0]); const c = G.char;
-  G.floor = n; G.M = dgnMap.gen(n); const M = G.M; try { G.info = d.floorInfo(n) || {}; } catch (e) { G.info = {}; } G.info.mobPool = G.info.mobPool || [];
+  G.floor = n; G.ropeView = []; G.ropePull = false; G.M = dgnMap.gen(n); const M = G.M; try { G.info = d.floorInfo(n) || {}; } catch (e) { G.info = {}; } G.info.mobPool = G.info.mobPool || [];
   G.mobs.length = G.pj.length = G.ep.length = G.zones.length = G.allies.length = G.drops.length = G.chests.length = G.portals.length = G.npcs.length = G.beams.length = G.orbits.length = G.shocks.length = G.fx.length = G.texts.length = G.slashes.length = G.bolts.length = G.later.length = 0;
-  G.boss = null; G.bs = {state: "idle", t: 0}; G.cine = null; G.near = null; G.spT = 4; G.over = null; G.horde = null; G.hordeT = HORDE.first + rand() * 20; G.combo = 0; G.comboT = -9; G.hasPsn = false; for (let i = 0; i < M.sf.length; i++) if (M.sf[i] === SF.POISON) { G.hasPsn = true; break; } G.rq = []; G.rw = DCFG.rw(n); G.nAgg = 0; G.spNearT = -99; G.ask = null; G.bossDownT = -99; G.runT = 0; G.stormT = 3 + rand() * 2; G.hazT = 0; G.bossWait = null; G.wipe = 0; G.travel = null;
+  G.boss = null; G.bs = {state: "idle", t: 0}; G.cine = null; G.near = null; G.spT = 4; G.over = null; G.horde = null; G.hordeT = HORDE.first + rand() * 20; G.combo = 0; G.comboT = -9; G.hasPsn = false; for (let i = 0; i < M.sf.length; i++) if (M.sf[i] === SF.POISON) { G.hasPsn = true; break; } G.rq = []; G.rw = DCFG.rw(n); G.nAgg = 0; G.spNearT = -99; G.ask = null; G.bossDownT = -99; G.runT = 0; G.stormT = 3 + rand() * 2; G.hazT = 0; G.bossWait = null; G.ropes = []; G.wipe = 0; G.travel = null;
   if (M.townRect) { M.mobBlock = new Uint8Array(M.W * M.H); const r = M.townRect; for (let y = r.y - 1; y <= r.y + r.h; y++) for (let x = r.x - 1; x <= r.x + r.w; x++) if (x >= 0 && y >= 0 && x < M.W && y < M.H) M.mobBlock[y * M.W + x] = 1; }
   const sp = tilePos(M, M.start.y * M.W + M.start.x);
   for (const hh of G.hs) {   // 6차: 파티 전원이 시작점에 선다(쓰러져 있던 영웅은 30% 체력으로 일어난다)
@@ -35566,8 +35565,41 @@ function bossRoomHeroes(G) {
     return x > b.x + 1 && x < b.x + b.w - 1 && y > b.y + 1 && y < b.y + b.h - 1;
   });
 }
+function ropeFollow(G, hero) {
+  if (G.bs.state !== "idle" || G.travel || isDead(G, hero)) return false;
+  const inside = bossRoomHeroes(G);
+  if (!inside.length || inside.includes(hero) || G.ropes?.some(r => r.hero === hero)) return false;
+  const leader = inside[Math.floor(rand() * inside.length)];
+  const b = G.M.boss.rect;
+  for (let i = 0; i < 12; i++) {
+    const angle = i * TAU / 12, x = leader.P.x + Math.cos(angle) * 35, y = leader.P.y + Math.sin(angle) * 35;
+    if (x / TILE <= b.x + 1 || x / TILE >= b.x + b.w - 1 ||
+        y / TILE <= b.y + 1 || y / TILE >= b.y + b.h - 1 ||
+        boxSolid(G.M, x, y, PLAYER_R + 2, false, false)) continue;
+    const P = hero.P;
+    (G.ropes ||= []).push({hero, leader, x0: P.x, y0: P.y, x, y, t: 0});
+    P.dash = null; P.vx = P.vy = 0;
+    forceHero(G, hero);
+    return true;
+  }
+  return false;
+}
+function updateRopes(G, dt) {
+  if (!G.ropes?.length) return;
+  G.ropes = G.ropes.filter(r => {
+    if (!G.hs.includes(r.hero) || isDead(G, r.hero)) return false;
+    r.t += dt;
+    const f = cl((r.t - .18) / .42, 0, 1), P = r.hero.P;
+    P.x = P.px = r.x0 + (r.x - r.x0) * f;
+    P.y = P.py = r.y0 + (r.y - r.y0) * f;
+    P.vx = P.vy = 0;
+    if (f < 1) return true;
+    forceHero(G, r.hero);
+    return false;
+  });
+}
 function bossChoice(G, hero, wait) {
-  if (G.bs.state !== "idle" || G.travel || !bossRoomHeroes(G).includes(hero)) return false;
+  if (G.bs.state !== "idle" || G.travel || G.ropes?.length || !bossRoomHeroes(G).includes(hero)) return false;
   if (wait && G.hs.length > 1) {
     G.bossWait = {waiting: true};
     return true;
@@ -35584,7 +35616,7 @@ function bossTrigger(G) {
   w.eligible = inside.map(h => h.idx);
   w.n = inside.length;
   w.of = aliveHeroes(G).length;
-  if (w.waiting && w.n === w.of) startBoss(G);
+  if (w.waiting && w.n === w.of && !G.ropes?.length) startBoss(G);
 }
 function startBoss(G) {
   const participants = bossRoomHeroes(G); if (!participants.length || G.bs.state !== "idle") return;
@@ -35627,7 +35659,7 @@ function bossDefeated(G, m) {
   }
   shakeIt(G, 8, .6); fxRing(G, m.x, m.y, 10, 320, .9, "#ffe27a", 8);
 }
-function altarRematch(G) { if (G.bs.state !== "cleared") return; G.bs = {state: "idle", t: 0}; G.rematch = true; G.altar = null; G.portals = G.portals.filter(p => !p.boss); emit(G, "toast", {text: "제단이 울려요! 보스가 다시 깨어났어요.", kind: "warn"}); }
+function altarRematch(G) { if (G.bs.state !== "cleared") return; G.bs = {state: "idle", t: 0}; G.rematch = true; G.altar = null; G.portals = G.portals.filter(p => !p.boss); emit(G, "toast", {text: "제단이 울려요! 보스가 다시 깨어났어요.", kind: "warn", g: 1}); }
 function nearest(G) {
   const P = G.P; let best = null, bd = 1e9; const consider = (o, kind, r, label) => { const d = hyp(o.x - P.x, o.y - P.y); if (d < r && d < bd) { bd = d; best = {kind, ref: o, label, d}; } };
   for (const c of G.chests) if (!c.open && (!c.participants || c.participants.has(G.cur))) consider(c, "chest", 62, "상자 열기");
@@ -35643,7 +35675,12 @@ function interact(G) {
     if (G.hs.length > 1) { const al = aliveHeroes(G), nn = al.filter(h => hyp(h.P.x - nr.ref.x, h.P.y - nr.ref.y) < 110).length; if (nn < al.length) { emit(G, "toast", {text: "동료가 모두 포탈 가까이 와야 해요 (" + nn + "/" + al.length + ")", kind: "warn"}); return true; } }
     travel(G, nr.ref.to, "portal"); return true; }
   if (nr.kind === "npc") { emit(G, "menu", {tab: nr.ref.tab}); return true; }
-  if (nr.kind === "altar") { if (G.t - (G.bossDownT == null ? -99 : G.bossDownT) < 1.5) return true; emit(G, "altarAsk", {}); return true; }   /* 5차: 바로 부르지 않고 확인 창 — 보스를 막 잡은 뒤 1.5초는 무시 */
+  if (nr.kind === "altar") {
+    if (G.t - (G.bossDownT ?? -99) < 1.5) return true;
+    if (G.party) altarRematch(G);
+    else emit(G, "altarAsk", {});
+    return true;
+  }
   return false;
 }
 function partyLock(G, n) {   // 6차: 파티는 '모두에게 열린 층'까지만 간다 → 막는 사람 이름(없으면 "")
@@ -35752,7 +35789,7 @@ function step(G, dt, inp) {   // inp = 영웅 0 의 입력. 손님 영웅은 h.i
   for (const h of hs) {   // 영웅별 갱신(쓰러진 영웅은 건너뜀)
     bind(G, h); if (G.over === "dead") continue;   /* 쓰러진 영웅은 능력치 갱신도 건너뛴다(refreshStats 가 체력 0 을 가득으로 되돌려 버린다) */ G.potCd -= dt; G.stT -= dt; if (G.stT <= 0) { G.stT = .5; refreshStats(G); G.basic = basicOf(G); }
     const hi = h === hs[0] ? inp : (h.inp || NOINP);
-    updateBuffs(G, dt); updatePlayer(G, dt, hi); hazardsHero(G, dt); updateFlow(G);
+    updateBuffs(G, dt); if (G.ropes?.some(r => r.hero === h)) continue; updatePlayer(G, dt, hi); hazardsHero(G, dt); updateFlow(G);
     if (hi.potion) usePotion(G);
   }
   bind(G, hs[0]); hazardsWorld(G, dt);
@@ -35764,6 +35801,7 @@ function step(G, dt, inp) {   // inp = 영웅 0 의 입력. 손님 영웅은 h.i
   for (const h of hs) { bind(G, h); if (G.over === "dead") { G.near = null; continue; } const hi = h === hs[0] ? inp : (h.inp || NOINP); nearest(G); if (hi.interact) interact(G); }
   bind(G, hs[0]);
   bossGuard(G);
+  updateRopes(G, dt);
   if (G.bs.state === "idle") bossTrigger(G);
   if (!G.cine) { updateSpawns(G, dt); updateHorde(G, dt); updateEvent(G, dt); }
   if (Math.floor(G.t * 4) !== Math.floor((G.t - dt) * 4)) reveal(G);
@@ -35822,7 +35860,7 @@ function botInput(G) {
 const randHero = G => { const al = aliveHeroes(G); return al.length ? al[(rand() * al.length) | 0] : G.hs[0]; };
 const H = {randHero, aliveHeroes, isDead, bind, withHero, rayLen, beamLen, beamEnd, inView, D, shotE, hurtPlayer, spawnMob, fxP, fxRing, fxText, shakeIt, boxSolid, moveBody, los, blockedAt, tilePos, tileOf, nearestMob, emit, sfx, hitMob, killMob, adiff, ELEM, mobSize, MAX_MOBS, bossDefeated, unstick, weightedDef};
 return {heroMove, nearest, setupTown, openFloor, updateFx, bind, withHero, addHero, removeHero, reviveHero, allDead, aliveHeroes, isDead, dmin, partyLock, setPartyMul, ackDrop, reveal, collect, mkFlow, newP, MAX_HEROES, HF, REVIVE_AUTO, REVIVE_HOLD, REVIVE_R, spreadHeroes,
-  forceHero, HORDE, startHorde, updateHorde, setPartySize: (G, n) => { G.partySize = cl(n | 0 || 1, 1, 8); setPartyMul(G); return G.partySize; }, DASH, startDodge, travelAnswer, placeArrival, rayLen, beamLen, DCFG, initCount, skMeta, create, enterFloor, step, respawn, refreshStats, usePotion, potionCount, interact, travel, botInput, wrapSave, unwrapSave, packExtra, unpackExtra, openMax, isOpen, openFloor, evtNextDelay, evtPickFloor, updateEvent, EVT_MIN, EVT_MAX, EVT_EXPIRE, spikeState, healPlayer, basicOf, hitMob, rarOf, H, X, TILE, PLAYER_R, mobSize, altarRematch, openChest, gainXp, spawnPack, spawnMob, startBoss, bossChoice, tileOf, nearestMob, SPIKE_PER};
+  forceHero, HORDE, startHorde, updateHorde, setPartySize: (G, n) => { G.partySize = cl(n | 0 || 1, 1, 8); setPartyMul(G); return G.partySize; }, DASH, startDodge, travelAnswer, placeArrival, rayLen, beamLen, DCFG, initCount, skMeta, create, enterFloor, step, respawn, refreshStats, usePotion, potionCount, interact, travel, botInput, wrapSave, unwrapSave, packExtra, unpackExtra, openMax, isOpen, openFloor, evtNextDelay, evtPickFloor, updateEvent, EVT_MIN, EVT_MAX, EVT_EXPIRE, spikeState, healPlayer, basicOf, hitMob, rarOf, H, X, TILE, PLAYER_R, mobSize, altarRematch, openChest, gainXp, spawnPack, spawnMob, startBoss, bossChoice, ropeFollow, tileOf, nearestMob, SPIKE_PER};
 })();
 
 /* dungeon_boss.js — 던전 인 라운드비: 보스 패턴·디자인표(10층마다 고유 보스, 중간 층은 변주).
@@ -36444,7 +36482,7 @@ function build() {
         <div class="dgn-mmw" data-act="dgn-map" role="button" aria-label="지도 (M)"><canvas class="dgn-mm" id="dgn-mm" width="224" height="224"></canvas><div class="dgn-bh" id="dgn-bh" aria-live="off"></div></div>
         <div class="dgn-sys"><button class="dgn-ib spd" id="dgn-spd" data-act="dgn-spd" aria-label="배속 (X)" title="배속 1·1.15·1.3배 (X)"><b id="dgn-spd-t">×1</b></button><button class="dgn-ib exit" data-act="dgn-ask" aria-label="나가기" title="나가기 (진행은 자동 저장)">${svgI(ICO.exit)}<span>나가기</span></button></div></div>
     </div>
-    <div class="dgn-pty" id="dgn-pty" aria-label="파티"></div><div class="dgn-spec dgn-pill" id="dgn-spec" hidden></div><div class="dgn-bw dgn-pill" id="dgn-bw" hidden><span id="dgn-bw-label"></span><button class="dgn-btn" data-act="dgn-boss-now">지금 바로 도전</button><button class="dgn-btn" data-act="dgn-boss-wait">파티원 기다리기</button></div>
+    <div class="dgn-pty" id="dgn-pty" aria-label="파티"></div><div class="dgn-spec dgn-pill" id="dgn-spec" hidden></div><div class="dgn-bw dgn-pill" id="dgn-bw" hidden><span id="dgn-bw-label"></span><button class="dgn-btn" data-act="dgn-boss-now">지금 바로 도전</button><button class="dgn-btn" data-act="dgn-boss-wait">파티원 기다리기</button><button class="dgn-btn" data-act="dgn-rope">밧줄로 따라가기</button></div>
     <div class="dgn-callout" id="dgn-shout" role="status" hidden></div><div class="dgn-callout dgn-autostate" id="dgn-autostate" role="status" hidden></div><div class="dgn-notes" id="dgn-notes" aria-live="polite"></div><div class="dgn-saved" id="dgn-saved" aria-live="polite"></div>
     <div class="dgn-boss" id="dgn-boss" hidden><b id="dgn-bn">보스</b><div class="dgn-bbar"><i id="dgn-bhp"></i><u style="left:66%"></u><u style="left:33%"></u><span id="dgn-bsp"></span></div></div>
     <div class="dgn-evt dgn-pill" id="dgn-evt" hidden><span>⚡ <b id="dgn-evt-t">이벤트 몹 출현</b></span><button data-act="dgn-evt-go">바로 이동</button></div>
@@ -36548,6 +36586,21 @@ function render(al, dt) {
       case 3: drawAlly(g, o, t); break; case 4: R.drawChest(g, o, t, o.x, o.y); break;
       case 5: R.drawNpc(g, o, t, o.x, o.y, sprite(o.k)); break;
     }
+  }
+  const ropes = G.mirror ? G.ropeView || [] : (G.ropes || []).map(r => [r.leader.P.x, r.leader.P.y, r.hero.P.x, r.hero.P.y, r.t]);
+  for (const [x, y, tx, ty, time] of ropes) {
+    const fraction = Math.min(1, time / .18), endX = x + (tx - x) * fraction, endY = y + (ty - y) * fraction;
+    g.save(); g.lineCap = "round";
+    const direction = Math.atan2(ty - y, tx - x), reach = 8 + 16 * fraction;
+    const handX = x + Math.cos(direction) * reach, handY = y - 30 + Math.sin(direction) * reach * .45;
+    g.beginPath(); g.moveTo(x, y - 24); g.lineTo(handX, handY);
+    g.strokeStyle = "#fff1bd"; g.lineWidth = 5; g.stroke();
+    g.beginPath(); g.moveTo(handX, handY);
+    g.quadraticCurveTo((x + endX) / 2, (y + endY) / 2 - 56, endX, endY - 22);
+    g.strokeStyle = "#392416"; g.lineWidth = 6; g.stroke();
+    g.strokeStyle = "#ffca6a"; g.lineWidth = 3; g.stroke();
+    g.fillStyle = "#fff1bd"; g.beginPath(); g.arc(endX, endY - 22, 5, 0, TAU); g.fill();
+    g.restore();
   }
   if (V.net?.bubbles) {
     const self = V.net.role === "guest" ? V.net.myIdx : 0;
@@ -36796,10 +36849,14 @@ function partyHud(G) {
   if (sp) { if (dead) { let left = 0; if (NT.role === "host") left = Math.max(0, core.REVIVE_AUTO - (G.t - (G.hs[0].deadAt || 0))); else left = Math.max(0, core.REVIVE_AUTO - (performance.now() - (NT.deadAt || performance.now())) / 1000); const wipe = G.wipe; sp.hidden = false; const msg = wipe ? "전멸했어요… 잠시 뒤 모두 마을에서 일어나요" : `✚ 쓰러졌어요 — 동료가 곁에 2.5초 서 있으면 일어나요 · 자동 부활 ${Math.ceil(left)}초`; if (sp._m !== msg) { sp._m = msg; sp.innerHTML = `<span>${esc(msg)}</span> <button class="dgn-btn dgn-tiny" data-act="dgn-ask">나가기</button>`; } else { const sx = sp.firstElementChild; if (sx && sx.textContent !== msg) sx.textContent = msg; } } else { sp.hidden = true; sp._m = ""; } }
   const bw = $("#dgn-bw"); if (bw) {
     const w = G.bossWait, idx = V.net?.role === "guest" ? V.net.myIdx : 0;
-    bw.hidden = G.bs.state !== "idle" || !w?.eligible?.includes(idx);
+    const inside = w?.eligible?.includes(idx), following = G.mirror ? G.ropePull : G.ropes?.some(r => r.hero === G.hs[0]);
+    const canFollow = !!V.net && !inside && !following && idx >= 0 && !G.over;
+    bw.hidden = G.bs.state !== "idle" || !w?.eligible?.length || (!inside && !canFollow);
     if (!bw.hidden) {
-      setT("dgn-bw-label", w.waiting ? `파티원 대기 중 (${w.n}/${w.of})` : `보스방 입장 (${w.n}/${w.of})`);
-      bw.querySelector('[data-act="dgn-boss-wait"]').hidden = !V.net || w.waiting || w.of < 2;
+      setT("dgn-bw-label", inside ? (w.waiting ? `파티원 대기 중 (${w.n}/${w.of})` : `보스방 입장 (${w.n}/${w.of})`) : "파티원이 보스방에 도착했어요");
+      bw.querySelector('[data-act="dgn-boss-now"]').hidden = !inside;
+      bw.querySelector('[data-act="dgn-boss-wait"]').hidden = !inside || !V.net || w.waiting || w.of < 2;
+      bw.querySelector('[data-act="dgn-rope"]').hidden = !canFollow;
     }
   }
 }
@@ -37189,6 +37246,7 @@ Object.assign(A, {
   "dgn-floors": () => { openFloors(); }, "dgn-map": () => { if (V.ui === "map") closeOv(); else openBigMap(); },
   "dgn-ftab": b => renderFloors(+b.dataset.d, (+b.dataset.d) * 10 + 1),
   "dgn-fpick": b => { const f = +b.dataset.f; if (!core.isOpen(V.G.char, f)) { note("아직 열리지 않은 층이에요. 아래층의 보스를 먼저 잡아요.", "warn"); return; } renderFloors(Math.floor((f - 1) / 10), f); dgSfx("dgUi"); },
+  "dgn-rope": () => { if (V.G && V.net) V.net.role === "guest" ? dgnNet.followRope() : core.ropeFollow(V.G, V.G.hs[0]); },
   "dgn-boss-now": () => { if (V.G) V.net?.role === "guest" ? dgnNet.bossChoice(false) : core.bossChoice(V.G, V.G.hs[0], false); },
   "dgn-boss-wait": () => { if (V.G) V.net?.role === "guest" ? dgnNet.bossChoice(true) : core.bossChoice(V.G, V.G.hs[0], true); },
   "dgn-fgo": () => { if (V.net?.role === "guest") return; const f = V._fsel; closeOv(); if (V.G && f) { if (V.net) { const lk = core.partyLock(V.G, f); if (lk) { note(lk + " 님은 아직 " + f + "층이 열리지 않았어요.", "warn"); return; } } startTravel(f, "select"); } },
@@ -37450,7 +37508,7 @@ function hostSay(S, idx, message) {
 function hostMsg(S, m, from) {
   if (!m || typeof m !== "object") return; const G = S.G; if (!G) return;
   if (m.t === "bg") { const r = bigRecv(S, from, m); if (r) hostBig(S, from, r); return; }
-  const h = S.byNet[from]; if (m.t === "autoSkill" && h) { h.autoSkill = m.on === true; return; } if (m.t === "bossChoice" && h && m.floor === G.floor) { core.bossChoice(G, h, !!m.wait); return; } if (m.t === "say" && h) { hostSay(S, h.idx, m.s); return; } if (m.t === "i") { if (h) hostInput(S, h, m); return; }
+  const h = S.byNet[from]; if (m.t === "rope" && h && m.floor === G.floor) { core.ropeFollow(G, h); return; } if (m.t === "autoSkill" && h) { h.autoSkill = m.on === true; return; } if (m.t === "bossChoice" && h && m.floor === G.floor) { core.bossChoice(G, h, !!m.wait); return; } if (m.t === "say" && h) { hostSay(S, h.idx, m.s); return; } if (m.t === "i") { if (h) hostInput(S, h, m); return; }
   if (m.t === "ack" && h) { core.ackDrop(G, m.id | 0, !!m.ok); return; }
   if (m.t === "rdy") { S.ready[from] = m.v ? 1 : 0; sendRoster(S); return; }
   if (m.t === "pong") return;
@@ -37540,7 +37598,7 @@ function sendSnap(S, g) {
   const sn = {t: "s", q: ++S.q, sp: V.spd, T: Math.round(G.t * 1000) / 1000, F: G.floor, C: G.combo | 0};
   sn.H = G.hs.map(h => { const p = h.P, st = stOf(G, h), dead = overOf(G, h) === "dead"; return [h.idx, r1(p.x), r1(p.y), r1(p.vx), r1(p.vy), r1(p.ang * 100), (dead ? 1 : 0) | (p.dash ? 2 : 0) | (p.inv > 0 ? 4 : 0) | (p.stun > 0 ? 8 : 0) | (p.hit > 0 ? 16 : 0) | (h.forced ? 32 : 0) | (p.face < 0 ? 64 : 0) | (p.shield > 0 ? 128 : 0), r1(h.char.hp), r1(st ? st.hpMax : 100), r1(p.shield || 0), h.char.lv | 0, h.char.k | 0, r1((p.swing || 0) * 100), r1((dead ? h.reviveP || 0 : 0) * 100)]; });
   for (const h of G.hs) if (h.forced) h.forced = 0;
-  const me = g.P; sn.me = {idx: g.idx, q: g.iseq | 0, fe: g.fe | 0, sk: me.sk.map(s => [r1(s.cd * 10) / 10, r1((s.max || 1) * 10) / 10]), dc: r1(me.dashCd * 100) / 100, dm: r1((me.dashMax || 2.5) * 100) / 100, pc: r1(Math.max(0, g.potCd || 0) * 10) / 10, st: r1((me.stun || 0) * 100) / 100, sl: r1((me.slow || 0) * 100) / 100, sw: r1((me.swingA == null ? me.ang : me.swingA) * 100), bs: bfSpd(g), bf: me.buffs.map(b => [b.id, r1(b.t * 10) / 10, b.col || "", b.name || ""]).slice(0, 6)};
+  const me = g.P; sn.me = {idx: g.idx, pull: !!G.ropes?.some(r => r.hero === g), q: g.iseq | 0, fe: g.fe | 0, sk: me.sk.map(s => [r1(s.cd * 10) / 10, r1((s.max || 1) * 10) / 10]), dc: r1(me.dashCd * 100) / 100, dm: r1((me.dashMax || 2.5) * 100) / 100, pc: r1(Math.max(0, g.potCd || 0) * 10) / 10, st: r1((me.stun || 0) * 100) / 100, sl: r1((me.slow || 0) * 100) / 100, sw: r1((me.swingA == null ? me.ang : me.swingA) * 100), bs: bfSpd(g), bf: me.buffs.map(b => [b.id, r1(b.t * 10) / 10, b.col || "", b.name || ""]).slice(0, 6)};
   const ms = []; for (const m of G.mobs) { if (m.dead || m.boss || !near(m.x, m.y, m.r)) continue; ms.push(m); }
   if (ms.length > 90) { ms.sort((a, b) => (a.x - P.x) * (a.x - P.x) + (a.y - P.y) * (a.y - P.y) - ((b.x - P.x) * (b.x - P.x) + (b.y - P.y) * (b.y - P.y))); ms.length = 90; }
   sn.M = ms.map(m => { const fl = (m.face < 0 ? 1 : 0) | (m.flash > 0 ? 2 : 0) | (m.lunge > 0 ? 4 : 0) | (m.stunT > 0 ? 8 : 0) | (m.slowT > 0 ? 16 : 0) | (m.burn ? 32 : 0) | (m.elite ? 64 : 0) | (m.evt ? 128 : 0) | (m.fly ? 256 : 0) | ((m.aff === "swift" ? 1 : m.aff === "steel" ? 2 : m.aff === "blast" ? 3 : 0) << 9) | (m.hd ? 2048 : 0); const a = [m.id, r1(m.x), r1(m.y), Math.max(1, Math.ceil(100 * m.hp / m.hpMax)), fl, dno(m.def), r1(m.r)]; if ((m.alpha != null && m.alpha < 1) || m.tele) { a.push(m.alpha != null && m.alpha < 1 ? r1(m.alpha * 100) : 100); if (m.tele) a.push(teleOf(m.tele, m, id)); } return a; });
@@ -37555,6 +37613,7 @@ function sendSnap(S, g) {
   sn.D = []; for (const o of G.drops) { if (o.h !== g.idx || o.pend || sn.D.length >= 40 || !near(o.x, o.y, 40)) continue; sn.D.push([o.id, r1(o.x), r1(o.y), r1(o.z || 0), o.kind === "gold" ? 0 : o.kind === "mat" ? 1 : o.kind === "cons" ? 2 : 3, o.rar | 0, o.kind === "mat" ? o.data.mat : o.kind === "cons" ? o.data.cons : 0, o.fly ? 1 : 0, r1(o.t * 10)]); }
   sn.Ch = G.chests.filter(c => !c.participants || c.participants.has(g)).map(c => [c.id, r1(c.x), r1(c.y), c.open ? 1 : 0, c.rich ? 1 : 0]);
   sn.Po = G.portals.map(p => [p.id, r1(p.x), r1(p.y), p.to, p.kind === "down" ? 0 : 1, p.boss ? 1 : 0, p.nn ? p.nn[0] : 0, p.nn ? p.nn[1] : 0, p.cool ? 1 : 0, r1((p.enter || 0) * 100)]);
+  sn.Rope = (G.ropes || []).map(r => [r1(r.leader.P.x), r1(r.leader.P.y), r1(r.hero.P.x), r1(r.hero.P.y), r2(r.t)]);
   if (G.altar) sn.Al = [r1(G.altar.x), r1(G.altar.y)];
   sn.Dr = M.boss && M.boss.doors && M.boss.doors.length ? (M.dyn[M.boss.doors[0]] === 1 ? 1 : 0) : 0; sn.Sh = M.shut.map(s => s.closed ? 1 : 0).join("");
   sn.Bs = [G.bs.state, r2(G.bs.t || 0)]; sn.Cn = G.cine ? [r2(G.cine.t), r2(G.cine.dur), r1(G.cine.tx), r1(G.cine.ty)] : 0; sn.Bw = G.bossWait ? [G.bossWait.n, G.bossWait.of, G.bossWait.waiting, G.bossWait.eligible] : 0; sn.Wp = G.wipe ? 1 : 0;
@@ -37604,6 +37663,7 @@ function guestFrame(dt, inp, locked) {
   const multiplier = dgn.speedRate(S.spd);
   const stepBudget = Math.ceil(8 * multiplier);
   S.acc += dt * multiplier; let n = 0; if (S.corr) { const kc = Math.min(1, dt * 7), cx = S.corr.x * kc, cy = S.corr.y * kc; P.x += cx; P.y += cy; S.corr.x -= cx; S.corr.y -= cy; if (Math.abs(S.corr.x) + Math.abs(S.corr.y) < .6) S.corr = null; }
+  if (G.ropePull) S.acc = 0;
   while (S.acc >= STEP && n < stepBudget) { core.heroMove(G, STEP, Object.assign({}, inp, {dash: n === 0 ? inp.dash : false})); S.acc -= STEP; n++; } if (n >= stepBudget) S.acc = 0;   /* A13-6: 프레임이 끊겨도(0.1초 한도) 이동을 덜 버린다(5→8스텝) */
   G.t += dt * multiplier; G.runT += dt * multiplier; if (!G.cine) G.playT += dt * multiplier; core.updateFx(G, dt); core.nearest(G);
   interpMirror(S, dt);
@@ -37642,7 +37702,8 @@ function applySnap(S, sn) {
          → ① 방장이 진짜로 옮겼을 때(강제 번호 fe 가 바뀜 · 첫 스냅샷 · 층 바뀜)만 스냅 ② 그 밖에는 '내가 q 번에 있던 위치'와 비교해 차이(err)가 64px 넘으면 그만큼을 부드럽게 보정, 420px 넘으면 한 번에 보정(상대값)
          ③ 대시 중·방금 보정한 직후(q ≤ corrSeq)에는 비교하지 않는다. */
       const P = G.P, fe = sn.me.fe | 0, forced = fe !== S.fe || S.firstSnap !== sn.F; S.firstSnap = sn.F;
-      if (forced) { P.x = P.px = a[1]; P.y = P.py = a[2]; P.vx = a[3]; P.vy = a[4]; S.fe = fe; S.corr = null; S.hist.clear(); S.corrSeq = S.seq; S.rc.snap++; }
+      G.ropePull = !!sn.me.pull;
+      if (forced || G.ropePull) { P.x = P.px = a[1]; P.y = P.py = a[2]; P.vx = a[3]; P.vy = a[4]; S.fe = fe; S.corr = null; S.hist.clear(); S.corrSeq = S.seq; S.rc.snap++; }
       else if (!(a[6] & 2) && !P.dash && (sn.me.q | 0) > S.corrSeq) {
         const hp = S.hist.get(sn.me.q | 0);
         if (hp) { const ex = a[1] - hp.x, ey = a[2] - hp.y, err = Math.hypot(ex, ey);
@@ -37685,6 +37746,7 @@ function applySnap(S, sn) {
   G.shocks = sn.S.map(a => ({x: a[0], y: a[1], r: a[2], w: a[3], maxR: a[4], col: col(a[5]), v: a[6]}));
   G.drops = sn.D.map(a => ({id: a[0], x: a[1], y: a[2], z: a[3], kind: ["gold", "mat", "cons", "item"][a[4]], rar: a[5], data: a[4] === 1 ? {mat: a[6]} : a[4] === 2 ? {cons: a[6]} : {}, fly: !!a[7], t: a[8] / 10}));
   G.chests = sn.Ch.map(a => ({id: a[0], x: a[1], y: a[2], open: !!a[3], rich: !!a[4], t: G.t})); G.portals = sn.Po.map(a => ({id: a[0], x: a[1], y: a[2], to: a[3], kind: a[4] ? "up" : "down", boss: !!a[5], nn: a[7] > 1 ? [a[6], a[7]] : null, cool: !!a[8], enter: a[9] / 100, label: a[3] === 1 && a[4] && a[5] ? "마을로" : a[3] + "층으로", t: G.t}));
+  G.ropeView = sn.Rope || [];
   G.altar = sn.Al ? {x: sn.Al[0], y: sn.Al[1], id: 1} : null;
   if (G.M) { const M = G.M; if (M.boss && M.boss.doors) for (const i of M.boss.doors) M.dyn[i] = sn.Dr ? 1 : 0; for (let k = 0; k < M.shut.length; k++) { const c = sn.Sh.charAt(k) === "1"; for (const ti of M.shut[k].tiles) M.dyn[ti] = c ? 1 : 0; M.shut[k].closed = c; } }
   G.bs = {state: sn.Bs[0], t: sn.Bs[1]}; G.cine = sn.Cn ? {t: sn.Cn[0], dur: sn.Cn[1], tx: sn.Cn[2], ty: sn.Cn[3]} : null; G.bossWait = sn.Bw ? {n: sn.Bw[0], of: sn.Bw[1], waiting: sn.Bw[2], eligible: sn.Bw[3]} : null; G.wipe = sn.Wp ? 1 : 0;
@@ -37732,7 +37794,7 @@ function guestBossDown(S, e) {   // 같이 있던 층의 보스를 잡았다 →
 }
 function mirrorEnter(S, n, e) {   // 손님 화면에서 층 바꾸기: 맵은 층 번호로 결정되고, 몹·탄은 스냅샷이 채운다
   const G = S.G, d = D(); n = cl(n | 0 || 1, 1, 150);
-  G.floor = n; G.M = dgnMap.gen(n); const M = G.M; try { G.info = d.floorInfo(n) || {}; } catch (er) { G.info = {}; } G.info.mobPool = G.info.mobPool || [];
+  G.floor = n; G.ropeView = []; G.ropePull = false; G.M = dgnMap.gen(n); const M = G.M; try { G.info = d.floorInfo(n) || {}; } catch (er) { G.info = {}; } G.info.mobPool = G.info.mobPool || [];
   if (e && e.defs) S.defs = e.defs; else S.defs = (G.info.mobPool || []).concat([G.info.bossId || ""]);
   G.mobs = []; G.pj = []; G.ep = []; G.zones = []; G.allies = []; G.drops = []; G.chests = []; G.portals = []; G.npcs = []; G.beams = []; G.orbits = []; G.shocks = []; G.fx = []; G.texts = []; G.slashes = []; G.bolts = []; G.later = [];
   S.mobs = new Map(); S.others = new Map(); G.others = []; G.boss = null; G.bs = {state: "idle", t: 0}; G.cine = null; G.near = null; G.ask = null; G.over = null; G.horde = null; G.combo = 0; G.explored = new Uint8Array(M.W * M.H); G.cleared = G.x.clr.includes(n); G.fl = {n, kills: 0, t0: G.playT}; G.runT = 0;
@@ -37828,6 +37890,10 @@ function installEntry() {
 
 return {N, ADV, S: () => N.S, active: () => !!N.S, visitor, soloContinue, role: () => N.S && N.S.role, openRoom, joinByCode, entPoll, ENT, advSet, advTagOf, ADV_RE, route, hostPost, guestFrame, leave, sendRoster, installEntry, hostBegin, guestBegin, applySnap, mirrorEnter, hostMsg, guestMsg, sendSnap, bigSend, bigRecv, myNo, knxOn,
   setReady(v) { const S = N.S; if (S && S.role === "guest") safe(() => S.sess.send({t: "rdy", v: v ? 1 : 0})); },
+  followRope() {
+    const S = N.S;
+    if (S?.role === "guest" && !S.hostLost) safe(() => S.sess.send({t: "rope", floor: S.G.floor}));
+  },
   syncAutoSkill() {
     const S = N.S;
     if (S?.role !== "guest" || S.hostLost) return;
