@@ -3341,7 +3341,9 @@ html.dgn-touch .dgn-sks .pot{grid-column:2;grid-row:3}
 html.dgn-touch .dgn-use{bottom:calc(190px + env(safe-area-inset-bottom,0px))}
 .dgn-callout{position:absolute;left:50%;top:96px;transform:translateX(-50%);z-index:8;max-width:76%;padding:8px 14px;border:1px solid #f4cd75;border-radius:10px;background:#201a32;color:#fff4d4;font-weight:800;text-align:center;overflow-wrap:anywhere;pointer-events:none}
 .dgn-callout.dgn-autostate{top:145px}
-#dgn-autoskill{font-size:11px;white-space:nowrap;padding:4px 7px}
+#dgn-autoskill{position:absolute;left:50%;bottom:calc(80px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);pointer-events:auto;min-height:42px;font-size:14px;white-space:nowrap;padding:6px 14px}
+html.dgn-touch #dgn-autoskill{left:auto;right:calc(10px + env(safe-area-inset-right,0px));bottom:calc(176px + env(safe-area-inset-bottom,0px));transform:none}
+html.dgn-touch .dgn-use{bottom:calc(225px + env(safe-area-inset-bottom,0px))}
 #dgn-autoskill[aria-pressed="true"]{background:#f6cd68;color:#16142a}
 /* ===DGN_CSS_END=== */
 /* ===== 문의·게임평 2차: 공지 · 자동 비공개 (접두사 brd) — 색만으로 구분하지 않고 아이콘+글자, 테두리 모양(실선/점선)을 함께 씀 ===== */
@@ -15356,6 +15358,7 @@ function build() {
   try { V.touch = matchMedia("(pointer: coarse)").matches; } catch (e) { V.touch = false; }
   V.zoom = V.touch ? 1 : 1;
   bindInput();
+  $("#dgn-autoskill").addEventListener("click", toggleAutoSkill);
   try { new ResizeObserver(() => { V.relayout = true; }).observe(sec); } catch (e) { window.addEventListener("resize", () => { V.relayout = true; }); }
   document.addEventListener("visibilitychange", () => { if (document.hidden && V.phase === "play") pause(true); });
   V.ready = true;
@@ -35128,7 +35131,7 @@ function updatePlayer(G, dt, inp) {
     if (!e) continue;
     const distance = hyp(skillTarget.x - P.x, skillTarget.y - P.y);
     const range = e.at === "target" ? 500 : e.range || e.radius || e.dist || 250;
-    if (distance > range) continue;
+    if (distance > range + (skillTarget.r || 0)) continue;
     castSkill(G, i, {aim: skillTarget}, Math.atan2(skillTarget.y - P.y, skillTarget.x - P.x), meta);
   }
   /* 자연 회복(약하게) · 마을 회복 */
@@ -36439,7 +36442,7 @@ function build() {
         <button class="dgn-ib" data-act="dgn-floors" aria-label="층 선택">${svgI(ICO.stairs)}<span>층</span></button>
         <button class="dgn-ib" data-act="dgn-pause" aria-label="메뉴 (Esc)">${svgI(ICO.menu)}</button></div>
         <div class="dgn-mmw" data-act="dgn-map" role="button" aria-label="지도 (M)"><canvas class="dgn-mm" id="dgn-mm" width="224" height="224"></canvas><div class="dgn-bh" id="dgn-bh" aria-live="off"></div></div>
-        <div class="dgn-sys"><button class="dgn-ib" id="dgn-autoskill" data-act="dgn-autoskill" aria-pressed="false">자동 스킬 끔</button><button class="dgn-ib spd" id="dgn-spd" data-act="dgn-spd" aria-label="배속 (X)" title="배속 1·1.15·1.3배 (X)"><b id="dgn-spd-t">×1</b></button><button class="dgn-ib exit" data-act="dgn-ask" aria-label="나가기" title="나가기 (진행은 자동 저장)">${svgI(ICO.exit)}<span>나가기</span></button></div></div>
+        <div class="dgn-sys"><button class="dgn-ib spd" id="dgn-spd" data-act="dgn-spd" aria-label="배속 (X)" title="배속 1·1.15·1.3배 (X)"><b id="dgn-spd-t">×1</b></button><button class="dgn-ib exit" data-act="dgn-ask" aria-label="나가기" title="나가기 (진행은 자동 저장)">${svgI(ICO.exit)}<span>나가기</span></button></div></div>
     </div>
     <div class="dgn-pty" id="dgn-pty" aria-label="파티"></div><div class="dgn-spec dgn-pill" id="dgn-spec" hidden></div><div class="dgn-bw dgn-pill" id="dgn-bw" hidden><span id="dgn-bw-label"></span><button class="dgn-btn" data-act="dgn-boss-now">지금 바로 도전</button><button class="dgn-btn" data-act="dgn-boss-wait">파티원 기다리기</button></div>
     <div class="dgn-callout" id="dgn-shout" role="status" hidden></div><div class="dgn-callout dgn-autostate" id="dgn-autostate" role="status" hidden></div><div class="dgn-notes" id="dgn-notes" aria-live="polite"></div><div class="dgn-saved" id="dgn-saved" aria-live="polite"></div>
@@ -36450,6 +36453,7 @@ function build() {
     <div class="dgn-joy" id="dgn-joy"><div class="dgn-jb" id="dgn-jb"><i id="dgn-jk"></i></div></div><div class="dgn-joyhint">이동</div>
     <div class="dgn-bot">
       <button class="dgn-use" id="dgn-use" hidden><kbd>E</kbd><span id="dgn-use-t">열기</span></button>
+      <button type="button" class="dgn-btn" id="dgn-autoskill" aria-pressed="false">스킬 자동사용 꺼짐</button>
       <div class="dgn-sks" id="dgn-sks">
         <button class="dgn-sk dash" id="dgn-dash" data-k="dash" aria-label="대시 (Space)"><span class="kh">␣</span>${svgI(SKI.dash)}<span class="nm">대시</span><span class="cd"></span><span class="cdn"></span></button>
         <button class="dgn-sk pot" id="dgn-pot" data-k="pot" aria-label="물약 (Q)"><span class="kh">Q</span>${svgI(SKI.pot)}<span class="cnt" id="dgn-potn">0</span></button>
@@ -36466,6 +36470,7 @@ function build() {
   const qp = (() => { try { return new URLSearchParams(location.search).get("touch"); } catch (e) { return null; } })();
   V.touch = qp === "1" ? true : qp === "0" ? false : coarse; document.documentElement.classList.toggle("dgn-touch", V.touch);
   bindInput();
+  $("#dgn-autoskill").addEventListener("click", toggleAutoSkill);
   try { new ResizeObserver(() => { V.relayout = true; }).observe(sec); } catch (e) { window.addEventListener("resize", () => { V.relayout = true; }); }
   document.addEventListener("visibilitychange", () => { if (document.hidden && UI.screen === "dungeon") { saveNow("hide", true); rankSubmit(true); } else V.last = performance.now(); });
   window.addEventListener("pagehide", () => { if (UI.screen === "dungeon") { saveNow("hide", true); } });
@@ -36750,9 +36755,7 @@ function hud(dt) {
     const i = +k, s = P.sk[i], id = s.id || null, empty = !id, ek = id || (c.sp > 0 ? "~sp" : ""); if (el._id !== ek) { el._id = ek; const mt = id ? meta[id] : null; let kind = "empty"; try { const e = id ? D().effectOf(c, id) : null; if (e && SKI[e.kind]) kind = e.kind; } catch (e) {} el.innerHTML = `<span class="kh">${i + 1}</span>${svgI(SKI[kind])}<span class="nm">${esc(mt ? mt.name : (c.sp > 0 ? "K 배우기" : "비었음"))}</span><span class="cd"></span><span class="cdn"></span>`; }
     el.classList.toggle("empty", empty); const cool = s.cd > 0 && !empty; el.classList.toggle("cool", cool); el.classList.toggle("rdy", !cool && !empty); if (cool) { el.querySelector(".cd").style.setProperty("--p", (s.cd / Math.max(.1, s.max)) * 100 + "%"); setT(el.querySelector(".cdn"), s.cd >= 10 ? String(Math.ceil(s.cd)) : s.cd.toFixed(1)); } else el.querySelector(".cd").style.setProperty("--p", "0%");
   }
-  const autoButton = $("#dgn-autoskill"), skillOn = !!G.opt.autoSkill;
-  autoButton.setAttribute("aria-pressed", String(skillOn));
-  setT(autoButton, "자동 스킬 " + (skillOn ? "켬" : "끔"));
+  syncAutoSkill(G);
   const shout = V.net?.shout, shoutEl = $("#dgn-shout");
   shoutEl.hidden = !shout || shout.until <= performance.now();
   if (!shoutEl.hidden) setT(shoutEl, shout.name + " · " + shout.text);
@@ -36843,6 +36846,32 @@ function bindInput() {
   jz.addEventListener("pointerup", ju); jz.addEventListener("pointercancel", ju);
 }
 function worldAim() { const m = V.mouse; if (!m.on || V.touch || performance.now() - m.t > 5000) return null; const z = V.zoom; m.wx = V.cam.x + (m.x - V.w / 2) / z; m.wy = V.cam.y + (m.y - V.h / 2) / z; return {x: m.wx, y: m.wy}; }
+function syncAutoSkill(G) {
+  const button = $("#dgn-autoskill");
+  const on = !!G.opt.autoSkill;
+  button.setAttribute("aria-pressed", String(on));
+  setT(button, "스킬 자동사용 " + (on ? "켜짐" : "꺼짐"));
+}
+function toggleAutoSkill() {
+  const G = V.G;
+  if (!G || G.over) return;
+  const on = !G.opt.autoSkill;
+  const d = D();
+  if (on && !d.bar(G.char).some(Boolean)) {
+    const starter = d.skillList(G.char.k).find(skill => skill.type === "active" && d.canLearn(G.char, skill.id).ok);
+    if (!starter || !d.learn(G.char, starter.id)) {
+      note("스킬을 하나 배우고 장착하면 자동사용을 켤 수 있어요.", "warn");
+      openMenu("skills");
+      return;
+    }
+    note(starter.n + " 장착 · 자동사용 켜짐", "good");
+    saveNow("skill", true);
+  }
+  G.opt.autoSkill = V.opt.autoSkill = on;
+  saveOpt();
+  syncAutoSkill(G);
+  if (V.net?.role === "guest") dgnNet.syncAutoSkill();
+}
 function toggleAuto() { const G = V.G; G.opt.auto = !G.opt.auto; V.opt.auto = G.opt.auto; saveOpt(); V.autoStateUntil = performance.now() + 2800; setT("dgn-autostate", G.opt.auto ? "기본 자동공격 켜짐 (F)" : "기본 자동공격 꺼짐 (F)"); }
 function buildInput() {
   if (V.bot && V.G) { V.castQ.fill(0); return core.botInput(V.G); }   // 시험용 자동 플레이(콘솔에서 dgn.V.bot = true)
@@ -37164,11 +37193,6 @@ Object.assign(A, {
   "dgn-boss-wait": () => { if (V.G) V.net?.role === "guest" ? dgnNet.bossChoice(true) : core.bossChoice(V.G, V.G.hs[0], true); },
   "dgn-fgo": () => { if (V.net?.role === "guest") return; const f = V._fsel; closeOv(); if (V.G && f) { if (V.net) { const lk = core.partyLock(V.G, f); if (lk) { note(lk + " 님은 아직 " + f + "층이 열리지 않았어요.", "warn"); return; } } startTravel(f, "select"); } },
   "dgn-home": () => { closeOv(); if (V.net && V.net.role !== "host") { note("파티 중에는 파티장이 정해요.", "warn"); return; } startTravel(1, "select"); },
-  "dgn-autoskill": () => {
-    if (!V.G) return;
-    V.G.opt.autoSkill = V.opt.autoSkill = !V.G.opt.autoSkill;
-    saveOpt();
-  },
   "dgn-auto": () => { toggleAuto(); openPause(); },
   "dgn-snd": () => { if (typeof SAVE !== "undefined") { SAVE.mute = !SAVE.mute; persist(true); } openPause(); },
   "dgn-zoom": () => { V.opt.zoom = V.opt.zoom === 1 ? 1.2 : V.opt.zoom === 1.2 ? .85 : 1; saveOpt(); V.relayout = true; openPause(); },
@@ -37426,7 +37450,7 @@ function hostSay(S, idx, message) {
 function hostMsg(S, m, from) {
   if (!m || typeof m !== "object") return; const G = S.G; if (!G) return;
   if (m.t === "bg") { const r = bigRecv(S, from, m); if (r) hostBig(S, from, r); return; }
-  const h = S.byNet[from]; if (m.t === "bossChoice" && h && m.floor === G.floor) { core.bossChoice(G, h, !!m.wait); return; } if (m.t === "say" && h) { hostSay(S, h.idx, m.s); return; } if (m.t === "i") { if (h) hostInput(S, h, m); return; }
+  const h = S.byNet[from]; if (m.t === "autoSkill" && h) { h.autoSkill = m.on === true; return; } if (m.t === "bossChoice" && h && m.floor === G.floor) { core.bossChoice(G, h, !!m.wait); return; } if (m.t === "say" && h) { hostSay(S, h.idx, m.s); return; } if (m.t === "i") { if (h) hostInput(S, h, m); return; }
   if (m.t === "ack" && h) { core.ackDrop(G, m.id | 0, !!m.ok); return; }
   if (m.t === "rdy") { S.ready[from] = m.v ? 1 : 0; sendRoster(S); return; }
   if (m.t === "pong") return;
@@ -37476,7 +37500,7 @@ function route(evs) {
     switch (e.t) {
       case "boss": if (e.personal) { if (remote) owner.evq.push(e); else local.push(e); break; } local.push(e); for (const g of S.guests) g.evq.push(e); break;
       case "save": case "travelAsk": case "altarAsk": if (!remote) local.push(e); break;
-      case "level": case "loot": case "auto": case "cast": case "menu": case "rare": if (remote) { if (e.t === "menu" || e.t === "rare") owner.evq.push(e); } else local.push(e); break;
+      case "level": case "loot": case "auto": case "cast": case "menu": case "rare": if (remote) { if (e.t === "menu" || e.t === "rare" || e.t === "cast") owner.evq.push(e); } else local.push(e); break;
       case "gain": case "xp": case "consume": case "pot": case "revived": if (remote) owner.evq.push(e); break;
       case "death": if (remote) owner.evq.push({t: "death", h: e.h}); else local.push(e); break;
       case "toast": if (e.g) { local.push(e); for (const g of S.guests) g.evq.push(e); } else if (remote) owner.evq.push(e); else local.push(e); break;
@@ -37804,6 +37828,16 @@ function installEntry() {
 
 return {N, ADV, S: () => N.S, active: () => !!N.S, visitor, soloContinue, role: () => N.S && N.S.role, openRoom, joinByCode, entPoll, ENT, advSet, advTagOf, ADV_RE, route, hostPost, guestFrame, leave, sendRoster, installEntry, hostBegin, guestBegin, applySnap, mirrorEnter, hostMsg, guestMsg, sendSnap, bigSend, bigRecv, myNo, knxOn,
   setReady(v) { const S = N.S; if (S && S.role === "guest") safe(() => S.sess.send({t: "rdy", v: v ? 1 : 0})); },
+  syncAutoSkill() {
+    const S = N.S;
+    if (S?.role !== "guest" || S.hostLost) return;
+    const gear = sigOfChar(S.G.char);
+    if (gear && gear !== S.sentGear) {
+      bigSend(S, 1, "g", D().save(S.G.char));
+      S.sentGear = gear;
+    }
+    safe(() => S.sess.send({t: "autoSkill", on: !!S.G.opt.autoSkill}));
+  },
   bossChoice(wait) {
     const S = N.S;
     if (S?.role === "guest" && !S.hostLost) safe(() => S.sess.send({t: "bossChoice", wait, floor: S.G.floor}));
