@@ -32089,13 +32089,13 @@ D.K = [
       P("h17", "그림자 걸음", "이동 속도가 오른다.", 7, 2, {moveP: 2.5}),
       P("h18", "약점 간파", "치명타 피해가 오른다.", 12, 2, {critDmg: 6})
     ]},
-  {i: 2, k: "jiyu", n: "지유", cls: "성기사", role: "회복·신성 광역", tag: "다친 사람을 그냥 두지 않는다. 치유와 신성 광역기의 기둥.",
+  {i: 2, k: "jiyu", n: "지유", cls: "성기사", role: "파티 힐러 · 회복·보호막", tag: "주변 아군의 체력을 채우고 보호막을 씌우는 파티 힐러.",
     m: {hp: 1.05, atk: 1.1, def: 1.0, spd: 1.0}, crit: .05, avoid: .9,
     basic: {name: "빛 구슬", kind: "proj", mul: .9, rate: 1.7, range: 350, speed: 600, pierce: 0, radius: 12},
     skills: [
       A("j1", "성광탄", "빛의 구슬을 날려 터뜨린다.", 2.5, 1, 1, {kind: "proj", mul: 4.2, count: 1, speed: 520, range: 420, pierce: 0, radius: 14, splash: 55, fx: "holybolt", col: "#fff0a8"}, {mul: .52, splash: 5}),
-      A("j2", "응급 간식", "간식을 나눠 체력을 크게 회복한다.", 9, 6, 2, {kind: "heal", pct: .28, radius: 150, dur: 0, fx: "snack", col: "#ffe3b8"}, {pct: .05, cd: -.4}, ["j1", 2]),
-      A("j3", "수호의 기도", "기도로 방어력을 올리고 체력을 서서히 되찾는다.", 18, 18, 3, {kind: "buff", dur: 10, defMul: .3, regenP: 2, dmgRed: .12, fx: "prayer", col: "#fff0a8"}, {defMul: .05, regenP: .4, dmgRed: .02, dur: 1, cd: -.6}, ["j2", 2]),
+      A("j2", "응급 간식", "자신과 가까운 파티원의 최대 체력에 비례해 회복한다.", 9, 6, 2, {kind: "heal", pct: .28, radius: 220, partyRadius: 220, dur: 0, fx: "snack", col: "#ffe3b8"}, {pct: .05, cd: -.4}, ["j1", 2]),
+      A("j3", "수호의 기도", "가까운 파티원의 방어력을 높이고 지속 회복을 건다.", 18, 18, 3, {kind: "buff", dur: 10, defMul: .3, regenP: 2, dmgRed: .12, partyRadius: 210, fx: "prayer", col: "#fff0a8"}, {defMul: .05, regenP: .4, dmgRed: .02, dur: 1, cd: -.6}, ["j2", 2]),
       A("j4", "심판의 빛", "주변을 하얗게 태우고 체력을 회복한다.", 26, 35, 5, {kind: "aoe", mul: 12.5, radius: 270, at: "self", delay: .4, stun: .5, healPct: .15, fx: "judgement", col: "#ffffff", say: "다친 사람 없죠? 간식도 있어요!"}, {mul: 2.0, radius: 12, healPct: .03, cd: -1.2}, ["j3", 2]),
       P("j5", "깊은 신앙", "신앙의 힘으로 체력이 오른다.", 3, 1, {hpP: 4}),
       P("j6", "간식 가방", "물약 효과와 초당 회복이 오른다.", 10, 2, {potionP: 10, regenP: .1}, ["j5", 2]),
@@ -32103,8 +32103,8 @@ D.K = [
       P("j8", "작은 기적", "쿨다운과 받는 피해가 줄어든다.", 50, 4, {cdr: 3, dmgRed: 2}, ["j4", 1]),
 /* ===5차 확충=== */
       A("j9", "성스러운 화살", "빛의 화살을 쏜다.", 3, 1, 1, {kind: "proj", mul: 2.4, count: 1, speed: 720, range: 560, radius: 12, pierce: 0, col: "#fff0a8"}, {mul: .3, range: 22}),
-      A("j10", "치유의 손길", "체력을 회복한다.", 14, 2, 1, {kind: "heal", pct: .25, radius: 120, col: "#b6f5c9"}, {pct: .04}),
-      A("j11", "신성한 방벽", "빛의 방벽으로 몸을 감싼다.", 14, 3, 2, {kind: "buff", dur: 6, shield: .25, col: "#fff0a8"}, {shield: .05, dur: .6}),
+      A("j10", "치유의 손길", "자신과 가까운 파티원의 체력을 회복한다.", 12, 1, 1, {kind: "heal", pct: .25, radius: 210, partyRadius: 210, col: "#b6f5c9"}, {pct: .04}),
+      A("j11", "신성한 방벽", "가까운 파티원에게 빛의 보호막을 씌운다.", 14, 3, 2, {kind: "buff", dur: 6, shield: .25, partyRadius: 190, col: "#fff0a8"}, {shield: .05, dur: .6}),
       A("j12", "축복의 장판", "빛의 장판이 적을 태운다.", 11, 5, 2, {kind: "aoe", mul: .55, radius: 120, at: "target", dur: 5, tick: .5, delay: .2, col: "#ffe9a0"}, {mul: .1, dur: .6}),
       A("j13", "수호 구슬", "빛 구슬이 몸 주위를 돈다.", 12, 7, 3, {kind: "orbit", mul: .9, count: 3, radius: 92, dur: 7, spin: 200, tick: .5, col: "#fff0a8"}, {mul: .1, dur: .5}),
       A("j14", "생명의 기도", "흡혈과 초당 회복.", 18, 10, 3, {kind: "buff", dur: 8, lifesteal: .1, regenP: 1.5, col: "#b6f5c9"}, {lifesteal: .01, regenP: .2}),
@@ -32137,13 +32137,13 @@ D.K = [
       P("a17", "민첩", "이동 속도가 오른다.", 7, 2, {moveP: 2}),
       P("a18", "침착", "치명타 피해가 오른다.", 12, 2, {critDmg: 6})
     ]},
-  {i: 4, k: "chaewon", n: "채원", cls: "전술 지휘관", role: "소환·설치", tag: "직접 싸우기보다 판을 짠다. 포탑·덫·드론으로 전장을 지배한다.",
+  {i: 4, k: "chaewon", n: "채원", cls: "전술 지휘관", role: "파티 버퍼 · 소환·설치", tag: "진형과 나팔로 파티의 공격·방어·기동을 높이고, 포탑과 덫을 설치한다.",
     m: {hp: .92, atk: 0.8, def: .9, spd: 1.0}, crit: .05, avoid: .78,
     basic: {name: "지휘봉 사격", kind: "proj", mul: .85, rate: 2.0, range: 400, speed: 680, pierce: 0, radius: 10, homing: .4},
     skills: [
       A("c1", "임시 포탑 설치", "자동으로 쏘는 포탑을 설치한다.", 8, 1, 1, {kind: "summon", form: "turret", count: 1, dur: 12, atkMul: .28, rate: 1.4, range: 340, hpMul: .5, fx: "turret", col: "#ffd9a0"}, {count: .5, dur: 2, atkMul: .04, cd: -.3}),
       A("c2", "압정 덫", "밟는 적을 느리게 하고 피해를 입히는 덫 지대.", 10, 6, 2, {kind: "aoe", mul: .55, radius: 118, at: "target", dur: 8, tick: .5, slow: .55, fx: "trap", col: "#ffd9a0"}, {mul: .08, radius: 8, dur: .5, cd: -.4}, ["c1", 2]),
-      A("c3", "진형 변경", "전열을 정비해 공격·방어·이동이 모두 오른다.", 16, 18, 3, {kind: "buff", dur: 10, atkMul: .2, defMul: .2, moveMul: .1, fx: "formation", col: "#ffd9a0"}, {atkMul: .04, defMul: .04, moveMul: .02, dur: 1, cd: -.5}, ["c2", 2]),
+      A("c3", "진형 변경", "가까운 파티원의 공격력·방어력·이동 속도를 높인다.", 16, 18, 3, {kind: "buff", dur: 10, atkMul: .2, defMul: .2, moveMul: .1, partyRadius: 250, fx: "formation", col: "#ffd9a0"}, {atkMul: .04, defMul: .04, moveMul: .02, dur: 1, cd: -.5}, ["c2", 2]),
       A("c4", "전술 드론 편대", "드론이 따라다니며 적을 자동 공격한다.", 30, 35, 5, {kind: "summon", form: "drone", count: 3, dur: 16, atkMul: .3, rate: 1.8, range: 320, hpMul: .4, fx: "drones", col: "#ffe9c8", say: "진형을 한 칸만 당길게요."}, {count: .5, dur: 2, atkMul: .05, cd: -1.5}, ["c3", 2]),
       P("c5", "치밀한 계획", "쿨다운이 줄어든다.", 3, 1, {cdr: 2.5}),
       P("c6", "보급 계통", "골드 획득과 획득 범위가 늘어난다.", 10, 2, {goldFind: 5, magnet: 8}, ["c5", 2]),
@@ -32154,8 +32154,8 @@ D.K = [
       A("c10", "박격포 지원", "목표 지점을 포격한다.", 7, 2, 1, {kind: "aoe", mul: 3.2, radius: 125, at: "target", delay: .45, col: "#ffb347"}, {mul: .35, radius: 7}),
       A("c11", "철조망 설치", "지나가는 적을 계속 다치게 하는 장판.", 11, 3, 2, {kind: "aoe", mul: .55, radius: 120, at: "target", dur: 5, tick: .5, delay: .2, col: "#ffd9a0"}, {mul: .1, dur: .6}),
       A("c12", "표적 지정", "주변 적이 더 큰 피해를 입는다.", 14, 5, 2, {kind: "buff", dur: 8, markRadius: 240, markDmg: .2, col: "#ffe9c8"}, {markDmg: .03}),
-      A("c13", "진군 나팔", "공격 속도와 이동 속도가 오른다.", 16, 7, 3, {kind: "buff", dur: 8, atkSpdMul: .25, moveMul: .15, col: "#ffd24d"}, {atkSpdMul: .03, dur: .6}),
-      A("c14", "방어 진형", "방벽을 세운다.", 14, 10, 3, {kind: "buff", dur: 6, shield: .25, col: "#9ad0ff"}, {shield: .05, dur: .6}),
+      A("c13", "진군 나팔", "가까운 파티원의 공격 속도와 이동 속도를 높인다.", 16, 2, 1, {kind: "buff", dur: 8, atkSpdMul: .25, moveMul: .15, partyRadius: 250, col: "#ffd24d"}, {atkSpdMul: .03, dur: .6}),
+      A("c14", "방어 진형", "가까운 파티원에게 방벽을 씌운다.", 14, 10, 3, {kind: "buff", dur: 6, shield: .25, partyRadius: 220, col: "#9ad0ff"}, {shield: .05, dur: .6}),
       P("c15", "전술 이해", "소환수가 강해진다.", 2, 1, {summonP: 6}),
       P("c16", "보급품", "물약 효과가 오른다.", 4, 1, {potionP: 8}),
       P("c17", "지휘 경험", "경험치가 오른다.", 7, 2, {xpMul: 3}),
@@ -32209,7 +32209,7 @@ D.K = [
       P("d17", "튼튼한 무릎", "이동 속도가 오른다.", 7, 2, {moveP: 2}),
       P("d18", "투지", "저체력일수록 공격력이 오른다.", 12, 2, {lowHpAtk: 3})
     ]},
-  {i: 7, k: "soyul", n: "소율", cls: "수호 기사", role: "탱커·도발·반사", tag: "도발하고 버티고 되돌려준다. 한 발도 물러나지 않는 방벽.",
+  {i: 7, k: "soyul", n: "소율", cls: "수호 기사", role: "파티 탱커 · 도발·보호막", tag: "적의 시선을 끌고 파티에 방벽을 씌우는 수호 기사.",
     m: {hp: 1.35, atk: 1.3, def: 1.4, spd: .95}, crit: .03, avoid: 1.0,
     basic: {name: "방패 밀치기", kind: "cone", mul: 1.4, rate: 1.7, range: 72, angle: 110},
     skills: [
@@ -32223,7 +32223,7 @@ D.K = [
       P("u8", "가시 방패", "받는 피해를 되돌려주고 피해가 줄어든다.", 50, 4, {thorns: 8, dmgRed: 2}, ["u4", 1]),
 /* ===5차 확충=== */
       A("u9", "방패 강타", "방패로 앞을 강하게 친다.", 4, 1, 1, {kind: "cone", mul: 2.2, range: 108, angle: 130, hits: 1, stun: .3, col: "#9ad0ff"}, {mul: .25, range: 4}),
-      A("u10", "수호 방패", "강한 방벽을 둘러친다.", 14, 2, 1, {kind: "buff", dur: 6, shield: .25, col: "#9ad0ff"}, {shield: .05, dur: .6}),
+      A("u10", "수호 방패", "자신과 가까운 파티원에게 강한 방벽을 씌운다.", 14, 2, 1, {kind: "buff", dur: 6, shield: .25, partyRadius: 180, col: "#9ad0ff"}, {shield: .05, dur: .6}),
       A("u11", "응급 처치", "체력을 회복한다.", 14, 3, 2, {kind: "heal", pct: .25, radius: 120, col: "#b6f5c9"}, {pct: .04}),
       A("u12", "방벽 영역", "지나가는 적을 다치게 하는 장판.", 11, 5, 2, {kind: "aoe", mul: .55, radius: 120, at: "target", dur: 5, tick: .5, delay: .2, col: "#9ad0ff"}, {mul: .1, dur: .6}),
       A("u13", "방패 회전", "방패를 돌려 주변을 쓸어낸다.", 5, 7, 3, {kind: "aoe", mul: 2.6, radius: 115, at: "self", delay: .1, col: "#9ad0ff"}, {mul: .3, radius: 7}),
@@ -33976,7 +33976,7 @@ function absSheet(c) {
   return `<button class="dgr-btn sm dgr-x" data-a="sheetClose">✕ 닫기</button><h2 id="dgr-sh">갈아넣기 — 영구 능력치</h2>
     <div class="dgr-note">쓰지 않는 장비를 갈아 넣으면 <b>가루</b>가 쌓여 고른 능력치 줄의 게이지가 차고, 가득 차면 그 능력치가 <b>영구히 +1단계</b> 올라요. 장비 한 개의 가루 = 등급 × 아이템 레벨 × 강화 단계에 비례. <b>잠금·장착 중 장비는 갈아넣을 수 없고, 되돌릴 수 없어요.</b></div>
     <div class="dgr-list">${rows}</div>
-    <div class="dgr-row">${[0, 1, 2, 3].map(r => `<button class="dgr-btn sm" data-a="absR" data-r="${r}" aria-pressed="${a.rmax === r}" style="${a.rmax === r ? "background:" + RAR[r].c + ";color:#14141c" : ""}">${RAR[r].n} 이하</button>`).join("")}</div>
+    <div class="dgr-row">${RAR.map((_, r) => `<button class="dgr-btn sm" data-a="absR" data-r="${r}" aria-pressed="${a.rmax === r}" style="${a.rmax === r ? "background:" + RAR[r].c + ";color:#14141c" : ""}">${RAR[r].n} 이하</button>`).join("")}</div>
     <label class="dgr-row dgr-sm"><input type="checkbox" data-a="absOpt" data-o="keepSet" ${a.keepSet ? "checked" : ""} style="width:22px;height:22px"> 세트 장비 제외</label>
     <label class="dgr-row dgr-sm"><input type="checkbox" data-a="absOpt" data-o="keepEnh" ${a.keepEnh ? "checked" : ""} style="width:22px;height:22px"> 강화한 장비 제외</label>
     <label class="dgr-row dgr-sm"><input type="checkbox" data-a="absOpt" data-o="keepUp" ${a.keepUp ? "checked" : ""} style="width:22px;height:22px"> 끼면 더 강해지는(▲) 장비 제외</label>
@@ -35175,9 +35175,15 @@ function updatePlayer(G, dt, inp) {
     if (!s.id || s.cd > 0 || G.cine || G.over) continue;
     if (inp.cast?.[i]) { castSkill(G, i, inp, ang, meta); continue; }
     const autoSlot = G.cur.idx === 0 ? G.opt.autoSlots?.[s.id] !== false : ((G.cur.autoMask ?? 255) & (1 << i)) !== 0;
-    if (!autoSlot || !skillTarget || P.dash) continue;
+    if (!autoSlot || !autoSkill || P.dash || P.stun > 0 || (!skillTarget && meta[s.id]?.effect?.kind !== "heal")) continue;
     const e = D().effectOf(c, s.id);
     if (!e) continue;
+    if (e.kind === "heal") {
+      if (supportTargets(G, e.partyRadius).some(h => h.char.hp < (h === G.cur ? G.st : h.st).hpMax * .78))
+        castSkill(G, i, {aim:null}, ang, meta);
+      continue;
+    }
+    if (!skillTarget) continue;
     let aim = skillTarget;
     const bossOnly = G.cur.idx === 0 ? G.opt.bossOnlyMove !== false : G.cur.bossOnlyMove !== false;
     if (e.kind === "dash" && bossOnly) {
@@ -35210,7 +35216,12 @@ function castSkill(G, slot, inp, ang, meta) {
   if (eff.kind === "cone" && eff.windup > 0) { fxRing(G, P.x, P.y, 6, (eff.range || 90) * .9, eff.windup, col, 4); P.castT = eff.windup + .2; const a0 = ang; later(G, eff.windup, () => { if (!G.over) { X.cone(G, eff, a0, cx); shakeIt(G, 6, .2); } }); } else X[eff.kind](G, eff, ang, cx);
   if (eff.kind !== "buff") selfBuff(G, eff, cx, eff.buffDur || 0);
   if (eff.selfHeal) healPlayer(G, G.st.hpMax * eff.selfHeal); if (eff.healPct && eff.kind === "aoe") healPlayer(G, G.st.hpMax * eff.healPct);
-  if (eff.taunt) for (const m of G.mobs) if (!m.dead && !m.boss && hyp(m.x - P.x, m.y - P.y) < eff.taunt) { m.agg = true; m.awake = true; }
+  if (eff.taunt) for (const m of G.mobs) {
+    if (m.dead || hyp(m.x-P.x,m.y-P.y) >= eff.taunt || !los(G.M,P.x,P.y,m.x,m.y) ||
+        (m.participants && !m.participants.has(G.cur))) continue;
+    m.taunt = {h:G.cur,t:G.t + (m.boss ? 3 : 5)};
+    m.agg = true; m.awake = true;
+  }
   if (eff.say) fxText(G, P.x, P.y - 66, eff.say, col, false, {small: true, out: "#1a1020", max: 1.6});
   sfx(G, "dgSkill"); emit(G, "cast", {slot, id});
 }
@@ -35264,11 +35275,25 @@ X.aoe = (G, e, ang, c) => {
 X.dash = (G, e, ang, c) => {
   const P = G.P, dist = e.dist || 220, dur = e.dur || .18, o = stOf(e); P.dash = {dx: Math.cos(ang), dy: Math.sin(ang), speed: dist / dur, dur, t: 0, hit: [], mul: e.mul == null ? 0 : e.mul, o, col: c.col}; if (e.invuln !== 0) P.inv = Math.max(P.inv, dur + (e.invuln || 0)); fxRing(G, P.x, P.y, 6, 48, .3, c.col, 4);
 };
+function supportTargets(G, radius) {
+  const caster = G.cur, P = G.P;
+  if (!radius) return [caster];
+  return G.hs.filter(h => h === caster || (!isDead(G, h) &&
+    hyp(h.P.x-P.x,h.P.y-P.y) <= radius && los(G.M,P.x,P.y,h.P.x,h.P.y)));
+}
 X.buff = (G, e, ang, c) => {
+  if (e.partyRadius) for (const ally of supportTargets(G, e.partyRadius)) {
+    if (ally === G.cur) continue;
+    withHero(G, ally, () => {
+      selfBuff(G, e, c, e.dur || 6);
+      fxText(G, G.P.x, G.P.y-44, c.name || "지원", c.col, false);
+      fxRing(G, G.P.x, G.P.y, 8, 36, .45, c.col, 3);
+    });
+  }
   const P = G.P, b = {id: c.id, t: e.dur || 6, atk: e.atk || 0, def: e.def || 0, spd: e.spd || 0, atkSpd: e.atkSpd || 0, crit: e.crit || 0, lifesteal: e.lifesteal || 0, cdr: e.cdr || 0, reflect: e.reflect || 0, invuln: e.invuln ? 1 : 0, regen: e.regen || 0, col: c.col, name: c.name};
   if (b.atk || b.def || b.spd || b.atkSpd || b.crit || b.lifesteal || b.cdr || b.reflect || b.invuln || b.regen) { const old = P.buffs.findIndex(x => x.id === c.id); if (old >= 0) P.buffs.splice(old, 1); P.buffs.push(b); }
   selfBuff(G, e, c, e.dur || 6);
-  fxRing(G, P.x, P.y, 10, 90, .6, c.col, 5); fxP(G, P.x, P.y, c.col, 14, 150, .6, 4); sfx(G, "dgBuff"); fxText(G, P.x, P.y - 44, c.name || "강화", c.col, false);
+  fxRing(G, P.x, P.y, 10, e.partyRadius || 90, .6, c.col, 5); fxP(G, P.x, P.y, c.col, 14, 150, .6, 4); sfx(G, "dgBuff"); fxText(G, P.x, P.y - 44, c.name || "강화", c.col, false);
 };
 X.summon = (G, e, ang, c) => {
   const P = G.P, n = e.count || 1, max = e.max || n; const mine = G.allies.filter(a => a.sid === c.id && a.h === G.cur.idx); while (mine.length + n > max && mine.length) { const o = mine.shift(); o.t = 0; }
@@ -35280,8 +35305,18 @@ X.beam = (G, e, ang, c) => {
 };
 X.orbit = (G, e, ang, c) => { const old = G.orbits.findIndex(o => o.sid === c.id && o.h === G.cur.idx); if (old >= 0) G.orbits.splice(old, 1); G.orbits.push({h: G.cur.idx, sid: c.id, t: 0, dur: e.dur || 6, n: Math.max(1, e.count | 0 || 3), r: e.radius || 85, spin: e.spin || 3.4, mul: e.mul == null ? 1 : e.mul, col: c.col || "#fff", hitAt: {}, o: stOf(e), a: rand() * TAU}); sfx(G, "dgBuff"); };
 X.heal = (G, e, ang, c) => {
-  const P = G.P; let amt = e.pct != null ? G.st.hpMax * e.pct : (e.mul == null ? .3 : e.mul) * G.st.atk; amt = Math.max(1, amt); healPlayer(G, amt); fxRing(G, P.x, P.y, 12, e.radius || 100, .6, "#a8f0c0", 6); fxP(G, P.x, P.y, "#b6f5c9", 16, 120, .8, 4, {g: -60, shape: 2}); sfx(G, "dgHeal");
-  if (e.dur) { const old = P.buffs.findIndex(x => x.id === c.id); if (old >= 0) P.buffs.splice(old, 1); P.buffs.push({id: c.id, t: e.dur, regen: (e.hot != null ? e.hot : .04), col: "#a8f0c0", name: c.name}); }
+  const P = G.P, power = G.st.atk;
+  for (const ally of supportTargets(G, e.partyRadius)) withHero(G, ally, () => {
+    const amount = e.pct != null ? G.st.hpMax * e.pct : (e.mul ?? .3) * power;
+    healPlayer(G, Math.max(1, amount));
+    if (e.dur) {
+      G.P.buffs = G.P.buffs.filter(b => b.id !== c.id);
+      G.P.buffs.push({id:c.id,t:e.dur,regen:e.hot ?? .04,col:"#a8f0c0",name:c.name});
+    }
+    fxP(G, G.P.x, G.P.y, "#b6f5c9", 10, 100, .6, 4, {g:-60,shape:2});
+  });
+  fxRing(G, P.x, P.y, 12, e.partyRadius || e.radius || 100, .6, "#a8f0c0", 6);
+  sfx(G, "dgHeal");
 };
 /* ---- 적에게 피해 ---- */
 function hitMob(G, m, mul, o) {
@@ -35548,7 +35583,7 @@ function poisonMob(G, m) {   // 독 웅덩이 틱: 플레이어와 같은 비율
 }
 function pickTarget(G, m) {   // 6차: 가장 가까운 (살아 있는) 영웅을 쫓는다. 0.3~0.5초마다 다시 고르고, 이미 쫓던 영웅이 1.5배 안이면 그대로(번갈아 쫓지 않게). 도발이 우선
   const hs = G.hs; if (hs.length === 1) return isDead(G, hs[0]) ? null : hs[0];
-  const cur = m.tg && !isDead(G, m.tg) ? m.tg : null; if (m.taunt && m.taunt.t > G.t && !isDead(G, m.taunt.h)) return m.tg = m.taunt.h; if (cur && m.tgT > G.t) return cur;
+  const cur = m.tg && !isDead(G, m.tg) ? m.tg : null; if (m.taunt && m.taunt.t > G.t && G.hs.includes(m.taunt.h) && !isDead(G, m.taunt.h)) return m.tg = m.taunt.h; if (cur && m.tgT > G.t) return cur;
   m.tgT = G.t + .3 + rand() * .2; let best = null, bd = 1e12, cd = 1e12;
   for (const h of hs) { if (isDead(G, h)) continue; const dx = h.P.x - m.x, dy = h.P.y - m.y, dd = dx * dx + dy * dy; if (dd < bd) { bd = dd; best = h; } if (h === cur) cd = dd; }
   if (cur && cd < bd * 2.25) best = cur; return m.tg = best;
@@ -36138,10 +36173,11 @@ function setPhase(G, m, B, ph) {
 
 }
 function bossTarget(G, m) {   // 6차: 보스가 노리는 영웅 — 패턴 중에는 고정, 패턴 사이에 가까운 사람(30%는 무작위)으로 바뀐다
-  const hs = G.hs; if (hs.length === 1) return hs[0]; const B = m.boss;
-  if (B.tg && !H.isDead(G, B.tg) && (B.pat || B.tgT > G.t)) return B.tg;
+  const hs = m.participants ? G.hs.filter(h => m.participants.has(h)) : G.hs; if (hs.length === 1) return hs[0]; const B = m.boss;
+  if (m.taunt && m.taunt.t > G.t && hs.includes(m.taunt.h) && !H.isDead(G,m.taunt.h)) return m.taunt.h;
+  if (B.tg && hs.includes(B.tg) && !H.isDead(G, B.tg) && (B.pat || B.tgT > G.t)) return B.tg;
   let best = null, bd = 1e12; for (const h of hs) { if (H.isDead(G, h)) continue; const d = hyp(h.P.x - m.x, h.P.y - m.y); if (d < bd) { bd = d; best = h; } }
-  if (best && hs.length > 2 && rand() < .3) best = H.randHero(G);
+  if (best && hs.length > 2 && rand() < .3) { const alive = hs.filter(h => !H.isDead(G,h)); best = alive[Math.floor(rand()*alive.length)] || best; }
   B.tgT = G.t + 1.8 + rand() * 1.4; return B.tg = best || hs[0];
 }
 function ai(G, m, dt) {
@@ -37397,7 +37433,7 @@ function renderReset() {
   else if (r.step === "undo") { const b = bakInfo(r.src === "conf" ? LS.cbak : LS.bak(k)); ov.innerHTML = `<div class="dgn-card dgn-small" role="alertdialog" aria-modal="true"><h2>백업으로 되돌릴까요?</h2><p class="sub">${b ? `<b>${esc(kn(b.k).n)}</b> Lv ${b.lv} · 최고 ${b.best}층 기록으로 되돌려요. 지금 이 기기의 같은 기사 기록은 그 기록으로 바뀌어요(그 뒤에 한 진행은 사라져요). 되돌리기는 한 번만 돼요.` : "백업이 없거나 24시간이 지났어요."}</p><div class="dgn-row"><button class="dgn-big gold" data-act="dgn-rst-no">취소</button>${b ? `<button class="dgn-btn dgn-tiny" id="dgn-rst-undo" data-act="dgn-rst-undo" disabled>되돌리기</button>` : ""}</div></div>`; if (b) delayBtn("dgn-rst-undo", 2, "되돌리기"); }
 }
 function openReset(k, step, src) { rstClear(); V.rst = {k, step: step || 1, src}; renderReset(); openOv("rst"); dgSfx("dgUi"); }
-const roleOf = i => { try { const x = typeof knx !== "undefined" && knx && knx.knights && knx.knights.info && knx.knights.info(i); if (x && x.role) return x.role; } catch (e) {} return kn(i).r || ""; };
+const roleOf = i => { try { const role = D()?.knight(i)?.role; if (role) return role; const x = typeof knx !== "undefined" && knx && knx.knights && knx.knights.info && knx.knights.info(i); if (x && x.role) return x.role; } catch (e) {} return kn(i).r || ""; };
 /* 층 선택 */
 function renderFloors(dec, sel) {
   const G = V.G, c = G.char, ov = $("#dgn-fls"), open = core.openMax(c); dec = dec == null ? Math.floor((G.floor - 1) / 10) : dec; sel = sel || G.floor; V._fdec = dec; V._fsel = sel;
