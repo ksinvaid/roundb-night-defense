@@ -33377,7 +33377,14 @@ dgr.canCraft = function (c, id, n) {
   if (r.out.box && dgr.invFree(c) < n) return false;
   return true;
 };
-dgr.maxCraft = function (c, id) { const r = dgr.recipe(id); if (!r) return 0; let m = 9999; for (const k in r.in) m = Math.min(m, Math.floor((c.mat[k] | 0) / r.in[k])); if (r.out.box) m = Math.min(m, dgr.invFree(c)); return Math.max(0, m); };
+dgr.maxCraft = function (c, id) {
+  const r = dgr.recipe(id); if (!r) return 0;
+  let m = Math.min(...Object.entries(r.in).map(([key, amount]) => Math.floor((c.mat[key] | 0) / amount)));
+  if (r.out.box) m = Math.min(m, dgr.invFree(c));
+  if (r.out.mat) m = Math.min(m, Math.floor((9999999 - (c.mat[r.out.mat] | 0)) / r.out.n));
+  if (r.out.cons) m = Math.min(m, Math.floor((99999 - (c.cons[r.out.cons] | 0)) / r.out.n));
+  return Math.max(0, m);
+};
 dgr.craft = function (c, id, n) {
   n = Math.max(1, n | 0 || 1); const r = dgr.recipe(id); if (!r || !dgr.canCraft(c, id, n)) return false;
   for (const k in r.in) c.mat[k] -= r.in[k] * n;
@@ -33407,6 +33414,16 @@ dgr.fuseAuto = function (c, r) {
   return dgr.fuse(c, list.slice(0, 3));
 };
 dgr.fusable = (c, r) => c.inv.filter(it => it && !it.l && it.r === r && !it.s).length;
+dgr.fuseMax = function (c, rarity) {
+  let success = 0, failure = 0;
+  const limit = dgr.fusable(c, rarity);
+  for (let i = 0; i < limit && dgr.fusable(c, rarity) >= 3; i++) {
+    const result = dgr.fuseAuto(c, rarity);
+    if (!result.ok) break;
+    if (result.success) success++; else failure++;
+  }
+  return {success, failure};
+};
 /* 강화 */
 /* ======================= 강화 (5차 재설계) =======================
    +1~+15. 단계마다 강화석(+1~3 사무 · +4~6 형광 · +7~ 야근) + 골드, 성공 확률은 단계가 오를수록 낮아지고(100%→12%) 비용은 오른다.
@@ -33883,7 +33900,7 @@ const SUBS = ["합성", "강화석", "소모품", "상자", "장비 합성", "�
 function recCard(c, r) {
   const mx = dgr.maxCraft(c, r.id), ok = mx > 0, out = r.out.mat ? MATS[r.out.mat].n + " ×" + r.out.n : r.out.cons ? CONS[r.out.cons].n + " ×" + r.out.n : RAR[r.out.box].n + " 등급 장비 1개 (현재 최고 층 기준)";
   return `<div class="dgr-rec ${ok ? "ok" : "no"}"><div><h4>${E(r.n)} <span class="dgr-chip">${E(r.kind)}</span></h4><div class="dgr-sm dgr-dim">→ ${E(out)}</div>${needHTML(c, r.in)}</div>
-    <div class="dgr-row" style="justify-content:flex-end"><button class="dgr-btn ${ok ? "gold" : ""}" data-a="craft" data-id="${r.id}" data-n="1" ${ok ? "" : "disabled"}>만들기</button><button class="dgr-btn sm" data-a="craft" data-id="${r.id}" data-n="${Math.min(mx, 10)}" ${mx > 1 ? "" : "disabled"}>×${Math.min(Math.max(mx, 1), 10)}</button></div></div>`;
+    <div class="dgr-row" style="justify-content:flex-end"><button class="dgr-btn ${ok ? "gold" : ""}" data-a="craft" data-id="${r.id}" data-n="1" ${ok ? "" : "disabled"}>만들기</button><button class="dgr-btn sm" data-a="craft" data-id="${r.id}" data-n="${Math.min(mx, 10)}" ${mx > 1 ? "" : "disabled"}>×${Math.min(Math.max(mx, 1), 10)}</button><button class="dgr-btn sm" data-a="craft" data-id="${r.id}" data-n="max" ${mx ? "" : "disabled"}>최대로${mx ? " · " + fmt(mx) : ""}</button></div></div>`;
 }
 function tabCraft(c) {
   const mats = `<div class="dgr-card"><h3>내 재료</h3><div class="dgr-pouch">${Object.keys(MATS).map(k => `<span class="dgr-pill" style="cursor:default"><i style="--pc:${MATS[k].col}">${MATS[k].ic}</i>${E(MATS[k].n)} <b>${fmt(c.mat[k] | 0)}</b></span>`).join("")}</div></div>`;
@@ -33891,7 +33908,7 @@ function tabCraft(c) {
   let body = "";
   if (S.sub === "장비 합성") {
     body = `<div class="dgr-note" style="margin-bottom:8px">같은 등급 장비 3개 → 한 단계 위 등급 1개. 실패하면 같은 등급의 새 장비 1개가 나와요(꽝은 없어요). 잠금·세트 장비는 쓰이지 않아요. 낮은 레벨 장비부터 쓰여요.</div><div class="dgr-list">` +
-      [0, 1, 2, 3, 4].map(r => { const n = dgr.fusable(c, r); return `<div class="dgr-rec ${n >= 3 ? "ok" : "no"}"><div><h4>${rn(r)} 3개 → ${rn(r + 1)} 1개</h4><div class="dgr-sm dgr-dim">성공 확률 ${Math.round(dgr.fuseChance(r) * 100)}% · 가진 수 ${n}개</div></div><button class="dgr-btn ${n >= 3 ? "gold" : ""}" data-a="fuse" data-r="${r}" ${n >= 3 ? "" : "disabled"}>합성</button></div>`; }).join("") + "</div>";
+      [0, 1, 2, 3, 4].map(r => { const n = dgr.fusable(c, r); return `<div class="dgr-rec ${n >= 3 ? "ok" : "no"}"><div><h4>${rn(r)} 3개 → ${rn(r + 1)} 1개</h4><div class="dgr-sm dgr-dim">성공 확률 ${Math.round(dgr.fuseChance(r) * 100)}% · 가진 수 ${n}개</div></div><div class="dgr-row"><button class="dgr-btn ${n >= 3 ? "gold" : ""}" data-a="fuse" data-r="${r}" ${n >= 3 ? "" : "disabled"}>합성</button><button class="dgr-btn sm" data-a="fuseMax" data-r="${r}" ${n >= 3 ? "" : "disabled"}>최대로</button></div></div>`; }).join("") + "</div>";
   } else if (S.sub === "강화") {
     body = `<div class="dgr-note" style="margin-bottom:8px">착용 중인 장비를 +15까지 강화해요. 실패해도 장비는 안 사라져요(+8 이상은 한 단계 내려갈 수 있고, 강화 보호권으로 막아요). 강화석은 아래 '강화석' 탭에서 재료로 만들어요. 가방 속 장비는 장비를 눌러 강화할 수 있어요.</div><div class="dgr-list">` +
       SLOTS.map(s => { const it = c.eq[s]; if (!it) return `<div class="dgr-rec no"><div><h4>${SLOTN[s]}</h4><div class="dgr-dim dgr-sm">비어 있어요</div></div></div>`; const q = dgr.enhInfo(it), have = q ? c.mat[q.stone] | 0 : 0;
@@ -34065,7 +34082,13 @@ function onClick(e) {
     case "learn": if (dgr.learn(c, d.id)) say(dgr.skillById(d.id).n + " " + dgr.skillRank(c, d.id) + "랭크"); else say("올릴 수 없어요", {warn: true}); return;
     case "resetSk": { const cost = dgr.resetCost(c); if (cost > c.gold) { say("골드가 부족해요 (₩" + fmt(cost) + ")", {warn: true}); return; } if (b.dataset.sure !== "1") { b.dataset.sure = "1"; b.textContent = "정말 초기화? 한 번 더 누르세요"; setTimeout(() => { b.dataset.sure = ""; if (document.body.contains(b)) b.textContent = "스킬 초기화 (" + (cost ? "₩" + fmt(cost) : "첫 1회 무료") + ")"; }, 3500); return; } dgr.resetSkills(c); say("스킬 포인트를 모두 돌려받았어요"); return; }
     case "sub": S.sub = d.s; render(); return;
-    case "craft": { const n = parseInt(d.n, 10) || 1; if (dgr.craft(c, d.id, n)) say(`${dgr.recipe(d.id).n} 제작 ×${n}`); else say("재료가 부족하거나 가방이 가득 찼어요", {warn: true}); return; }
+    case "craft": { const n = d.n === "max" ? dgr.maxCraft(c, d.id) : parseInt(d.n, 10) || 1; if (n > 0 && dgr.craft(c, d.id, n)) say(`${dgr.recipe(d.id).n} 제작 ×${n}`); else say("재료가 부족하거나 가방이 가득 찼어요", {warn: true}); return; }
+    case "fuseMax": {
+      const {success, failure} = dgr.fuseMax(c, +d.r);
+      if (success + failure) say(`${success + failure}회 합성 · 성공 ${success} · 실패 ${failure}`);
+      else say("합성할 장비가 부족해요.", {warn:true});
+      return;
+    }
     case "fuse": { const r = dgr.fuseAuto(c, +d.r); if (!r.ok) say(r.why, {warn: true}); else say(r.success ? "합성 성공! " + dgr.itemName(r.item) : "아쉽게 실패… 같은 등급 새 장비가 나왔어요", {r: r.item.r}); return; }
     case "enh": case "enhIt": case "enhGo": {   // 5차: 확인(한 번 더 누르기) + ×1/×10 + 결과 연출
       const ref = d.s ? {slot: d.s} : {inv: +d.i}, n = parseInt(d.n, 10) || 1, it = ref.slot ? c.eq[ref.slot] : c.inv[ref.inv], q = dgr.enhInfo(it); if (!it || !q) { say("더 강화할 수 없어요", {warn: true}); return; }
