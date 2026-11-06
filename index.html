@@ -3311,6 +3311,9 @@ html.dgn-party-on .dgn-notes{top:calc(74px + 150px + env(safe-area-inset-top,0px
 .dgn-spec{position:absolute;left:50%;top:calc(70px + env(safe-area-inset-top,0px));transform:translateX(-50%);padding:6px 12px;display:flex;gap:8px;align-items:center;font:800 13px var(--f-body);color:#ffe9e9;z-index:4;max-width:min(560px,92vw)}
 .dgn-spec[hidden],.dgn-bw[hidden]{display:none}
 .dgn-bw button{pointer-events:auto;margin:4px 2px 0}
+.dgn-bw.follow{top:calc(202px + env(safe-area-inset-top,0px));width:max-content;max-width:calc(100vw - 24px);text-align:center;z-index:9}
+.dgn-bw.follow span{display:block}
+.dgn-bw.follow [data-act="dgn-rope"]{background:var(--gold);color:#251a07;font-size:16px;padding:8px 16px}
 .dgn-bw{position:absolute;left:50%;top:calc(112px + env(safe-area-inset-top,0px));transform:translateX(-50%);padding:5px 12px;font:800 13px var(--f-body);color:#ffe9a0;z-index:4}
 @media (max-width:640px){.dgp{grid-template-columns:1fr}.dgn-pty{width:min(172px,50vw);top:calc(74px + env(safe-area-inset-top,0px))}.dgn-pn{font-size:11px}html.dgn-party-on .dgn-notes{top:calc(196px + env(safe-area-inset-top,0px))}.dgn-spec{top:calc(128px + env(safe-area-inset-top,0px));font-size:12px}.dgn-bw{top:calc(168px + env(safe-area-inset-top,0px))}}
 
@@ -35683,6 +35686,7 @@ function interact(G) {
   const nr = G.near; if (!nr || G.over) return false;
   if (nr.kind === "chest") { openChest(G, nr.ref); return true; }
   if (nr.kind === "portal") {
+    if (G.party && nr.ref.to > G.floor) { travel(G, nr.ref.to, "party-next"); return true; }
     if (G.hs.length > 1) { const al = aliveHeroes(G), nn = al.filter(h => hyp(h.P.x - nr.ref.x, h.P.y - nr.ref.y) < 110).length; if (nn < al.length) { emit(G, "toast", {text: "동료가 모두 포탈 가까이 와야 해요 (" + nn + "/" + al.length + ")", kind: "warn"}); return true; } }
     travel(G, nr.ref.to, "portal"); return true; }
   if (nr.kind === "npc") { emit(G, "menu", {tab: nr.ref.tab}); return true; }
@@ -35698,11 +35702,13 @@ function partyLock(G, n) {   // 6차: 파티는 '모두에게 열린 층'까지�
   if (n === 1) return ""; for (const h of G.hs) if (!isOpen(h.char, n)) return h.name || "동료"; return "";
 }
 function travel(G, n, how) {
-  const lk = G.hs.length > 1 ? partyLock(G, n) : (!isOpen(G.char, n) && n !== 1 ? "나" : "");
+  if (G.travel) return false;
+  const forward = how === "party-next" && G.party && n > G.floor;
+  const lk = G.hs.length > 1 && !forward ? partyLock(G, n) : (!isOpen(G.char, n) && n !== 1 ? "나" : "");
   if (lk) { emit(G, "toast", {text: lk === "나" ? "아직 열리지 않은 층이에요." : lk + " 님은 아직 " + n + "층이 열리지 않았어요. 파티는 모두에게 열린 층까지만 갈 수 있어요.", kind: "warn", h: 0}); return false; }
   /* 5차: 이전 층으로 돌아가는 포탈은 확인 창을 거친다(UI 가 travelAnswer 로 답한다). 시험 봇(autoTravel)은 바로 */
   if (how === "portal" && n < G.floor && !G.autoTravel) { if (!G.ask) { G.ask = {to: n, from: G.floor}; emit(G, "travelAsk", {to: n, from: G.floor}); } return false; }
-  if (how === "portalok") how = "portal";
+  if (how === "portalok" || forward) how = "portal";
   if (G.autoTravel) { enterFloor(G, n, how); return true; } G.travel = {to: n, how: how || ""}; emit(G, "travel", {to: n, how: how || ""}); return true; }
 function travelAnswer(G, yes) {
   const a = G.ask; G.ask = null; if (!a) return false; if (yes) return travel(G, a.to, "portalok");
@@ -35717,9 +35723,18 @@ function updatePortals(G, dt) {
     if (hs.length === 1) { const d = hyp(p.x - P.x, p.y - P.y); if (p.cool) { if (d > 70) p.cool = false; p.enter = 0; continue; } if (d < 40 && !G.travel && !G.ask && !G.over) { p.enter = (p.enter || 0) + dt; if (p.enter > .55) { p.enter = 0; travel(G, p.to, "portal"); } } else p.enter = 0; continue; }
     /* 6차: 파티는 살아 있는 전원이 포탈 위(46px)에 서 있어야 이동 — 하나라도 멀면 안 움직인다(실수로 혼자 넘어가는 사고 방지). 쓰러진 영웅은 세지 않는다 */
     if (!al) al = aliveHeroes(G); let near = 0, any = 0; for (const h of al) { const d = hyp(p.x - h.P.x, p.y - h.P.y); if (d < 70) any++; if (d < 46) near++; }
-    p.nn = [near, al.length];
+    p.nn = p.to > G.floor ? null : [near, al.length];
     if (p.cool) { if (any === 0) p.cool = false; p.enter = 0; continue; }
-    if (al.length && near === al.length && !G.travel && !G.ask) { p.enter = (p.enter || 0) + dt; if (p.enter > .55) { p.enter = 0; travel(G, p.to, "portal"); } } else p.enter = 0;
+    const forward = p.to > G.floor;
+    const leader = forward && al.find(h => isOpen(h.char, p.to) && hyp(p.x - h.P.x, p.y - h.P.y) < 46);
+    if ((leader || (!forward && al.length && near === al.length)) && !G.travel && !G.ask) {
+      p.enter = (p.enter || 0) + dt;
+      if (p.enter > .55) {
+        p.enter = 0;
+        if (leader) withHero(G, leader, () => travel(G, p.to, "party-next"));
+        else travel(G, p.to, "portal");
+      }
+    } else p.enter = 0;
   }
 }
 function updateChests(G, dt) { for (const c of G.chests) c.t += dt; }
@@ -36908,8 +36923,9 @@ function partyHud(G) {
     const inside = w?.eligible?.includes(idx), following = G.mirror ? G.ropePull : G.ropes?.some(r => r.hero === G.hs[0]);
     const canFollow = !!V.net && !inside && !following && idx >= 0 && !G.over;
     bw.hidden = G.bs.state !== "idle" || !w?.eligible?.length || (!inside && !canFollow);
+    bw.classList.toggle("follow", canFollow);
     if (!bw.hidden) {
-      setT("dgn-bw-label", inside ? (w.waiting ? `파티원 대기 중 (${w.n}/${w.of})` : `보스방 입장 (${w.n}/${w.of})`) : "파티원이 보스방에 도착했어요");
+      setT("dgn-bw-label", inside ? (w.waiting ? `파티원 대기 중 (${w.n}/${w.of})` : `보스방 입장 (${w.n}/${w.of})`) : "보스방에 먼저 도착한 파티원이 있어요");
       bw.querySelector('[data-act="dgn-boss-now"]').hidden = !inside;
       bw.querySelector('[data-act="dgn-boss-wait"]').hidden = !inside || !V.net || w.waiting || w.of < 2;
       bw.querySelector('[data-act="dgn-rope"]').hidden = !canFollow;
