@@ -1,0 +1,44 @@
+.brawl {
+  width: min(880px, 96vw);
+  max-height: 96dvh;
+  padding: 12px;
+  color: #fff8e7;
+  background: #161b36;
+  border: 2px solid #b99852;
+  border-radius: 14px;
+}
+.brawl::backdrop { background: #080b19db; }
+.brawl header, .brawl-controls, .brawl-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.brawl header { margin-bottom: 8px; }
+.brawl header strong { font-size: 18px; }
+.brawl header span, .brawl p { font-size: 12px; }
+.brawl canvas {
+  display: block;
+  width: 100%;
+  height: clamp(220px, 65dvh, 660px);
+  background: #262b4d;
+  border-radius: 8px;
+  touch-action: none;
+}
+.brawl-controls { margin-top: 8px; }
+.brawl button, .lb-brawl-launch {
+  min-height: 40px;
+  border: 1px solid #e7ba58;
+  border-radius: 8px;
+  background: #322d51;
+  color: #fff8e7;
+  font-weight: 700;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+.brawl button:focus-visible, .lb-brawl-launch:focus-visible { outline: 2px solid #fff087; }
+.brawl-controls button { flex: 1; }
+.brawl-result { padding: 8px; background: #39304a; }
+.brawl-result[hidden] { display: none; }
+.lb-brawl-launch { flex: none; align-self: flex-start; }
