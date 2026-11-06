@@ -36270,6 +36270,14 @@ return {LOOK, TILE, CH, paintChunk, drawMob, drawMobBar, drawTele, drawEShot, dr
 const dgn = (() => {
 "use strict";
 const TILE = dgnMap.TILE, T = dgnMap.T, SF = dgnMap.SF, TAU = Math.PI * 2, STEP = 1 / 60, INK = "#14141c";
+const speedRates = [1, 1.15, 1.3];
+const speedRate = tier => speedRates[tier - 1] || 1;
+function frameDelta(state, now) {
+  if (now <= state.last) return 0;
+  const dt = Math.min(.1, (now - state.last) / 1000);
+  state.last = now;
+  return dt;
+}
 const core = dgnCore, R = dgnR, D = () => window.dgr;
 const cl = (v, a, b) => v < a ? a : v > b ? b : v, hyp = Math.hypot;
 const V = {ready: false, G: null, ui: null, raf: 0, last: 0, acc: 0, keys: {}, mouse: {x: 0, y: 0, t: -99}, atk: false, atkKey: false, castQ: Array(8).fill(0), useQ: false, potQ: false, dashQ: false, joy: {id: -1, x: 0, y: 0, ox: 0, oy: 0}, touch: false, dpr: 1, w: 800, h: 600, zoom: 1, cam: {x: 0, y: 0}, chunks: new Map(), res: 1, tr: null, notes: new Map(), hudT: 0, amb: [], spr: {}, pool: [], dl: [], mmSeen: null, mmC: null, selK: -1, lastSave: 0, sess: {t0: 0, played: false}, noSave: false, fps: 0, fpsA: 0, fpsN: 0, ftimes: [], spd: 1, opt: {auto: null, zoom: 1, spd: 1, autoSave: 60}, lastSig: "", rst: null, evtPill: null, evtBanner: 0, shown: {}, flick: 0, flickT: 0, nearKey: "", lastHp: 0, lowHp: false, flAnim: 0};
@@ -36328,8 +36336,8 @@ function dgSfx(name) {
 }
 
 /* ================= 설정 · 저장 ================= */
-function loadOpt() { try { const o = JSON.parse(lsGet(LS.opt) || "{}"); if (o && typeof o === "object") { V.opt.auto = typeof o.auto === "boolean" ? o.auto : null; V.opt.autoSkill = o.autoSkill === true; V.opt.zoom = [.85, 1, 1.2].includes(o.zoom) ? o.zoom : 1; V.opt.spd = [1, 2, 3].includes(o.spd) ? o.spd : 1; V.spd = V.opt.spd; V.opt.autoSave = [0, 30, 60].includes(o.autoSave) ? o.autoSave : 60; } } catch (e) {} }
-function saveOpt() { lsSet(LS.opt, JSON.stringify({auto: V.opt.auto, autoSkill: !!V.opt.autoSkill, zoom: V.opt.zoom, spd: V.opt.spd, autoSave: V.opt.autoSave})); }
+function loadOpt() { try { const o = JSON.parse(lsGet(LS.opt) || "{}"); if (o && typeof o === "object") { V.opt.auto = typeof o.auto === "boolean" ? o.auto : null; V.opt.autoSkill = o.autoSkill === true; V.opt.zoom = [.85, 1, 1.2].includes(o.zoom) ? o.zoom : 1; V.opt.spd = o.speedVersion === 2 && [1, 2, 3].includes(o.spd) ? o.spd : 1; V.spd = V.opt.spd; V.opt.autoSave = [0, 30, 60].includes(o.autoSave) ? o.autoSave : 60; } } catch (e) {} }
+function saveOpt() { lsSet(LS.opt, JSON.stringify({auto: V.opt.auto, autoSkill: !!V.opt.autoSkill, zoom: V.opt.zoom, spd: V.opt.spd, speedVersion: 2, autoSave: V.opt.autoSave})); }
 const getMeta = () => { try { const o = JSON.parse(lsGet(LS.meta) || "{}"); return {cur: o.cur == null ? -1 : o.cur, rev: o.rev | 0, synced: o.synced | 0}; } catch (e) { return {cur: -1, rev: 0, synced: 0}; } };
 const setMeta = m => lsSet(LS.meta, JSON.stringify(m));
 function readSlot(k) { const s = lsGet(LS.slot(k)); if (!s) return null; try { const o = JSON.parse(s); return o && typeof o.d === "string" ? o : null; } catch (e) { return null; } }
@@ -36431,7 +36439,7 @@ function build() {
         <button class="dgn-ib" data-act="dgn-floors" aria-label="층 선택">${svgI(ICO.stairs)}<span>층</span></button>
         <button class="dgn-ib" data-act="dgn-pause" aria-label="메뉴 (Esc)">${svgI(ICO.menu)}</button></div>
         <div class="dgn-mmw" data-act="dgn-map" role="button" aria-label="지도 (M)"><canvas class="dgn-mm" id="dgn-mm" width="224" height="224"></canvas><div class="dgn-bh" id="dgn-bh" aria-live="off"></div></div>
-        <div class="dgn-sys"><button class="dgn-ib" id="dgn-autoskill" data-act="dgn-autoskill" aria-pressed="false">자동 스킬 끔</button><button class="dgn-ib spd" id="dgn-spd" data-act="dgn-spd" aria-label="배속 (X)" title="배속 1·1.5·2배 (X)"><b id="dgn-spd-t">×1</b></button><button class="dgn-ib exit" data-act="dgn-ask" aria-label="나가기" title="나가기 (진행은 자동 저장)">${svgI(ICO.exit)}<span>나가기</span></button></div></div>
+        <div class="dgn-sys"><button class="dgn-ib" id="dgn-autoskill" data-act="dgn-autoskill" aria-pressed="false">자동 스킬 끔</button><button class="dgn-ib spd" id="dgn-spd" data-act="dgn-spd" aria-label="배속 (X)" title="배속 1·1.15·1.3배 (X)"><b id="dgn-spd-t">×1</b></button><button class="dgn-ib exit" data-act="dgn-ask" aria-label="나가기" title="나가기 (진행은 자동 저장)">${svgI(ICO.exit)}<span>나가기</span></button></div></div>
     </div>
     <div class="dgn-pty" id="dgn-pty" aria-label="파티"></div><div class="dgn-spec dgn-pill" id="dgn-spec" hidden></div><div class="dgn-bw dgn-pill" id="dgn-bw" hidden><span id="dgn-bw-label"></span><button class="dgn-btn" data-act="dgn-boss-now">지금 바로 도전</button><button class="dgn-btn" data-act="dgn-boss-wait">파티원 기다리기</button></div>
     <div class="dgn-callout" id="dgn-shout" role="status" hidden></div><div class="dgn-callout dgn-autostate" id="dgn-autostate" role="status" hidden></div><div class="dgn-notes" id="dgn-notes" aria-live="polite"></div><div class="dgn-saved" id="dgn-saved" aria-live="polite"></div>
@@ -36751,7 +36759,7 @@ function hud(dt) {
   const autoState = $("#dgn-autostate");
   autoState.hidden = !(V.autoStateUntil > performance.now());
   const atk = $("#dgn-atk"); if (atk) atk.classList.toggle("act", V.atk || !!G.opt.auto);
-  { const sb = $("#dgn-spd"); if (sb) { const speed = V.net?.role === "guest" ? V.net.spd || 1 : V.spd; setT("dgn-spd-t", "×" + (1 + (speed - 1) / 2)); sb.classList.toggle("on", speed > 1); } }
+  { const sb = $("#dgn-spd"); if (sb) { const speed = V.net?.role === "guest" ? V.net.spd || 1 : V.spd; setT("dgn-spd-t", "×" + (speedRate(speed))); sb.classList.toggle("on", speed > 1); } }
   { const bb = $("#dgn-bagbd"); if (bb) { let fr = 99; try { fr = D().invFree(c); } catch (e) {} const low = fr < 10; bb.hidden = !low; if (low) setT(bb, fr <= 0 ? "가득!" : fr + "칸"); } }   /* 4차: 가방이 거의 차면 가방 단추에 남은 칸(글자)을 띄운다 */
   /* 상호작용 */
   const nr = G.near, use = $("#dgn-use"), altHold = !!nr && nr.kind === "altar" && G.t - (G.bossDownT == null ? -99 : G.bossDownT) < 1.5; const key = (nr ? nr.kind + ":" + nr.label : "") + (altHold ? ":hold" : ""); if (key !== V.nearKey) { V.nearKey = key; use.hidden = !nr || !!V.ui || altHold; use.classList.toggle("alt", !!nr && nr.kind === "altar"); if (nr) $("#dgn-use-t").textContent = nr.label; }   /* 5차: 제단(보스 다시 부르기)은 작은 보조 단추, 보스를 잡은 뒤 1.5초는 숨김 */
@@ -36811,7 +36819,7 @@ function bindInput() {
     if (V.ui) { if (V.ui === "map" && (k === "m" || k === "M")) closeOv(); if (V.ui === "floors" && k === "Tab") { e.preventDefault(); closeOv(); } if (V.ui === "death" && (k === "Enter" || k === " ")) { e.preventDefault(); A["dgn-revive"](); } return; }
     if (D() && D().ui && D().ui.isOpen && D().ui.isOpen()) { if (k === "i" || k === "k" || k === "c") { try { D().ui.close(); } catch (er) {} } return; }
     V.keys[k] = true; if (["w", "a", "s", "d", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " ", "Tab"].includes(k)) e.preventDefault();
-    if (k >= "1" && k <= "8") V.castQ[+k - 1] = 1; else if (k === "e" || k === "Enter") V.useQ = true; else if (k === "q") V.potQ = true; else if (k === "i") openMenu("inv"); else if (k === "k") openMenu("skills"); else if (k === "c") openMenu("char"); else if (k === "m") A["dgn-map"](); else if (k === "Tab") A["dgn-floors"](); else if (k === "f") { if (!e.repeat) toggleAuto(); } else if (k === "x") A["dgn-spd"](); else if (k === " ") V.dashQ = true; else if (k === "j") V.atkKey = true;
+    if (k >= "1" && k <= "8") V.castQ[+k - 1] = 1; else if (k === "e" || k === "Enter") V.useQ = true; else if (k === "q") V.potQ = true; else if (k === "i") openMenu("inv"); else if (k === "k") openMenu("skills"); else if (k === "c") openMenu("char"); else if (k === "m") A["dgn-map"](); else if (k === "Tab") A["dgn-floors"](); else if (k === "f") { if (!e.repeat) toggleAuto(); } else if (k === "x") { if (!e.repeat) A["dgn-spd"](); } else if (k === " ") V.dashQ = true; else if (k === "j") V.atkKey = true;
   });
   document.addEventListener("keyup", e => { const k = e.key.length === 1 ? e.key.toLowerCase() : e.key; delete V.keys[k]; if (k === "j") V.atkKey = false; });
   window.addEventListener("blur", () => { V.keys = {}; V.atk = false; V.atkKey = false; });
@@ -36874,14 +36882,14 @@ function openAsk() {
   openOv("ask");
 }
 function setSpeed(v) {   // 배속 1·2·3 — 설정으로 기억한다
-  v = v === 2 || v === 3 ? v : 1; if (V.net?.role === "guest") { note("파티 배속은 방장이 바꿀 수 있어요.", "info"); return; } V.spd = V.opt.spd = v; saveOpt(); V.acc = 0; try { note(v > 1 ? "배속 ×" + (1 + (v - 1) / 2) + " (X로 바꿔요)" : "배속 ×1 — 보통 속도", "info", null, 1800); } catch (e) {} dgSfx("dgUi");
+  v = v === 2 || v === 3 ? v : 1; if (V.net?.role === "guest") { note("파티 배속은 방장이 바꿀 수 있어요.", "info"); return; } V.spd = V.opt.spd = v; saveOpt(); V.acc = 0; try { note(v > 1 ? "배속 ×" + (speedRate(v)) + " (X로 바꿔요)" : "배속 ×1 — 보통 속도", "info", null, 1800); } catch (e) {} dgSfx("dgUi");
 }
 function openPause() {
   const G = V.G, ov = $("#dgn-pau"); const muted = typeof SAVE !== "undefined" && SAVE.mute;
   ov.innerHTML = `<div class="dgn-card" role="dialog" aria-modal="true" aria-label="일시정지"><h2>일시정지</h2><p class="sub">${G.floor}층 · Lv ${G.char.lv} · ${esc(kn(G.char.k).n)}</p>
     <div class="dgn-menu"><button class="dgn-btn" data-act="dgn-menu" data-tab="char">캐릭터 (C)</button><button class="dgn-btn" data-act="dgn-menu" data-tab="inv">가방 (I)</button><button class="dgn-btn" data-act="dgn-menu" data-tab="skills">스킬 (K)</button><button class="dgn-btn" data-act="dgn-menu" data-tab="craft">제작·합성</button><button class="dgn-btn" data-act="dgn-menu" data-tab="shop">상점</button><button class="dgn-btn" data-act="dgn-floors">층 선택 (Tab)</button><button class="dgn-btn" data-act="dgn-map">지도 (M)</button><button class="dgn-btn" data-act="dgn-home">마을로 돌아가기</button></div>
     <div class="dgn-menu"><button class="dgn-btn ${G.opt.auto ? "on" : ""}" data-act="dgn-auto">자동 공격 ${G.opt.auto ? "켬" : "끔"} (F)</button><button class="dgn-btn" data-act="dgn-snd">소리 ${muted ? "꺼짐" : "켜짐"}</button><button class="dgn-btn" data-act="dgn-zoom">화면 크기 ${V.opt.zoom === .85 ? "작게" : V.opt.zoom === 1.2 ? "크게" : "보통"}</button><button class="dgn-btn" data-act="dgn-touch">터치 조작 ${V.touch ? "켬" : "끔"}</button><button class="dgn-btn" data-act="dgn-asv">자동 저장 ${V.opt.autoSave === 60 ? "1분" : V.opt.autoSave === 30 ? "30초" : "끔"}</button><button class="dgn-btn" data-act="dgn-savenow">지금 저장</button></div>
-    <div class="dgn-seg" role="group" aria-label="배속"><span>배속 (X)</span>${[1, 2, 3].map(v => `<button class="dgn-btn ${V.spd === v ? "on" : ""}" data-act="dgn-spd" data-v="${v}" aria-pressed="${V.spd === v}">×${1 + (v - 1) / 2}</button>`).join("")}</div>
+    <div class="dgn-seg" role="group" aria-label="배속"><span>배속 (X)</span>${[1, 2, 3].map(v => `<button class="dgn-btn ${V.spd === v ? "on" : ""}" data-act="dgn-spd" data-v="${v}" aria-pressed="${V.spd === v}">×${speedRate(v)}</button>`).join("")}</div>
     ${V.net ? '<p class="sub"><b>파티 중에는 일시정지가 없어요</b> — 메뉴를 열어도 세계는 계속 돌아요.</p>' : ""}<p class="sub">${V.touch ? "왼쪽 화면을 끌어 이동 · 오른쪽 버튼으로 공격·스킬" : "WASD 이동 · 마우스 공격(J) · Space 대시(회피) · 1~4 스킬 · E 상호작용 · Q 물약 · I 가방 · K 스킬 · M 지도 · X 배속"}</p>
     <div class="dgn-row"><button class="dgn-big gold" data-act="dgn-resume">계속하기</button><button class="dgn-big ghost" data-act="dgn-exit">저장하고 나가기</button></div></div>`;
   openOv("pause");
@@ -37221,10 +37229,10 @@ function frameCore(now, viaWorker) {   // viaWorker: 방장 탭이 가려졌을 
   if (UI.screen === "dgr" && V.G && V.menuOpen && !NT) { if (!viaWorker) V.raf = requestAnimationFrame(frame); V.last = now; return; }   /* QA-C: K2 메뉴가 떠 있는 동안은 멈춰 있기만 한다 */
   const k2 = UI.screen === "dgr" && V.G && V.menuOpen && !!NT;   // 6차: 파티 중에는 K2 메뉴가 떠 있어도 세계가 계속 돈다(동료를 멈출 수 없다)
   if (UI.screen !== "dungeon" && !k2) { if (!viaWorker) onLeaveScreen(); return; } if (!viaWorker) V.raf = requestAnimationFrame(frame);
-  let dt = Math.min(.1, Math.max(0, (now - V.last) / 1000)); V.last = now; if (document.hidden && !viaWorker) return; if (V.relayout && !viaWorker) layout();
+  if (document.hidden && !viaWorker) return; const dt = frameDelta(V, now); if (V.relayout && !viaWorker) layout();
   if (!viaWorker) { V.fpsA += dt; V.fpsN++; if (V.fpsA >= 1) { V.fps = V.fpsN / V.fpsA; V.fpsA = 0; V.fpsN = 0; if (V.G && !V.ui && !V.tr && V.fps < 42 && V.fps > 4 && (V.dprCap || 9) > 1) { V.slowN = (V.slowN | 0) + 1; if (V.slowN >= 3) { V.slowN = 0; V.dprCap = (V.dprCap || (V.touch ? 1.75 : 2)) > 1.3 ? 1.25 : 1; V.relayout = true; } } else V.slowN = 0; } }   // 느리면 해상도를 한 단계씩 낮춘다
   const G = V.G; if (G) {
-    const menuUp = !!(V.menuOpen || (D() && D().ui && D().ui.isOpen && D().ui.isOpen())), locked = !!V.ui || menuUp, paused = NT ? false : locked, spd = 1 + (V.spd - 1) / 2;
+    const menuUp = !!(V.menuOpen || (D() && D().ui && D().ui.isOpen && D().ui.isOpen())), locked = !!V.ui || menuUp, paused = NT ? false : locked, spd = speedRate(V.spd);
     if (NT && NT.role === "guest") {
       dgnNet.guestFrame(dt, buildInput(), locked);
       if (G.ev.length) { const evs = G.ev.slice(); G.ev.length = 0; for (const e of evs) handleEv(e); }
@@ -37266,7 +37274,7 @@ function mount() {
 mount();
 const X = {err: dgErr, entryFail, saveNow: why => saveNow(why || "party", true), loadChar, beginRun, note, banner, handleEv: e => handleEv(e), closeDeath, partyChanged, hostLostDialog, selectedKnight: () => (V.selK < 0 ? ((getMeta().cur >= 0 ? getMeta().cur : ((typeof SAVE !== "undefined" && SAVE.kn) | 0))) : V.selK),
   openSelect: tab => { open(); if (tab) V.selTab = tab; renderSelect(); }, renderSelectIfOpen: () => { if (V.ui === "select") renderSelect(); }, ensureLoop, visitorTag, exitToTitle: () => { A["dgn-exit"](); }};
-return {X, V, core, open, startGame, openFloors, openMenu, note, render, hud, handleEv, saveNow, dgSfx, unpack: core.unpackExtra, slotInfo, getMeta, cloudCheck, readSlot, startTravel, leave, buildInput, frame, ensureLoop, banner, mmDraw, layout, openBigMap, openPause, renderFloors};
+return {speedRate, X, V, core, open, startGame, openFloors, openMenu, note, render, hud, handleEv, saveNow, dgSfx, unpack: core.unpackExtra, slotInfo, getMeta, cloudCheck, readSlot, startTravel, leave, buildInput, frame, ensureLoop, banner, mmDraw, layout, openBigMap, openPause, renderFloors};
 })();
 
 /* dungeon_net.js — 던전 인 라운드비 6차(온라인): 파티 협동 사냥(최대 4명, 방장 권위 P2P) + 통합 입구(모집 중인 파티·던전 접속자) + 초대/링크/방장 이전.
@@ -37569,11 +37577,11 @@ function guestFrame(dt, inp, locked) {
   if (locked) inp = idle();
   S.pend.c |= inp.cast.reduce((bits, pressed, i) => bits | (pressed ? 1 << i : 0), 0); S.pend.e |= (inp.interact ? 1 : 0) | (inp.potion ? 2 : 0) | (inp.dash ? 4 : 0);
   if (inp.potion && D().quickPotion && core.potionCount(G) <= 0) S.pend.e &= ~2;
-  const multiplier = 1 + ((S.spd || 1) - 1) / 2;
-  const stepBudget = 8 * multiplier;
+  const multiplier = dgn.speedRate(S.spd);
+  const stepBudget = Math.ceil(8 * multiplier);
   S.acc += dt * multiplier; let n = 0; if (S.corr) { const kc = Math.min(1, dt * 7), cx = S.corr.x * kc, cy = S.corr.y * kc; P.x += cx; P.y += cy; S.corr.x -= cx; S.corr.y -= cy; if (Math.abs(S.corr.x) + Math.abs(S.corr.y) < .6) S.corr = null; }
   while (S.acc >= STEP && n < stepBudget) { core.heroMove(G, STEP, Object.assign({}, inp, {dash: n === 0 ? inp.dash : false})); S.acc -= STEP; n++; } if (n >= stepBudget) S.acc = 0;   /* A13-6: 프레임이 끊겨도(0.1초 한도) 이동을 덜 버린다(5→8스텝) */
-  G.t += dt; G.runT += dt; G.playT += dt; core.updateFx(G, dt); core.nearest(G);
+  G.t += dt * multiplier; G.runT += dt * multiplier; if (!G.cine) G.playT += dt * multiplier; core.updateFx(G, dt); core.nearest(G);
   interpMirror(S, dt);
   S.sendAcc += dt; const edge = S.pend.c || S.pend.e;
   if (S.sendAcc >= 1 / IN_HZ || edge) { S.sendAcc = 0; sendInput(S, inp); }
@@ -37598,7 +37606,7 @@ function applySnap(S, sn) {
   const col = i => dc[i];
   for (const e of sn.V || []) guestEvent(S, e);   // 이벤트 먼저(층 바뀜이 스냅샷보다 앞서므로)
   if (sn.F !== G.floor) { mirrorEnter(S, sn.F, {defs: S.defs.length ? S.defs : null}); ui().handleEv({t: "floor", n: sn.F, how: "join", name: G.info.name || (sn.F + "층"), mood: G.info.mood || "", tags: G.M.tags, decade: G.M.look, h: 0}); }   // 합류 직후(이미 층 안)에는 floor 이벤트를 못 받는다 → 직접 화면 준비
-  S.hostT = sn.T; G.t += (sn.T - G.t) * .2; if (Math.abs(sn.T - G.t) > 1.5) G.t = sn.T; G.combo = sn.C | 0;
+  S.hostT = sn.T; const drift = sn.T - G.t; if (Math.abs(drift) > 1.5) G.t = sn.T; G.combo = sn.C | 0;
   const defsOf = S.defs;
   /* 영웅 */
   const others = []; const seen = new Set();
