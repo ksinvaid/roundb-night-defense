@@ -34705,9 +34705,14 @@ const PLAYER_R = 12, BASE_SPD = 190, MOB_SPD = 78, MAX_MOBS = 340, MAX_PJ = 140,
 /* ===== 4차(2026-11-03 밤): 필드 몹 밀도 · 재생성 · 보상 보정 — 숫자는 전부 여기서 고친다 =====
    옛 밀도 = 몹 자리 34칸에 1마리(26~110마리). 새 밀도 = 그 ×2(1~3층) → ×3(60층~), 52~200마리. 처치마다 "대기표"가 쌓이고 8~16초 뒤 다른 곳(시야 밖)에 무리로 다시 나온다.
    깨어 있는(추격 중인) 몹은 AGG_CAP 마리까지만 — 넘으면 나머지는 가만히 있다가 앞 몹이 죽으면 깬다. 보상(경험치·골드·드랍률)은 rw(n) 로 줄여서 레벨업·장비 속도가 옛날과 비슷하게 유지된다(test_density.js 로 전/후 비교). */
+/* 125층부터 추가 난이도(3인 파티 기준으로 111층 이후도 쉽다는 피드백). 층마다 (1 + step × (층−124))를 곱해 150층까지 계속 오른다.
+   조절은 이 한 줄만: from=시작 층 · mobHp/mobAtk/bossHp/bossAtk=시작 배율 · *Step=층당 증가폭 · dens=몹 밀도 추가 */
+const DEEP = {from: 125, mobHp: 2.0, mobHpStep: .05, mobAtk: 1.6, mobAtkStep: .035, bossHp: 1.7, bossHpStep: .04, bossAtk: 1.5, bossAtkStep: .03, dens: .5};
+const deepHp = (f, boss) => { const k = f - DEEP.from + 1; return k <= 0 ? 1 : boss ? DEEP.bossHp * (1 + DEEP.bossHpStep * k) : DEEP.mobHp * (1 + DEEP.mobHpStep * k); };
+const deepAtk = (f, boss) => { const k = f - DEEP.from + 1; return k <= 0 ? 1 : boss ? DEEP.bossAtk * (1 + DEEP.bossAtkStep * k) : DEEP.mobAtk * (1 + DEEP.mobAtkStep * k); };
 const DCFG = {
   base: 34, walkDiv: 90, lo: 64, hi: 260, aggCap: 48, respMin: 6, respMax: 12, nearR: 1000, nearDiv: 6, nearLo: 12, nearHi: 30,
-  mul: n => 2.8 + 1.2 * Math.min(1, Math.max(0, (n - 3) / 57)),         // 밀도 배율: 1~3층 ×2.3 → 60층부터 ×3.3 (옛 정적 밀도 대비 화면 안 몹 수 ≈ ×2 ~ ×3)
+  mul: n => 2.8 + 1.2 * Math.min(1, Math.max(0, (n - 3) / 57)) + (n >= DEEP.from ? DEEP.dens : 0),         // 밀도 배율: 1~3층 ×2.3 → 60층부터 ×3.3 (옛 정적 밀도 대비 화면 안 몹 수 ≈ ×2 ~ ×3)
   rw: n => 1 / (1 + .32 * (2.8 + 1.2 * Math.min(1, Math.max(0, (n - 3) / 57)) - 1)) * .9   // 몹 1마리 보상 배율(경험치·골드·드랍률): 밀도가 높을수록 마리당 보상은 줄인다
 };
 const SOLIDt = dgnMap.SOLID, BLOCKt = dgnMap.BLOCK;
@@ -35007,7 +35012,7 @@ function spawnPack(G, x, y, outOfView, o) {
 const mobSize = def => { const s = def.size == null ? 1 : def.size; return s > 6 ? s / 14 : s; };
 function spawnMob(G, def, x, y, o) {
   o = o || {}; const d = D(); let st; try { st = o.boss ? d.bossStats(def.id, G.floor, o.partySize || G.partySize || 1) : d.mobStats(def, G.floor); } catch (e) { st = null; } if (!st) st = {hp: 30, atk: 5, def: 0, spd: 1, xp: 5, gold: 2};
-  const sz = mobSize(def) * (o.sizeMul || 1) * (o.elite ? 1.3 : 1), r = 14 * sz, pmx = (o.boss || o.evt || !G.pmul) ? null : G.pmul, hpMul = (G.floor >= 111 && !o.boss ? 1.45 : 1) * (o.hpMul || 1) * (o.elite ? 2.6 : 1) * (pmx ? pmx.hp : 1), atkMul = (G.floor >= 111 && !o.boss ? 1.55 : 1) * (o.atkMul || 1) * (o.elite ? 1.4 : 1) * (pmx ? pmx.atk : 1);
+  const sz = mobSize(def) * (o.sizeMul || 1) * (o.elite ? 1.3 : 1), r = 14 * sz, pmx = (o.boss || o.evt || !G.pmul) ? null : G.pmul, hpMul = (G.floor >= 111 && !o.boss ? 1.45 : 1) * deepHp(G.floor, o.boss) * (o.hpMul || 1) * (o.elite ? 2.6 : 1) * (pmx ? pmx.hp : 1), atkMul = (G.floor >= 111 && !o.boss ? 1.55 : 1) * deepAtk(G.floor, o.boss) * (o.atkMul || 1) * (o.elite ? 1.4 : 1) * (pmx ? pmx.atk : 1);
   const rwK = (o.boss || o.evt) ? 1 : (G.rw > 0 ? G.rw : 1), sp = st.spd == null ? 1 : st.spd, m = {id: ++G.uid, def, name: o.name || def.name || "몹", ai: o.ai || def.ai || "chase", x, y, px: x, py: y, vx: 0, vy: 0, kx: 0, ky: 0, r, cr: Math.min(r, o.boss ? 40 : 18), hp: Math.max(1, st.hp * hpMul), hpMax: Math.max(1, st.hp * hpMul), atk: st.atk * atkMul, mdef: st.def || 0, spd: (sp > 8 ? sp : MOB_SPD * sp) * (o.spdMul || 1),
     xp: (st.xp || 0) * (o.elite ? 3 : 1) * (o.xpMul || 1) * rwK, gold: (st.gold || 0) * (o.elite ? 3 : 1) * rwK, tier: def.tier || 1, elite: !!o.elite, aff: "", age: rand() * 3, cd: rand() * 1.2, flash: 0, stunT: 0, slowT: 0, slowF: 0, burn: null, state: "idle", stT: 0, agg: false, wt: rand() * 2, wdx: 0, wdy: 0, awake: false, los: true, losT: 0, home: {x, y}, face: 1, fly: !!def.fly, dead: false, tele: null, lunge: 0, aggroR: (def.ai === "ranged" ? 470 : 360) + (o.elite ? 120 : 0), boss: null, evt: !!o.evt, noLoot: false, kbR: o.boss ? .1 : 1, pat: null};
   m.dmgDef = Object.assign({}, def, {def: m.mdef, hp: m.hpMax}); if (m.elite) { m.aff = pickOf(["swift", "steel", "blast"]); if (m.aff === "swift") m.spd *= 1.3; if (m.aff === "steel") { m.hp *= 1.4; m.hpMax *= 1.4; } m.name = AFF_N[m.aff] + " " + m.name; }
@@ -36721,7 +36726,7 @@ function build() {
         <div class="dgn-sys"><button class="dgn-ib spd" id="dgn-spd" data-act="dgn-spd" aria-label="배속 (X)" title="배속 1·1.15·1.3배 (X)"><b id="dgn-spd-t">×1</b></button><button class="dgn-ib exit" data-act="dgn-ask" aria-label="나가기" title="나가기 (진행은 자동 저장)">${svgI(ICO.exit)}<span>나가기</span></button></div>
       </div>
     </div>
-    <div class="dgn-pty" id="dgn-pty" aria-label="파티"></div><div class="dgn-spec dgn-pill" id="dgn-spec" hidden></div><div class="dgn-bw dgn-pill" id="dgn-bw" hidden><span id="dgn-bw-label"></span><button class="dgn-btn" data-act="dgn-boss-now">지금 바로 도전</button><button class="dgn-btn" data-act="dgn-boss-wait">파티원 기다리기</button><button class="dgn-btn" data-act="dgn-rope">밧줄로 따라가기</button></div>
+    <div class="dgn-pty" id="dgn-pty" aria-label="파티"></div><div class="dgn-spec dgn-pill" id="dgn-spec" hidden></div><div class="dgn-bw dgn-pill" id="dgn-bw" hidden><span id="dgn-bw-label"></span><button class="dgn-btn" data-act="dgn-boss-now">지금 바로 도전</button><button class="dgn-btn" data-act="dgn-boss-wait">파티원 기다리기</button><button class="dgn-btn" data-act="dgn-rope">밧줄로 따라가기 (R)</button></div>
     <div class="dgn-callout" id="dgn-shout" role="status" hidden></div><div class="dgn-callout dgn-autostate" id="dgn-autostate" role="status" hidden></div><div class="dgn-notes" id="dgn-notes" aria-live="polite"></div><div class="dgn-saved" id="dgn-saved" aria-live="polite"></div>
     <div class="dgn-boss" id="dgn-boss" hidden><b id="dgn-bn">보스</b><div class="dgn-bbar"><i id="dgn-bhp"></i><u style="left:66%"></u><u style="left:33%"></u><span id="dgn-bsp"></span></div></div>
     <div class="dgn-evt dgn-pill" id="dgn-evt" hidden><span>⚡ <b id="dgn-evt-t">이벤트 몹 출현</b></span><button data-act="dgn-evt-go">바로 이동</button></div>
@@ -37206,7 +37211,7 @@ function bindInput() {
     if (V.ui) { if (V.ui === "map" && (k === "m" || k === "M")) closeOv(); if (V.ui === "floors" && k === "Tab") { e.preventDefault(); closeOv(); } if (V.ui === "death" && (k === "Enter" || k === " ")) { e.preventDefault(); A["dgn-revive"](); } return; }
     if (D() && D().ui && D().ui.isOpen && D().ui.isOpen()) { if (k === "i" || k === "k" || k === "c") { try { D().ui.close(); } catch (er) {} } return; }
     V.keys[k] = true; if (["w", "a", "s", "d", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " ", "Tab"].includes(k)) e.preventDefault();
-    if (k >= "1" && k <= "8") V.castQ[+k - 1] = 1; else if (k === "e" || k === "Enter") V.useQ = true; else if (k === "q") V.potQ = true; else if (k === "i") openMenu("inv"); else if (k === "k") openMenu("skills"); else if (k === "c") openMenu("char"); else if (k === "m") A["dgn-map"](); else if (k === "Tab") A["dgn-floors"](); else if (k === "f") { if (!e.repeat) toggleAuto(); } else if (k === "x") { if (!e.repeat) A["dgn-spd"](); } else if (k === " ") V.dashQ = true; else if (k === "j") V.atkKey = true;
+    if (k >= "1" && k <= "8") V.castQ[+k - 1] = 1; else if (k === "e" || k === "Enter") V.useQ = true; else if (k === "q") V.potQ = true; else if (k === "i") openMenu("inv"); else if (k === "k") openMenu("skills"); else if (k === "c") openMenu("char"); else if (k === "m") A["dgn-map"](); else if (k === "Tab") A["dgn-floors"](); else if (k === "r") { const bw = $("#dgn-bw"), rb = bw && bw.querySelector('[data-act="dgn-rope"]'); if (bw && !bw.hidden && rb && !rb.hidden) { e.preventDefault(); A["dgn-rope"](); } }else if (k === "f") { if (!e.repeat) toggleAuto(); } else if (k === "x") { if (!e.repeat) A["dgn-spd"](); } else if (k === " ") V.dashQ = true; else if (k === "j") V.atkKey = true;
   });
   document.addEventListener("keyup", e => { const k = e.key.length === 1 ? e.key.toLowerCase() : e.key; delete V.keys[k]; if (k === "j") V.atkKey = false; });
   window.addEventListener("blur", () => { V.keys = {}; V.atk = false; V.atkKey = false; });
