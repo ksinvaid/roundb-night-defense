@@ -3818,13 +3818,13 @@ html[data-lowfx="1"]{scroll-behavior:auto}
       </header>
       <!-- 생활 메뉴 = 이 게임의 존재 이유(공간 홍보). 카드마다 data-life="lunch|gallery|road" + 빈 .lb-life-extra 자리(홍보 링크 담당이 '링크' 버튼을 붙인다) — lobby.js 가 채운다 -->
       <div class="lb-life" id="lb-life" role="group" aria-label="라운드비 공간 바로 가기: 오늘 뭐 먹지, 공간 둘러보기, 로드뷰 투어"></div>
-      <button type="button" class="lb-brawl-launch" data-open-brawl>⚔ 대난투 · 기사 10인전</button>
       <div class="lb-map-layout">
         <div class="lb-game-rail" role="group" aria-label="게임 바로가기 1">
-          <button type="button" class="lb-game-shortcut" data-game-spot="3f-storage"><strong>던전 인 라운드비</strong><small>기사와 함께 던전 100층 도전</small></button>
+          <button type="button" class="lb-game-shortcut" data-game-spot="3f-storage"><strong>던전 인 라운드비</strong><small>기사와 함께 던전 150층 도전</small></button>
           <button type="button" class="lb-game-shortcut" data-game-spot="3f-studio"><strong>LORD 영주전</strong><small>영지를 넓히고 용 사냥</small></button>
           <button type="button" class="lb-game-shortcut" data-game-spot="3f-desks"><strong>서바이버</strong><small>몰려오는 공실 귀신 버티기</small></button>
           <button type="button" class="lb-game-shortcut" data-game-spot="3f-ac"><strong>소용돌이·미로</strong><small>터렛을 지어 길목 방어</small></button>
+          <button type="button" class="lb-game-shortcut" data-open-brawl><strong>⚔ 대난투</strong><small>기사 10인전 · 스킬 4개</small></button>
         </div>
       <div class="lb-stage" id="lb-stage">
         <canvas id="lb-cv" role="img" aria-label="라운드비 3층과 4층 배치도 로비. 방향키나 WASD로 내 기사를 걷게 하고, 방 이름표를 누르면 순간이동해서 바로 들어가요. 오른쪽 떠 있는 버튼으로 게임 목록·메뉴·채팅·내 정보를 열어요."></canvas>
@@ -3859,6 +3859,7 @@ html[data-lowfx="1"]{scroll-behavior:auto}
           <button type="button" class="lb-game-shortcut" data-game-spot="4f-lounge"><strong>땅따먹기</strong><small>한 바퀴 돌아 내 땅 넓히기</small></button>
           <button type="button" class="lb-game-shortcut" data-game-spot="4f-wall"><strong>대결</strong><small>유닛을 보내 상대 팀 방 공략</small></button>
           <button type="button" class="lb-game-shortcut" data-game-spot="4f-ac"><strong>로봇대전</strong><small>컨베이어에 로봇 올려 대결</small></button>
+          <button type="button" class="lb-game-shortcut" data-open-blood><strong>◉ 진화 블러드</strong><small>자동 생산 · 드론 지휘</small></button>
         </div>
       </div>
       <div class="lb-sheet" id="lb-sheet" hidden></div>
@@ -14734,7 +14735,7 @@ function pgFill(G, p) {   // 꼬리를 내 땅으로 바꾼 뒤 호출 — 내 �
 function pgStep(G, p, dt) {
   const P = pgPos(p); let H = pgHd(p), phi = 0;
   if (p.turnIn) phi = p.turnIn * OMEGA * dt;
-  else if (p.aim) { const a = p.aim, cr = pgCross(H, a), s = pgDot(P, cr), c = pgDot(H, a), d = Math.atan2(s, c), m = (p.af ? OMEGA_KEY : OMEGA) * dt; phi = d > m ? m : d < -m ? -m : d; if (p.af && d <= m && d >= -m) p.aim = null; }   // 방향키 목표(af)는 도착하면 비운다 — 구 위에서는 옛 3차원 벡터가 멀리 가면 엉뚱한 쪽을 가리키므로(평면은 각도라 상관없음)
+  else if (p.aim) { const a = p.aim, cr = pgCross(H, a), s = pgDot(P, cr), c = pgDot(H, a), d = Math.atan2(s, c), m = (p.af ? OMEGA_KEY : p.human ? 13 : OMEGA) * dt; phi = d > m ? m : d < -m ? -m : d; if (p.af && d <= m && d >= -m) p.aim = null; }   // 방향키 목표(af)는 도착하면 비운다 — 구 위에서는 옛 3차원 벡터가 멀리 가면 엉뚱한 쪽을 가리키므로(평면은 각도라 상관없음)
   if (phi) H = pgRot(P, H, phi);
   const v = p.speed * dt;
   let np = P, nh = H;
@@ -14891,7 +14892,7 @@ const OMEGA_KEY = 48;                             // 방향키·WASD 로 정한 
 const KEY_REV = 2.6;                              // 꼬리를 달고 밖에 있을 때, 지금 방향과 이 각(≈149°)보다 더 벌어진 '거의 반대' 키는 무시(순간 유턴으로 꼬리를 물어 죽는 것 방지)
 const PROT_SEC = 1.8;                             // 부활 직후 무적 시간
 const SELF_GRACE = .42;                           // 방금 지나온 내 꼬리(이 시간 안)는 밟아도 안 죽는다(몸 바로 뒤 칸)
-const PT_GAP = .5;                                // 꼬리 그림용 점을 찍는 간격(칸)
+const PT_GAP = .24;                                // 꼬리 그림용 점을 찍는 간격(칸)
 const EXT = {};                                   // 확장 자리(지구본 같은 다른 모양 지도가 여기에 함수를 등록한다)
 const wrapA = a => { a %= TAU; if (a > Math.PI) a -= TAU; else if (a < -Math.PI) a += TAU; return a; };
 const dirOf = a => { a = wrapA(a); return Math.abs(a) <= Math.PI / 4 ? 1 : a > Math.PI / 4 && a < 3 * Math.PI / 4 ? 2 : a < -Math.PI / 4 && a > -3 * Math.PI / 4 ? 0 : 3; };
@@ -15084,7 +15085,7 @@ function moveTo(G, p, nx, ny) {
 function steerP(p, dt) {
   let a = p.ang;
   if (p.turnIn) a += p.turnIn * OMEGA * dt;
-  else if (p.aim != null) { const d = wrapA(p.aim - a), m = (p.af ? OMEGA_KEY : OMEGA) * dt; a += d > m ? m : d < -m ? -m : d; }
+  else if (p.aim != null) { const d = wrapA(p.aim - a), m = (p.af ? OMEGA_KEY : p.human ? 13 : OMEGA) * dt; a += d > m ? m : d < -m ? -m : d; }
   p.ang = wrapA(a);
 }
 function stepMove(G, p, dt) {
@@ -15624,7 +15625,7 @@ const DASH = [[], [.12, .5], [.9, .55], [.35, .35], [1.3, .45, .2, .45], [.2, .2
 function drawTrail(g, p, ox, oy, now) {
   const T = V.T, TH = V.TH, c = COL[p.col], q = p.pts, n = q.length; if (n < 2) return; const wd = T * .48;
   g.lineCap = "round"; g.lineJoin = "round"; g.beginPath(); g.moveTo(ox + q[0] * T, oy + q[1] * TH);
-  for (let i = 2; i + 1 < n; i += 2) { const mx = (q[i] + (q[i + 2] != null ? q[i + 2] : p.fx)) / 2, my = (q[i + 1] + (q[i + 3] != null ? q[i + 3] : p.fy)) / 2; g.quadraticCurveTo(ox + q[i] * T, oy + q[i + 1] * TH, ox + mx * T, oy + my * TH); }
+  for (let i = 2; i + 1 < n; i += 2) g.lineTo(ox + q[i] * T, oy + q[i + 1] * TH);
   g.lineTo(ox + p.fx * T, oy + p.fy * TH);
   g.save(); g.translate(0, T * .1); g.strokeStyle = "rgba(0,0,0,.4)"; g.lineWidth = wd + 3; g.stroke(); g.restore();
   g.strokeStyle = "rgba(10,12,28,.9)"; g.lineWidth = wd + Math.max(3, T * .12); g.stroke();
@@ -17245,13 +17246,14 @@ function nearEnemyBase(S, p, u) {   // 가장 가까운 살아 있는 상대 기
 }
 function pickTarget(S, u, p) {
   const d = u.d, o = u.ord, tm = u.team, vis = S.vis[tm]; let A = o.k === "near" ? 1e9 : o.k === "def" ? 320 : d.rng > 150 ? 330 : 290, best = null, bs = 1e18, bb = false;
+  A = Math.max(A, d.rng + u.rad + 80);
   const ccx = o.k === "def" ? o.x : u.x, ccy = o.k === "def" ? o.y : u.y;
   for (const e of S.unT[1 - tm]) {
     if (e.hp <= 0) continue; const dx = e.x - u.x, dy = e.y - u.y, dd = Math.sqrt(dx * dx + dy * dy); if (dd > A) continue;
     if (o.k === "def" && (e.x - ccx) ** 2 + (e.y - ccy) ** 2 > 560 * 560) continue;
     if (!seenAt(S, tm, e.x, e.y)) continue;
     let sc = dd * (e.d.dmg > 0 ? .9 : 1.1); if (e.hp < e.mhp * .5 && AIC[p.lvl].focus) sc *= .72; else if (e.hp < e.mhp * .5) sc *= .9; if (e.d.role === "heal") sc *= .8;
-    if (sc < bs) { bs = sc; best = e; bb = false; PT.d = dd; }
+    if (dd - u.rad - e.rad <= d.rng ? !best || PT.d - u.rad - best.rad > d.rng || sc < bs : (!best || PT.d - u.rad - best.rad > d.rng) && sc < bs) { bs = sc; best = e; bb = false; PT.d = dd; }
   }
   if (best) { PT.b = false; return best; }
   for (const e of S.bT[1 - tm]) {
@@ -17300,7 +17302,7 @@ function unitStep(S, u, p, dt) {
     u.tt -= dt;
     if (!tg || u.tt <= 0) {
       u.tt = .3 + S.rng() * .25; const nt = pickTarget(S, u, p);
-      if (nt && nt !== tg) { if (!tg || isB || (!PT.b && PT.d < (hyp(tg.x - u.x, tg.y - u.y) - tg.rad) * .72)) { tg = u.tg = nt; u.tgB = isB = PT.b; } }
+      if (nt && nt !== tg) { if (!tg || isB || (o.k === "am" && PT.d - u.rad - (PT.b ? 0 : nt.rad) <= d.rng && hyp(tg.x-u.x,tg.y-u.y)-u.rad-tg.rad > d.rng) || (!PT.b && PT.d < (hyp(tg.x - u.x, tg.y - u.y) - tg.rad) * .72)) { tg = u.tg = nt; u.tgB = isB = PT.b; } }
     }
   }
   let dest = null; const step = d.spd * dt * u.slowF;
@@ -22263,7 +22265,7 @@ for (const g of [
   {id: "lord", name: "LORD 영주전", tag: "땅을 넓히고 용을 잡는 영주 대결", icon: svg("lord"), kind: "main", open: act("lrd-open")},
   {id: "paper", name: "땅따먹기", tag: "한 바퀴 돌아 내 땅을 넓혀요", icon: svg("paper"), kind: "main", open: act("ppr-open")},
   {id: "survivor", name: "서바이버", tag: "야근 생존", icon: svg("ghost"), kind: "main", open: soonOpen},   // 서바이버 패치가 register 로 open 을 덮어쓴다
-  {id: "dungeon", name: "던전 인 라운드비", tag: "100층 RPG 던전", icon: svg("dungeon"), kind: "main", open: soonOpen},   // 던전 담당이 register 로 open 을 덮어쓴다(계약 §8)
+  {id: "dungeon", name: "던전 인 라운드비", tag: "150층 RPG 던전", icon: svg("dungeon"), kind: "main", open: soonOpen},   // 던전 담당이 register 로 open 을 덮어쓴다(계약 §8)
   {id: "robot", name: "로봇대전", tag: "컨베이어에 로봇을 올려 상대를 무너뜨려요", icon: svg("robot"), kind: "main", open: soonOpen},   // 로봇대전 패치가 register 로 open 을 덮어쓴다(계약 §9)
   {id: "lunch", name: "오늘 뭐 먹지", tag: "라운드비 근처 밥집 뽑기·지도", icon: svg("lunch"), kind: "life", open: act("lnc-open")},
   {id: "gallery", name: "공간 둘러보기", tag: "실제 라운드비 사진", icon: svg("gallery"), kind: "life", open: act("to-gallery")},
@@ -26800,7 +26802,7 @@ const GAMEDEF = {
   paper: {name: "땅따먹기", tag: "선을 그어 내 땅을 넓히는 영역 싸움이에요.", icon: "paper"},
   survivor: {name: "서바이버", tag: "야근 생존 — 몰려오는 귀신 속에서 끝까지 버텨요.", icon: "survivor"},
   robot: {name: "로봇대전", tag: "컨베이어 라인 5개에 로봇을 보내 상성으로 겨루는 2인 대결이에요.", icon: "gear"},
-  dungeon: {name: "던전 인 라운드비", tag: "라운드비 지하로 이어진 던전. 100층까지 몹을 잡고 성장해요.", icon: "dungeon"},
+  dungeon: {name: "던전 인 라운드비", tag: "라운드비 지하로 이어진 던전. 150층까지 몹을 잡고 성장해요.", icon: "dungeon"},
   lunch: {name: "오늘 뭐 먹지?", tag: "라운드비 근처 밥집 뽑기와 지도예요.", icon: "lunch"},
   gallery: {name: "공간 둘러보기", tag: "게임 속 방들의 실제 사진을 봐요.", icon: "gallery"},
   road: {name: "로드뷰 투어", tag: "3층 라운지·4층 공유오피스를 걸어서 둘러봐요.", icon: "road"}
@@ -26906,7 +26908,7 @@ const KN = [
     amb: ["한 방에 끝내자!", "좋아, 가자! 지금이야!!", "망설이면 지는 거야! 돌격!", "뜨거워졌다! 전부 덤벼!", "내가 앞장설게! 따라와!", "오늘도 힘이 넘친다!", "쉬는 시간? 몸이 근질근질해!", "하나, 둘, 셋, 간다!", "포기란 없어! 끝까지 간다!", "불꽃이 튀는 승부, 기다렸어!", "몸풀기 끝! 이제 본게임이다!", "같이 하자! 혼자보다 백 배 재밌어!", "넘어져도 또 일어나면 되는 거야!", "내 심장이 두근두근 하고 있어!", "가슴이 뛴다! 오늘은 이길 것 같아!", "질 수 없지! 졌다면 한 판 더!"],
     lunch: "점심 먹었어?! 안 먹었으면 달려가자!", dinner: "저녁이다! 든든하게 먹고 한 판 가자!", night: "밤이다! 제일 신나는 시간이지!", morning: "좋은 아침! 몸 풀고 시작하자!",
     food: "오늘 뭐 먹지 해 봤어?! 뽑기 돌리면 기분 최고야!",
-    dun: g => `${g}! 100층까지 가 보자! 내가 앞장선다!`, sur: g => `${g}! 몰려오는 놈들 다 상대해 주지!`,
+    dun: g => `${g}! 150층까지 가 보자! 내가 앞장선다!`, sur: g => `${g}! 몰려오는 놈들 다 상대해 주지!`,
     wk: (g, m) => `이번 주는 ${g}다!! ${m}배라니, 안 할 수 없지!`,
     on: n => n > 1 ? `지금 ${n}명이 접속했어! 열기가 뜨겁다!` : "아직 한 명? 내가 상대해 줄게!",
     rob: g => `로봇대전! 로봇 보내 놓고 응원하는 거야! 가자!!`, wd: () => `옷방 가 봤어?! 새 스킨 입고 한 판 가자!`,
@@ -26933,7 +26935,7 @@ const KN = [
     amb: ["걱정 마! 내가 다 막는다!", "하하하! 이 정도쯤이야!", "자, 덤벼라! 몸으로 막아 주마!", "든든하게 먹고 시작하자고!", "괜찮아, 괜찮아! 어떻게든 돼!", "내 방패는 튼튼하다고!", "크하하, 오늘 기분 최고다!", "쫄지 마! 우리가 있잖아!", "이야~ 사람 많으니 신나는데!", "뭐든 맡겨! 내가 책임진다!", "한 번 더 해 보자고! 아직 힘 남았어!", "웃으면 복이 와! 하하!", "맛있는 거 먹으러 가자! 내가 쏜다!", "쾅! 문은 내가 막았다!", "덤벼, 덤벼! 오늘은 안 져!", "다 같이 해야 재밌지! 하하!"],
     lunch: "점심 먹었냐! 안 먹었으면 내가 쏜다! 하하!", dinner: "저녁이다! 든든하게 먹어야 힘이 나지!", night: "밤이라고 쫄지 마! 내가 다 막아 줄게!", morning: "좋은 아침이다! 오늘도 기운차게 가자!",
     food: "오늘 뭐 먹지 해 봤어? 뽑기 걸리는 대로 먹는 거야! 하하!",
-    dun: g => `${g}! 던전이 뭐 대수냐! 같이 100층까지 가자, 하하!`, sur: g => `${g}! 몰려와 봐라, 다 막아 줄 테니까!`,
+    dun: g => `${g}! 던전이 뭐 대수냐! 같이 150층까지 가자, 하하!`, sur: g => `${g}! 몰려와 봐라, 다 막아 줄 테니까!`,
     wk: (g, m) => `이번 주의 게임은 ${g}! ${m}배라니 안 할 수 없지, 하하!`,
     on: n => n > 1 ? `지금 ${n}명이 접속 중이다! 북적북적해서 좋네!` : "아직 한 명? 걱정 마, 내가 있잖아!",
     rob: g => `로봇대전이다! 로봇 부대 줄줄이 보내는 거, 호쾌하잖아! 하하!`, wd: () => `옷방에서 멋지게 차려입고 오라고! 하하!`,
@@ -32416,7 +32418,7 @@ D.W.byId = byId;
 
 /* 테마 안 위치(1..10)에 따라 몹 풀: 초입엔 3종, 중반 4종, 깊은 곳 5종 */
 D.W.poolFor = function (floor) {
-  const f = Math.min(100, Math.max(1, floor | 0)), th = Math.floor((f - 1) / 10), k = ((f - 1) % 10) + 1;
+  const f = Math.min(150, Math.max(1, floor | 0)), th = Math.floor((f - 1) / 10) % THEMES.length, k = ((f - 1) % 10) + 1;
   const all = THEMES[th].mobs, n = k <= 2 ? 3 : k <= 6 ? 4 : 5;
   const pool = all.slice(0, n);
   if (th > 0 && k >= 4 && k <= 8) pool.push(THEMES[th - 1].mobs[(k + th) % 5]);   // 지난 테마 몹이 가끔 섞여 나온다
@@ -33085,8 +33087,8 @@ dgr.noteKill = function (c, id) { if (!c) return; c.kills = (c.kills | 0) + 1; i
 const PHASE = ["입구", "초입", "초입", "중반", "중반", "중반", "깊은 곳", "깊은 곳", "보스 앞", "보스방"];
 const _fi = {};
 dgr.floorInfo = function (n) {
-  n = int(n, 1, 100, 1); if (_fi[n]) return _fi[n];
-  const th = Math.floor((n - 1) / 10), T = W.THEMES[th], k = ((n - 1) % 10) + 1, main = k === 10;
+  n = int(n, 1, 150, 1); if (_fi[n]) return _fi[n];
+  const th = Math.floor((n - 1) / 10) % W.THEMES.length, T = W.THEMES[th], k = ((n - 1) % 10) + 1, main = k === 10;
   const bossId = main ? T.boss : T.boss + ":" + k, bd = dgr.mobDef(bossId);
   return _fi[n] = {floor: n, themeIdx: th, theme: T.n, themeShort: T.short, name: `${T.short} ${k}구역 · ${PHASE[k - 1]}`, mood: T.mood, mobPool: W.poolFor(n),
     tierMul: Math.round(Hc(n) * 100) / 100, bossId, bossName: bd.n, bossMain: main, isBoss: main, eliteChance: Math.round((.04 + .0011 * n) * 1000) / 1000, dropMul: Math.round((1 + .004 * n) * 1000) / 1000,
@@ -33095,9 +33097,9 @@ dgr.floorInfo = function (n) {
 dgr.themes = () => W.THEMES;
 /* 층 보스를 잡았을 때 엔진이 부른다: 최고 층 기록 + 다음 층 포털 열기. first = 이 층 첫 클리어인가 */
 dgr.clearFloor = function (c, floor) {
-  floor = int(floor, 1, 100, 1); const first = floor > (c.floorBest | 0);
+  floor = int(floor, 1, 150, 1); const first = floor > (c.floorBest | 0);
   if (first) c.floorBest = floor;
-  c.floorsOpen = clamp(Math.max(c.floorsOpen | 0, floor + 1), 1, 100); emit("change", c); return {first, floorsOpen: c.floorsOpen};
+  c.floorsOpen = clamp(Math.max(c.floorsOpen | 0, floor + 1), 1, 150); emit("change", c); return {first, floorsOpen: c.floorsOpen};
 };
 const _md = {};
 function derive(def) {
@@ -33128,7 +33130,7 @@ dgr.eliteOf = function (def) {
 };
 dgr.mobStats = function (def, floor) {
   def = dgr.mobDef(def); if (!def) return null;
-  const L = int(floor, 1, 100, 1), bg = def.boss ? Math.sqrt(bossG(L)) : 1, hpm = def.boss ? CFG.boss.hp * bg : 1, am = def.boss ? CFG.boss.atk * bg : 1;
+  const L = int(floor, 1, 150, 1), bg = def.boss ? Math.sqrt(bossG(L)) : 1, hpm = def.boss ? CFG.boss.hp * bg : 1, am = def.boss ? CFG.boss.atk * bg : 1;
   return {id: def.id, name: def.n, hp: Math.round(CFG.mob.hp * def.hpF * hpm * Hc(L)), atk: Math.round(CFG.mob.atk * def.atkF * am * Ac(L)), def: Math.round(CFG.mob.def * def.defF * Dc(L)),
     spd: Math.round(CFG.mob.spd * def.spdF * (1 + Math.min(.5, L * .004))), xp: Math.max(1, Math.round(xpPerKill(L) * def.xpF)), gold: Math.max(1, Math.round(goldUnit(L) * def.goldF)),
     size: def.sz, ai: def.ai, tier: def.tier, boss: !!def.boss, p: def.p || {}, art: def.art, floor: L};
@@ -33136,7 +33138,7 @@ dgr.mobStats = function (def, floor) {
 /* 5차: 보스 난이도 — 10층부터 층이 오를수록 체력·공격 가산(10층 ×1 → 50층 체력 ×1.6·공격 ×1.25 → 100층 체력 ×2.4·공격 ×1.55), 파티 인원 p(1~8)가 늘면 체력 ×(1+0.75(p-1)) · 공격 ×(1+0.1(p-1)).
    솔로(p=1)는 장비·스킬·영구 능력치를 갖추면 클리어, 파티는 체력이 더 많아 같이 싸울 맛이 나게. 온라인 파티 담당은 dgr.bossStats(id, floor, partySize) 또는 엔진 dgnCore.setPartySize(G, n) 로 인원을 넣는다. */
 dgr.bossScale = function (floor, partySize) {
-  const f = clamp(floor | 0, 1, 100), p = clamp(partySize | 0 || 1, 1, 8), fh = f >= 10 ? 1 + .015 * (f - 9) : 1, fa = f >= 10 ? 1 + .006 * (f - 9) : 1;
+  const f = clamp(floor | 0, 1, 150), p = clamp(partySize | 0 || 1, 1, 8), fh = f >= 10 ? 1 + .015 * (f - 9) : 1, fa = f >= 10 ? 1 + .006 * (f - 9) : 1;
   return {hp: Math.round(fh * (1 + .75 * (p - 1)) * 1000) / 1000, atk: Math.round(fa * (1 + .1 * (p - 1)) * 1000) / 1000, floorHp: Math.round(fh * 1000) / 1000, floorAtk: Math.round(fa * 1000) / 1000, party: p};
 };
 dgr.bossStats = function (bossId, floor, partySize) {
@@ -33506,7 +33508,7 @@ dgr.load = function (str) {
   const c = dgr.newChar(k);
   c.seq = int(o.sq, 0, 2e9, 0); c.perm = {}; if (Array.isArray(o.pm)) PERM.forEach((P, i) => { const q = o.pm[i]; if (Array.isArray(q)) { const l = int(q[0], 0, P.max, 0); c.perm[P.id] = [l, l >= P.max ? 0 : int(q[1], 0, 1e9, 0)]; } });   /* 영구 능력치(옛 저장엔 없음 = 0) */
   c.lv = int(o.l, 1, CFG.cap, 1); c.xp = int(o.x, 0, 1e12, 0); if (c.lv >= CFG.cap) c.xp = 0; else c.xp = Math.min(c.xp, Math.max(0, xpNeed(c.lv) - 1));
-  c.gold = int(o.g, 0, 1e12, 0); c.floorBest = int(o.fb, 0, 100, 0); c.floorsOpen = int(o.fo, 1, 100, 1); c.floorsOpen = Math.max(c.floorsOpen, Math.min(100, c.floorBest + 1));
+  c.gold = int(o.g, 0, 1e12, 0); c.floorBest = int(o.fb, 0, 150, 0); c.floorsOpen = int(o.fo, 1, 150, 1); c.floorsOpen = Math.max(c.floorsOpen, Math.min(150, c.floorBest + 1));
   c.kills = int(o.kl, 0, 1e9, 0); c.playSec = int(o.ps, 0, 1e9, 0);
   c.skills = {}; if (Array.isArray(o.sk)) for (const e of o.sk) { const id = e && e[0], r = int(e && e[1], 0, 5, 0); if (SKILLS[id] && SKILLS[id].k === k && r > 0) c.skills[id] = Math.min(r, SKILLS[id].def.max); }
   const earned = spEarned(c.lv); let spent = spSpent(c);
@@ -34308,7 +34310,7 @@ function symmetrize(g) {
 
 /* ---------- 층 사양: 층 번호만으로 정해지는 순수 함수 ---------- */
 function spec(n) {
-  n = clamp(Math.round(n) || 1, 1, 100);
+  n = clamp(Math.round(n) || 1, 1, 150);
   const r = mulberry32(seedOf(n) ^ 0xA5A5A5A5), d = Math.floor((n - 1) / 10), k = (n - 1) % 10, q = .35 + .65 * (k / 9);
   const S = {n, d, k, gen: "tpl", tpl: "L34", fx: false, fy: false, rot: 0, mods: {}, flags: {}, cw: 2, W: 80, H: 62, style: "", boss: k === 9 ? "major" : "minor", tags: []};
   const wp = (arr) => { const tot = arr.reduce((s, a) => s + a[1], 0); let x = r() * tot; for (const a of arr) { x -= a[1]; if (x <= 0) return a[0]; } return arr[0][0]; };
@@ -34364,7 +34366,7 @@ function describeTags(S) {
   if (M.merge || M.split) t.push("방 구조 변형");
   return t;
 }
-const describe = n => { const s = spec(n); return {n: s.n, decade: s.d, theme: DECADE_NAMES[s.d], gen: s.gen, tpl: s.gen === "tpl" ? s.tpl : null, tags: s.tags.slice(), boss: s.boss}; };
+const describe = n => { const s = spec(n); return {n: s.n, decade: s.d, theme: DECADE_NAMES[s.d % DECADE_NAMES.length], gen: s.gen, tpl: s.gen === "tpl" ? s.tpl : null, tags: s.tags.slice(), boss: s.boss}; };
 
 /* ---------- 연결성: 걸을 수 있는 칸의 덩어리 나누기 · 최단 거리 · 터널 ---------- */
 const DX4 = [1, 0, -1, 0], DY4 = [0, 1, 0, -1];
@@ -34835,7 +34837,7 @@ function weightedDef(G, pred) {
 }
 function tilePos(M, i) { return {x: (i % M.W + .5) * TILE, y: ((i / M.W) | 0) * TILE + TILE / 2}; }
 function enterFloor(G, n, how) {
-  n = cl(Math.round(n) || 1, 1, 100); const d = D(), prevFloor = G.floor; if (G.cur !== G.hs[0]) bind(G, G.hs[0]); const c = G.char;
+  n = cl(Math.round(n) || 1, 1, 150); const d = D(), prevFloor = G.floor; if (G.cur !== G.hs[0]) bind(G, G.hs[0]); const c = G.char;
   G.floor = n; G.M = dgnMap.gen(n); const M = G.M; try { G.info = d.floorInfo(n) || {}; } catch (e) { G.info = {}; } G.info.mobPool = G.info.mobPool || [];
   G.mobs.length = G.pj.length = G.ep.length = G.zones.length = G.allies.length = G.drops.length = G.chests.length = G.portals.length = G.npcs.length = G.beams.length = G.orbits.length = G.shocks.length = G.fx.length = G.texts.length = G.slashes.length = G.bolts.length = G.later.length = 0;
   G.boss = null; G.bs = {state: "idle", t: 0}; G.cine = null; G.near = null; G.spT = 4; G.over = null; G.horde = null; G.hordeT = HORDE.first + rand() * 20; G.combo = 0; G.comboT = -9; G.hasPsn = false; for (let i = 0; i < M.sf.length; i++) if (M.sf[i] === SF.POISON) { G.hasPsn = true; break; } G.rq = []; G.rw = DCFG.rw(n); G.nAgg = 0; G.spNearT = -99; G.ask = null; G.bossDownT = -99; G.runT = 0; G.stormT = 3 + rand() * 2; G.hazT = 0; G.bossWait = null; G.wipe = 0; G.travel = null;
@@ -34873,8 +34875,8 @@ function setupPortals(G) {
   const mk = (tx, ty, to, kind, label, o) => G.portals.push(Object.assign({x: (tx + .5) * TILE, y: (ty + .5) * TILE, to, kind, label, cool: true, t: 0, id: ++G.uid}, o || {}));
   if (n > 1) { let ty = st.y + 2; if (ty >= M.H - 1 || dgnMap.solidI(M, ty * M.W + st.x)) ty = st.y - 2; mk(st.x, ty, n - 1, "down", (n - 1) + "층으로", {start: true}); }
   if (G.cleared) {
-    mk(M.portal.x, M.portal.y, n < 100 ? n + 1 : 1, "up", n < 100 ? (n + 1) + "층으로" : "마을로", {boss: true}); addAltar(G); G.bs = {state: "cleared", t: 0};
-    if (n < 100 && isOpen(c, n + 1)) { let tx = st.x + 2; if (dgnMap.solidI(M, st.y * M.W + tx)) tx = st.x - 2; mk(tx, st.y, n + 1, "up", (n + 1) + "층으로", {start: true}); }
+    mk(M.portal.x, M.portal.y, n < 150 ? n + 1 : 1, "up", n < 150 ? (n + 1) + "층으로" : "마을로", {boss: true}); addAltar(G); G.bs = {state: "cleared", t: 0};
+    if (n < 150 && isOpen(c, n + 1)) { let tx = st.x + 2; if (dgnMap.solidI(M, st.y * M.W + tx)) tx = st.x - 2; mk(tx, st.y, n + 1, "up", (n + 1) + "층으로", {start: true}); }
   }
 }
 /* 5차: 층에 도착하면 시작 포탈(이전 층·다음 층)에서 4칸 넘게 떨어진 자리에 놓는다 — 도착하자마자 이전 층 포탈을 밟는 사고 방지. 도착한 포탈은 잠깐(2.5초) 작동하지 않는다 */
@@ -34904,7 +34906,7 @@ function setupTown(G) {
 }
 /* ---- 4차: 필드 몹 배치 ---- */
 function walkCount(M) { if (M._walkN == null) { let w = 0; for (let i = 0; i < M.W * M.H; i++) if (M.dist[i] >= 0 && !M.type[i]) w++; M._walkN = w; } return M._walkN; }
-const initCount = (M, n, pm) => cl(Math.round(Math.max(M.spawn.length / DCFG.base, walkCount(M) / DCFG.walkDiv) * DCFG.mul(n) * (pm || 1)), DCFG.lo, DCFG.hi * (pm || 1));   // 몹 자리 34칸당 1마리(걸을 수 있는 칸 90칸당 1마리 중 큰 쪽) × 배율
+const initCount = (M, n, pm) => cl(Math.round(Math.max(M.spawn.length / DCFG.base, walkCount(M) / DCFG.walkDiv) * DCFG.mul(n) * (pm || 1) * (n >= 111 ? 1.3 : 1)), DCFG.lo, Math.min(MAX_MOBS - 25, DCFG.hi * (pm || 1) * (n >= 111 ? 1.25 : 1)));   // 몹 자리 34칸당 1마리(걸을 수 있는 칸 90칸당 1마리 중 큰 쪽) × 배율
 function crowd(G, x, y, r) { let n = 0; const r2 = r * r; for (const m of G.mobs) { if (m.dead) continue; const dx = m.x - x, dy = m.y - y; if (dx * dx + dy * dy < r2) n++; } return n; }
 function pickGroup(M) { const gs = M.groups; if (!M._gw) M._gw = gs.reduce((s, g) => s + g.tiles.length, 0); let x = rand() * M._gw, grp = gs[0]; for (const g of gs) { x -= g.tiles.length; if (x <= 0) { grp = g; break; } } return grp; }
 function pickSpot(G, minD, maxD) {   // 몹 자리 후보 14곳 중 플레이어(파티는 가장 가까운 영웅)에서 minD~maxD px, 가장 한산한 곳
@@ -34942,7 +34944,7 @@ function spawnPack(G, x, y, outOfView, o) {
 const mobSize = def => { const s = def.size == null ? 1 : def.size; return s > 6 ? s / 14 : s; };
 function spawnMob(G, def, x, y, o) {
   o = o || {}; const d = D(); let st; try { st = o.boss ? d.bossStats(def.id, G.floor, G.partySize || 1) : d.mobStats(def, G.floor); } catch (e) { st = null; } if (!st) st = {hp: 30, atk: 5, def: 0, spd: 1, xp: 5, gold: 2};
-  const sz = mobSize(def) * (o.sizeMul || 1) * (o.elite ? 1.3 : 1), r = 14 * sz, pmx = (o.boss || o.evt || !G.pmul) ? null : G.pmul, hpMul = (o.hpMul || 1) * (o.elite ? 2.6 : 1) * (pmx ? pmx.hp : 1), atkMul = (o.atkMul || 1) * (o.elite ? 1.4 : 1) * (pmx ? pmx.atk : 1);
+  const sz = mobSize(def) * (o.sizeMul || 1) * (o.elite ? 1.3 : 1), r = 14 * sz, pmx = (o.boss || o.evt || !G.pmul) ? null : G.pmul, hpMul = (G.floor >= 111 && !o.boss ? 1.45 : 1) * (o.hpMul || 1) * (o.elite ? 2.6 : 1) * (pmx ? pmx.hp : 1), atkMul = (G.floor >= 111 && !o.boss ? 1.55 : 1) * (o.atkMul || 1) * (o.elite ? 1.4 : 1) * (pmx ? pmx.atk : 1);
   const rwK = (o.boss || o.evt) ? 1 : (G.rw > 0 ? G.rw : 1), sp = st.spd == null ? 1 : st.spd, m = {id: ++G.uid, def, name: o.name || def.name || "몹", ai: o.ai || def.ai || "chase", x, y, px: x, py: y, vx: 0, vy: 0, kx: 0, ky: 0, r, cr: Math.min(r, o.boss ? 40 : 18), hp: Math.max(1, st.hp * hpMul), hpMax: Math.max(1, st.hp * hpMul), atk: st.atk * atkMul, mdef: st.def || 0, spd: (sp > 8 ? sp : MOB_SPD * sp) * (o.spdMul || 1),
     xp: (st.xp || 0) * (o.elite ? 3 : 1) * (o.xpMul || 1) * rwK, gold: (st.gold || 0) * (o.elite ? 3 : 1) * rwK, tier: def.tier || 1, elite: !!o.elite, aff: "", age: rand() * 3, cd: rand() * 1.2, flash: 0, stunT: 0, slowT: 0, slowF: 0, burn: null, state: "idle", stT: 0, agg: false, wt: rand() * 2, wdx: 0, wdy: 0, awake: false, los: true, losT: 0, home: {x, y}, face: 1, fly: !!def.fly, dead: false, tele: null, lunge: 0, aggroR: (def.ai === "ranged" ? 470 : 360) + (o.elite ? 120 : 0), boss: null, evt: !!o.evt, noLoot: false, kbR: o.boss ? .1 : 1, pat: null};
   m.dmgDef = Object.assign({}, def, {def: m.mdef, hp: m.hpMax}); if (m.elite) { m.aff = pickOf(["swift", "steel", "blast"]); if (m.aff === "swift") m.spd *= 1.3; if (m.aff === "steel") { m.hp *= 1.4; m.hpMax *= 1.4; } m.name = AFF_N[m.aff] + " " + m.name; }
@@ -34959,7 +34961,7 @@ function spawnEventMob(G) {
 /* ================= 이벤트 몹 스케줄(순수 함수: 노드로 시험) ================= */
 const EVT_MIN = 300, EVT_MAX = 720, EVT_EXPIRE = 1500;
 const evtNextDelay = (rng) => EVT_MIN + (rng || rand)() * (EVT_MAX - EVT_MIN);
-function evtPickFloor(char, cur, rng) { const mx = openMax(char), c = []; for (let f = 1; f <= Math.min(100, mx); f++) if (isOpen(char, f) && f !== cur) c.push(f); if (!c.length) c.push(cur || 1); return c[Math.floor((rng || rand)() * c.length)]; }
+function evtPickFloor(char, cur, rng) { const mx = openMax(char), c = []; for (let f = 1; f <= Math.min(150, mx); f++) if (isOpen(char, f) && f !== cur) c.push(f); if (!c.length) c.push(cur || 1); return c[Math.floor((rng || rand)() * c.length)]; }
 function updateEvent(G, dt) {
   if (G.hs.length > 1) return;   // 6차: 파티 판에서는 이벤트 몹을 열지 않는다(이벤트는 방장 캐릭터 저장에 묶인 것)
   if (!G.evt) { G.evtCd -= dt; if (G.evtCd <= 0) { const f = evtPickFloor(G.char, G.floor); G.evt = {floor: f, born: G.playT, mobId: 0}; emit(G, "evt", {floor: f, kind: "start"}); emit(G, "save", {why: "evt"}); if (f === G.floor) spawnEventMob(G); } }
@@ -35518,12 +35520,12 @@ function startBoss(G) {
 function bossDefeated(G, m) {
   if (G.cur !== G.hs[0]) bind(G, G.hs[0]);
   const M = G.M, n = G.floor, c = G.char;
-  for (let i = 1; i < G.hs.length; i++) withHero(G, G.hs[i], () => { const cc = G.char, dd = D(); try { if (dd && dd.clearFloor) dd.clearFloor(cc, n); else if (n > (cc.floorBest | 0)) cc.floorBest = n; } catch (e) {} if (n < 100) openFloor(cc, n + 1); });   /* 6차: 같이 있던 모든 영웅이 이 층을 '자기가' 깬 것으로 기록(손님의 진짜 기록은 그 사람 화면이 같은 이벤트로 올린다) */ G.bossDownT = G.t; G.bs = {state: "cleared", t: 0}; G.cleared = true; G.boss = null; for (const i of M.boss.doors) M.dyn[i] = 0; sfx(G, "dgDoor");
+  for (let i = 1; i < G.hs.length; i++) withHero(G, G.hs[i], () => { const cc = G.char, dd = D(); try { if (dd && dd.clearFloor) dd.clearFloor(cc, n); else if (n > (cc.floorBest | 0)) cc.floorBest = n; } catch (e) {} if (n < 150) openFloor(cc, n + 1); });   /* 6차: 같이 있던 모든 영웅이 이 층을 '자기가' 깬 것으로 기록(손님의 진짜 기록은 그 사람 화면이 같은 이벤트로 올린다) */ G.bossDownT = G.t; G.bs = {state: "cleared", t: 0}; G.cleared = true; G.boss = null; for (const i of M.boss.doors) M.dyn[i] = 0; sfx(G, "dgDoor");
   if (!G.x.clr.includes(n)) G.x.clr.push(n); const first = n > (c.floorBest | 0) && !G.x.best[n]; G.x.best[n] = Math.round(G.playT - G.fl.t0);
   try { const dd = D(); if (dd && dd.clearFloor) dd.clearFloor(c, n); else if (n > (c.floorBest | 0)) c.floorBest = n; } catch (e) { if (n > (c.floorBest | 0)) c.floorBest = n; }
-  if (n < 100) openFloor(c, n + 1); const p = M.portal; if (!G.portals.some(q => q.boss)) G.portals.push({x: (p.x + .5) * TILE, y: (p.y + .5) * TILE, to: n < 100 ? n + 1 : 1, kind: "up", label: n < 100 ? n + 1 + "층으로" : "마을로", cool: true, t: 0, id: ++G.uid, boss: true}); addAltar(G);
+  if (n < 150) openFloor(c, n + 1); const p = M.portal; if (!G.portals.some(q => q.boss)) G.portals.push({x: (p.x + .5) * TILE, y: (p.y + .5) * TILE, to: n < 150 ? n + 1 : 1, kind: "up", label: n < 150 ? n + 1 + "층으로" : "마을로", cool: true, t: 0, id: ++G.uid, boss: true}); addAltar(G);
   for (let i = 0; i < (M.boss.kind === "major" ? 3 : 1); i++) { const a = (i / 3) * TAU + 1; G.chests.push({x: (p.x + .5) * TILE + Math.cos(a) * 130, y: (p.y + .5) * TILE + Math.sin(a) * 130, open: false, t: 0, id: ++G.uid, tier: 1, rich: true}); }
-  emit(G, "boss", {kind: "down", name: m.name, floor: n, major: M.boss.kind === "major", first, last: n >= 100}); emit(G, "save", {why: "boss"}); shakeIt(G, 8, .6); fxRing(G, m.x, m.y, 10, 320, .9, "#ffe27a", 8);
+  emit(G, "boss", {kind: "down", name: m.name, floor: n, major: M.boss.kind === "major", first, last: n >= 150}); emit(G, "save", {why: "boss"}); shakeIt(G, 8, .6); fxRing(G, m.x, m.y, 10, 320, .9, "#ffe27a", 8);
 }
 function altarRematch(G) { if (G.bs.state !== "cleared") return; G.bs = {state: "idle", t: 0}; G.rematch = true; G.altar = null; G.portals = G.portals.filter(p => !p.boss); emit(G, "toast", {text: "제단이 울려요! 보스가 다시 깨어났어요.", kind: "warn"}); }
 function nearest(G) {
@@ -35677,8 +35679,8 @@ function updateFx(G, dt) {
 }
 
 /* ================= 저장 문자열(엔진 몫) ================= */
-function packExtra(G) { const x = G.x; return {v: 1, clr: x.clr.slice(0, 100), evt: G.evt ? {floor: G.evt.floor} : null, evtCd: Math.round(G.evtCd), best: x.best, rank: x.rank || 0, last: x.last | 0}; }
-function unpackExtra(G, e) { if (!e || typeof e !== "object") return; if (Array.isArray(e.clr)) G.x.clr = e.clr.filter(n => n >= 1 && n <= 100); if (e.evt && e.evt.floor >= 1 && e.evt.floor <= 100 && isOpen(G.char, e.evt.floor)) { G.evt = {floor: e.evt.floor, born: G.playT, mobId: 0}; } if (e.evtCd > 0) G.evtCd = e.evtCd; if (e.best && typeof e.best === "object") G.x.best = e.best; if (e.rank) G.x.rank = e.rank; if (e.last >= 1 && e.last <= 100) G.x.last = e.last; }
+function packExtra(G) { const x = G.x; return {v: 1, clr: x.clr.slice(0, 150), evt: G.evt ? {floor: G.evt.floor} : null, evtCd: Math.round(G.evtCd), best: x.best, rank: x.rank || 0, last: x.last | 0}; }
+function unpackExtra(G, e) { if (!e || typeof e !== "object") return; if (Array.isArray(e.clr)) G.x.clr = e.clr.filter(n => n >= 1 && n <= 150); if (e.evt && e.evt.floor >= 1 && e.evt.floor <= 150 && isOpen(G.char, e.evt.floor)) { G.evt = {floor: e.evt.floor, born: G.playT, mobId: 0}; } if (e.evtCd > 0) G.evtCd = e.evtCd; if (e.best && typeof e.best === "object") G.x.best = e.best; if (e.rank) G.x.rank = e.rank; if (e.last >= 1 && e.last <= 150) G.x.last = e.last; }
 function wrapSave(G, rev) { if (G.cur !== G.hs[0]) bind(G, G.hs[0]); const d = D(); let s = ""; try { s = d.save(G.char); } catch (e) { s = ""; } return JSON.stringify({v: 1, k: G.char.k, c: s, e: packExtra(G), rev: rev | 0}); }
 function unwrapSave(str) { const d = D(); if (typeof str !== "string" || !str) return null; try { if (str.charAt(0) === "{") { const o = JSON.parse(str); if (o && o.v === 1 && typeof o.c === "string") { const ch = d.load(o.c); if (ch) return {char: ch, extra: o.e || null, rev: o.rev | 0}; return null; } } } catch (e) {} const ch = d.load(str); return ch ? {char: ch, extra: null, rev: 0} : null; }
 
@@ -36295,7 +36297,7 @@ function showConflict(c) {
   V._conf = c;
 }
 function rankSubmit(force) {
-  const G = V.G, no = meNo(); if (!G || !no) return; const c = G.char, s = (c.floorBest | 0) * 1000 + Math.min(100, c.lv | 0); if (s <= (G.x.rank | 0)) return;   /* 5차: 레벨 상한 1000 — 점수의 레벨 몫은 100 으로 묶는다(lb/dungeon ≤ 100100). 진짜 레벨은 x 글자로 */ const now = Date.now(); if (!force && now - (V.lastRank || 0) < 60000) return; V.lastRank = now;
+  const G = V.G, no = meNo(); if (!G || !no) return; const c = G.char, s = Math.min(100, c.floorBest | 0) * 1000 + Math.min(100, c.lv | 0); if (s <= (G.x.rank | 0)) return;   /* 5차: 레벨 상한 1000 — 점수의 레벨 몫은 100 으로 묶는다(lb/dungeon ≤ 100100). 진짜 레벨은 x 글자로 */ const now = Date.now(); if (!force && now - (V.lastRank || 0) < 60000) return; V.lastRank = now;
   let me = null; try { me = knx.me(); } catch (e) {} if (!me || !me.nick) return;   // n·k 는 사원증(accts)의 현재 닉·기사여야 한다 — 던전 캐릭터의 기사 번호가 아님
   Promise.resolve().then(() => DB.lbSubmit(no, s, me.nick, me.kn | 0, "최고 " + (c.floorBest | 0) + "층 Lv" + (c.lv | 0))).then(() => { G.x.rank = s; }).catch(() => {});
 }
@@ -36473,6 +36475,19 @@ function drawBody(g, P, kidx, t, x, y, dead, me) {
   g.globalAlpha = (P.inv > 0 && P.inv < 3 && !P.dash && Math.floor(t * 20) % 2) ? .45 : 1;
   const sq = P.swing > 0 ? 1.08 : 1, lean = P.dash ? .25 * P.face : 0; g.translate(0, -bob); g.rotate(lean); g.scale(P.face * sq, 2 - sq);
   if (spr) { const w = h * spr.width / spr.height; g.drawImage(spr, -w / 2, -h + 6, w, h); } else { g.fillStyle = "#6aa8ff"; g.strokeStyle = INK; g.lineWidth = 3; g.beginPath(); g.arc(0, -28, 20, 0, TAU); g.fill(); g.stroke(); }
+  if (P.move > 20 && !P.dash) {
+    const stride = Math.sin(P.walk);
+    g.lineCap = "round";
+    for (const side of [-1, 1]) {
+      const swing = stride * side;
+      g.strokeStyle = "#1a2035"; g.lineWidth = 5;
+      g.beginPath(); g.moveTo(side * 8, -9); g.lineTo(side * 9 + swing * 7, 4 - Math.max(0, swing) * 5); g.stroke();
+      if (P.swing <= 0) {
+        g.strokeStyle = "#49364d"; g.lineWidth = 4;
+        g.beginPath(); g.moveTo(side * 15, -25); g.lineTo(side * 17 - swing * 4, -17 + swing * 5); g.stroke();
+      }
+    }
+  }
   if (P.hit > 0) { g.globalAlpha = P.hit * 1.6; g.fillStyle = "#ff5a5a"; g.beginPath(); g.arc(0, -28, 26, 0, TAU); g.fill(); }
   g.restore();
   if (me) { /* 조준 표시 */ g.save(); g.translate(x, y - 4); g.rotate(P.ang); g.globalAlpha = .75; g.fillStyle = "#fff"; g.strokeStyle = INK; g.lineWidth = 2; g.beginPath(); g.moveTo(40, 0); g.lineTo(31, -5); g.lineTo(31, 5); g.closePath(); g.fill(); g.stroke(); g.restore(); }
@@ -36756,14 +36771,14 @@ function renderSelect() {
   const tab = V.selTab === "party" ? "party" : "solo", tabs = `<div class="dgn-tabs" role="tablist" aria-label="하는 방법"><button role="tab" aria-selected="${tab === "solo"}" class="${tab === "solo" ? "on" : ""}" data-act="dgn-seltab" data-t="solo">혼자 하기</button><button role="tab" aria-selected="${tab === "party"}" class="${tab === "party" ? "on" : ""}" data-act="dgn-seltab" data-t="party">온라인 파티 <em>NEW</em></button></div>`;
   if (tab === "party") { ov.innerHTML = `<div class="dgn-card" role="dialog" aria-modal="true" aria-label="온라인 파티"><h2>던전 인 라운드비</h2>${tabs}<p class="sub">친구·접속자와 2~4명이 같은 층을 함께 사냥해요. <b>쓸 기사</b>를 아래에서 고르세요 — 경험치·장비는 각자 자기 기록에 쌓여요.</p>
     <div class="dgn-kg">${cards}</div>${partyLobbyHTML(k, inf)}<div class="dgn-row"><button class="dgn-big ghost" data-act="dgn-exit">나가기</button></div></div>`; partyListStart(); return; }
-  ov.innerHTML = `<div class="dgn-card" role="dialog" aria-modal="true" aria-label="캐릭터 선택"><h2>던전 인 라운드비</h2>${tabs}<p class="sub">기사를 골라 100층을 올라가요. 기사마다 직업과 스킬이 달라요. 이전에 키운 기사는 이어서 해요.</p>
+  ov.innerHTML = `<div class="dgn-card" role="dialog" aria-modal="true" aria-label="캐릭터 선택"><h2>던전 인 라운드비</h2>${tabs}<p class="sub">기사를 골라 150층을 올라가요. 기사마다 직업과 스킬이 달라요. 이전에 키운 기사는 이어서 해요.</p>
     <div class="dgn-kg">${cards}</div>
     <div class="dgn-kinfo"><div><b>${esc(kn(k).n)}</b> · ${esc(roleOf(k))}${inf ? ` · 이어하기 (Lv ${inf.lv}, 최고 ${inf.best}층)` : " · 새 캐릭터"}</div>${info || `<div>${esc(kn(k).q)}</div>`}${sk ? `<div class="dgn-sklist">${sk}</div>` : ""}</div>
     <div class="dgn-row"><button class="dgn-big" data-act="dgn-go">${inf ? "이어하기" : "시작하기"}</button><button class="dgn-big ghost" data-act="dgn-exit">나가기</button></div>${dangerHTML(k, inf)}</div>`;
 }
 /* ---- 6차: 온라인 파티 탭 — 파티 만들기 · 빠른 합류 · 통합 입구(모집 중인 파티 + 던전 접속자) ---- */
 V.pf = {pub: true, cap: 4, floor: 1}; V.selTab = "solo";
-function openMaxOf(k) { const sl = slotInfo(k); return sl ? Math.min(100, Math.max(1, sl.best + 1)) : 1; }
+function openMaxOf(k) { const sl = slotInfo(k); return sl ? Math.min(150, Math.max(1, sl.best + 1)) : 1; }
 function partyLobbyHTML(k, inf) {
   const pf = V.pf, mx = openMaxOf(k); pf.floor = cl(pf.floor, 1, mx); const NN = typeof dgnNet !== "undefined" ? dgnNet : null, busy = !!(NN && (NN.S() || NN.N.pending)), opts = []; for (let f = 1; f <= mx; f++) opts.push(`<option value="${f}"${f === pf.floor ? " selected" : ""}>${f}층${f % 10 === 0 ? " (큰 보스)" : ""}</option>`);
   const online = !!(window.rbxRoom && rbxRoom.open);
@@ -36791,7 +36806,7 @@ function partyListStart() {
   plTimer = setInterval(() => { if (V.ui !== "select" || V.selTab !== "party") { clearInterval(plTimer); plTimer = 0; return; } go(false); }, 10000); go(true);
 }
 function visitorTag() {   // 던전에 있는 동안 presence 의 s 칸에 '최고 층·레벨' 태그(dgf-047-0052)를 실어 입구 목록에 보이게 한다(파티 모집 중이면 모집 태그가 이긴다)
-  try { const NN = typeof dgnNet !== "undefined" ? dgnNet : null; if (!NN) return; const G = V.G; if (!G) { NN.visitor(""); return; } NN.visitor("dgf-" + String(cl(G.char.floorBest | 0, 0, 100)).padStart(3, "0") + "-" + cl(G.char.lv | 0, 1, 9999)); } catch (e) {}
+  try { const NN = typeof dgnNet !== "undefined" ? dgnNet : null; if (!NN) return; const G = V.G; if (!G) { NN.visitor(""); return; } NN.visitor("dgf-" + String(cl(G.char.floorBest | 0, 0, 150)).padStart(3, "0") + "-" + cl(G.char.lv | 0, 1, 9999)); } catch (e) {}
 }
 function openInviteSheet() {   // 방 창(rbxRoom)의 '친구·접속자 초대' — 지금 접속 중인 친구와 던전 접속자에게 knx.fr.invite 로 초대 편지를 보낸다
   const old = $("#dgp-sheet"); if (old) old.remove(); const NN = dgnNet; const sh = document.createElement("div"); sh.id = "dgp-sheet"; sh.className = "dgp-pop"; sh.setAttribute("role", "dialog");   /* A13-3: 전체 화면 덮는 시트 → 오른쪽 모서리의 작은 패널(판은 계속 진행·조작) */ sh.setAttribute("aria-label", "파티 초대");
@@ -36902,7 +36917,7 @@ function handleEv(e) {
     case "boss":
       if (e.kind === "intro") { banner(e.name, `${e.floor}층의 주인이 깨어났어요!`, e.major ? ["큰 보스"] : null, "boss", 3400); }
       else if (e.kind === "phase") { banner(e.text, null, null, "boss", 1800); }
-      else if (e.kind === "down") { banner(e.last ? "100층 정복!" : "보스 처치!", e.last ? "라운드비의 모든 층을 올랐어요. 축하해요!" : `${e.floor + 1}층으로 가는 포털이 열렸어요`, null, "", 4200); stat("clear"); gameEnd(!!e.last); if (e.first) grantRp(true, e.floor, G.playT); saveNow("boss", true); rankSubmit(true); renderFloorsIfOpen(); }
+      else if (e.kind === "down") { banner(e.last ? "150층 정복!" : "보스 처치!", e.last ? "라운드비의 모든 층을 올랐어요. 축하해요!" : `${e.floor + 1}층으로 가는 포털이 열렸어요`, null, "", 4200); stat("clear"); gameEnd(!!e.last); if (e.first) grantRp(true, e.floor, G.playT); saveNow("boss", true); rankSubmit(true); renderFloorsIfOpen(); }
       break;
     case "evt":
       if (e.kind === "start") { dgSfx("dgEvent"); const el = $("#dgn-evt"); el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop"); banner("이벤트 몹이 " + e.floor + "층에 출현했습니다!", "눌러서 바로 이동할 수 있어요. 처치하면 특별한 보상이 나와요.", null, "evt", 5200); note(`⚡ 이벤트 몹 · ${e.floor}층 (상단 알림에서 이동)`, "warn", null, 6000); }
@@ -37092,9 +37107,9 @@ function onLeaveScreen() { if (V.G) { leave(); } }
 const GAME_ICON = '<svg class="knx-ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 21V9l4-3 4 3 4-3 4 3v12M4 21h16M9 21v-5a3 3 0 0 1 6 0v5M12 3v3"/></svg>';
 function mount() {
   let ok = false;
-  try { if (typeof knx !== "undefined" && knx && knx.games && knx.games.register) { knx.games.register({id: "dungeon", name: "던전 인 라운드비", tag: "기사단 RPG — 100층을 올라라", icon: GAME_ICON, kind: "main", open: () => A["dgn-open"]()}); ok = true; } } catch (e) {}
+  try { if (typeof knx !== "undefined" && knx && knx.games && knx.games.register) { knx.games.register({id: "dungeon", name: "던전 인 라운드비", tag: "기사단 RPG — 150층을 올라라", icon: GAME_ICON, kind: "main", open: () => A["dgn-open"]()}); ok = true; } } catch (e) {}
   try { if (typeof knx !== "undefined" && knx && knx.screens && knx.screens.register) knx.screens.register("dungeon", {inGame: () => true, bar: false, show: () => {}, hide: () => { if (V.G && !V.menuOpen) leave(); }}); } catch (e) {}
-  try { if (typeof knx !== "undefined" && knx && knx.knights && knx.knights.reg) knx.knights.reg("dungeon", i => { let acts = ""; try { acts = (D().skillList(i) || []).filter(s => s.type === "active").slice(0, 4).map(s => s.name).join(" · "); } catch (e) {} let cls = ""; try { cls = D().knight(i).cls || ""; } catch (e) {} return {n: "던전 직업 · " + (cls || kn(i).r || "기사"), d: acts ? "스킬: " + acts : "기사단 RPG — 100층을 올라요"}; }); } catch (e) {}
+  try { if (typeof knx !== "undefined" && knx && knx.knights && knx.knights.reg) knx.knights.reg("dungeon", i => { let acts = ""; try { acts = (D().skillList(i) || []).filter(s => s.type === "active").slice(0, 4).map(s => s.name).join(" · "); } catch (e) {} let cls = ""; try { cls = D().knight(i).cls || ""; } catch (e) {} return {n: "던전 직업 · " + (cls || kn(i).r || "기사"), d: acts ? "스킬: " + acts : "기사단 RPG — 150층을 올라요"}; }); } catch (e) {}
   const host = $("#rbx-modes"); if (!ok && host && !$("#dgn-open-btn")) { const b = document.createElement("button"); b.className = "btn btn-lg"; b.id = "dgn-open-btn"; b.dataset.act = "dgn-open"; b.innerHTML = `던전 인 라운드비 <span class="chip" style="color:#2a1a00;background:var(--gold);border-color:var(--gold)">NEW</span>`; host.appendChild(b); }
 }
 mount();
@@ -37158,13 +37173,13 @@ function visitor(tag) { advWrap(); ADV.vis = tag || ""; const t = ADV.rec || ADV
 function advFlush() {   // 다음 45초 박동을 기다리지 않고 바로 다시 쓴다
   try { if (!ADV.last || !knxOn() || !knx.net) return; const v = Object.assign({}, ADV.last.v, {t: knx.net.TS}); if (ADV.tag) v.s = ADV.tag; Promise.resolve(knx.net.put(ADV.last.p, v)).catch(() => {}); } catch (e) {}
 }
-const advTagOf = (code, floor, n, cap) => "dgp-" + String(code).toLowerCase() + "-" + String(cl(floor | 0, 1, 100)).padStart(3, "0") + "-" + cl(n | 0, 1, 9) + cl(cap | 0, 2, 9);
+const advTagOf = (code, floor, n, cap) => "dgp-" + String(code).toLowerCase() + "-" + String(cl(floor | 0, 1, 150)).padStart(3, "0") + "-" + cl(n | 0, 1, 9) + cl(cap | 0, 2, 9);
 const ADV_RE = /^dgp-([2-9a-hj-np-z]{4})-(\d{3})-(\d)(\d)$/;
 
 /* ============================================================= 방 열기(rbxRoom) */
 function openRoom(kind, o) {
   o = o || {}; if (!window.rbxRoom || !rbxRoom.open) { toast("온라인 방 기능이 아직 준비되지 않았어요."); return null; }
-  const cap = cl(o.cap | 0 || 4, 2, MAXP), info = {k: o.k, fresh: !!o.fresh, floor: cl(o.floor | 0 || 1, 1, 100), pub: !!o.pub, cap, kind};
+  const cap = cl(o.cap | 0 || 4, 2, MAXP), info = {k: o.k, fresh: !!o.fresh, floor: cl(o.floor | 0 || 1, 1, 150), pub: !!o.pub, cap, kind};
   N.pending = info; N.lastOpen = {kind, o: Object.assign({}, o)}; let handle = null;
   handle = rbxRoom.open({mode: MODE, key: KEY, title: "던전 파티", kind, code: o.code, min: kind === "quick" ? 2 : 1, max: cap, autoStartSec: 0,
     onStart: sess => { advStop(); N.pending = null; try { if (sess.role === "host") { hostBegin(sess, info); if (info.pub && N.S && N.S.late) advStart(info); } else guestBegin(sess, info); } catch (e) { try { sess.close(); } catch (er) {} try { N.S = null; V.net = null; document.documentElement.classList.remove("dgn-party-on"); if (window.rbxMig) rbxMig.stop(MODE); } catch (er) {} ui().entryFail(N.lastOpen, e); } },   /* A13-4: 로비로 튕기지 않고 원인 + 다시 시도 */
@@ -37500,13 +37515,13 @@ function guestEvent(S, e) {
   }
 }
 function guestBossDown(S, e) {   // 같이 있던 층의 보스를 잡았다 → 내 기록에 반영(내가 열 수 있는 층에서만; 보스를 '봤어야' 한다)
-  const G = S.G, c = G.char, n = e.floor | 0, d = D(); if (n < 1 || n > 100) return;
+  const G = S.G, c = G.char, n = e.floor | 0, d = D(); if (n < 1 || n > 150) return;
   if (!core.isOpen(c, n) || !(S.sawBoss === n)) { e.first = false; return; }
   const first = n > (c.floorBest | 0) && !G.x.best[n]; if (!G.x.clr.includes(n)) G.x.clr.push(n); G.x.best[n] = Math.round(G.playT - G.fl.t0);
-  safe(() => { if (d.clearFloor) d.clearFloor(c, n); else if (n > (c.floorBest | 0)) c.floorBest = n; }); if (n < 100) core.openFloor(c, n + 1); e.first = first; G.cleared = true;
+  safe(() => { if (d.clearFloor) d.clearFloor(c, n); else if (n > (c.floorBest | 0)) c.floorBest = n; }); if (n < 150) core.openFloor(c, n + 1); e.first = first; G.cleared = true;
 }
 function mirrorEnter(S, n, e) {   // 손님 화면에서 층 바꾸기: 맵은 층 번호로 결정되고, 몹·탄은 스냅샷이 채운다
-  const G = S.G, d = D(); n = cl(n | 0 || 1, 1, 100);
+  const G = S.G, d = D(); n = cl(n | 0 || 1, 1, 150);
   G.floor = n; G.M = dgnMap.gen(n); const M = G.M; try { G.info = d.floorInfo(n) || {}; } catch (er) { G.info = {}; } G.info.mobPool = G.info.mobPool || [];
   if (e && e.defs) S.defs = e.defs; else S.defs = (G.info.mobPool || []).concat([G.info.bossId || ""]);
   G.mobs = []; G.pj = []; G.ep = []; G.zones = []; G.allies = []; G.drops = []; G.chests = []; G.portals = []; G.npcs = []; G.beams = []; G.orbits = []; G.shocks = []; G.fx = []; G.texts = []; G.slashes = []; G.bolts = []; G.later = [];
@@ -37546,7 +37561,7 @@ function migResume(ck, ctl) {   // 내가 새 방장: 내 캐릭터로 새 월�
   ctl.conns = new Map(); const S = N.S = {role: "host", sess, code: old.code, cap: old.cap, selfNo: ctl.host, names: ck.names || old.names, G: null, q: 0, snapAcc: 0, roAcc: 0, byNet: {}, guests: [], asm: {}, sel: ck.fl, pub: false, ready: {}, migrated: true, t0: nowMs()};
   S.names = (ck.names || []).slice(); S.selfNo = ctl.host; V.net = S; document.documentElement.classList.add("dgn-party-on");
   // 새 방장은 번호 0 이 아니라 ck 의 내 번호지만, 새 방에서는 내가 0 이 된다. 손님 번호는 이전 번호를 그대로 쓴다(연결 맵 키).
-  X.beginRun(ch, extra, {floor: cl(ck.fl, 1, 100), party: true, keepFloor: true}); S.G = V.G; S.G.fwd = []; S.G.party = true; (ck.clr || []).forEach(n => { if (!S.G.x.clr.includes(n)) S.G.x.clr.push(n); });
+  X.beginRun(ch, extra, {floor: cl(ck.fl, 1, 150), party: true, keepFloor: true}); S.G = V.G; S.G.fwd = []; S.G.party = true; (ck.clr || []).forEach(n => { if (!S.G.x.clr.includes(n)) S.G.x.clr.push(n); });
   if (ck.bs === "fight" || ck.bs === "intro") { S.G.bs = {state: "idle", t: 0}; }   // 보스전이었다면 보스는 처음부터(체력은 체크포인트 비율로)
   S.bossHpf = ck.bhp || 0;
   sess.onMsg = null; sess.onLeave = null;
@@ -37563,7 +37578,7 @@ function migAdopt(ctl) {   // 나는 손님: 새 방장과의 연결로 갈아 �
 
 function soloContinue() {   // 손님: 방장이 사라졌다 — 같은 층에서 내 캐릭터로 혼자 이어서
   const S = N.S; if (!S) return; const G = S.G, X = ui(), ch = G.char, extra = core.packExtra(G), fl = G.floor || 1; safe(() => X.saveNow("hostlost"));
-  leave(); X.beginRun(ch, extra, {floor: cl(fl, 1, 100)}); X.note("혼자 이어서 해요. 몹은 새로 채워졌어요.", "info", null, 4500); X.ensureLoop();
+  leave(); X.beginRun(ch, extra, {floor: cl(fl, 1, 150)}); X.note("혼자 이어서 해요. 몹은 새로 채워졌어요.", "info", null, 4500); X.ensureLoop();
 }
 /* ============================================================= 정리 */
 function leave(why) {
@@ -39893,8 +39908,8 @@ window.pmDbg = {PM, IT, IDS, linkOf, textOf, allText, base, fillLobbyExtras, dec
       {g: "🕹️", t: "움직이기", x: "공격은 자동! 귀신 떼를 피해 움직이세요.", pc: "**W A S D** 또는 방향키 · **Esc** 일시정지(메뉴에 '나가기'가 있어요) · **F** 배속(×1→×2→×3)", ph: "화면 아무 데나 **누른 채 끌기**(조이스틱이 나와요) · 오른쪽 위 ×1 버튼으로 배속"},
       {g: "✨", t: "소품 줍고 레벨업", x: "귀신이 떨어뜨린 소품을 먹으면 경험치가 차요. 레벨이 오르면 카드 **3장 중 하나**를 골라요.", keys: ["1", "2", "3"], tip: "소품은 커피 → 에너지 캔 → 사원증 포인트 순으로 경험치가 커져요. 다시 뽑기는 1번, 무기·패시브는 각각 6개까지예요."},
       {g: "📦", t: "상자와 진화", x: "엘리트·보스를 잡으면 **상자**가 나와요. 무기를 8레벨까지 키우고 **짝 패시브**가 있으면 상자에서 **진화**해요!", tip: "도시락은 체력 회복, 자석은 소품을 한꺼번에 끌어와요. 보스는 **노란 점선 경고** 뒤에 공격해요."}]},
-    {id: "dungeon", name: "던전 인 라운드비", sub: "기사단 RPG · 100층", ic: "🗡️", cards: [
-      {g: "🎯", t: "이 게임은요", x: "기사 한 명을 키워 **100층**까지 올라가요. 층마다 몹을 잡고 **보스**를 쓰러뜨리면 **포털**이 열려 다음 층으로 갈 수 있어요.", tip: "시작 화면의 **온라인 파티** 탭에서 같이 할 수도 있어요."},
+    {id: "dungeon", name: "던전 인 라운드비", sub: "기사단 RPG · 150층", ic: "🗡️", cards: [
+      {g: "🎯", t: "이 게임은요", x: "기사 한 명을 키워 **150층**까지 올라가요. 층마다 몹을 잡고 **보스**를 쓰러뜨리면 **포털**이 열려 다음 층으로 갈 수 있어요.", tip: "시작 화면의 **온라인 파티** 탭에서 같이 할 수도 있어요."},
       {g: "🕹️", t: "움직이기 · 싸우기", x: "움직이면서 마우스(또는 버튼)로 공격하고, 스킬과 대시로 위기를 넘겨요.", pc: "**WASD**·방향키 이동 · **마우스 클릭**(또는 **J**) 공격 · **Space** 대시 · **1~4** 스킬 · **E**/**Enter** 상호작용 · **Q** 포션", ph: "왼쪽 **조이스틱**으로 이동, 오른쪽 아래 버튼으로 **대시 · 스킬 1~4 · 포션**"},
       {g: "🎒", t: "키우기", x: "장비를 끼고 스킬을 올려 점점 강해져요. 열기 쉬운 창은 이래요.", pc: "**I** 가방 · **K** 스킬 · **C** 캐릭터 · **M** 지도 · **Tab** 층 선택 · **F** 자동 공격 켜기/끄기 · **X** 배속", ph: "위쪽 **가방 · 스킬 · 층** 버튼, ×1 으로 배속"},
       {g: "⚠️", t: "알아 둘 것", x: "층에 도착하면 시작 포털은 잠깐(약 2.5초) 작동하지 않아요. **이전 층으로 돌아가는 포털**은 확인 창이 떠요.", tip: "나가기는 화면 오른쪽 위 근처 **나가기** 버튼이에요(확인 창이 한 번 떠요)."}]},
@@ -41479,5 +41494,7 @@ setTimeout(prefetchRank, 1200);   // 랭킹 화면이 바로 뜨도록 미리 �
 try { const kp = window.knx && knx.start && knx.start(); if (kp && kp.catch) kp.catch(e => console.error('knx.start', e)); } catch (e) { console.error('knx.start', e); }   /* ===SHELL_BOOT=== */
 </script>
 
-<link rel="stylesheet" href="brawl.css">
-<script src="brawl.js"></script>
+<link rel="stylesheet" href="brawl.css?v=arena2">
+<script src="arena-room.js?v=arena2"></script>
+<script src="brawl.js?v=arena2"></script>
+<script src="blood.js?v=arena2"></script>

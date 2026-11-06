@@ -1,5 +1,5 @@
 .brawl {
-  width: min(880px, 96vw);
+  width: min(1450px, 96vw);
   max-height: 96dvh;
   padding: 12px;
   color: #fff8e7;
@@ -39,6 +39,15 @@
 }
 .brawl button:focus-visible, .lb-brawl-launch:focus-visible { outline: 2px solid #fff087; }
 .brawl-controls button { flex: 1; }
+.brawl-controls [hidden] { display: none; }
+.brawl-controls input { min-height: 40px; max-width: 115px; }
+.brawl-skills { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; margin-top: 8px; }
+.brawl-skills button { min-height: 48px; }
+.brawl-skills button:disabled { opacity: .6; }
+@media(max-width:600px) {
+  .brawl canvas { height: 49dvh; }
+  .brawl-skills { grid-template-columns: repeat(2,1fr); }
+}
 .brawl-result { padding: 8px; background: #39304a; }
 .brawl-result[hidden] { display: none; }
 .lb-brawl-launch { flex: none; align-self: flex-start; }
