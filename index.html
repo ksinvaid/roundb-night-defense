@@ -33169,7 +33169,8 @@ dgr.mobStats = function (def, floor) {
    솔로(p=1)는 장비·스킬·영구 능력치를 갖추면 클리어, 파티는 체력이 더 많아 같이 싸울 맛이 나게. 온라인 파티 담당은 dgr.bossStats(id, floor, partySize) 또는 엔진 dgnCore.setPartySize(G, n) 로 인원을 넣는다. */
 dgr.bossScale = function (floor, partySize) {
   const f = clamp(floor | 0, 1, 150), p = clamp(partySize | 0 || 1, 1, 8), fh = f >= 10 ? 1 + .015 * (f - 9) : 1, fa = f >= 10 ? 1 + .006 * (f - 9) : 1;
-  return {hp: Math.round(fh * (1 + .75 * (p - 1)) * 1000) / 1000, atk: Math.round(fa * (1 + .1 * (p - 1)) * 1000) / 1000, floorHp: Math.round(fh * 1000) / 1000, floorAtk: Math.round(fa * 1000) / 1000, party: p};
+  const late = Math.max(0, f - 100) / 50;
+  return {hp: Math.round(fh * (1 + .35 * late) * (1 + .75 * (p - 1)) * 1000) / 1000, atk: Math.round(fa * (1 + .25 * late) * (1 + .1 * (p - 1)) * 1000) / 1000, floorHp: Math.round(fh * 1000) / 1000, floorAtk: Math.round(fa * 1000) / 1000, party: p};
 };
 dgr.bossStats = function (bossId, floor, partySize) {
   const d = dgr.mobDef(bossId); if (!d || !d.boss) return null;
@@ -33330,7 +33331,7 @@ dgr.disassemble = function (c, sel) {
   let idx = [];
   const pre = sel && !Array.isArray(sel) && sel.preview;
   if (Array.isArray(sel)) idx = sel;
-  else { const mx = sel && sel.rarityMax != null ? sel.rarityMax : -1, keepSet = !sel || sel.keepSet !== false, keepEnh = !!(sel && sel.keepEnh); c.inv.forEach((it, i) => { if (it && it.r <= mx && !it.l && !(keepSet && it.s) && !(keepEnh && it.e > 0)) idx.push(i); }); }
+  else { const mx = sel && sel.rarityMax != null ? sel.rarityMax : -1, keepSet = !sel || sel.keepSet !== false, keepEnh = !!(sel && sel.keepEnh); c.inv.forEach((it, i) => { if (it && (sel?.rarityExact != null ? it.r === sel.rarityExact : it.r <= mx) && !it.l && !(keepSet && it.s) && !(keepEnh && it.e > 0)) idx.push(i); }); }
   const mats = {}; let count = 0; const names = [];   /* 장비(가방 칸)만 대상 — 재료·소모품 주머니(c.mat·c.cons)는 절대 건드리지 않는다 */
   for (const i of idx) { const it = c.inv[i]; if (!it || it.l || !isGear(it)) continue; const y = disYield(it); for (const k in y) mats[k] = (mats[k] || 0) + y[k]; count++; if (names.length < 40) names.push({n: itemName(it), r: it.r}); if (!pre) c.inv[i] = null; }
   if (!pre) { for (const k in mats) addMat(c, k, mats[k]); if (count) emit("change", c); }
@@ -33340,7 +33341,7 @@ dgr.sell = function (c, sel) {
   let idx = [];
   const pre = sel && !Array.isArray(sel) && sel.preview;
   if (Array.isArray(sel)) idx = sel;
-  else { const mx = sel && sel.rarityMax != null ? sel.rarityMax : -1, keepSet = !sel || sel.keepSet !== false, keepEnh = !!(sel && sel.keepEnh); c.inv.forEach((it, i) => { if (it && it.r <= mx && !it.l && !(keepSet && it.s) && !(keepEnh && it.e > 0)) idx.push(i); }); }
+  else { const mx = sel && sel.rarityMax != null ? sel.rarityMax : -1, keepSet = !sel || sel.keepSet !== false, keepEnh = !!(sel && sel.keepEnh); c.inv.forEach((it, i) => { if (it && (sel?.rarityExact != null ? it.r === sel.rarityExact : it.r <= mx) && !it.l && !(keepSet && it.s) && !(keepEnh && it.e > 0)) idx.push(i); }); }
   let gold = 0, count = 0; const names = [];
   for (const i of idx) { const it = c.inv[i]; if (!it || it.l || !isGear(it)) continue; gold += sellPrice(it); count++; if (names.length < 40) names.push({n: itemName(it), r: it.r}); if (!pre) c.inv[i] = null; }
   if (!pre && count) { c.gold = clamp(c.gold + gold, 0, 1e12); emit("change", c); }
@@ -33729,7 +33730,7 @@ const E = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&": "&amp;
 const fmt = dgr.fmt, r1 = v => Math.round(v * 10) / 10, pc = v => r1(v * 100) + "%";
 const ui = dgr.ui = dgr.ui || {};
 dgr.imgBase = dgr.imgBase || "img/";
-const S = {tab: "char", char: null, onClose: null, onChange: null, onExit: null, sheet: null, sub: "합성", prev: null, open: false, bulk: {kind: "dis", rmax: 1, keepSet: true, keepEnh: true}, flt: {t: "", r: -1}, abs: {stat: "atk", rmax: 1, keepSet: true, keepEnh: true, keepUp: true}, enhRes: null, enhOk: false, enhFx: "", enhProt: true};
+const S = {tab: "char", char: null, onClose: null, onChange: null, onExit: null, sheet: null, sub: "합성", prev: null, open: false, bulk: {kind: "dis", rmax: 1, exact: null, keepSet: true, keepEnh: true}, flt: {t: "", r: -1}, abs: {stat: "atk", rmax: 1, keepSet: true, keepEnh: true, keepUp: true}, enhRes: null, enhOk: false, enhFx: "", enhProt: true};
 const TABS = [["char", "캐릭터", '<path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>'], ["skills", "스킬", '<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>'],
   ["inv", "가방", '<path d="M6 8h12l1 13H5z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>'], ["craft", "제작", '<path d="M14 4l6 6-3 3-6-6z"/><path d="M11 9L3 17l4 4 8-8"/>'],
   ["shop", "상점", '<circle cx="12" cy="12" r="9"/><path d="M9 9h5a2 2 0 0 1 0 4h-4a2 2 0 0 0 0 4h5M12 6v2M12 18v-2"/>'], ["dex", "도감", '<path d="M5 4h10a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M8 8h6M8 12h6"/>']];
@@ -33965,12 +33966,12 @@ function absSheet(c) {
 }
 
 function bulkSheet(c) {
-  const b = S.bulk, kind = b.kind, so = {rarityMax: b.rmax, keepSet: b.keepSet, keepEnh: b.keepEnh, preview: true}, pv = kind === "dis" ? dgr.disassemble(c, so) : dgr.sell(c, so);
+  const b = S.bulk, kind = b.kind, so = {rarityMax: b.rmax, rarityExact: b.exact, keepSet: b.keepSet, keepEnh: b.keepEnh, preview: true}, pv = kind === "dis" ? dgr.disassemble(c, so) : dgr.sell(c, so);
   const res = kind === "dis" ? Object.keys(pv.mats).map(k => `${E(MATS[k].n)} ×${fmt(pv.mats[k])}`).join(" · ") : `₩${fmt(pv.gold)}`;
   const list = (pv.names || []).slice(0, 14).map(n => `<span class="dgr-pill" style="--pc:${RAR[n.r].c}">${E(n.n)}</span>`).join("") + (pv.count > 14 ? `<span class="dgr-sm dgr-dim"> 외 ${pv.count - 14}개</span>` : "");
   return `<button class="dgr-btn sm dgr-x" data-a="sheetClose">✕ 닫기</button><h2 id="dgr-sh">${kind === "dis" ? "일괄 분해" : "일괄 판매"}</h2>
-    <div class="dgr-note">고를 등급 "이하" <b>장비</b>를 ${kind === "dis" ? "재료로 분해" : "골드로 판매"}해요. <b>재료·소모품·강화석은 포함되지 않아요.</b> 잠긴 장비는 항상 빠져요. 아래 목록을 확인하세요.</div>
-    <div class="dgr-row">${[0, 1, 2, 3, 4].map(r => `<button class="dgr-btn sm" data-a="bulkR" data-r="${r}" aria-pressed="${b.rmax === r}" style="${b.rmax === r ? "background:" + RAR[r].c + ";color:#14141c" : ""}">${RAR[r].n} 이하</button>`).join("")}</div>
+    <div class="dgr-note">선택한 등급의 <b>장비</b>를 ${kind === "dis" ? "재료로 분해" : "골드로 판매"}해요. <b>재료·소모품·강화석은 포함되지 않아요.</b> 잠긴 장비는 항상 빠져요. 아래 목록을 확인하세요.</div>
+    <div class="dgr-row">${[...RAR.map((grade, r) => ({grade, r, exact:false})), ...[4, 5].map(r => ({grade:RAR[r], r, exact:true}))].map(({grade, r, exact}) => { const on = exact ? b.exact === r : b.exact == null && b.rmax === r; return `<button class="dgr-btn sm" data-a="bulkR" data-r="${r}" data-exact="${exact}" aria-pressed="${on}" style="${on ? "background:" + grade.c + ";color:#14141c" : ""}">${grade.n} ${exact ? "만" : "이하"}</button>`; }).join("")}</div>
     <label class="dgr-row dgr-sm"><input type="checkbox" data-a="bulkSet" ${b.keepSet ? "checked" : ""} style="width:22px;height:22px"> 세트 장비는 제외</label>
     <label class="dgr-row dgr-sm"><input type="checkbox" data-a="bulkEnh" ${b.keepEnh ? "checked" : ""} style="width:22px;height:22px"> 강화한(+1 이상) 장비는 제외</label>
     <div class="dgr-pv"><b>${pv.count}개</b> 대상<br>${pv.count ? res : "대상이 없어요"}</div>${pv.count ? `<div class="dgr-pouch" aria-label="대상 장비 목록">${list}</div>` : ""}
@@ -34047,9 +34048,16 @@ function onClick(e) {
       const list = dgr.absorbList(c, S.abs), pv = dgr.absorbPreview(c, S.abs.stat, list); if (!pv || !pv.count) { say("갈아넣을 장비가 없어요", {warn: true}); return; }
       if (b.dataset.sure !== "1") { b.dataset.sure = "1"; const old = b.textContent; b.textContent = `정말 ${pv.count}개를 갈아 넣어요? 한 번 더`; setTimeout(() => { b.dataset.sure = ""; if (document.body.contains(b)) b.textContent = old; }, 3500); return; }
       const r = dgr.absorb(c, S.abs.stat, list); if (!r.ok) { say(r.why, {warn: true}); return; } say(`${r.count}개를 갈아 넣었어요 — ${r.n} Lv ${r.lv0} → Lv ${r.lv1} (가루 +${fmt(r.pts)})`); return; }
-    case "bulk": S.bulk.kind = d.k; if (d.r != null && d.r !== "") S.bulk.rmax = +d.r; S.sheet = {t: "bulk"}; render(); return;
-    case "bulkR": S.bulk.rmax = +d.r; render(); return;
-    case "bulkDo": { const o = {rarityMax: S.bulk.rmax, keepSet: S.bulk.keepSet, keepEnh: S.bulk.keepEnh}; if (S.bulk.kind === "dis") { const r = dgr.disassemble(c, o); say(`${r.count}개 분해 → ` + Object.keys(r.mats).map(k => MATS[k].n + " ×" + r.mats[k]).join(", ")); } else { const r = dgr.sell(c, o); say(`${r.count}개 판매 +₩${fmt(r.gold)}`); } S.sheet = null; render(); return; }
+    case "bulk": S.bulk.kind = d.k; S.bulk.exact = null; if (S.bulk.rmax > 3) S.bulk.rmax = 3; if (d.r != null && d.r !== "") S.bulk.rmax = +d.r; S.sheet = {t: "bulk"}; render(); return;
+    case "bulkR": S.bulk.rmax = +d.r; S.bulk.exact = d.exact === "true" ? S.bulk.rmax : null; render(); return;
+    case "bulkDo": {
+      if (S.bulk.rmax >= 4 && b.dataset.sure !== "1") {
+        b.dataset.sure = "1"; const label = b.textContent;
+        b.textContent = RAR[S.bulk.rmax].n + " 장비 포함 · 처리 · 한 번 더 눌러 확정";
+        setTimeout(() => { b.dataset.sure = ""; b.textContent = label; }, 4000);
+        return;
+      }
+      const o = {rarityMax: S.bulk.rmax, rarityExact: S.bulk.exact, keepSet: S.bulk.keepSet, keepEnh: S.bulk.keepEnh}; if (S.bulk.kind === "dis") { const r = dgr.disassemble(c, o); say(`${r.count}개 분해 → ` + Object.keys(r.mats).map(k => MATS[k].n + " ×" + r.mats[k]).join(", ")); } else { const r = dgr.sell(c, o); say(`${r.count}개 판매 +₩${fmt(r.gold)}`); } S.sheet = null; render(); return; }
     case "disOne": { const r = dgr.disassemble(c, [+d.i]); S.sheet = null; say("분해 → " + (Object.keys(r.mats).map(k => MATS[k].n + " ×" + r.mats[k]).join(", ") || "없음")); return; }
     case "sellOne": { const r = dgr.sell(c, [+d.i]); S.sheet = null; say(`판매 +₩${fmt(r.gold)}`); return; }
     case "useCons": { const r = dgr.useCons(c, d.id); say(r.ok ? (r.heal != null ? `체력 +${fmt(r.heal)}` : r.xp ? `경험치 +${fmt(r.xp)}${r.levels ? " · 레벨 업!" : ""}` : "사용했어요") : r.why || "쓸 수 없어요", r.ok ? null : {warn: true}); S.sheet = null; render(); return; }
@@ -35126,7 +35134,7 @@ function updatePlayer(G, dt, inp) {
   if (inp.aim) ang = Math.atan2(inp.aim.y - P.y, inp.aim.x - P.x); else if (P.remote && inp.ang != null && inp.angOn) ang = inp.ang; else if (tg) ang = Math.atan2(tg.y - P.y, tg.x - P.x); else if (mv > 30) ang = Math.atan2(P.vy, P.vx);
   P.ang = ang; if (Math.abs(Math.cos(ang)) > .2) P.face = Math.cos(ang) >= 0 ? 1 : -1; G.aimTarget = tg;
   /* 기본 공격 */
-  P.atkT -= dt; if (P.castT > 0) P.castT -= dt; if (P.swing > 0) P.swing -= dt;
+  P.atkT -= dt; if (P.castT > 0) P.castT -= dt; if (P.motion) { P.motion.left -= dt; if (P.motion.left <= 0) P.motion = null; } if (P.swing > 0) P.swing -= dt;
   const b = G.basic, brange = b.kind === "cone" ? (b.range || 90) + 10 : (b.range || 480) * .9;
   const target = (inp.atk || autoOn) && nearestMob(G, P.x, P.y, brange, m => los(M, P.x, P.y, m.x, m.y));
   if (target && P.atkT <= 0 && !G.cine && !P.dash && !G.over) { const aim = Math.atan2(target.y - P.y, target.x - P.x); P.face = target.x < P.x ? -1 : 1; basicAttack(G, aim); }
@@ -35170,7 +35178,10 @@ function basicAttack(G, ang) {
 function castSkill(G, slot, inp, ang, meta) {
   const P = G.P, d = D(), s = P.sk[slot], id = s.id, mt = meta[id]; let eff = null; try { eff = normEff(d.effectOf(G.char, id)); } catch (e) {} if (!eff || !X[eff.kind]) { s.cd = .5; return; }
   const cdBase = nz(eff.cdBase, nz(eff.cd, mt ? mt.cd : 6)), cd = Math.max(.35, cdBase * (1 - Math.min(.6, G.st.cdr + G.bf.cdr))); s.cd = cd; s.max = cd; P.castT = .28; P.swing = .2; P.swingA = ang;
-  const col = eff.color || ELEM[eff.elem] || "#ffffff"; const cx = {col, id, name: mt && mt.name, aim: inp.aim, slot};
+  const col = eff.color || ELEM[eff.elem] || "#ffffff";
+  const length = eff.kind === "beam" ? .72 : eff.kind === "dash" ? .42 : eff.kind === "summon" ? .64 : .48;
+  P.motion = {kind:eff.kind, angle:ang, color:col, left:length, length, variant:id.charCodeAt(id.length-1) % 3};
+  const cx = {col, id, name: mt && mt.name, aim: inp.aim, slot};
   if (eff.kind === "cone" && eff.windup > 0) { fxRing(G, P.x, P.y, 6, (eff.range || 90) * .9, eff.windup, col, 4); P.castT = eff.windup + .2; const a0 = ang; later(G, eff.windup, () => { if (!G.over) { X.cone(G, eff, a0, cx); shakeIt(G, 6, .2); } }); } else X[eff.kind](G, eff, ang, cx);
   if (eff.kind !== "buff") selfBuff(G, eff, cx, eff.buffDur || 0);
   if (eff.selfHeal) healPlayer(G, G.st.hpMax * eff.selfHeal); if (eff.healPct && eff.kind === "aoe") healPlayer(G, G.st.hpMax * eff.healPct);
@@ -35937,12 +35948,11 @@ return {heroMove, nearest, setupTown, openFloor, updateFx, bind, withHero, addHe
 
 /* dungeon_boss.js — 던전 인 라운드비: 보스 패턴·디자인표(10층마다 고유 보스, 중간 층은 변주).
    dgnBoss.init(G, m) 보스 몹 생성 직후 · dgnBoss.ai(G, m, dt) 매 스텝 · dgnBoss.tick(G, dt) 충격파·적 빔 갱신(보스가 없어도).
-   패턴 12종(fan·ring·spiral·slam·charge·rain·beam·summon·wall·blink·nova·orbs)을 십 단위 디자인표(DES)가 3~5개씩 골라 쓴다.
+   보스마다 15개 패턴을 순환한다. 디자인표(DES)는 선호 패턴과 공격 색·탄 모양을 정의한다.
    체력·공격력은 dgr.bossStats 가 정하고, 여기서는 패턴의 모양·간격만 정한다(탄 피해 = m.atk × 패턴 배율). */
 const dgnBoss = (() => {
 "use strict";
 const H = dgnCore.H, TILE = dgnCore.TILE, TAU = Math.PI * 2, hyp = Math.hypot, rand = Math.random;
-const pick = a => a[Math.floor(rand() * a.length)];
 /* 디자인: 십 단위 0~9. pats = 기본 패턴, p2·p3 = 2·3단계에서 더해지는 패턴. sty = 탄 모양(색+모양). 이름은 dgr(K2)의 보스 도감이 따로 정한다 */
 const DES = [
   {pats: ["fan", "slam", "beam", "summon"], p2: "ring", p3: "rain", sty: {col: "#ff8a4a", shape: "paper", r: 9}},         // 0 복합기 골렘(종이·스캔 빔)
@@ -35956,12 +35966,20 @@ const DES = [
   {pats: ["rain", "beam", "ring", "charge"], p2: "wall", p3: "nova", sty: {col: "#ffe24a", shape: "bolt", r: 9}},            // 8 뇌우 정령
   {pats: ["fan", "slam", "beam", "orbs", "summon"], p2: "nova", p3: "spiral", sty: {col: "#ff5a7a", shape: "dia", r: 10}}   // 9 대표(최종)
 ];
+const BOSS_PATTERNS = ["fan", "ring", "spiral", "slam", "charge", "rain", "beam", "summon", "wall", "blink", "nova", "orbs", "cross", "mines", "lances"];
 const PHASE_TXT = ["", "", "2단계 — 화가 났어요!", "3단계 — 폭주!"];
 
 function init(G, m) {
   const d = Math.min(9, G.M.look), k = (G.floor - 1) % 10, major = k === 9, des = DES[d], lite = major ? 1 : .55 + .45 * k / 9, rng = dgnMap.mulberry32(G.floor * 977 + 13);
-  let pats = des.pats.slice(); if (!major) { const n = 2 + (k >= 4 ? 1 : 0) + (k >= 7 ? 1 : 0); for (let i = pats.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); const t = pats[i]; pats[i] = pats[j]; pats[j] = t; } pats = pats.slice(0, n); }
-  m.boss = {des: d, k, major, lite, pats, p2: des.p2, p3: des.p3, sty: Object.assign({}, des.sty), pat: null, idle: 1.2, phase: 1, rage: 1, hitT: 0, armor: 0, drift: rand() * TAU, hue: (G.floor * 37) % 360, name: m.name, adds: 0, last: ""};
+  const signature = [...new Set([...des.pats, des.p2, des.p3])];
+  const rest = BOSS_PATTERNS.filter(name => !signature.includes(name));
+  for (let i = rest.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [rest[i], rest[j]] = [rest[j], rest[i]];
+  }
+  const pressure = Math.max(0, (G.floor - 10) / 140);
+  m.boss = {des:d, k, major, lite, pats:signature.concat(rest), cursor:0, pressure, sty:{...des.sty},
+    pat:null, idle:1.2, phase:1, rage:1, hitT:0, armor:0, drift:rand()*TAU, hue:(G.floor*37)%360, name:m.name, adds:0, last:""};
   m.cr = Math.min(m.cr, 38); m.kbR = 0; m.fly = false;
 }
 function ang2P(G, m) { return Math.atan2(G.P.y - m.y, G.P.x - m.x); }
@@ -36051,12 +36069,48 @@ PT.orbs = (G, m, B, p, dt) => {
   return p.launched >= p.orbs.length && p.t > 2.4;
 };
 
+function bossLane(G, m, B, x, y, angle, delay, width) {
+  if (H.blockedAt(G.M, x, y)) return;
+  G.zones.push({own:"e", kind:"line", x, y, ang:angle, len:620, w:width, t:0, delay, atk:m.atk, mul:.95, col:B.sty.col, fired:false});
+}
+PT.cross = (G, m, B, p, dt) => {
+  if (!p.i) {
+    p.i = 1; p.t = 0;
+    const angle = ang2P(G,m) + Math.PI/4;
+    for (let i=0; i<4; i++) bossLane(G,m,B,m.x,m.y,angle+i*TAU/4,1.05,30+B.phase*5);
+    H.sfx(G,"dgWarn");
+  }
+  p.t += dt;
+  return p.t > 1.38;
+};
+PT.mines = (G, m, B, p, dt) => {
+  if (!p.i) {
+    p.i=1; p.t=0;
+    const x=G.P.x, y=G.P.y, n=5+B.phase, angle=rand()*TAU;
+    for (let i=0; i<n; i++) {
+      const a=angle+i*TAU/n, mx=x+Math.cos(a)*105, my=y+Math.sin(a)*105;
+      if (H.blockedAt(G.M,mx,my)) continue;
+      G.zones.push({own:"e",kind:"circle",x:mx,y:my,r:52,t:0,delay:.8+i*.12,atk:m.atk,mul:.88,col:B.sty.col,fired:false,bolt:true});
+    }
+    H.sfx(G,"dgWarn");
+  }
+  p.t+=dt;
+  return p.t>2;
+};
+PT.lances = (G, m, B, p, dt) => {
+  if (!p.i) {
+    p.i=1; p.t=0; p.angle=ang2P(G,m);
+    for (let i=-2; i<=2; i++) bossLane(G,m,B,m.x,m.y,p.angle+i*.23,.85+Math.abs(i)*.24,26+B.phase*3);
+    H.sfx(G,"dgWarn");
+  }
+  p.t+=dt;
+  return p.t>1.7;
+};
+
 function setPhase(G, m, B, ph) {
-  B.phase = ph; B.rage = ph === 3 ? 1.3 : 1.1; B.pat = null; m.tele = null; m.inv = 1.3; B.idle = 1.1; G.ev.push({t: "boss", kind: "phase", phase: ph, text: PHASE_TXT[ph]}); H.sfx(G, "dgBossIntro"); H.shakeIt(G, 7, .4);
+  B.phase = ph; B.rage = (ph === 3 ? 1.3 : 1.1) + B.pressure * .2; B.pat = null; m.tele = null; m.inv = 1.3; B.idle = 1.1; G.ev.push({t: "boss", kind: "phase", phase: ph, text: PHASE_TXT[ph]}); H.sfx(G, "dgBossIntro"); H.shakeIt(G, 7, .4);
   G.shocks.push({x: m.x, y: m.y, r: 20, v: 300, w: 22, maxR: 480, atk: m.atk, mul: .9, hit: false, col: B.sty.col}); H.fxRing(G, m.x, m.y, 20, 200, .6, "#ffffff", 8);
-  const extra = ph === 2 ? B.p2 : B.p3; if (B.major && extra && !B.pats.includes(extra)) B.pats.push(extra);
-  if (!B.major) { if (ph === 2 && B.p2 && !B.pats.includes(B.p2) && B.k >= 5) B.pats.push(B.p2); }
-  if (ph === 3 && B.major) PT.summon && (B.forceSummon = true);
+
 }
 function bossTarget(G, m) {   // 6차: 보스가 노리는 영웅 — 패턴 중에는 고정, 패턴 사이에 가까운 사람(30%는 무작위)으로 바뀐다
   const hs = G.hs; if (hs.length === 1) return hs[0]; const B = m.boss;
@@ -36075,16 +36129,16 @@ function aiB(G, m, dt) {
   if (G.cine) { m.alpha = Math.min(1, G.cine.t / 1.5); return; }
   if (m.burn) { m.burn = null; }
   m.stunT = 0; m.slowT = 0;
-  const hpf = m.hp / m.hpMax, ph = hpf > .66 ? 1 : hpf > .33 ? 2 : 3; const maxPh = B.major ? 3 : 2; if (ph > B.phase && B.phase < maxPh) { setPhase(G, m, B, Math.min(maxPh, B.phase + 1)); return; }
+  const hpf = m.hp / m.hpMax, ph = hpf > .66 ? 1 : hpf > .33 ? 2 : 3; const maxPh = 3; if (ph > B.phase && B.phase < maxPh) { setPhase(G, m, B, Math.min(maxPh, B.phase + 1)); return; }
   if (m.alpha != null && m.alpha < 1 && !B.pat) m.alpha = Math.min(1, m.alpha + dt * 3);
-  if (B.pat) { const done = PT[B.pat.name](G, m, B, B.pat, dt); if (done) { B.last = B.pat.name; B.pat = null; B.idle = (B.major ? 1.1 : 1.6) / B.rage + rand() * .5; m.tele = null; m.alpha = 1; } }
+  if (B.pat) { B.pat.elapsed += dt; const done = PT[B.pat.name](G, m, B, B.pat, dt * (1 + B.pressure * .15)); if (done) { B.last = B.pat.name; B.pat = null; B.idle = Math.max(.42, (B.major ? 1.1 : 1.45) / (B.rage + B.pressure * .65)) + rand() * .35; m.tele = null; m.alpha = 1; } }
   else {
     /* 패턴 사이: 천천히 거리를 유지하며 떠돈다 */
     B.idle -= dt; const want = d < 200 ? -1 : d > 330 ? 1 : 0, a = Math.atan2(P.y - m.y, P.x - m.x) + (want === 0 ? 1.57 * Math.sin(m.age * .7) : 0), sp = B.major ? 70 : 55;
     m.vx += (Math.cos(a) * want * sp - m.vx) * Math.min(1, 4 * dt); m.vy += (Math.sin(a) * want * sp - m.vy) * Math.min(1, 4 * dt); if (want === 0) { m.vx += Math.cos(a) * sp * .5 * dt; m.vy += Math.sin(a) * sp * .5 * dt; }
     H.moveBody(G.M, m, m.vx * dt, m.vy * dt, m.cr, false, false); if (m.vx > 5) m.face = 1; else if (m.vx < -5) m.face = -1;
     if (m.cd <= 0) for (const h of G.hs) if (!H.isDead(G, h) && hyp(h.P.x - m.x, h.P.y - m.y) < m.cr + 18) { H.hurtPlayer(G, m.atk, m, {mul: .7, inv: .5, hero: h}); m.cd = 1.2; } m.cd -= dt;
-    if (B.idle <= 0) { let list = B.pats.filter(n => n !== B.last); if (!list.length) list = B.pats; let name = pick(list); if (B.forceSummon) { name = "summon"; B.forceSummon = false; } B.pat = {name}; }
+    if (B.idle <= 0) B.pat = {name:B.pats[B.cursor++ % B.pats.length], elapsed:0};
   }
   if (H.boxSolid(G.M, m.x, m.y, m.cr, false, false)) H.unstick(G.M, m, m.cr, false, false);
 }
@@ -36353,10 +36407,55 @@ function drawNpc(g, n, t, ix, iy, spr) {
   g.font = "800 12px 'IBM Plex Sans KR',sans-serif"; g.textAlign = "center"; g.lineWidth = 4; g.strokeStyle = INK; g.strokeText(n.name, 0, -62); g.fillStyle = "#ffe9a0"; g.fillText(n.name, 0, -62); g.restore();
 }
 /* ================= 보스 몸 (십 단위 디자인) ================= */
+const bossCue = {
+  fan:"부채꼴 연사", ring:"교차 탄막", spiral:"회전 탄막", slam:"도약 강타", charge:"연속 돌진",
+  rain:"낙하 폭격", beam:"회전 광선", summon:"부하 소환", wall:"탄막 장벽", blink:"위상 이동",
+  nova:"확산 충격파", orbs:"궤도 구체", cross:"십자 절단", mines:"연쇄 지뢰", lances:"추적 창격"
+};
+function bossMotion(g, pattern, t, r, color, angle, name) {
+  const p = Math.max(0, t || 0), wind = Math.min(1, p * 2);
+  const strike = Math.max(0, Math.sin(Math.min(1, p) * Math.PI));
+  g.save();
+  g.lineWidth = 3; g.strokeStyle = color; g.fillStyle = color; g.lineCap = "round";
+  g.globalAlpha *= .3 + strike * .55;
+  if (["fan","beam","lances","charge"].includes(pattern)) {
+    g.rotate(angle);
+    const spread = pattern === "beam" ? .1 : pattern === "charge" ? .24 : .38;
+    for (let i=-1; i<=1; i++) {
+      g.beginPath(); g.moveTo(r*.55, i*r*.12);
+      g.lineTo(r*(1.25+wind*.65), i*r*spread); g.stroke();
+    }
+  } else if (["rain","mines","summon","orbs"].includes(pattern)) {
+    for (let i=0; i<5; i++) {
+      const a = i*TAU/5 + p*2, x = Math.cos(a)*r*1.25, y = Math.sin(a)*r*.7-r*.35;
+      g.beginPath(); g.moveTo(x,y-8); g.lineTo(x+6,y); g.lineTo(x,y+8); g.lineTo(x-6,y); g.closePath(); g.fill();
+    }
+  } else {
+    g.rotate(pattern === "cross" ? angle + Math.PI/4 : p*(pattern === "spiral" ? 5 : 1.5));
+    for (let i=0; i<4; i++) {
+      g.rotate(TAU/4);
+      g.beginPath(); g.arc(0,0,r*(1.3+.32*wind),-.65,.32); g.stroke();
+    }
+  }
+  g.restore();
+  if (!name) return;
+  g.save(); g.font = "800 12px sans-serif"; g.textAlign = "center";
+  g.lineWidth = 4; g.strokeStyle = "#151126"; g.fillStyle = "#fff4d0";
+  g.strokeText(name,0,-r*1.65-11); g.fillText(name,0,-r*1.65-11); g.restore();
+}
 function drawBoss(g, m, t, ix, iy, ppx, ppy) {
   const B = m.boss, d = B ? B.des : 0, r = m.r, col = hexOf(m.def && m.def.art && m.def.art.color, "#c9a86a"), acc = hexOf(m.def && m.def.art && m.def.art.accent, "#fff3b0"), hit = m.flash > 0 || (B && B.hitT > 0);
   g.save(); g.translate(ix, iy); g.fillStyle = "rgba(0,0,0,.3)"; g.beginPath(); g.ellipse(0, r * .95, r * 1.2, r * .4, 0, 0, TAU); g.fill(); if (m.alpha != null && m.alpha < 1) g.globalAlpha = Math.max(.04, m.alpha); if (m.inv > 0 && m.inv < 50) g.globalAlpha *= .6 + .4 * Math.sin(t * 30);
-  const hue = B ? B.hue : 0; const body = hit ? "#ffffff" : col, dark = hit ? "#e6e6e6" : shade(col, -.35), bob = Math.sin(t * 2.5) * 3; g.translate(0, bob); if (m.face < 0 && d !== 9) g.scale(-1, 1);
+  const pattern = B?.pat?.name, progress = B?.pat?.elapsed || 0, angle = Math.atan2(ppy-iy,ppx-ix);
+  const body = hit ? "#ffffff" : col, dark = hit ? "#e6e6e6" : shade(col, -.35);
+  if (pattern) bossMotion(g, pattern, progress, r, acc, angle, bossCue[pattern]);
+  const power = pattern ? Math.sin(Math.min(1, progress)*Math.PI) : 0;
+  const lift = pattern === "slam" || pattern === "blink" ? -r*.48*power : 0;
+  const lean = pattern === "charge" ? .22*power : pattern === "spiral" ? Math.sin(progress*5)*.15 : .05*power;
+  g.translate(pattern === "charge" ? Math.cos(angle)*power*r*.25 : 0, Math.sin(t*2.5)*3 + lift);
+  g.rotate(lean * (m.face || 1));
+  g.scale(1 + power*(pattern === "nova" ? .24 : .08), 1 + power*(pattern === "slam" ? .16 : -.05));
+  if (m.face < 0 && d !== 9) g.scale(-1, 1);
   g.lineWidth = 4; g.strokeStyle = INK; g.lineJoin = "round"; const dx = ppx - ix, dy = ppy - iy, dl = Math.hypot(dx, dy) || 1, ax = dx / dl, ay = dy / dl;
   const rect = (x, y, w, h, c, rad) => { g.fillStyle = c; rr(g, x, y, w, h, rad || 6); g.fill(); g.stroke(); };
   switch (d) {
@@ -36766,6 +36865,42 @@ function walkPose(spr, phase) {
   poses[index] = c;
   return c;
 }
+function drawSkillMotion(g, motion) {
+  if (!motion) return;
+  const p = 1 - motion.left / motion.length, glow = Math.sin(Math.PI * Math.min(1, p+.08));
+  g.save(); g.translate(0,-24); g.rotate(motion.angle);
+  g.globalAlpha *= glow*.8; g.strokeStyle = motion.color; g.fillStyle = motion.color; g.lineCap = "round";
+  const v = motion.variant || 0;
+  if (motion.kind === "cone") {
+    g.lineWidth = 5; g.beginPath(); g.arc(0,0,33+v*5,-1.1,-1.1+2.2*p); g.stroke();
+    g.lineWidth = 2; g.strokeStyle = "#fff"; g.beginPath(); g.arc(0,0,39+v*5,-.7,-.7+1.6*p); g.stroke();
+  } else if (motion.kind === "dash" || motion.kind === "proj" || motion.kind === "beam") {
+    const reach = motion.kind === "beam" ? 75 : motion.kind === "dash" ? 46 : 32;
+    for (let i=-1; i<=1; i++) {
+      g.lineWidth = i===0 ? 5 : 2; g.beginPath(); g.moveTo(-10,i*5); g.lineTo(reach*p+12,i*(6+v*2)); g.stroke();
+    }
+  } else if (motion.kind === "aoe") {
+    g.lineWidth = 4; g.beginPath(); g.ellipse(0,0,14+41*p,8+22*p,0,0,TAU); g.stroke();
+    g.strokeStyle = "#fff"; g.lineWidth = 1.5; g.beginPath(); g.ellipse(0,0,10+44*p,5+24*p,0,0,TAU); g.stroke();
+  } else if (motion.kind === "heal") {
+    g.lineWidth = 3;
+    for (const x of [-18,0,18]) {
+      const y = -24*p - (x === 0 ? 10 : 0);
+      g.beginPath(); g.moveTo(x-5,y); g.lineTo(x+5,y); g.moveTo(x,y-5); g.lineTo(x,y+5); g.stroke();
+    }
+  } else {
+    const count = motion.kind === "summon" ? 6 : 4;
+    if (motion.kind === "orbit") g.rotate(p*TAU/2);
+    for (let i=0; i<count; i++) {
+      g.rotate(TAU/count);
+      const r = 14 + p*22;
+      if (motion.kind === "orbit") { g.beginPath(); g.arc(r,0,4,0,TAU); g.fill(); }
+      else if (motion.kind === "buff") { g.fillRect(r,-7,3,14); }
+      else { g.beginPath(); g.moveTo(r,-5); g.lineTo(r+8,0); g.lineTo(r,5); g.lineTo(r-5,0); g.closePath(); g.fill(); }
+    }
+  }
+  g.restore();
+}
 function drawBody(g, P, kidx, t, x, y, dead, me) {
   const spr = sprite(kidx), h = 64, bob = P.move > 20 ? Math.abs(Math.sin(P.walk)) * 1.6 : Math.sin(t * 2.4) * 1; g.save(); g.translate(x, y);
   g.fillStyle = "rgba(0,0,0,.3)"; g.beginPath(); g.ellipse(0, 6, 17, 6, 0, 0, TAU); g.fill();
@@ -36775,7 +36910,10 @@ function drawBody(g, P, kidx, t, x, y, dead, me) {
   for (const b of P.buffs) { g.strokeStyle = b.col || "#fff"; g.globalAlpha = .55; g.lineWidth = 3; g.setLineDash([6, 5]); g.lineDashOffset = -t * 30; g.beginPath(); g.ellipse(0, 4, 24, 9, 0, 0, TAU); g.stroke(); } g.setLineDash([]); g.globalAlpha = 1;
   if (P.shield > 0) { g.strokeStyle = "#b6d4ff"; g.globalAlpha = .75; g.lineWidth = 3.5; g.beginPath(); g.arc(0, -26, 32, 0, TAU); g.stroke(); g.globalAlpha = .12; g.fillStyle = "#b6d4ff"; g.fill(); g.globalAlpha = 1; g.strokeStyle = INK; g.lineWidth = 1.5; g.setLineDash([5, 5]); g.beginPath(); g.arc(0, -26, 35, 0, TAU); g.stroke(); g.setLineDash([]); }
   g.globalAlpha = (P.inv > 0 && P.inv < 3 && !P.dash && Math.floor(t * 20) % 2) ? .45 : 1;
-  const sq = P.swing > 0 ? 1.08 : 1, lean = P.dash ? .25 * P.face : 0; g.translate(0, -bob); g.rotate(lean); g.scale(P.face * sq, 2 - sq);
+  drawSkillMotion(g, P.motion);
+  const kind = P.motion?.kind, cast = P.motion ? Math.sin(Math.PI*(1-P.motion.left/P.motion.length)) : 0;
+  const sq = P.swing > 0 ? 1.08 + cast*.04 : 1;
+  const lean = P.dash ? .25*P.face : (kind === "cone" ? .19 : kind === "proj" ? -.11 : kind === "beam" ? -.07 : .03)*cast*P.face; g.translate(0, -bob); g.rotate(lean); g.scale(P.face * sq, 2 - sq);
   if (spr) {
     const scale = h / spr.height, walking = P.move > 20 && !P.dash;
     const pose = walking ? walkPose(spr, P.walk) : spr;
@@ -37778,13 +37916,13 @@ function sendSnap(S, g) {
   const near = (x, y, m) => Math.abs(x - P.x) < hw + m && Math.abs(y - P.y) < hh + m;
   const defs = (G.info && G.info.mobPool || []).concat([G.info && G.info.bossId || ""]); const dno = d => { const i = defs.indexOf(d && d.id); return i < 0 ? 0 : i; };
   const sn = {t: "s", q: ++S.q, sp: V.spd, T: Math.round(G.t * 1000) / 1000, F: G.floor, C: G.combo | 0};
-  sn.H = G.hs.map(h => { const p = h.P, st = stOf(G, h), dead = overOf(G, h) === "dead"; return [h.idx, r1(p.x), r1(p.y), r1(p.vx), r1(p.vy), r1(p.ang * 100), (dead ? 1 : 0) | (p.dash ? 2 : 0) | (p.inv > 0 ? 4 : 0) | (p.stun > 0 ? 8 : 0) | (p.hit > 0 ? 16 : 0) | (h.forced ? 32 : 0) | (p.face < 0 ? 64 : 0) | (p.shield > 0 ? 128 : 0), r1(h.char.hp), r1(st ? st.hpMax : 100), r1(p.shield || 0), h.char.lv | 0, h.char.k | 0, r1((p.swing || 0) * 100), r1((dead ? h.reviveP || 0 : 0) * 100)]; });
+  sn.H = G.hs.map(h => { const p = h.P, st = stOf(G, h), dead = overOf(G, h) === "dead"; return [h.idx, r1(p.x), r1(p.y), r1(p.vx), r1(p.vy), r1(p.ang * 100), (dead ? 1 : 0) | (p.dash ? 2 : 0) | (p.inv > 0 ? 4 : 0) | (p.stun > 0 ? 8 : 0) | (p.hit > 0 ? 16 : 0) | (h.forced ? 32 : 0) | (p.face < 0 ? 64 : 0) | (p.shield > 0 ? 128 : 0), r1(h.char.hp), r1(st ? st.hpMax : 100), r1(p.shield || 0), h.char.lv | 0, h.char.k | 0, r1((p.swing || 0) * 100), r1((dead ? h.reviveP || 0 : 0) * 100), p.motion ? [p.motion.kind,r2(p.motion.angle),p.motion.color,r2(p.motion.left),p.motion.length,p.motion.variant] : 0]; });
   for (const h of G.hs) if (h.forced) h.forced = 0;
   const me = g.P; sn.me = {idx: g.idx, sd: !!(me.dash && !me.dash.dodge), de: g.dashEpoch, pull: !!G.ropes?.some(r => r.hero === g), q: g.iseq | 0, fe: g.fe | 0, sk: me.sk.map(s => [r1(s.cd * 10) / 10, r1((s.max || 1) * 10) / 10]), dc: r1(me.dashCd * 100) / 100, dm: r1((me.dashMax || 2.5) * 100) / 100, pc: r1(Math.max(0, g.potCd || 0) * 10) / 10, st: r1((me.stun || 0) * 100) / 100, sl: r1((me.slow || 0) * 100) / 100, sw: r1((me.swingA == null ? me.ang : me.swingA) * 100), bs: bfSpd(g), bf: me.buffs.map(b => [b.id, r1(b.t * 10) / 10, b.col || "", b.name || ""]).slice(0, 6)};
   const ms = []; for (const m of G.mobs) { if (m.dead || m.boss || !near(m.x, m.y, m.r)) continue; ms.push(m); }
   if (ms.length > 90) { ms.sort((a, b) => (a.x - P.x) * (a.x - P.x) + (a.y - P.y) * (a.y - P.y) - ((b.x - P.x) * (b.x - P.x) + (b.y - P.y) * (b.y - P.y))); ms.length = 90; }
   sn.M = ms.map(m => { const fl = (m.face < 0 ? 1 : 0) | (m.flash > 0 ? 2 : 0) | (m.lunge > 0 ? 4 : 0) | (m.stunT > 0 ? 8 : 0) | (m.slowT > 0 ? 16 : 0) | (m.burn ? 32 : 0) | (m.elite ? 64 : 0) | (m.evt ? 128 : 0) | (m.fly ? 256 : 0) | ((m.aff === "swift" ? 1 : m.aff === "steel" ? 2 : m.aff === "blast" ? 3 : 0) << 9) | (m.hd ? 2048 : 0); const a = [m.id, r1(m.x), r1(m.y), Math.max(1, Math.ceil(100 * m.hp / m.hpMax)), fl, dno(m.def), r1(m.r)]; if ((m.alpha != null && m.alpha < 1) || m.tele) { a.push(m.alpha != null && m.alpha < 1 ? r1(m.alpha * 100) : 100); if (m.tele) a.push(teleOf(m.tele, m, id)); } return a; });
-  const bm = G.boss && !G.boss.dead ? G.boss : null; if (bm) { const B = bm.boss || {}; sn.B = [bm.id, r1(bm.x), r1(bm.y), r1(bm.hp), r1(bm.hpMax), r1(bm.r), dno(bm.def), bm.alpha != null ? r1(bm.alpha * 100) : 100, bm.face < 0 ? 1 : 0, bm.flash > 0 || B.hitT > 0 ? 1 : 0, B.phase | 0, B.des | 0, B.hue | 0, B.major ? 1 : 0, B.k | 0, bm.name, bm.tele ? teleOf(bm.tele, bm, id) : 0, bm.inv > 0 && bm.inv < 50 ? 1 : 0]; }
+  const bm = G.boss && !G.boss.dead ? G.boss : null; if (bm) { const B = bm.boss || {}; sn.B = [bm.id, r1(bm.x), r1(bm.y), r1(bm.hp), r1(bm.hpMax), r1(bm.r), dno(bm.def), bm.alpha != null ? r1(bm.alpha * 100) : 100, bm.face < 0 ? 1 : 0, bm.flash > 0 || B.hitT > 0 ? 1 : 0, B.phase | 0, B.des | 0, B.hue | 0, B.major ? 1 : 0, B.k | 0, bm.name, bm.tele ? teleOf(bm.tele, bm, id) : 0, bm.inv > 0 && bm.inv < 50 ? 1 : 0, B.pat ? [B.pat.name,r2(B.pat.elapsed)] : 0]; }
   sn.E = []; for (const b of G.ep) { if (sn.E.length >= 80) break; if (near(b.x, b.y, 30)) sn.E.push([r1(b.x), r1(b.y), r1(b.vx), r1(b.vy), r1(b.r), id(b.col), id(b.shape), b.spin ? r1(b.ang * 100) : 0, b.delay > 0 ? 1 : 0]); }
   sn.J = []; for (const b of G.pj) { if (sn.J.length >= 60) break; if (near(b.x, b.y, 30)) sn.J.push([r1(b.x), r1(b.y), r1(b.vx), r1(b.vy), r1(b.r), id(b.col), id(b.shape), b.h | 0]); }
   sn.Z = []; for (const z of G.zones) { if (sn.Z.length >= 30) break; if (!near(z.x, z.y, z.r || 120)) continue; if (z.own === "p") sn.Z.push([2, r1(z.x), r1(z.y), r1(z.r), r2(z.t), r2(z.delay), r2(z.dur), id(z.col)]); else if (!z.fired) sn.Z.push([z.kind === "line" ? 1 : 0, r1(z.x), r1(z.y), z.kind === "line" ? r2(z.ang) : r1(z.r), z.kind === "line" ? r1(z.len) : 0, z.kind === "line" ? r1(z.w) : 0, r2(z.t), r2(z.delay), id(z.col || "#ff4d6d"), z.lightning ? 1 : 0]); }
@@ -37910,13 +38048,14 @@ function applySnap(S, sn) {
           }
         }
       }
+      P.motion = a[14] ? {kind:a[14][0],angle:a[14][1],color:a[14][2],left:a[14][3],length:a[14][4],variant:a[14][5]} : null;
       G.char.hp = a[7]; P.shield = a[9]; P.ang = a[5] / 100; P.inv = a[6] & 4 ? .3 : 0; P.hit = a[6] & 16 ? .2 : 0; P.swing = a[12] / 100; P.swingA = sn.me.sw / 100; const wasDead = G.over === "dead", dead = !!(a[6] & 1);
       P.stun = sn.me.st; P.slow = sn.me.sl; P.dashCd = sn.me.dc; P.dashMax = sn.me.dm; G.potCd = sn.me.pc; if (G.bf) G.bf.spd = sn.me.bs || 0;
       const bar5 = safe(() => D().bar(G.char) || [], []); for (let i = 0; i < 8; i++) { const s = P.sk[i]; s.cd = (sn.me.sk[i]?.[0] ?? 0); s.max = (sn.me.sk[i]?.[1] ?? 1); s.id = bar5[i] || null; /* A13-5: 손님 화면은 updatePlayer 를 안 돌려 s.id 가 영영 null → HUD 가 '비었음'·쿨 표시 없음이었다 */ } P.buffs = (sn.me.bf || []).map(b => ({id: b[0], t: b[1], col: b[2], name: b[3]}));
       if (dead && !wasDead) { G.over = "dead"; S.deadAt = nowMs(); ui().handleEv({t: "death", floor: G.floor, party: true}); } else if (!dead && wasDead) { G.over = null; ui().closeDeath(); }
       S.reviveP = a[13] / 100; S.hostHp = a[7];
     } else { seen.add(idx); let o = S.others.get(idx); if (!o) { o = {idx, P: {x: a[1], y: a[2], px: a[1], py: a[2], vx: 0, vy: 0, face: 1, ang: 0, move: 0, walk: 0, swing: 0, inv: 0, hit: 0, buffs: [], shield: 0, dash: null, hurtT: 0}, tx: a[1], ty: a[2], k: a[11], lv: a[10], hp: a[7], hpMax: a[8], dead: false, name: (S.roster.find(r => r[0] === idx) || [])[1] || "기사", reviveP: 0}; S.others.set(idx, o); }
-      o.tx = a[1]; o.ty = a[2]; o.P.vx = a[3]; o.P.vy = a[4]; o.P.ang = a[5] / 100; o.P.face = a[6] & 64 ? -1 : 1; o.P.shield = a[9]; o.P.inv = a[6] & 4 ? .3 : 0; o.P.hit = a[6] & 16 ? .2 : 0; o.P.swing = a[12] / 100; o.P.dash = a[6] & 2 ? {} : null; o.dead = !!(a[6] & 1); o.hp = a[7]; o.hpMax = a[8]; o.k = a[11]; o.lv = a[10]; o.reviveP = a[13] / 100; const r = S.roster.find(r => r[0] === idx); if (r) o.name = r[1]; if (Math.hypot(o.tx - o.P.x, o.ty - o.P.y) > 200) { o.P.x = o.tx; o.P.y = o.ty; } }
+      o.P.motion = a[14] ? {kind:a[14][0],angle:a[14][1],color:a[14][2],left:a[14][3],length:a[14][4],variant:a[14][5]} : null; o.tx = a[1]; o.ty = a[2]; o.P.vx = a[3]; o.P.vy = a[4]; o.P.ang = a[5] / 100; o.P.face = a[6] & 64 ? -1 : 1; o.P.shield = a[9]; o.P.inv = a[6] & 4 ? .3 : 0; o.P.hit = a[6] & 16 ? .2 : 0; o.P.swing = a[12] / 100; o.P.dash = a[6] & 2 ? {} : null; o.dead = !!(a[6] & 1); o.hp = a[7]; o.hpMax = a[8]; o.k = a[11]; o.lv = a[10]; o.reviveP = a[13] / 100; const r = S.roster.find(r => r[0] === idx); if (r) o.name = r[1]; if (Math.hypot(o.tx - o.P.x, o.ty - o.P.y) > 200) { o.P.x = o.tx; o.P.y = o.ty; } }
   }
   for (const k of [...S.others.keys()]) if (!seen.has(k)) S.others.delete(k);
   G.others = [...S.others.values()];
@@ -37932,7 +38071,7 @@ function applySnap(S, sn) {
   if (sn.B) { const b = sn.B, id = b[0]; let m = S.mobs.get(id); const df = safe(() => d.mobDef(defsOf[b[6]]), null) || {name: b[15], art: {}};
     if (!m) { m = {id, def: df, x: b[1], y: b[2], px: b[1], py: b[2], tx: b[1], ty: b[2], vx: 0, vy: 0, dead: false, boss: {}, state: "idle", age: 0, flash: 0, lunge: 0}; S.mobs.set(id, m); }
     m.tx = b[1]; m.ty = b[2]; m.hp = b[3]; m.hpMax = b[4]; m.r = m.cr = b[5]; m.alpha = b[7] / 100; m.face = b[8] ? -1 : 1; m.flash = b[9] ? .1 : 0; m.name = b[15]; m.inv = b[17] ? 1 : 0; m.tele = b[16] ? telePack(b[16]) : null; m.def = df;
-    Object.assign(m.boss, {phase: b[10], des: b[11], hue: b[12], major: !!b[13], k: b[14], hitT: b[9] ? .1 : 0}); G.boss = m; mseen.add(id); S.sawBoss = G.floor; }
+    Object.assign(m.boss, {phase: b[10], des: b[11], hue: b[12], major: !!b[13], k: b[14], hitT: b[9] ? .1 : 0, pat: b[18] ? {name:b[18][0],elapsed:b[18][1]} : null}); G.boss = m; mseen.add(id); S.sawBoss = G.floor; }
   else { if (G.boss) S.mobs.delete(G.boss.id); G.boss = null; }
   G.mobs = [...S.mobs.values()];
   /* 탄·구역·빔·궤도·동료·충격파 */
