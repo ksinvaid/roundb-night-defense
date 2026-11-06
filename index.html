@@ -36644,8 +36644,49 @@ function drawOther(g, o, t, x, y) {   // 6차: 파티원 — 몸 + 이름표(번
   else if (o.reviveP > 0) { g.strokeStyle = "#a8f0c0"; g.lineWidth = 4; g.beginPath(); g.arc(0, -30, 20, -Math.PI / 2, -Math.PI / 2 + TAU * Math.min(1, o.reviveP / 2.5)); g.stroke(); }
   g.restore();
 }
+/* Deform the original sprite pixels through a small grid and cache the walking poses. */
+function walkPose(spr, phase) {
+  const poses = spr.walkPoses ||= [];
+  const index = Math.round(((phase % TAU + TAU) % TAU) * 12 / TAU) % 12;
+  if (poses[index]) return poses[index];
+  const c = document.createElement("canvas"), pad = 12;
+  const w = spr.width, h = spr.height, g = c.getContext("2d");
+  c.width = w + pad * 2; c.height = h + pad * 2;
+  const wave = Math.sin(index * TAU / 12);
+  const xs = [0, .22, .39, .5, .61, .78, 1], ys = [0, .38, .49, .61, .72, .81, .91, 1];
+  const points = ys.map(v => xs.map(u => {
+    const side = u < .5 ? -1 : 1, swing = side * wave;
+    const arm = Math.max(0, 1 - Math.abs(v - .61) / .23) * Math.min(1, Math.abs(u - .5) * 5);
+    const leg = Math.max(0, (v - .69) / .31) * Math.min(1, Math.abs(u - .5) * 9);
+    return {sx:u*w, sy:v*h, x:pad + u*w + (arm * swing * 5 - leg * swing * 8),
+      y:pad + v*h + arm * swing * 4 - leg * Math.max(0, swing) * 10};
+  }));
+  function triangle(a, b, d) {
+    const ux = b.sx-a.sx, uy = b.sy-a.sy, vx = d.sx-a.sx, vy = d.sy-a.sy;
+    const det = ux*vy-uy*vx;
+    const dx = b.x-a.x, dy = b.y-a.y, ex = d.x-a.x, ey = d.y-a.y;
+    const xx = (dx*vy-ex*uy)/det, xy = (dy*vy-ey*uy)/det;
+    const yx = (ex*ux-dx*vx)/det, yy = (ey*ux-dy*vx)/det;
+    const cx = (a.x+b.x+d.x)/3, cy = (a.y+b.y+d.y)/3;
+    g.save(); g.beginPath();
+    for (const [i, p] of [a,b,d].entries()) {
+      const x = p.x-cx, y = p.y-cy, scale = 1 + .6 / Math.max(1, Math.hypot(x,y));
+      if (i) g.lineTo(cx+x*scale,cy+y*scale);
+      else g.moveTo(cx+x*scale,cy+y*scale);
+    }
+    g.closePath(); g.clip();
+    g.transform(xx,xy,yx,yy,a.x-xx*a.sx-yx*a.sy,a.y-xy*a.sx-yy*a.sy);
+    g.drawImage(spr,0,0); g.restore();
+  }
+  for (let y=0; y<ys.length-1; y++) for (let x=0; x<xs.length-1; x++) {
+    const a = points[y][x], b = points[y][x+1], d = points[y+1][x], e = points[y+1][x+1];
+    triangle(a,b,d); triangle(b,e,d);
+  }
+  poses[index] = c;
+  return c;
+}
 function drawBody(g, P, kidx, t, x, y, dead, me) {
-  const spr = sprite(kidx), h = 64, bob = P.move > 20 ? Math.abs(Math.sin(P.walk)) * 3 : Math.sin(t * 2.4) * 1; g.save(); g.translate(x, y);
+  const spr = sprite(kidx), h = 64, bob = P.move > 20 ? Math.abs(Math.sin(P.walk)) * 1.6 : Math.sin(t * 2.4) * 1; g.save(); g.translate(x, y);
   g.fillStyle = "rgba(0,0,0,.3)"; g.beginPath(); g.ellipse(0, 6, 17, 6, 0, 0, TAU); g.fill();
   if (dead) {   // 쓰러진 기사: 옆으로 누워 흐리게 + 십자 표시(모양으로도 구분)
     g.globalAlpha = .55; g.translate(0, -8); g.rotate(-1.35); if (spr) { const w = h * spr.width / spr.height; g.drawImage(spr, -w / 2, -h + 6, w, h); } g.rotate(1.35); g.globalAlpha = 1; g.strokeStyle = INK; g.fillStyle = "#fff"; g.lineWidth = 3; g.beginPath(); g.moveTo(-3, -34); g.lineTo(3, -34); g.lineTo(3, -28); g.lineTo(9, -28); g.lineTo(9, -22); g.lineTo(3, -22); g.lineTo(3, -12); g.lineTo(-3, -12); g.lineTo(-3, -22); g.lineTo(-9, -22); g.lineTo(-9, -28); g.lineTo(-3, -28); g.closePath(); g.fill(); g.stroke(); g.restore(); return;
@@ -36654,19 +36695,14 @@ function drawBody(g, P, kidx, t, x, y, dead, me) {
   if (P.shield > 0) { g.strokeStyle = "#b6d4ff"; g.globalAlpha = .75; g.lineWidth = 3.5; g.beginPath(); g.arc(0, -26, 32, 0, TAU); g.stroke(); g.globalAlpha = .12; g.fillStyle = "#b6d4ff"; g.fill(); g.globalAlpha = 1; g.strokeStyle = INK; g.lineWidth = 1.5; g.setLineDash([5, 5]); g.beginPath(); g.arc(0, -26, 35, 0, TAU); g.stroke(); g.setLineDash([]); }
   g.globalAlpha = (P.inv > 0 && P.inv < 3 && !P.dash && Math.floor(t * 20) % 2) ? .45 : 1;
   const sq = P.swing > 0 ? 1.08 : 1, lean = P.dash ? .25 * P.face : 0; g.translate(0, -bob); g.rotate(lean); g.scale(P.face * sq, 2 - sq);
-  if (spr) { const w = h * spr.width / spr.height; g.drawImage(spr, -w / 2, -h + 6, w, h); } else { g.fillStyle = "#6aa8ff"; g.strokeStyle = INK; g.lineWidth = 3; g.beginPath(); g.arc(0, -28, 20, 0, TAU); g.fill(); g.stroke(); }
-  if (P.move > 20 && !P.dash) {
-    const stride = Math.sin(P.walk);
-    g.lineCap = "round";
-    for (const side of [-1, 1]) {
-      const swing = stride * side;
-      g.strokeStyle = "#1a2035"; g.lineWidth = 5;
-      g.beginPath(); g.moveTo(side * 8, -9); g.lineTo(side * 9 + swing * 7, 4 - Math.max(0, swing) * 5); g.stroke();
-      if (P.swing <= 0) {
-        g.strokeStyle = "#49364d"; g.lineWidth = 4;
-        g.beginPath(); g.moveTo(side * 15, -25); g.lineTo(side * 17 - swing * 4, -17 + swing * 5); g.stroke();
-      }
-    }
+  if (spr) {
+    const scale = h / spr.height, walking = P.move > 20 && !P.dash;
+    const pose = walking ? walkPose(spr, P.walk) : spr;
+    const w = pose.width * scale, extra = (pose.height - spr.height) * scale / 2;
+    g.drawImage(pose, -w / 2, -h + 6 - extra, w, pose.height * scale);
+  } else {
+    g.fillStyle = "#6aa8ff"; g.strokeStyle = INK; g.lineWidth = 3;
+    g.beginPath(); g.arc(0, -28, 20, 0, TAU); g.fill(); g.stroke();
   }
   if (P.hit > 0) { g.globalAlpha = P.hit * 1.6; g.fillStyle = "#ff5a5a"; g.beginPath(); g.arc(0, -28, 26, 0, TAU); g.fill(); }
   g.restore();
