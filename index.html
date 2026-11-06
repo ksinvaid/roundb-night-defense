@@ -3338,6 +3338,10 @@ html.dgn-touch .dgn-sks .atk{grid-column:4;grid-row:3}
 html.dgn-touch .dgn-sks .dash{grid-column:1;grid-row:3}
 html.dgn-touch .dgn-sks .pot{grid-column:2;grid-row:3}
 html.dgn-touch .dgn-use{bottom:calc(190px + env(safe-area-inset-bottom,0px))}
+.dgn-callout{position:absolute;left:50%;top:96px;transform:translateX(-50%);z-index:8;max-width:76%;padding:8px 14px;border:1px solid #f4cd75;border-radius:10px;background:#201a32;color:#fff4d4;font-weight:800;text-align:center;overflow-wrap:anywhere;pointer-events:none}
+.dgn-callout.dgn-autostate{top:145px}
+#dgn-autoskill{font-size:11px;white-space:nowrap;padding:4px 7px}
+#dgn-autoskill[aria-pressed="true"]{background:#f6cd68;color:#16142a}
 /* ===DGN_CSS_END=== */
 /* ===== 문의·게임평 2차: 공지 · 자동 비공개 (접두사 brd) — 색만으로 구분하지 않고 아이콘+글자, 테두리 모양(실선/점선)을 함께 씀 ===== */
 .brd-ic{width:14px;height:14px;flex:none;vertical-align:-2px}
@@ -35109,7 +35113,23 @@ function updatePlayer(G, dt, inp) {
   if (target && P.atkT <= 0 && !G.cine && !P.dash && !G.over) { const aim = Math.atan2(target.y - P.y, target.x - P.x); P.face = target.x < P.x ? -1 : 1; basicAttack(G, aim); }
   /* 스킬 */
   const meta = skMeta(G), bar = (() => { try { return D().bar(c) || []; } catch (e) { return []; } })();
-  for (let i = 0; i < 8; i++) { const s = P.sk[i]; if (s.cd > 0) s.cd -= dt; s.id = bar[i] || null; if (inp.cast && inp.cast[i] && s.id && s.cd <= 0 && !G.cine && !G.over) castSkill(G, i, inp, ang, meta); else if (inp.cast && inp.cast[i] && s.id && s.cd > 0) {} }
+  const autoSkill = G.cur.idx === 0 ? G.opt.autoSkill : G.cur.autoSkill;
+  const skillTarget = autoSkill && !G.cine && !G.over && !P.dash &&
+    nearestMob(G, P.x, P.y, 650, m => los(M, P.x, P.y, m.x, m.y));
+  for (let i = 0; i < 8; i++) {
+    const s = P.sk[i];
+    if (s.cd > 0) s.cd -= dt;
+    s.id = bar[i] || null;
+    if (!s.id || s.cd > 0 || G.cine || G.over) continue;
+    if (inp.cast?.[i]) { castSkill(G, i, inp, ang, meta); continue; }
+    if (!skillTarget || P.dash) continue;
+    const e = D().effectOf(c, s.id);
+    if (!e) continue;
+    const distance = hyp(skillTarget.x - P.x, skillTarget.y - P.y);
+    const range = e.at === "target" ? 500 : e.range || e.radius || e.dist || 250;
+    if (distance > range) continue;
+    castSkill(G, i, {aim: skillTarget}, Math.atan2(skillTarget.y - P.y, skillTarget.x - P.x), meta);
+  }
   /* 자연 회복(약하게) · 마을 회복 */
   G.regenT += dt; if (G.regenT >= .5) { G.regenT = 0; const inTown = M.townRect && P.x / TILE >= M.townRect.x && P.x / TILE < M.townRect.x + M.townRect.w && P.y / TILE >= M.townRect.y && P.y / TILE < M.townRect.y + M.townRect.h; healPlayer(G, (st.hpMax * (inTown ? .08 : .004) + (st.regen || 0) * .5) * (P.psn > 0 ? 0 : 1), false);   /* QA-C: K2 초당 회복(regen) */ }
   /* 물약 · 상호작용은 step 에서 */
@@ -36239,8 +36259,8 @@ function dgSfx(name) {
 }
 
 /* ================= 설정 · 저장 ================= */
-function loadOpt() { try { const o = JSON.parse(lsGet(LS.opt) || "{}"); if (o && typeof o === "object") { V.opt.auto = typeof o.auto === "boolean" ? o.auto : null; V.opt.zoom = [.85, 1, 1.2].includes(o.zoom) ? o.zoom : 1; V.opt.spd = [1, 2, 3].includes(o.spd) ? o.spd : 1; V.spd = V.opt.spd; V.opt.autoSave = [0, 30, 60].includes(o.autoSave) ? o.autoSave : 60; } } catch (e) {} }
-function saveOpt() { lsSet(LS.opt, JSON.stringify({auto: V.opt.auto, zoom: V.opt.zoom, spd: V.opt.spd, autoSave: V.opt.autoSave})); }
+function loadOpt() { try { const o = JSON.parse(lsGet(LS.opt) || "{}"); if (o && typeof o === "object") { V.opt.auto = typeof o.auto === "boolean" ? o.auto : null; V.opt.autoSkill = o.autoSkill === true; V.opt.zoom = [.85, 1, 1.2].includes(o.zoom) ? o.zoom : 1; V.opt.spd = [1, 2, 3].includes(o.spd) ? o.spd : 1; V.spd = V.opt.spd; V.opt.autoSave = [0, 30, 60].includes(o.autoSave) ? o.autoSave : 60; } } catch (e) {} }
+function saveOpt() { lsSet(LS.opt, JSON.stringify({auto: V.opt.auto, autoSkill: !!V.opt.autoSkill, zoom: V.opt.zoom, spd: V.opt.spd, autoSave: V.opt.autoSave})); }
 const getMeta = () => { try { const o = JSON.parse(lsGet(LS.meta) || "{}"); return {cur: o.cur == null ? -1 : o.cur, rev: o.rev | 0, synced: o.synced | 0}; } catch (e) { return {cur: -1, rev: 0, synced: 0}; } };
 const setMeta = m => lsSet(LS.meta, JSON.stringify(m));
 function readSlot(k) { const s = lsGet(LS.slot(k)); if (!s) return null; try { const o = JSON.parse(s); return o && typeof o.d === "string" ? o : null; } catch (e) { return null; } }
@@ -36342,10 +36362,10 @@ function build() {
         <button class="dgn-ib" data-act="dgn-floors" aria-label="층 선택">${svgI(ICO.stairs)}<span>층</span></button>
         <button class="dgn-ib" data-act="dgn-pause" aria-label="메뉴 (Esc)">${svgI(ICO.menu)}</button></div>
         <div class="dgn-mmw" data-act="dgn-map" role="button" aria-label="지도 (M)"><canvas class="dgn-mm" id="dgn-mm" width="224" height="224"></canvas><div class="dgn-bh" id="dgn-bh" aria-live="off"></div></div>
-        <div class="dgn-sys"><button class="dgn-ib spd" id="dgn-spd" data-act="dgn-spd" aria-label="배속 (X)" title="배속 1·2·3배 (X)"><b id="dgn-spd-t">×1</b></button><button class="dgn-ib exit" data-act="dgn-ask" aria-label="나가기" title="나가기 (진행은 자동 저장)">${svgI(ICO.exit)}<span>나가기</span></button></div></div>
+        <div class="dgn-sys"><button class="dgn-ib" id="dgn-autoskill" data-act="dgn-autoskill" aria-pressed="false">자동 스킬 끔</button><button class="dgn-ib spd" id="dgn-spd" data-act="dgn-spd" aria-label="배속 (X)" title="배속 1·2·3배 (X)"><b id="dgn-spd-t">×1</b></button><button class="dgn-ib exit" data-act="dgn-ask" aria-label="나가기" title="나가기 (진행은 자동 저장)">${svgI(ICO.exit)}<span>나가기</span></button></div></div>
     </div>
     <div class="dgn-pty" id="dgn-pty" aria-label="파티"></div><div class="dgn-spec dgn-pill" id="dgn-spec" hidden></div><div class="dgn-bw dgn-pill" id="dgn-bw" hidden></div>
-    <div class="dgn-notes" id="dgn-notes" aria-live="polite"></div><div class="dgn-saved" id="dgn-saved" aria-live="polite"></div>
+    <div class="dgn-callout" id="dgn-shout" role="status" hidden></div><div class="dgn-callout dgn-autostate" id="dgn-autostate" role="status" hidden></div><div class="dgn-notes" id="dgn-notes" aria-live="polite"></div><div class="dgn-saved" id="dgn-saved" aria-live="polite"></div>
     <div class="dgn-boss" id="dgn-boss" hidden><b id="dgn-bn">보스</b><div class="dgn-bbar"><i id="dgn-bhp"></i><u style="left:66%"></u><u style="left:33%"></u><span id="dgn-bsp"></span></div></div>
     <div class="dgn-evt dgn-pill" id="dgn-evt" hidden><span>⚡ <b id="dgn-evt-t">이벤트 몹 출현</b></span><button data-act="dgn-evt-go">바로 이동</button></div>
     <div class="dgn-banner" id="dgn-banner"></div>
@@ -36653,6 +36673,14 @@ function hud(dt) {
     const i = +k, s = P.sk[i], id = s.id || null, empty = !id, ek = id || (c.sp > 0 ? "~sp" : ""); if (el._id !== ek) { el._id = ek; const mt = id ? meta[id] : null; let kind = "empty"; try { const e = id ? D().effectOf(c, id) : null; if (e && SKI[e.kind]) kind = e.kind; } catch (e) {} el.innerHTML = `<span class="kh">${i + 1}</span>${svgI(SKI[kind])}<span class="nm">${esc(mt ? mt.name : (c.sp > 0 ? "K 배우기" : "비었음"))}</span><span class="cd"></span><span class="cdn"></span>`; }
     el.classList.toggle("empty", empty); const cool = s.cd > 0 && !empty; el.classList.toggle("cool", cool); el.classList.toggle("rdy", !cool && !empty); if (cool) { el.querySelector(".cd").style.setProperty("--p", (s.cd / Math.max(.1, s.max)) * 100 + "%"); setT(el.querySelector(".cdn"), s.cd >= 10 ? String(Math.ceil(s.cd)) : s.cd.toFixed(1)); } else el.querySelector(".cd").style.setProperty("--p", "0%");
   }
+  const autoButton = $("#dgn-autoskill"), skillOn = !!G.opt.autoSkill;
+  autoButton.setAttribute("aria-pressed", String(skillOn));
+  setT(autoButton, "자동 스킬 " + (skillOn ? "켬" : "끔"));
+  const shout = V.net?.shout, shoutEl = $("#dgn-shout");
+  shoutEl.hidden = !shout || shout.until <= performance.now();
+  if (!shoutEl.hidden) setT(shoutEl, shout.name + " · " + shout.text);
+  const autoState = $("#dgn-autostate");
+  autoState.hidden = !(V.autoStateUntil > performance.now());
   const atk = $("#dgn-atk"); if (atk) atk.classList.toggle("act", V.atk || !!G.opt.auto);
   { const sb = $("#dgn-spd"); if (sb) { const speed = V.net?.role === "guest" ? V.net.spd || 1 : V.spd; setT("dgn-spd-t", "×" + speed); sb.classList.toggle("on", speed > 1); } }
   { const bb = $("#dgn-bagbd"); if (bb) { let fr = 99; try { fr = D().invFree(c); } catch (e) {} const low = fr < 10; bb.hidden = !low; if (low) setT(bb, fr <= 0 ? "가득!" : fr + "칸"); } }   /* 4차: 가방이 거의 차면 가방 단추에 남은 칸(글자)을 띄운다 */
@@ -36707,7 +36735,7 @@ function bindInput() {
     if (V.ui) { if (V.ui === "map" && (k === "m" || k === "M")) closeOv(); if (V.ui === "floors" && k === "Tab") { e.preventDefault(); closeOv(); } if (V.ui === "death" && (k === "Enter" || k === " ")) { e.preventDefault(); A["dgn-revive"](); } return; }
     if (D() && D().ui && D().ui.isOpen && D().ui.isOpen()) { if (k === "i" || k === "k" || k === "c") { try { D().ui.close(); } catch (er) {} } return; }
     V.keys[k] = true; if (["w", "a", "s", "d", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " ", "Tab"].includes(k)) e.preventDefault();
-    if (k >= "1" && k <= "8") V.castQ[+k - 1] = 1; else if (k === "e" || k === "Enter") V.useQ = true; else if (k === "q") V.potQ = true; else if (k === "i") openMenu("inv"); else if (k === "k") openMenu("skills"); else if (k === "c") openMenu("char"); else if (k === "m") A["dgn-map"](); else if (k === "Tab") A["dgn-floors"](); else if (k === "f") { toggleAuto(); } else if (k === "x") A["dgn-spd"](); else if (k === " ") V.dashQ = true; else if (k === "j") V.atkKey = true;
+    if (k >= "1" && k <= "8") V.castQ[+k - 1] = 1; else if (k === "e" || k === "Enter") V.useQ = true; else if (k === "q") V.potQ = true; else if (k === "i") openMenu("inv"); else if (k === "k") openMenu("skills"); else if (k === "c") openMenu("char"); else if (k === "m") A["dgn-map"](); else if (k === "Tab") A["dgn-floors"](); else if (k === "f") { if (!e.repeat) toggleAuto(); } else if (k === "x") A["dgn-spd"](); else if (k === " ") V.dashQ = true; else if (k === "j") V.atkKey = true;
   });
   document.addEventListener("keyup", e => { const k = e.key.length === 1 ? e.key.toLowerCase() : e.key; delete V.keys[k]; if (k === "j") V.atkKey = false; });
   window.addEventListener("blur", () => { V.keys = {}; V.atk = false; V.atkKey = false; });
@@ -36731,7 +36759,7 @@ function bindInput() {
   jz.addEventListener("pointerup", ju); jz.addEventListener("pointercancel", ju);
 }
 function worldAim() { const m = V.mouse; if (!m.on || V.touch || performance.now() - m.t > 5000) return null; const z = V.zoom; m.wx = V.cam.x + (m.x - V.w / 2) / z; m.wy = V.cam.y + (m.y - V.h / 2) / z; return {x: m.wx, y: m.wy}; }
-function toggleAuto() { const G = V.G; G.opt.auto = !G.opt.auto; V.opt.auto = G.opt.auto; saveOpt(); note(G.opt.auto ? "자동 공격 켬 (F)" : "자동 공격 끔 (F)", "info"); }
+function toggleAuto() { const G = V.G; G.opt.auto = !G.opt.auto; V.opt.auto = G.opt.auto; saveOpt(); V.autoStateUntil = performance.now() + 2800; setT("dgn-autostate", G.opt.auto ? "기본 자동공격 켜짐 (F)" : "기본 자동공격 꺼짐 (F)"); }
 function buildInput() {
   if (V.bot && V.G) { V.castQ.fill(0); return core.botInput(V.G); }   // 시험용 자동 플레이(콘솔에서 dgn.V.bot = true)
   const k = V.keys; let mx = (k.d || k.ArrowRight ? 1 : 0) - (k.a || k.ArrowLeft ? 1 : 0), my = (k.s || k.ArrowDown ? 1 : 0) - (k.w || k.ArrowUp ? 1 : 0); mx += V.joy.x; my += V.joy.y;
@@ -36958,7 +36986,7 @@ function startGame(k, fresh) { const L = loadChar(k, fresh); if (L) beginRun(L.c
 function beginRun(char, extra, o) {
   o = o || {}; const d = D(), k = char.k;
   if (d.setChar) d.setChar(char); else d.char = char;
-  const G = V.G = core.create(char, {auto: V.opt.auto != null ? V.opt.auto : true}); core.unpackExtra(G, extra); G.autoTravel = false; V.sess = {t0: performance.now(), played: false}; V.bestSeen = char.floorBest | 0; V.lastSig = ""; V.autoT = 0;
+  const G = V.G = core.create(char, {auto: V.opt.auto != null ? V.opt.auto : true, autoSkill: !!V.opt.autoSkill}); core.unpackExtra(G, extra); G.autoTravel = false; V.sess = {t0: performance.now(), played: false}; V.bestSeen = char.floorBest | 0; V.lastSig = ""; V.autoT = 0;
   G.opt.auto = V.opt.auto != null ? V.opt.auto : true; V.camInit = false;
   let f = 1; if (extra && extra.last && core.isOpen(char, extra.last)) f = extra.last; if (G.x.last) f = core.isOpen(char, G.x.last) ? G.x.last : 1; if (o.floor) f = o.floor;
   const face = $("#dgn-face"); face.style.backgroundImage = `url(${kSrc(k, true)})`;
@@ -37048,6 +37076,11 @@ Object.assign(A, {
   "dgn-fpick": b => { const f = +b.dataset.f; if (!core.isOpen(V.G.char, f)) { note("아직 열리지 않은 층이에요. 아래층의 보스를 먼저 잡아요.", "warn"); return; } renderFloors(Math.floor((f - 1) / 10), f); dgSfx("dgUi"); },
   "dgn-fgo": () => { const f = V._fsel; closeOv(); if (V.G && f) { if (V.net) { const lk = core.partyLock(V.G, f); if (lk) { note(lk + " 님은 아직 " + f + "층이 열리지 않았어요.", "warn"); return; } } startTravel(f, "select"); } },
   "dgn-home": () => { closeOv(); if (V.net && V.net.role !== "host") { note("파티 중에는 파티장이 정해요.", "warn"); return; } startTravel(1, "select"); },
+  "dgn-autoskill": () => {
+    if (!V.G) return;
+    V.G.opt.autoSkill = V.opt.autoSkill = !V.G.opt.autoSkill;
+    saveOpt();
+  },
   "dgn-auto": () => { toggleAuto(); openPause(); },
   "dgn-snd": () => { if (typeof SAVE !== "undefined") { SAVE.mute = !SAVE.mute; persist(true); } openPause(); },
   "dgn-zoom": () => { V.opt.zoom = V.opt.zoom === 1 ? 1.2 : V.opt.zoom === 1.2 ? .85 : 1; saveOpt(); V.relayout = true; openPause(); },
@@ -37288,16 +37321,19 @@ function hostBegin(sess, info) {
   safe(() => { if (window.rbxMig) rbxMig.start(MODE); });
   safe(() => lateJoinInstall(S));
 }
-function showPartyBubble(S, idx, message) {
+function showPartyBubble(S, idx, message, name) {
   const text = String(message || "").trim().slice(0, 48);
   if (!text || !Number.isInteger(idx)) return;
-  (S.bubbles ||= new Map()).set(idx, {text, until: nowMs() + 5000});
+  const bubble = {text, name: String(name || "기사").slice(0, 24), until: nowMs() + 5000};
+  (S.bubbles ||= new Map()).set(idx, bubble);
+  S.shout = bubble;
 }
 function hostSay(S, idx, message) {
   const text = String(message || "").trim().slice(0, 48);
   if (!text) return;
-  showPartyBubble(S, idx, text);
-  for (const guest of S.guests) send(S, guest.net, {t: "say", i: idx, s: text});
+  const name = S.G.hs[idx]?.name || S.names[0] || "기사";
+  showPartyBubble(S, idx, text, name);
+  for (const guest of S.guests) send(S, guest.net, {t: "say", i: idx, s: text, name});
 }
 function hostMsg(S, m, from) {
   if (!m || typeof m !== "object") return; const G = S.G; if (!G) return;
@@ -37334,7 +37370,7 @@ function hostInput(S, h, m) {
   h.iseq = m.n | 0;   /* A13-6/7: 입력 번호(스냅샷이 되돌려 줌) · 강제 번호 — 손님이 아직 모르는 옛 위치 보고는 무시한다(방장이 영웅을 직접 옮긴 뒤 옛 좌표로 걸어 돌아가던 것) */
   if (Number.isFinite(x) && Number.isFinite(y) && x > 0 && y > 0 && x < M.W * TILE && y < M.H * TILE && (m.fe | 0) >= (h.fe | 0)) h.rp = {x, y};
   const q = h.inp || (h.inp = idle()), f = m.f | 0, c = m.c | 0, e = m.e | 0;
-  q.mx = cl(+m.mx || 0, -1, 1); q.my = cl(+m.my || 0, -1, 1); q.atk = !!(f & 1); h.auto = !!(f & 2); q.aim = (f & 8) && Number.isFinite(+m.ax) && Number.isFinite(+m.ay) ? {x: +m.ax, y: +m.ay} : null;
+  q.mx = cl(+m.mx || 0, -1, 1); q.my = cl(+m.my || 0, -1, 1); q.atk = !!(f & 1); h.auto = !!(f & 2); h.autoSkill = !!(f & 16); q.aim = (f & 8) && Number.isFinite(+m.ax) && Number.isFinite(+m.ay) ? {x: +m.ax, y: +m.ay} : null;
   for (let i = 0; i < 8; i++) if (c & (1 << i)) q.cast[i] = true; if (e & 1) q.interact = true; if (e & 2) q.potion = true; if (e & 4) q.dash = true;
   if (Array.isArray(m.vw) && m.vw.length === 2) h.view = {hw: cl(+m.vw[0] || 420, 200, 900), hh: cl(+m.vw[1] || 280, 150, 700)};
 }
@@ -37438,7 +37474,7 @@ function guestMsg(S, m) {
   if (m.t === "ro") { S.roster = m.L || []; S.myIdx = m.you | 0; S.sel = m.sel | 0 || 1; S.hostFloor = m.fl | 0; S.cap = m.cap || S.cap; ui().partyChanged(); return; }
   if (m.t === "wel") { S.myIdx = m.idx; return; }
   if (m.t === "kick") { S.kicked = true; S.hostLost = true; safe(() => S.sess.close()); ui().hostLostDialog(); return; }
-  if (m.t === "say") { showPartyBubble(S, m.i, m.s); return; }
+  if (m.t === "say") { showPartyBubble(S, m.i, m.s, m.name); return; }
   if (m.t === "nt") { ui().note(String(m.s || "").slice(0, 60), m.k === "good" || m.k === "warn" ? m.k : "info", null, 4200); return; }
   if (m.t === "no") { ui().note(m.why || "파티에 들어가지 못했어요", "warn", null, 5000); return; }
   if (m.t === "ping") { try { S.sess.send({t: "pong", n: m.n}); } catch (e) {} return; }
@@ -37466,7 +37502,7 @@ function guestFrame(dt, inp, locked) {
 function sendInput(S, inp) {
   const G = S.G, P = G.P; const vw = [r1(V.w / (2 * V.zoom)), r1(V.h / (2 * V.zoom))], vws = vw[0] + "," + vw[1];
   S.seq = (S.seq + 1) | 0; S.hist.set(S.seq, {x: P.x, y: P.y}); if (S.hist.size > 240) S.hist.delete(S.hist.keys().next().value);
-  const m = {t: "i", n: S.seq, fl: G.floor, fe: S.fe | 0, x: r1(P.x * 10) / 10, y: r1(P.y * 10) / 10, mx: r2(inp.mx || 0), my: r2(inp.my || 0), f: (inp.atk ? 1 : 0) | (G.opt.auto ? 2 : 0) | (inp.aim ? 8 : 0), c: S.pend.c, e: S.pend.e};
+  const m = {t: "i", n: S.seq, fl: G.floor, fe: S.fe | 0, x: r1(P.x * 10) / 10, y: r1(P.y * 10) / 10, mx: r2(inp.mx || 0), my: r2(inp.my || 0), f: (inp.atk ? 1 : 0) | (G.opt.auto ? 2 : 0) | (G.opt.autoSkill ? 16 : 0) | (inp.aim ? 8 : 0), c: S.pend.c, e: S.pend.e};
   if (inp.aim) { m.ax = r1(inp.aim.x); m.ay = r1(inp.aim.y); } if (vws !== S.vwSent) { m.vw = vw; S.vwSent = vws; }
   S.pend.c = 0; S.pend.e = 0; try { S.sess.send(m); } catch (e) {}
 }
