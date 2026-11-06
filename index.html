@@ -2075,7 +2075,7 @@ html.kc-rail #scr-shop .wrap{padding-bottom:72px}
 .lb-lx svg{width:18px;height:18px}
 
 /* 지도(한 화면에 3F·4F) */
-.lb-stage{position:relative;flex:1 1 auto;min-height:0;width:100%;border-radius:16px;overflow:hidden;border:3px solid var(--ink);background:#070a1c;box-shadow:0 8px 30px rgba(0,0,0,.55);isolation:isolate;-webkit-user-select:none;user-select:none}
+.lb-stage{position:relative;flex:1 1 auto;min-height:0;width:100%;border-radius:16px;overflow:hidden;border:3px solid var(--ink);background:#efe7f6;box-shadow:0 8px 30px rgba(0,0,0,.45);isolation:isolate;-webkit-user-select:none;user-select:none}
 #lb-cv{position:absolute;left:0;top:0;display:block;touch-action:none;-webkit-tap-highlight-color:transparent;outline:none}
 .lb-ov{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:3}
 .lb-hint{position:absolute;left:10px;bottom:10px;z-index:4;max-width:calc(100% - 100px);padding:4px 12px;border-radius:99px;background:rgba(10,14,32,.82);border:2px solid var(--line2);font:600 11.5px/1.35 var(--f-body);color:var(--dim);text-align:center;pointer-events:none;animation:lbhint 12s forwards}
@@ -2281,6 +2281,32 @@ html.kc-rail #scr-shop .wrap{padding-bottom:72px}
 /* (상점은 합본 ORDER 에 없고 base 에 구워져 있어 상점_소스/shop.css 와 같은 규칙을 여기서도 얹는다) */
 /* A19(5차): 상점 구매 버튼이 스티키 탭(.shp-bar 약 190px)·아래 고정 메뉴(knx-bar 약 60px) 밑에 가려지던 것 — 포커스·scrollIntoView·앵커 이동 때 버튼이 그 사이에 오도록 여백(측정: 375×812 에서 scrollIntoView 후 가려진 버튼 14/15 → 0/15) */
 .shp-b{scroll-margin-top:200px;scroll-margin-bottom:84px}
+
+/* 4차 생활 카드 5장(소개·공간·로드뷰·3D·점심) — 한 줄 5칸 작은 박스, '링크 복사' 버튼은 박스 안 오른쪽 위(홍보링크 패치의 폰용 '카드 밑 알약' 규칙보다 앞서도록 #scr-lobby + !important) */
+.lb-life{grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.lb-life .lb-lc-go{flex-direction:column;justify-content:center;text-align:center;gap:5px;padding:14px 6px 9px;border-radius:16px;min-height:104px}
+.lb-life .lb-lc-ic{width:44px;height:44px;border-radius:13px}
+.lb-life .lb-lc-ic svg{width:27px;height:27px}
+.lb-life .lb-lc-tx{justify-items:center;width:100%}
+.lb-life .lb-lc-tx b{font-size:17px;white-space:normal;line-height:1.12;word-break:keep-all}
+.lb-life .lb-lc-tx em{font-size:11.5px;white-space:normal;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:keep-all}
+.lb-life .lb-lc-arr{display:none}
+#scr-lobby .lb-life .lb-lc>.lb-life-extra{position:absolute!important;top:5px;right:5px;margin:0!important;z-index:2;display:flex}
+#scr-lobby .lb-life .lb-lc>.lb-life-extra:empty{display:none}
+#scr-lobby .lb-life .lb-lc>.lb-life-extra>*{font-size:0!important;line-height:0;gap:0!important;flex:none!important;min-width:0!important;min-height:0!important;width:28px!important;height:28px!important;padding:0!important;justify-content:center;border-radius:50%!important;box-shadow:none!important}
+#scr-lobby .lb-life .lb-lc>.lb-life-extra>* svg{width:15px!important;height:15px!important;margin:0!important}
+@media (max-width:640px){
+  .lb-life{gap:4px}
+  .lb-life .lb-lc-go{min-height:76px;padding:12px 2px 6px;gap:3px;border-radius:12px}
+  .lb-life .lb-lc-ic{width:30px;height:30px;border-radius:9px}
+  .lb-life .lb-lc-ic svg{width:19px;height:19px}
+  .lb-life .lb-lc-tx b{font-size:11px;line-height:1.1}
+  .lb-life .lb-lc-tx em{display:none}
+  #scr-lobby .lb-life .lb-lc>.lb-life-extra{top:2px;right:2px}
+  #scr-lobby .lb-life .lb-lc>.lb-life-extra>*{width:22px!important;height:22px!important}
+  #scr-lobby .lb-life .lb-lc>.lb-life-extra>* svg{width:12px!important;height:12px!important}
+}
+#scr-lobby .lb-life .lb-lc>.lb-life-extra .pm-t{display:none!important}   /* 생활 카드 안 복사 버튼은 아이콘만(글자는 title·aria-label) */
 
 /* ===DFX_CSS=== 방어전 개선: 기사 설명 카드 · 내 기사 패널 · 기사 강화 칸. 색만으로 구분하지 않는다: 패시브 ◆ / 액티브 ★ / 다른 모드 ● 글자 + 모양 */
 .kxc{display:grid;gap:7px;background:var(--card2);border:2px solid var(--ink);border-radius:14px;padding:9px 11px;box-shadow:0 3px 0 var(--ink);text-align:left;min-width:0}
@@ -3735,7 +3761,7 @@ html[data-lowfx="1"]{scroll-behavior:auto}
         <div id="t-links"></div>
         <div class="row" id="rbx-extra" style="justify-content:center"></div>
         <div class="rd-card ttl-road" id="rd-card"><button class="rd-th" data-act="road-open" aria-label="로드뷰 투어 열기"><img src="roadview/poster.jpg" alt="" onerror="document.getElementById('rd-card').hidden=true"></button><div class="ttl-rd-t"><h3>라운드비 로드뷰 투어</h3><p>3층 라운지·4층 공유오피스를 걸어서 둘러보세요</p></div><div class="row ttl-rd-b"><button class="btn btn-sm btn-red" data-act="road-open">걸어서 둘러보기</button><button class="btn btn-sm" data-act="road-video">영상으로 보기</button></div></div>
-        <p class="small faint">라운드비 나이츠 v3.5 · 혼자(스테이지 22개) · 같이(사람·AI) · 대결(AI) · 소용돌이(자유 건설 터렛 협동) · 클릭·터치로 플레이 · 단축키는 게임 중 패널에 표시돼요</p>
+        <p class="small faint">라운드비 나이츠 v3.6 · 혼자(스테이지 22개) · 같이(사람·AI) · 대결(AI) · 소용돌이(자유 건설 터렛 협동) · 클릭·터치로 플레이 · 단축키는 게임 중 패널에 표시돼요</p>
       </div>
     </div>
   </section>
@@ -21822,10 +21848,10 @@ return {SHOPS:LNC_SHOPS, CATS, ST, pool, draw, pick, openLunch, layoutPins, matc
 window.lncDbg = lncEng;
 /* ===LNC_END=== */
 
-/* ===SHELL_START=== 라운드비 나이츠 셸 v3.5 — window.knx 코어(bus·screens·games·weekly·stat·env·copy·net·start) + 전체 메뉴바(#knx-bar) + 앱 안 브라우저 안내(#knx-inapp).
+/* ===SHELL_START=== 라운드비 나이츠 셸 v3.6 — window.knx 코어(bus·screens·games·weekly·stat·env·copy·net·start) + 전체 메뉴바(#knx-bar) + 앱 안 브라우저 안내(#knx-inapp).
    소스: 나이츠셸_소스/shell.js · 얹는 법: build_shell.py · 계약: 통합/README_작업규칙_3차.md §3·§4. 새 전역은 window.knx 하나뿐(나머지는 이 함수 안에 가둔다). */
 (function () {
-const VER = "3.5";
+const VER = "3.6";
 const KNX_DB = "https://roundb-games-default-rtdb.asia-southeast1.firebasedatabase.app";   // 실시간 DB 주소(운영). 시험 때는 window.KNX_DB_URL 로 덮어쓴다 — 메인 세션이 실제 주소를 확정하면 build_shell.py 의 KNX_DB 환경변수로 바꾼다
 const knx = window.knx = window.knx || {};
 
@@ -25510,6 +25536,7 @@ if (typeof module !== "undefined" && module.exports) module.exports = CHAT_LOGIC
   if (!win.knx) win.knx = {};
   const K = () => win.knx;                                           // 셸이 나중에 바꿔 끼워도 항상 최신을 본다
   const CAP = CL.CAP, COOL = CL.COOL;
+  const MSG_TTL = 10 * 60 * 1000, DM_TTL = 24 * 60 * 60 * 1000;   // 채팅 표시 시간(밀리초)
   const INGAME = new Set(["game", "td", "paper", "lord", "pv2", "survivor", "world"]);   // knx.screens.inGame 이 없을 때의 안전망
   const FACES = ["seoa", "hayun", "jiyu", "arin", "chaewon", "isol", "daon", "soyul", "ian", "teo"];
 
@@ -25630,6 +25657,7 @@ if (typeof module !== "undefined" && module.exports) module.exports = CHAT_LOGIC
     else if (t === "dm") { const c = S.L.dm.get(S.dmSel); arr = c ? c.lines.concat(sysFor("dm:" + S.dmSel)) : []; }
     else { arr = S.L.server.concat(S.L.room, S.L.sys, S.npcOn ? S.L.npc : []); for (const c of S.L.dm.values()) arr = arr.concat(c.lines); }
     arr.sort(CL.byTime);
+    const tNow = now(); arr = arr.filter(it => { const tt = +it.t || 0; return !tt || tNow - tt <= (it.ch === "dm" ? DM_TTL : MSG_TTL); });   // 사용자 요청: 채팅이 영구히 남지 않게 — 서버·인게임·시스템·기사단 말풍선은 10분, 귓속말은 24시간만 보인다(화면에서만 숨김, 서버 기록은 그대로)
     return arr.length > CAP ? arr.slice(-CAP) : arr;
   }
 
@@ -26635,6 +26663,7 @@ if (typeof module !== "undefined" && module.exports) module.exports = CHAT_LOGIC
     S.lastScreen = curScreen();
     bind(); refreshMe(); applyLayout(); renderChrome(); renderList(true);
     setInterval(tick, 1000);
+    setInterval(() => { try { if (el.list && viewing()) renderList(false); } catch (e) {} }, 30000);   // 오래된 줄이 시간이 지나면 목록에서 사라지게(표시 시간 MSG_TTL·DM_TTL)
     attachBar(); wrapRoom();
     const kn = K();
     const go = () => { refreshMe(); if (!S.ready) { S.ready = true; readyRes(true); } };
@@ -26731,7 +26760,7 @@ const UTIL = {
 };
 const LIFE_FALLBACK = {lunch: "lnc-open", gallery: "to-gallery", road: "road-open"};
 /* 4차: 화면 맨 위 '생활 메뉴' 메인 카드 줄(이 게임의 존재 이유 = 공간 홍보). 카드마다 data-life + 빈 .lb-life-extra 자리(홍보 링크 담당이 '링크' 버튼을 붙인다) */
-const LIFE = [{id: "lunch", sp: "4f-pantry", sub: "신당역 밥집 뽑기·지도"}, {id: "gallery", sp: "3f-desk", sub: "라운드비 공간 사진 보기"}, {id: "road", sp: "4f-desk", sub: "걸어서 3·4층 투어"}];
+const LIFE = [{id: "intro", url: "intro/", name: "라운드비 소개", sub: "사진·배치도·주차·문의", ic: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 10.5 12 4l8 6.5V20H4z\"/><path d=\"M9.5 20v-5.5h5V20\"/></svg>"}, {id: "gallery", sp: "3f-desk", sub: "라운드비 공간 사진 보기"}, {id: "road", sp: "4f-desk", sub: "걸어서 3·4층 투어"}, {id: "tour", url: "tour/", name: "3D 투어", sub: "걸어 다니며 4층·3층", ic: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 3 20 7.5v9L12 21l-8-4.5v-9z\"/><path d=\"M12 12 20 7.5M12 12 4 7.5M12 12v9\"/></svg>"}, {id: "lunch", sp: "4f-pantry", sub: "신당역 밥집 뽑기·지도"}];
 
 /* 방(스팟) ↔ 게임·시설 연결표 — README 의 표와 같아요. 좌표는 map_data.json */
 const BIND = {
@@ -27414,31 +27443,31 @@ function rrp(c, x, y, w, h, r) { c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y 
 function renderBg(k) {
   const f = FL[k], v = f.view, c = document.createElement("canvas"); c.width = f.vw; c.height = f.vh;
   const q = c.getContext("2d"), o = OUTER[k];
-  q.fillStyle = "#0b0f26"; q.fillRect(0, 0, c.width, c.height);
+  q.fillStyle = "#f4eefb"; q.fillRect(0, 0, c.width, c.height);
   if (planImg && planImg.naturalWidth) q.drawImage(planImg, v[0], v[1], f.vw, f.vh, 0, 0, f.vw, f.vh);
   q.translate(-v[0], -v[1]);
   // 건물 바깥: 밤하늘 + 이웃 건물 불빛(창가 불빛)
-  q.save(); q.beginPath(); q.rect(v[0], v[1], f.vw, f.vh); rrp(q, o[0], o[1], o[2] - o[0], o[3] - o[1], 16); q.fillStyle = "#070a1c"; q.fill("evenodd"); q.restore();
+  q.save(); q.beginPath(); q.rect(v[0], v[1], f.vw, f.vh); rrp(q, o[0], o[1], o[2] - o[0], o[3] - o[1], 16); q.fillStyle = "#e9e2f6"; q.fill("evenodd"); q.restore();
   let seed = k === "3f" ? 7 : 19; const rd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
   for (let i = 0; i < 90; i++) {
     const side = Math.floor(rd() * 4); let x, y;
     if (side === 0) { x = v[0] + rd() * (o[0] - v[0] - 8); y = v[1] + rd() * f.vh; } else if (side === 1) { x = o[2] + 8 + rd() * (v[2] - o[2] - 10); y = v[1] + rd() * f.vh; }
     else if (side === 2) { x = v[0] + rd() * f.vw; y = v[1] + rd() * (o[1] - v[1] - 8); } else { x = v[0] + rd() * f.vw; y = o[3] + 8 + rd() * (v[3] - o[3] - 10); }
     if (x > o[0] - 2 && x < o[2] + 2 && y > o[1] - 2 && y < o[3] + 2) continue;
-    q.fillStyle = rd() < .6 ? "rgba(255,214,120,.85)" : "rgba(190,215,255,.8)"; q.fillRect(x, y, 3 + rd() * 3, 4 + rd() * 4);
+    q.fillStyle = rd() < .6 ? "rgba(255,196,140,.7)" : "rgba(176,196,240,.65)"; q.fillRect(x, y, 3 + rd() * 3, 4 + rd() * 4);
   }
   // 안쪽 밤 톤
   q.save(); rr(q, o[0], o[1], o[2] - o[0], o[3] - o[1], 16); q.clip();
-  q.globalCompositeOperation = "multiply"; q.fillStyle = "rgb(104,116,178)"; q.fillRect(o[0], o[1], o[2] - o[0], o[3] - o[1]);
-  if (k === "3f") { q.fillStyle = "rgb(150,110,190)"; q.fillRect(108, 288, 400, 202); }   // 창고 = 던전 입구: 보랏빛으로 한 단계 더 어둡게
+  q.globalCompositeOperation = "multiply"; q.fillStyle = "rgb(255,248,240)"; q.fillRect(o[0], o[1], o[2] - o[0], o[3] - o[1]);   // 4차: 밤색 푸른 톤 → 밝은 파스텔(배치도 원색)
+  if (k === "3f") { q.fillStyle = "rgb(232,216,246)"; q.fillRect(108, 288, 400, 202); }   // 창고 = 던전 입구: 보랏빛으로 한 단계 더 어둡게
   q.globalCompositeOperation = "screen";
   for (const L of LIGHTS[k]) { const gr = q.createRadialGradient(L[0], L[1], 4, L[0], L[1], L[2]); gr.addColorStop(0, `rgba(${L[4]},${L[3]})`); gr.addColorStop(1, `rgba(${L[4]},0)`); q.fillStyle = gr; q.fillRect(L[0] - L[2], L[1] - L[2], L[2] * 2, L[2] * 2); }
   // 창가 불빛: 바깥 벽을 따라 안쪽으로 번지는 푸른 빛
-  const win = (x, y, w, h, dx, dy) => { const gr = q.createLinearGradient(x, y, x + dx * 46, y + dy * 46); gr.addColorStop(0, "rgba(150,195,255,.42)"); gr.addColorStop(1, "rgba(150,195,255,0)"); q.fillStyle = gr; q.fillRect(x, y, w, h); };
+  const win = (x, y, w, h, dx, dy) => { const gr = q.createLinearGradient(x, y, x + dx * 46, y + dy * 46); gr.addColorStop(0, "rgba(255,226,170,.38)"); gr.addColorStop(1, "rgba(255,226,170,0)"); q.fillStyle = gr; q.fillRect(x, y, w, h); };
   for (let y = o[1] + 30; y < o[3] - 90; y += 112) { if (k === "3f" && y > 600 && y < 1080) continue; win(o[0] + 8, y, 46, 78, 1, 0); }
   for (let x = o[0] + 60; x < o[2] - 130; x += 120) win(x, o[1] + 8, 82, 46, 0, 1);
   q.globalCompositeOperation = "multiply";
-  const cx = (o[0] + o[2]) / 2, cy = (o[1] + o[3]) / 2, vg = q.createRadialGradient(cx, cy, 300, cx, cy, 780); vg.addColorStop(0, "rgba(255,255,255,1)"); vg.addColorStop(1, "rgba(70,76,120,1)"); q.fillStyle = vg; q.fillRect(o[0], o[1], o[2] - o[0], o[3] - o[1]);
+  const cx = (o[0] + o[2]) / 2, cy = (o[1] + o[3]) / 2, vg = q.createRadialGradient(cx, cy, 300, cx, cy, 780); vg.addColorStop(0, "rgba(255,255,255,1)"); vg.addColorStop(1, "rgba(238,226,246,1)"); q.fillStyle = vg; q.fillRect(o[0], o[1], o[2] - o[0], o[3] - o[1]);
   q.restore();
   // 소품: 안내 데스크 · 안내판 · 던전 아치 문
   const desk = (hx0, hy0, hx1, hy1, label) => { q.save(); rr(q, hx0, hy0, hx1 - hx0, hy1 - hy0, 8); q.fillStyle = "#c8a56e"; q.fill(); q.lineWidth = 3; q.strokeStyle = "#14141c"; q.stroke(); q.fillStyle = "#14141c"; q.font = `700 12px ${FONT}`; q.textAlign = "center"; q.textBaseline = "middle"; q.fillText(label, (hx0 + hx1) / 2, (hy0 + hy1) / 2); q.restore(); };
@@ -27504,10 +27533,10 @@ function drawSpots(f, t) {
     g.save();
     if (isW) { g.fillStyle = `rgba(246,196,83,${.1 + .12 * pulse})`; rr(g, h[0], h[1], h[2] - h[0], h[3] - h[1], 12); g.fill(); g.lineWidth = lw * 1.6; g.strokeStyle = `rgba(246,196,83,${.6 + .4 * pulse})`; g.stroke(); }
     if (isF) { g.setLineDash([14, 7]); g.lineDashOffset = reducedMotion() ? 0 : -t * 14; g.lineWidth = lw * 1.5; g.strokeStyle = `rgba(255,120,80,${.7 + .3 * pulse})`; rr(g, h[0] + 3, h[1] + 3, h[2] - h[0] - 6, h[3] - h[1] - 6, 12); g.stroke(); }
-    if (nearMe || hov) { g.setLineDash([]); g.lineWidth = lw * 1.4; g.strokeStyle = "rgba(255,255,255,.95)"; rr(g, h[0], h[1], h[2] - h[0], h[3] - h[1], 12); g.stroke(); }
+    if (nearMe || hov) { g.setLineDash([]); g.lineWidth = lw * 1.4; g.strokeStyle = "rgba(31,42,92,.95)"; rr(g, h[0], h[1], h[2] - h[0], h[3] - h[1], 12); g.stroke(); }
     g.restore();
     // 문 앞 표시: 발판 고리
-    g.save(); g.setLineDash(info.open ? [6, 5] : [2, 6]); g.lineWidth = lw * 1.2; g.strokeStyle = nearMe ? "rgba(246,196,83,1)" : "rgba(255,255,255,.55)";
+    g.save(); g.setLineDash(info.open ? [6, 5] : [2, 6]); g.lineWidth = lw * 1.2; g.strokeStyle = nearMe ? "rgba(246,196,83,1)" : "rgba(40,44,100,.6)";
     g.beginPath(); g.ellipse(sp.stand[0], sp.stand[1], 22 * Math.min(bs, 1.4), 10 * Math.min(bs, 1.4), 0, 0, 6.2832); g.stroke(); g.restore();
   }
 }
@@ -27598,7 +27627,7 @@ function drawPane(fl) {
   const p = P[fl], f = FL[fl], s = p.s, t = S.t, dpr = S.dpr, mine = ME.fl === fl;
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
   g.save(); g.beginPath(); rrp(g, p.x, p.y, p.w, p.h, 10); g.clip();
-  const bgs = paneBg(fl); if (bgs) g.drawImage(bgs, p.x, p.y, p.w, p.h); else { g.fillStyle = "#0b0f26"; g.fillRect(p.x, p.y, p.w, p.h); }
+  const bgs = paneBg(fl); if (bgs) g.drawImage(bgs, p.x, p.y, p.w, p.h); else { g.fillStyle = "#f4eefb"; g.fillRect(p.x, p.y, p.w, p.h); }
   g.restore();
   g.setTransform(dpr * s, 0, 0, dpr * s, dpr * (p.x - f.view[0] * s), dpr * (p.y - f.view[1] * s));
   g.imageSmoothingEnabled = true;
@@ -27779,10 +27808,16 @@ function renderLife() {
   const box = el("lb-life"); if (!box) return;
   if (!lifeBuilt) {
     lifeBuilt = true;
-    box.innerHTML = LIFE.map(L => `<div class="lb-lc" data-life="${L.id}" data-sp="${L.sp}"><button type="button" class="lb-lc-go"></button><span class="lb-life-extra" data-life-extra="${L.id}"></span></div>`).join("");
+    box.innerHTML = LIFE.map(L => `<div class="lb-lc" data-life="${L.id}" data-sp="${L.sp || ""}"${L.url ? ` data-url="${L.url}"` : ""}><button type="button" class="lb-lc-go"></button><span class="lb-life-extra" data-life-extra="${L.id}"></span></div>`).join("");
     try { const x = nx(); if (x && x.bus) x.bus.emit("lobby:life", {el: box}); document.dispatchEvent(new CustomEvent("lobby:life-ready", {detail: {el: box}})); } catch (e) {}
   }
   for (const L of LIFE) {
+    if (L.url) {   // 4차: 방(문)이 없는 바로가기 카드(소개 페이지·3D 투어) — 누르면 새 탭
+      const card = box.querySelector(`.lb-lc[data-life="${L.id}"]`), bb = card && card.querySelector(".lb-lc-go"); if (!bb) continue;
+      const h = `<span class="lb-lc-ic">${L.ic}</span><span class="lb-lc-tx"><b>${esc(L.name)}</b><em>${esc(L.sub)}</em></span><span class="lb-lc-arr" aria-hidden="true">바로 가기 ▶</span>`;
+      if (bb._h !== h) { bb._h = h; bb.innerHTML = h; }
+      bb.disabled = false; bb.setAttribute("aria-label", `${L.name} — 새 탭에서 열기`); card.classList.remove("soon"); continue;
+    }
     const card = box.querySelector(`.lb-lc[data-life="${L.id}"]`), sp = SPOT_BY[L.sp]; if (!card || !sp) continue;
     const info = spotInfo(sp), b = card.querySelector(".lb-lc-go");
     const h = `<span class="lb-lc-ic">${iconHTML(info, 32)}</span><span class="lb-lc-tx"><b>${esc(info.name)}</b><em>${esc(info.open ? L.sub : "준비 중이에요")}</em></span><span class="lb-lc-arr" aria-hidden="true">${info.open ? "바로 가기 ▶" : "준비 중"}</span>`;
@@ -28080,7 +28115,7 @@ function init() {
   scr.addEventListener("click", e => {
     const fb = e.target.closest(".lb-fb"); if (fb) { togglePanel(fb.dataset.pn); return; }
     if (e.target.closest("[data-panel='close']")) { closePanel(); return; }
-    const lc = e.target.closest(".lb-lc-go"); if (lc) { if (!lc.disabled) enterFromUI(SPOT_BY[lc.closest(".lb-lc").dataset.sp]); return; }
+    const lc = e.target.closest(".lb-lc-go"); if (lc) { if (!lc.disabled) { const cd = lc.closest(".lb-lc"); if (cd.dataset.url) { try { window.open(cd.dataset.url, "_blank", "noopener"); } catch (er) { location.href = cd.dataset.url; } } else enterFromUI(SPOT_BY[cd.dataset.sp]); } return; }
     if (e.target.closest("#lb-meb")) { openKnightSheet(); return; }
     const em = e.target.closest(".lb-emo button"); if (em) { bubble(ME, EMOTES[Number(em.dataset.i)][1], 2.6); ME.hop = .4; try { sfx("click"); } catch (er) {} return; }
     if (e.target.closest("[data-touch]")) { try { if (typeof tchSetMode === "function") { tchSetMode((typeof tchActive !== "undefined" && tchActive) ? "off" : "on"); toast((typeof tchActive !== "undefined" && tchActive) ? "터치 조작을 켰어요" : "터치 조작을 껐어요"); } else toast("이 기기에서는 쓸 수 없어요"); } catch (er) {} syncTouch(); return; }
@@ -39549,7 +39584,7 @@ setInterval(() => { const S = FLR_SELL; if (S.id < 0) return; const u = UI.scree
 /* ===PROMO_START=== 홍보 링크(?p=lunch|gallery|road) · 링크 복사 버튼 · 홍보 허브. 소스: 홍보링크_소스/ (build_promo.py) — 앞 패치가 만든 lunch·gallery·road 화면을 그대로 쓰고 아무것도 새로 저장하지 않는다 */
 (function () {
 "use strict";
-const D = {"live":"https://ksinvaid.github.io/roundb-night-defense/","brand":"라운드비 나이츠","items":{"lunch":{"slug":"lunch","name":"오늘 뭐 먹지?","short":"오늘 뭐 먹지","tag":"라운드비 근처 신당역 밥집 14곳 · 뽑기와 지도","pageTitle":"오늘 뭐 먹지? · 라운드비 나이츠","ogTitle":"오늘 뭐 먹지? 라운드비 근처 신당역 밥집 14곳 뽑기","desc":"라운드비에서 걸어가는 신당역 밥집 14곳! 뽑기를 돌리고 지도로 거리를 확인해 보세요. 설치 없이 링크 하나로 바로 열려요.","share":"오늘 뭐 먹지? 라운드비 근처 신당역 밥집 14곳, 뽑기로 정해 보세요","alt":"오늘 뭐 먹지? 신당역 밥집 14곳 뽑기 — 라운드비 나이츠","img":"img/lunch/05.jpg"},"gallery":{"slug":"gallery","name":"공간 둘러보기","short":"공간 둘러보기","tag":"게임 속 방들의 실제 라운드비 사진","pageTitle":"공간 둘러보기 · 라운드비 나이츠","ogTitle":"공간 둘러보기 — 게임 속 방들의 실제 모습","desc":"동대문 공유오피스 라운드비 3층 라운지·4층 공유오피스의 실제 사진이에요. 회의실·스튜디오·휴게공간까지 설치 없이 바로 둘러보세요.","share":"공간 둘러보기 — 동대문 공유오피스 라운드비, 3·4층 실제 사진","alt":"공간 둘러보기 — 라운드비 3층 라운지와 4층 공유오피스의 실제 사진","img":"img/gallery/g03.jpg"},"road":{"slug":"road","name":"로드뷰 투어","short":"로드뷰 투어","tag":"걸어서 둘러보는 3층 라운지·4층 공유오피스","pageTitle":"로드뷰 투어 · 라운드비 나이츠","ogTitle":"로드뷰 투어 — 걸어서 둘러보는 라운드비","desc":"바닥의 화살표를 눌러 3층 라운지와 4층 공유오피스를 직접 걸어 보세요. 15개 정거장, 2분 영상으로도 볼 수 있어요.","share":"로드뷰 투어 — 화살표를 눌러 걸어서 둘러보는 라운드비 3층 라운지·4층 공유오피스","alt":"로드뷰 투어 — 화살표를 눌러 걸어서 둘러보는 라운드비","img":"roadview/poster.jpg"}}};   // build_promo.py 가 promo_data.json 을 여기에 넣는다
+const D = {"live":"https://ksinvaid.github.io/roundb-night-defense/","brand":"라운드비 나이츠","items":{"lunch":{"slug":"lunch","name":"오늘 뭐 먹지?","short":"오늘 뭐 먹지","tag":"라운드비 근처 신당역 밥집 14곳 · 뽑기와 지도","pageTitle":"오늘 뭐 먹지? · 라운드비 나이츠","ogTitle":"오늘 뭐 먹지? 라운드비 근처 신당역 밥집 14곳 뽑기","desc":"라운드비에서 걸어가는 신당역 밥집 14곳! 뽑기를 돌리고 지도로 거리를 확인해 보세요. 설치 없이 링크 하나로 바로 열려요.","share":"오늘 뭐 먹지? 라운드비 근처 신당역 밥집 14곳, 뽑기로 정해 보세요","alt":"오늘 뭐 먹지? 신당역 밥집 14곳 뽑기 — 라운드비 나이츠","img":"img/lunch/05.jpg"},"gallery":{"slug":"gallery","name":"공간 둘러보기","short":"공간 둘러보기","tag":"게임 속 방들의 실제 라운드비 사진","pageTitle":"공간 둘러보기 · 라운드비 나이츠","ogTitle":"공간 둘러보기 — 게임 속 방들의 실제 모습","desc":"동대문 공유오피스 라운드비 3층 라운지·4층 공유오피스의 실제 사진이에요. 회의실·스튜디오·휴게공간까지 설치 없이 바로 둘러보세요.","share":"공간 둘러보기 — 동대문 공유오피스 라운드비, 3·4층 실제 사진","alt":"공간 둘러보기 — 라운드비 3층 라운지와 4층 공유오피스의 실제 사진","img":"img/gallery/g03.jpg"},"road":{"slug":"road","name":"로드뷰 투어","short":"로드뷰 투어","tag":"걸어서 둘러보는 3층 라운지·4층 공유오피스","pageTitle":"로드뷰 투어 · 라운드비 나이츠","ogTitle":"로드뷰 투어 — 걸어서 둘러보는 라운드비","desc":"바닥의 화살표를 눌러 3층 라운지와 4층 공유오피스를 직접 걸어 보세요. 15개 정거장, 2분 영상으로도 볼 수 있어요.","share":"로드뷰 투어 — 화살표를 눌러 걸어서 둘러보는 라운드비 3층 라운지·4층 공유오피스","alt":"로드뷰 투어 — 화살표를 눌러 걸어서 둘러보는 라운드비","img":"roadview/poster.jpg"},"intro":{"slug":"intro","name":"라운드비 소개 페이지","short":"소개 페이지","tag":"공간 사진·배치도·주차·문의","pageTitle":"라운드비 공유오피스 소개","ogTitle":"라운드비 공유오피스 소개","desc":"공간 사진과 배치도, 주차 안내, 문의를 한 곳에서 확인하세요.","share":"라운드비 공유오피스 — 사진·배치도·주차 안내·문의를 한 곳에서 확인해요","alt":"라운드비 공유오피스 소개 페이지","img":"img/gallery/g08.jpg"},"tour":{"slug":"tour","name":"4층 3D 투어","short":"3D 투어","tag":"걸어 다니며 둘러보는 4층·3층","pageTitle":"라운드비 3D 투어","ogTitle":"라운드비 3D 투어","desc":"삐약매니저와 함께 4층 공유오피스와 3층 라운지를 걸어 다니며 둘러보세요.","share":"라운드비 3D 투어 — 4층 공유오피스·3층 라운지를 걸어 다니며 둘러봐요","alt":"라운드비 3D 투어","img":"img/gallery/g08.jpg"}}};   // build_promo.py 가 promo_data.json 을 여기에 넣는다
 if (!D || !D.items) return;
 const IDS = ["lunch", "gallery", "road"], IT = D.items;
 const PM_STAT = false;   // true 로 바꾸면 홍보 링크로 열 때 knx.stat(id,"open") 을 센다(익명 로그인+실시간 DB 쓰기가 생기므로 기본은 꺼 둠)
@@ -39630,7 +39665,7 @@ function fillLobbyExtras() {
   for (const card of qa$("[data-life]")) {
     const id = card.getAttribute("data-life"); if (!IT[id]) continue;
     const slot = card.querySelector(".lb-life-extra"); if (!slot || slot.querySelector(".pm-mini")) continue;
-    const b = document.createElement("button"); b.type = "button"; b.className = "pm-mini"; b.dataset.id = id; b.setAttribute("aria-label", IT[id].name + " 링크 복사"); b.innerHTML = IC_LINK + "링크 복사";
+    const b = document.createElement("button"); b.type = "button"; b.className = "pm-mini"; b.dataset.id = id; b.setAttribute("aria-label", IT[id].name + " 링크 복사"); b.innerHTML = IC_LINK + '<span class="pm-t">링크 복사</span>'; b.title = IT[id].name + " 링크 복사";
     b.addEventListener("click", e => { e.stopPropagation(); e.preventDefault(); copyLink(id); });
     for (const ev of ["pointerdown", "pointerup", "mousedown", "touchstart", "keydown", "keyup", "dblclick"]) b.addEventListener(ev, e => e.stopPropagation());   // 카드(문으로 걸어가기)가 같이 눌리지 않게
     slot.appendChild(b);
