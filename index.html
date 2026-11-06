@@ -3347,6 +3347,8 @@ html.dgn-touch .dgn-use{bottom:calc(190px + env(safe-area-inset-bottom,0px))}
 .dgn-auto-controls{position:relative;z-index:10;display:grid;gap:5px;justify-items:end;pointer-events:auto}
 .dgn-auto-controls button{min-height:42px;font-size:13px;white-space:nowrap;padding:6px 10px}
 #dgn-auto-move{border-color:#f6cd68;font-weight:900}
+#dgn-next-now{pointer-events:auto;background:#f6cd68;color:#251a07;z-index:10;min-height:42px}
+#dgn-next-now[hidden]{display:none}
 html.dgn-touch .dgn-use{bottom:calc(232px + env(safe-area-inset-bottom,0px))}
 .dgn-auto-controls button[aria-pressed="true"]{background:#f6cd68;color:#16142a}
 /* ===DGN_CSS_END=== */
@@ -35687,6 +35689,7 @@ function interact(G) {
   const nr = G.near; if (!nr || G.over) return false;
   if (nr.kind === "chest") { openChest(G, nr.ref); return true; }
   if (nr.kind === "portal") {
+    if (nr.ref === clearedNextPortal(G)) { nextFloorNow(G, G.cur); return true; }
     if (G.party && nr.ref.to > G.floor) { travel(G, nr.ref.to, "party-next"); return true; }
     if (G.hs.length > 1) { const al = aliveHeroes(G), nn = al.filter(h => hyp(h.P.x - nr.ref.x, h.P.y - nr.ref.y) < 110).length; if (nn < al.length) { emit(G, "toast", {text: "동료가 모두 포탈 가까이 와야 해요 (" + nn + "/" + al.length + ")", kind: "warn"}); return true; } }
     travel(G, nr.ref.to, "portal"); return true; }
@@ -35699,17 +35702,27 @@ function interact(G) {
   }
   return false;
 }
+function clearedNextPortal(G) {
+  return G.bs.state === "cleared" && G.portals.find(p => p.boss && p.to > G.floor);
+}
+function nextFloorNow(G, hero) {
+  const portal = clearedNextPortal(G);
+  if (!portal || G.travel || !G.hs.includes(hero) || isDead(G, hero)) return false;
+  G.ask = null;
+  return travel(G, portal.to, "cleared-next");
+}
 function partyLock(G, n) {   // 6차: 파티는 '모두에게 열린 층'까지만 간다 → 막는 사람 이름(없으면 "")
   if (n === 1) return ""; for (const h of G.hs) if (!isOpen(h.char, n)) return h.name || "동료"; return "";
 }
 function travel(G, n, how) {
   if (G.travel) return false;
   const forward = how === "party-next" && G.party && n > G.floor;
-  const lk = G.hs.length > 1 && !forward ? partyLock(G, n) : (!isOpen(G.char, n) && n !== 1 ? "나" : "");
+  const cleared = how === "cleared-next" && clearedNextPortal(G)?.to === n;
+  const lk = cleared ? "" : G.hs.length > 1 && !forward ? partyLock(G, n) : (!isOpen(G.char, n) && n !== 1 ? "나" : "");
   if (lk) { emit(G, "toast", {text: lk === "나" ? "아직 열리지 않은 층이에요." : lk + " 님은 아직 " + n + "층이 열리지 않았어요. 파티는 모두에게 열린 층까지만 갈 수 있어요.", kind: "warn", h: 0}); return false; }
   /* 5차: 이전 층으로 돌아가는 포탈은 확인 창을 거친다(UI 가 travelAnswer 로 답한다). 시험 봇(autoTravel)은 바로 */
   if (how === "portal" && n < G.floor && !G.autoTravel) { if (!G.ask) { G.ask = {to: n, from: G.floor}; emit(G, "travelAsk", {to: n, from: G.floor}); } return false; }
-  if (how === "portalok" || forward) how = "portal";
+  if (how === "portalok" || forward || cleared) how = "portal";
   if (G.autoTravel) { enterFloor(G, n, how); return true; } G.travel = {to: n, how: how || ""}; emit(G, "travel", {to: n, how: how || ""}); return true; }
 function travelAnswer(G, yes) {
   const a = G.ask; G.ask = null; if (!a) return false; if (yes) return travel(G, a.to, "portalok");
@@ -35887,7 +35900,7 @@ function botInput(G) {
 const randHero = G => { const al = aliveHeroes(G); return al.length ? al[(rand() * al.length) | 0] : G.hs[0]; };
 const H = {randHero, aliveHeroes, isDead, bind, withHero, rayLen, beamLen, beamEnd, inView, D, shotE, hurtPlayer, spawnMob, fxP, fxRing, fxText, shakeIt, boxSolid, moveBody, los, blockedAt, tilePos, tileOf, nearestMob, emit, sfx, hitMob, killMob, adiff, ELEM, mobSize, MAX_MOBS, bossDefeated, unstick, weightedDef};
 return {heroMove, nearest, setupTown, openFloor, updateFx, bind, withHero, addHero, removeHero, reviveHero, allDead, aliveHeroes, isDead, dmin, partyLock, setPartyMul, ackDrop, reveal, collect, mkFlow, newP, MAX_HEROES, HF, REVIVE_AUTO, REVIVE_HOLD, REVIVE_R, spreadHeroes,
-  forceHero, HORDE, startHorde, updateHorde, setPartySize: (G, n) => { G.partySize = cl(n | 0 || 1, 1, 8); setPartyMul(G); return G.partySize; }, DASH, startDodge, travelAnswer, placeArrival, rayLen, beamLen, DCFG, initCount, skMeta, create, enterFloor, step, respawn, refreshStats, usePotion, potionCount, interact, travel, botInput, wrapSave, unwrapSave, packExtra, unpackExtra, openMax, isOpen, openFloor, evtNextDelay, evtPickFloor, updateEvent, EVT_MIN, EVT_MAX, EVT_EXPIRE, spikeState, healPlayer, basicOf, hitMob, rarOf, H, X, TILE, PLAYER_R, mobSize, altarRematch, openChest, gainXp, spawnPack, spawnMob, startBoss, bossChoice, ropeFollow, tileOf, nearestMob, SPIKE_PER};
+  forceHero, HORDE, startHorde, updateHorde, setPartySize: (G, n) => { G.partySize = cl(n | 0 || 1, 1, 8); setPartyMul(G); return G.partySize; }, DASH, startDodge, travelAnswer, placeArrival, rayLen, beamLen, DCFG, initCount, skMeta, create, enterFloor, step, respawn, refreshStats, usePotion, potionCount, interact, travel, clearedNextPortal, nextFloorNow, botInput, wrapSave, unwrapSave, packExtra, unpackExtra, openMax, isOpen, openFloor, evtNextDelay, evtPickFloor, updateEvent, EVT_MIN, EVT_MAX, EVT_EXPIRE, spikeState, healPlayer, basicOf, hitMob, rarOf, H, X, TILE, PLAYER_R, mobSize, altarRematch, openChest, gainXp, spawnPack, spawnMob, startBoss, bossChoice, ropeFollow, tileOf, nearestMob, SPIKE_PER};
 })();
 
 /* dungeon_boss.js — 던전 인 라운드비: 보스 패턴·디자인표(10층마다 고유 보스, 중간 층은 변주).
@@ -36510,6 +36523,7 @@ function build() {
           <button type="button" class="dgn-btn" id="dgn-auto-move" aria-pressed="true" title="자동 이동 스킬을 보스에게만 사용해요. 직접 사용은 언제든 가능해요.">이동 스킬: 보스전만</button>
           <button type="button" class="dgn-btn" id="dgn-autoskill" aria-pressed="false">스킬 자동사용 꺼짐</button>
         </div>
+        <button type="button" class="dgn-btn" id="dgn-next-now" data-act="dgn-next-now" hidden>다음 층 바로 가기</button>
         <div class="dgn-mmw" data-act="dgn-map" role="button" aria-label="지도 (M)"><canvas class="dgn-mm" id="dgn-mm" width="224" height="224"></canvas><div class="dgn-bh" id="dgn-bh" aria-live="off"></div></div>
         <div class="dgn-sys"><button class="dgn-ib spd" id="dgn-spd" data-act="dgn-spd" aria-label="배속 (X)" title="배속 1·1.15·1.3배 (X)"><b id="dgn-spd-t">×1</b></button><button class="dgn-ib exit" data-act="dgn-ask" aria-label="나가기" title="나가기 (진행은 자동 저장)">${svgI(ICO.exit)}<span>나가기</span></button></div>
       </div>
@@ -36884,6 +36898,9 @@ function hud(dt) {
     el.classList.toggle("empty", empty); const cool = s.cd > 0 && !empty; el.classList.toggle("cool", cool); el.classList.toggle("rdy", !cool && !empty); if (cool) { el.querySelector(".cd").style.setProperty("--p", (s.cd / Math.max(.1, s.max)) * 100 + "%"); setT(el.querySelector(".cdn"), s.cd >= 10 ? String(Math.ceil(s.cd)) : s.cd.toFixed(1)); } else el.querySelector(".cd").style.setProperty("--p", "0%");
   }
   syncAutoSkill(G);
+  const next = core.clearedNextPortal(G), nextButton = $("#dgn-next-now");
+  nextButton.hidden = !next || !!G.over || !!V.tr;
+  if (next) setT(nextButton, next.to + "층 바로 가기");
   const shout = V.net?.shout, shoutEl = $("#dgn-shout");
   shoutEl.hidden = !shout || shout.until <= performance.now();
   if (!shoutEl.hidden) setT(shoutEl, shout.name + " · " + shout.text);
@@ -37325,6 +37342,12 @@ Object.assign(A, {
   "dgn-floors": () => { openFloors(); }, "dgn-map": () => { if (V.ui === "map") closeOv(); else openBigMap(); },
   "dgn-ftab": b => renderFloors(+b.dataset.d, (+b.dataset.d) * 10 + 1),
   "dgn-fpick": b => { const f = +b.dataset.f; if (!core.isOpen(V.G.char, f)) { note("아직 열리지 않은 층이에요. 아래층의 보스를 먼저 잡아요.", "warn"); return; } renderFloors(Math.floor((f - 1) / 10), f); dgSfx("dgUi"); },
+  "dgn-next-now": () => {
+    const G = V.G;
+    if (!G || V.tr || G.over || !core.clearedNextPortal(G)) return;
+    if (V.net?.role === "guest") dgnNet.nextFloorNow();
+    else core.nextFloorNow(G, G.hs[0]);
+  },
   "dgn-rope": () => { if (V.G && V.net) V.net.role === "guest" ? dgnNet.followRope() : core.ropeFollow(V.G, V.G.hs[0]); },
   "dgn-boss-now": () => { if (V.G) V.net?.role === "guest" ? dgnNet.bossChoice(false) : core.bossChoice(V.G, V.G.hs[0], false); },
   "dgn-boss-wait": () => { if (V.G) V.net?.role === "guest" ? dgnNet.bossChoice(true) : core.bossChoice(V.G, V.G.hs[0], true); },
@@ -37587,7 +37610,7 @@ function hostSay(S, idx, message) {
 function hostMsg(S, m, from) {
   if (!m || typeof m !== "object") return; const G = S.G; if (!G) return;
   if (m.t === "bg") { const r = bigRecv(S, from, m); if (r) hostBig(S, from, r); return; }
-  const h = S.byNet[from]; if (m.t === "rope" && h && m.floor === G.floor) { core.ropeFollow(G, h); return; } if (m.t === "autoSkill" && h) { h.autoSkill = m.on === true; h.bossOnlyMove = m.bossOnlyMove !== false; return; } if (m.t === "bossChoice" && h && m.floor === G.floor) { core.bossChoice(G, h, !!m.wait); return; } if (m.t === "say" && h) { hostSay(S, h.idx, m.s); return; } if (m.t === "i") { if (h) hostInput(S, h, m); return; }
+  const h = S.byNet[from]; if (m.t === "nextFloor" && h && m.floor === G.floor) { core.nextFloorNow(G, h); return; } if (m.t === "rope" && h && m.floor === G.floor) { core.ropeFollow(G, h); return; } if (m.t === "autoSkill" && h) { h.autoSkill = m.on === true; h.bossOnlyMove = m.bossOnlyMove !== false; return; } if (m.t === "bossChoice" && h && m.floor === G.floor) { core.bossChoice(G, h, !!m.wait); return; } if (m.t === "say" && h) { hostSay(S, h.idx, m.s); return; } if (m.t === "i") { if (h) hostInput(S, h, m); return; }
   if (m.t === "ack" && h) { core.ackDrop(G, m.id | 0, !!m.ok); return; }
   if (m.t === "rdy") { S.ready[from] = m.v ? 1 : 0; sendRoster(S); return; }
   if (m.t === "pong") return;
@@ -37969,6 +37992,10 @@ function installEntry() {
 
 return {N, ADV, S: () => N.S, active: () => !!N.S, visitor, soloContinue, role: () => N.S && N.S.role, openRoom, joinByCode, entPoll, ENT, advSet, advTagOf, ADV_RE, route, hostPost, guestFrame, leave, sendRoster, installEntry, hostBegin, guestBegin, applySnap, mirrorEnter, hostMsg, guestMsg, sendSnap, bigSend, bigRecv, myNo, knxOn,
   setReady(v) { const S = N.S; if (S && S.role === "guest") safe(() => S.sess.send({t: "rdy", v: v ? 1 : 0})); },
+  nextFloorNow() {
+    const S = N.S;
+    if (S?.role === "guest" && !S.hostLost) safe(() => S.sess.send({t: "nextFloor", floor: S.G.floor}));
+  },
   followRope() {
     const S = N.S;
     if (S?.role === "guest" && !S.hostLost) safe(() => S.sess.send({t: "rope", floor: S.G.floor}));
