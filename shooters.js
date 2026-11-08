@@ -38,6 +38,20 @@
   wall(5,4,9,4); wall(4,23,7,23);
   const spawns = [[2.5,2.5],[3.5,2.5],[17.5,2.5],[18.5,2.5],[2.5,13.5],[3.5,13.5],[17.5,13.5],[18.5,13.5],[10.5,24.5],[11.5,24.5]];
   const solid = (x,y)=>floorGrid[Math.floor(y)]?.[Math.floor(x)]!==0;
+  const wallShades=[[169,159,143],[112,151,161]].map(palette=>
+    Array.from({length:32},(_,level)=>`rgb(${palette.map(channel=>Math.round(channel*level/31)).join(",")})`));
+  function castWall(x,y,dx,dy) {
+    let col=Math.floor(x),row=Math.floor(y),depth=0,side=0;
+    const stepX=Math.sign(dx),stepY=Math.sign(dy);
+    const strideX=Math.abs(1/dx),strideY=Math.abs(1/dy);
+    let nextX=dx===0?Infinity:(dx>0?col+1-x:x-col)*strideX;
+    let nextY=dy===0?Infinity:(dy>0?row+1-y:y-row)*strideY;
+    while(!solid(col,row)){
+      if(nextX<nextY){depth=nextX;nextX+=strideX;col+=stepX;side=0;}
+      else {depth=nextY;nextY+=strideY;row+=stepY;side=1;}
+    }
+    return {depth:Math.max(.035,depth),side,col,row};
+  }
   function clear(a,b) {
     const steps = Math.ceil(distance(a,b)*8);
     for(let i=1;i<steps;i++) {
@@ -79,7 +93,7 @@
     dialog.className="brawl rb-shooter";
     window.roundbArenaScreen(dialog);
     dialog.innerHTML=`
-      <header><strong>${name}</strong><span data-hud></span><button type="button" data-action="exit">로비로</button></header>
+      <header><strong>${name}</strong><span data-hud></span>${fps?'<label class="shooter-sensitivity">회전 감도 <input data-sensitivity type="range" min="15" max="150" value="45"><output data-sensitivity-value>45%</output></label>':""}<button type="button" data-action="exit">로비로</button></header>
       <div class="brawl-controls">
         ${fps?'<select data-match aria-label="총격전 방식"><option value="objective">설치·해체전 · 최대 7라운드</option><option value="deathmatch">팀 데스매치 · 20점</option></select>':""}
         <button type="button" data-action="solo">AI와 플레이</button><button type="button" data-action="host">온라인 방 만들기</button>
@@ -99,16 +113,21 @@
       </div>`:""}
       <aside data-scoreboard class="arena-combat shooter-scoreboard" hidden aria-label="전적판"></aside>
       <div class="arena-combat shooter-matchbar"><button type="button" data-action="score">전적 Tab</button>
-        <button type="button" data-action="pickup">총기 줍기 F</button><span data-kda></span><span data-pickup></span></div>
+        <button type="button" data-action="pickup">총기 줍기 ${fps?"G":"F"}</button><span data-kda></span><span data-pickup></span></div>
       <div class="arena-combat shooter-link-status" data-link-status hidden role="status">방장 화면과 동기화가 지연되고 있어요.</div>
       <ol class="arena-combat shooter-feed" data-feed></ol>
+      <section data-result class="shooter-result arena-combat" hidden aria-labelledby="${id}-result">
+        <div><small>경기 종료</small><h2 id="${id}-result" data-result-title></h2><p data-final-score></p>
+        <p data-final-stats></p><button type="button" data-action="score">전체 전적</button>
+        <button type="button" data-action="exit">로비로 돌아가기</button></div>
+      </section>
       <canvas tabindex="0" aria-label="${name} 전장"></canvas>
       <div class="rb-shooter-buttons arena-combat">
         <button type="button" data-action="left">◀</button><button type="button" data-action="forward">▲</button>
         <button type="button" data-action="back">▼</button><button type="button" data-action="right">▶</button>
         <button type="button" data-action="reload">재장전 R</button>
         ${fps?`<button type="button" data-action="fire">발사</button><button type="button" data-action="zoom" aria-pressed="false">조준 확대</button><button type="button" data-action="weapon">무기 1–3</button>
-          <button type="button" data-action="frag">수류탄 G</button><button type="button" data-action="smoke">연막탄 H</button><button type="button" data-action="flash">섬광탄 J</button>`:""}
+          <button type="button" data-action="frag">수류탄 4</button><button type="button" data-action="smoke">연막탄 H</button><button type="button" data-action="flash">섬광탄 J</button>`:""}
       </div>
       <p>${fps?"WASD 이동 · 마우스 드래그 조준 · 클릭 또는 Space 발사 · 1 주총 / 2 권총 / 3 칼":"WASD 또는 이동 버튼 · 마우스·터치로 조준 · 시야에 들어오면 자동 발사 · 아이템 위에서 멈춰 획득"}</p>`;
     document.body.append(dialog);
@@ -122,13 +141,27 @@
       accent:fps?"#85c9ff":"#d6bbff",category:fps?"5대5 · 전술 FPS":"2인 5팀 · 마지막 팀 생존",
       title:name,summary:fps?"라운드비의 두 목표 지점을 공방합니다. 장비를 구매하고, 공격팀은 장치를 설치하며 수비팀은 해체합니다. 4라운드 선승, 최대 7라운드입니다.":"손전등으로 좁은 복도를 살피고, 팀원과 함께 탄약과 장비를 챙겨 살아남으세요.",
       map:"회의실과 복도 전술도",preview,
-      rules:fps?[["목표","E 설치·해체 · 공격과 수비는 3라운드 뒤 교대"],["조준","우클릭 확대 · 1 주총 / 2 권총 / 3 단검"],["전술","Q 고유 능력 · G 수류탄 · H 연막 · J 섬광"]]:[["교전","손전등으로 비추면 자동 사격"],["획득","아이템 위에서 멈춰 게이지 채우기"],["관전","쓰러지면 생존 중인 팀원 화면으로 전환"]],
+      rules:fps?[["목표","E 설치·해체 · 공격과 수비는 3라운드 뒤 교대"],["조준","우클릭 확대 · 1 주총 / 2 권총 / 3 단검"],["전술","Q 고유 능력 · 4 수류탄 · G 줍기 · H 연막 · J 섬광"]]:[["교전","손전등으로 비추면 자동 사격"],["획득","아이템 위에서 멈춰 게이지 채우기"],["관전","쓰러지면 생존 중인 팀원 화면으로 전환"]],
       start:()=>{disconnect();begin();}
     });
     const sites=[{label:"A",x:5.5,y:12.5},{label:"B",x:17.5,y:15.5}];
     const signatures=["연막 전개","적 탐지","전투 자극","응급 회복"];
     const team=i=>fps?i%2:Math.floor(i/2);
     const nearbyGun=p=>state.drops.find(item=>distance(p,item)<1.2&&clear(p,item));
+    let sensitivity=.45, lastAimSend=0, aimPending=false;
+    if(fps){
+      const slider=$("[data-sensitivity]");
+      try {slider.value=localStorage.getItem("roundb-shooter-sensitivity")||"45";} catch {}
+      const syncSensitivity=()=>{
+        sensitivity=Number(slider.value)/100;
+        $("[data-sensitivity-value]").textContent=slider.value+"%";
+      };
+      syncSensitivity();
+      slider.addEventListener("input",()=>{
+        syncSensitivity();
+        try {localStorage.setItem("roundb-shooter-sensitivity",slider.value);} catch {}
+      });
+    }
     function weapon(p) { return p.w===1?pistol:p.w===2?knife:guns[p.primary]; }
     function spawn(p) {
       const [x,y]=fps?[[2.5,4.5,10.5,12.5,18.5][Math.floor(p.i/2)],p.team===(state?.attack??0)?2.5:24.5]:spawns[p.i];
@@ -138,10 +171,11 @@
     }
     function begin() {
       briefing.play();
+      $("[data-result]").hidden=true;
       cancelAnimationFrame(frame);
       const me=Number(window.lbDbg?.ME?.kn)||0;
       state={round:crypto.randomUUID(),t:0,done:false,score:Array(fps?2:5).fill(0),effects:[],loot:[],
-        tactical:fps && $("[data-match]").value==="objective",feed:[],drops:[],combatVersion:3,
+        tactical:fps && $("[data-match]").value==="objective",feed:[],drops:[],combatVersion:4,
         players:Array.from({length:10},(_,i)=>({i,k:(i+me)%10,team:team(i),kills:0,deaths:0,assists:0,credits:650}))};
       if(state.tactical) nextRound();
       else state.players.forEach(spawn);
@@ -410,7 +444,7 @@
       const board=$("[data-scoreboard]");
       const item=p.hp&&nearbyGun(p);
       $("[data-kda]").textContent=`킬 / 데스 / 어시스트  ${kda(p)}`;
-      $("[data-pickup]").textContent=item?`F · ${guns[item.gun][0]} 줍기`:"";
+      $("[data-pickup]").textContent=item?`${fps?"G":"F"} · ${guns[item.gun][0]} 줍기`:"";
       $("[data-action=pickup]").disabled=!item;
       const feed=state.feed.filter(row=>state.t-row[3]<7).map(([from,to,, ,gun])=>`<li>${KNIGHTS[from].n} <b>${gun}</b> ${KNIGHTS[to].n}</li>`).join("");
       const list=$("[data-feed]");
@@ -440,7 +474,7 @@
       matchHud(p);
       if(fps) {
         const watch=state.tactical&&!p.hp&&state.players.find(q=>q.hp&&q.team===p.team);
-        firstPerson(watch||p,w,h);
+        firstPerson(watch||p,w,h,watch||role!=="guest"?undefined:heading);
         if(state.tactical)tacticalHud(p,watch,w,h);
         else dialog.querySelector(".shooter-tactical").hidden=true;
       }
@@ -455,6 +489,14 @@
         paid=state.round;
         const win=state.winner===p.team;
         const reward=window.knx.reward?.grant(id,{win,secs:state.t,players:10,humans:state.humans||humans.size+1,score:p.kills*120,once:id+":"+state.round});
+        const result=state.winner<0?"무승부":win?"승리":"패배";
+        $("[data-result-title]").textContent=result;
+        $("[data-result]").dataset.outcome=win?"win":state.winner<0?"draw":"loss";
+        $("[data-final-score]").textContent=fps
+          ? `우리 팀 ${state.score[p.team]}  :  ${state.score[1-p.team]} 상대 팀`
+          : state.winner<0?"동점으로 경기 종료":`${state.winner+1}팀 승리`;
+        $("[data-final-stats]").textContent=`${p.kills}킬 · ${p.deaths}데스 · ${p.assists}어시스트 · +${reward?.rp||0} RP`;
+        $("[data-result]").hidden=false;
         $("[data-message]").textContent=(state.winner<0?"무승부":win?"우리 팀 승리":"상대 팀 승리")+` · ${p.kills}킬 · +${reward?.rp||0} RP`;
       }
     }
@@ -536,21 +578,32 @@
         ctx.moveTo(x+Math.cos(p.a)*size*.2,y+Math.sin(p.a)*size*.2);
         ctx.lineTo(x+Math.cos(p.a)*size*2.1,y+Math.sin(p.a)*size*2.1);ctx.stroke();ctx.lineWidth=1;}
     }
-    function firstPerson(p,w,h) {
-      ctx.fillStyle="#303344";ctx.fillRect(0,0,w,h/2);ctx.fillStyle="#635746";ctx.fillRect(0,h/2,w,h/2);
-      const fov=zoom?.56:1.12, columns=Math.min(280,w), width=w/columns, depths=[];
+    function firstPerson(p,w,h,viewHeading=p.a) {
+      const backdrop=ctx.createLinearGradient(0,0,0,h);
+      backdrop.addColorStop(0,"#263648");backdrop.addColorStop(.5,"#718493");
+      backdrop.addColorStop(.501,"#35404a");backdrop.addColorStop(1,"#18232e");
+      ctx.fillStyle=backdrop;ctx.fillRect(0,0,w,h);
+      for(let row=1;row<=8;row++){
+        const y=h*.5+h*.5/(row*.7+1);
+        ctx.fillStyle="#b6d3de20";ctx.fillRect(0,y,w,1);
+      }
+      const fov=zoom?.56:1.12, columns=Math.min(320,w), width=w/columns, depths=[];
       for(let i=0;i<columns;i++){
-        const a=p.a+fov*(i/columns-.5),dx=Math.cos(a),dy=Math.sin(a);
-        let d=.035;
-        while(d<30&&!solid(p.x+dx*d,p.y+dy*d))d+=.065;
-        const z=d*Math.cos(a-p.a);depths.push(z);
-        const height=Math.min(h*2,h*1.1/z),shade=Math.max(.18,1-z/21);
-        ctx.fillStyle=`rgb(${Math.round(199*shade)},${Math.round(176*shade)},${Math.round(170*shade)})`;
-        ctx.fillRect(i*width,(h-height)/2,width+1,height);
+        const a=viewHeading+fov*(i/columns-.5),dx=Math.cos(a),dy=Math.sin(a);
+        const hit=castWall(p.x,p.y,dx,dy);
+        const z=hit.depth*Math.cos(a-viewHeading);depths.push(z);
+        const height=Math.min(h*2,h*1.1/z),shade=Math.max(.25,1-z/24)*(hit.side?.78:1);
+        const seam=(hit.side?p.x+dx*hit.depth:p.y+dy*hit.depth)%1<.035;
+        ctx.fillStyle=wallShades[Number(hit.col>=14)][Math.round(31*shade*(seam?.78:1))];
+        const top=(h-height)/2;
+        ctx.fillRect(i*width,top,width+1,height);
+        ctx.fillStyle=hit.col>=14?"#55c9d364":"#e0a65f66";
+        ctx.fillRect(i*width,top+height*.22,width+1,Math.max(1,height*.025));
+        ctx.fillStyle="#15223468";ctx.fillRect(i*width,top+height*.82,width+1,height*.18);
       }
       const sprites=state.players.filter(q=>q.hp&&q!==p&&visible(p,q)).sort((a,b)=>distance(p,b)-distance(p,a));
       for(const q of sprites) {
-        const a=offset(angle(p,q),p.a),d=distance(p,q)*Math.cos(a), x=w*(.5+a/fov),size=Math.min(h*1.1,h*.75/d);
+        const a=offset(angle(p,q),viewHeading),d=distance(p,q)*Math.cos(a), x=w*(.5+a/fov),size=Math.min(h*1.1,h*.75/d);
         if(d<=0)continue;
         const col=Math.floor(x/width);
         if(col<0||col>=columns||depths[col]<d-.12)continue;
@@ -564,13 +617,13 @@
         }
       }
       for(const item of state.drops){
-        const a=offset(angle(p,item),p.a),d=distance(p,item)*Math.cos(a),x=w*(.5+a/fov);
+        const a=offset(angle(p,item),viewHeading),d=distance(p,item)*Math.cos(a),x=w*(.5+a/fov);
         if(d<=.12||Math.abs(a)>=fov/2||depths[Math.floor(x/width)]<d-.12)continue;
         drawDroppedGun(x,h/2+Math.min(h*.44,h*.44/d),Math.min(76,h*.25/d));
       }
       for(const cloud of state.effects) {
         if(cloud.type!==1||cloud.armed||!clear(p,cloud))continue;
-        const bearing=offset(angle(p,cloud),p.a), depth=distance(p,cloud)*Math.cos(bearing);
+        const bearing=offset(angle(p,cloud),viewHeading), depth=distance(p,cloud)*Math.cos(bearing);
         if(depth<=.1||Math.abs(bearing)>fov*.75)continue;
         const x=w*(.5+bearing/fov), radius=Math.min(h,h*.7/depth);
         const gradient=ctx.createRadialGradient(x,h/2,0,x,h/2,radius);
@@ -603,7 +656,7 @@
         vignette.addColorStop(0,"#ef304000");vignette.addColorStop(1,"#ef3040aa");ctx.fillStyle=vignette;ctx.fillRect(0,0,w,h);
       }
       if(state.tactical && p.blind<=0)for(const point of sites){
-        const bearing=offset(angle(p,point),p.a);
+        const bearing=offset(angle(p,point),viewHeading);
         if(Math.abs(bearing)>fov/2||!clear(p,point))continue;
         const x=w*(.5+bearing/fov),y=h*.63;
         ctx.save();ctx.textAlign="center";ctx.font="900 15px system-ui";
@@ -655,9 +708,16 @@
       $("[data-message]").textContent="방장 화면에서 경기 처리 오류가 발생했어요. 방을 다시 열어 주세요.";
     }
     function disconnect() {
-      clearInterval(snapshotWatch);heldAt=null;$("[data-link-status]").hidden=true;
+      $("[data-result]").hidden=true;
+      clearInterval(snapshotWatch);aimPending=false;lastAimSend=0;heldAt=null;$("[data-link-status]").hidden=true;
       room?.close();room=null;role="";slot=0;state=null;humans.clear();keys.clear();controls.clear();fire=false;
-      cancelAnimationFrame(frame);$("[data-scoreboard]").hidden=true;briefing.show();zoom=false;$('[data-action="zoom"]')?.setAttribute("aria-pressed","false");$('[data-action="start"]').hidden=true;
+      cancelAnimationFrame(frame);frame=0;$("[data-scoreboard]").hidden=true;briefing.show();zoom=false;$('[data-action="zoom"]')?.setAttribute("aria-pressed","false");$('[data-action="start"]').hidden=true;
+    }
+    function drawGuest(now) {
+      if(role!=="guest"||!state){frame=0;return;}
+      if(aimPending&&now-lastAimSend>=33){aimPending=false;lastAimSend=now;send();}
+      draw();
+      frame=state.done?0:requestAnimationFrame(drawGuest);
     }
     function connect(next) {
       disconnect();role=next;$("[data-message]").textContent="연결 중…";
@@ -667,12 +727,13 @@
         accept:()=>!state||state.done,join(i){humans.set(i,{});},leave(i){humans.delete(i);},input:receive,
         state(nextState) {
           if(nextState?.players?.length!==10)return;
-          if(nextState.combatVersion!==3){
+          if(nextState.combatVersion!==4){
             disconnect();$("[data-message]").textContent="방장이 이전 버전이에요. 둘 다 새로고침하고 다시 입장해 주세요.";return;
           }
-          if(state?.round!==nextState.round||state?.roundNo!==nextState.roundNo){heading=nextState.players[slot].a;dialog.querySelector("details").open=false;$("[data-message]").textContent="교전 시작";}
+          if(state?.round!==nextState.round||state?.roundNo!==nextState.roundNo){$("[data-result]").hidden=true;heading=nextState.players[slot].a;dialog.querySelector("details").open=false;$("[data-message]").textContent="교전 시작";}
           briefing.play();state=nextState;lastSnapshot=performance.now();
-          $("[data-link-status]").hidden=true;draw();
+          $("[data-link-status]").hidden=true;
+          if(!frame)frame=requestAnimationFrame(drawGuest);
         }
       });
       if(role==="host")room.host({listed: $("[data-public]").checked});else {
@@ -701,14 +762,14 @@
     function aim(event) {
       if(fps){
         const dx=heldAt?event.clientX-heldAt.x:event.movementX;
-        if(Number.isFinite(dx))heading+=Math.max(-70,Math.min(70,dx))*.008;
+        if(Number.isFinite(dx))heading+=Math.max(-28,Math.min(28,dx))*.004*sensitivity;
         if(heldAt)heldAt.x=event.clientX;
       }
       if(!fps&&state){
         const p=state.players[slot],box=canvas.getBoundingClientRect(),s=Math.min(box.width/21,box.height/27);
         heading=Math.atan2(event.clientY-box.top-(box.height-s*27)/2-p.y*s,event.clientX-box.left-(box.width-s*21)/2-p.x*s);
       }
-      send();
+      if(role==="guest")aimPending=true;
     }
     canvas.addEventListener("pointermove",event=>{if(state&&!state.done&&(event.pointerType==="mouse"||heldAt))aim(event);});
     canvas.addEventListener("pointerup",()=>{
@@ -756,11 +817,11 @@
       if(key==="tab"){
         event.preventDefault();event.stopImmediatePropagation();$("[data-scoreboard]").hidden=false;draw();return;
       }
-      if(key!=="shift"&&(!"wasd r123ghjeqf".includes(key)||key.length!==1))return;
+      if(key!=="shift"&&(!"wasd r1234ghjeqf".includes(key)||key.length!==1))return;
       event.preventDefault();event.stopImmediatePropagation();
       if(["w","a","s","d","e","shift"].includes(key))keys.add(key);
       if(key===" ")fire=true;
-      const command={r:"reload",1:"0",2:"1",3:"2",g:"frag",h:"smoke",j:"flash",q:"signature",f:"pickup"}[key];
+      const command={r:"reload",1:"0",2:"1",3:"2",4:"frag",g:fps?"pickup":"frag",h:"smoke",j:"flash",q:"signature",f:fps?undefined:"pickup"}[key];
       send(event.repeat?undefined:command);
     },true);
     window.addEventListener("keyup",event=>{
