@@ -144,3 +144,7 @@ section.brawl canvas { flex: 1 0 40dvh; height: auto; min-height: 0; }
 .blood .blood-targets { flex:1 1 100%; display:grid; grid-template-columns:repeat(10,minmax(0,1fr)); }
 .blood .blood-targets button { padding:4px; border-color:#698894; }
 @media(max-width:640px){ .blood .blood-targets {grid-template-columns:repeat(5,minmax(0,1fr));} }
+
+.blood .blood-live:not([hidden]) { padding:10px 14px; margin:0 0 8px; background:#224a40; color:#d3ffeb; border:1px solid #7ed9b1; border-radius:8px; font-weight:800; }
+.blood .blood-live[hidden] { display:none; }
+.blood [data-play],.blood [data-start] { background:#315d51; border-color:#92ddbb; }

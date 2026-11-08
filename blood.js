@@ -19,12 +19,13 @@
     <header><strong>진화 블러드</strong><span data-hud></span><button type="button" data-exit>로비로</button></header>
     <div class="brawl-controls">
       <select data-rule aria-label="경기 방식"><option value="hour">무한 생산 · 1시간</option><option value="elim">본진 섬멸전</option></select>
-      <button type="button" data-play>혼자 하기</button><button type="button" data-host>방 만들기</button>
+      <button type="button" data-play>혼자 경기 시작</button><button type="button" data-host>방 만들기</button>
       <label class="arena-public"><input type="checkbox" data-public> 공개방</label>
       <input data-code maxlength="6" placeholder="초대 코드" aria-label="초대 코드">
-      <button type="button" data-join>참가</button><button type="button" data-start hidden>온라인 시작</button>
+      <button type="button" data-join>참가</button><button type="button" data-start hidden>온라인 경기 시작</button>
     </div>
     <p data-message role="status">처치 수가 오르면 다음 유닛이 생산됩니다.</p>
+    <p class="arena-combat blood-live" data-live role="status" hidden></p>
     <canvas aria-label="진화 블러드 전장"></canvas>
     <div class="brawl-controls arena-combat"><button type="button" data-command="drone">드론 이동</button>
       <button type="button" data-command="attack">공격 이동</button><button type="button" data-command="move">이동</button></div>
@@ -32,7 +33,7 @@
       <div class="blood-targets">${bases.map((_,i)=>`<button type="button" data-target="${i}">${i+1}번</button>`).join("")}</div>
       <div class="blood-officer"><img alt="" src="${kSrc(4,false)}"><span>지휘관 대기 중</span></div>
     </section>
-    <p>화면 가장자리 / 방향키로 시점 이동 · 유닛 드래그 선택 · 우클릭 이동 / 공격 이동 · 지휘소에서 본진을 고르면 지휘관이 일반 병력을 보냅니다.</p>`;
+    <p>WASD 드론 이동 · 화면 가장자리 / 방향키로 시점 이동 · 유닛 드래그 선택 · 우클릭 이동 / 공격 이동 · 지휘소에서 본진을 고르면 지휘관이 일반 병력을 보냅니다.</p>`;
   document.body.append(dialog);
   const $ = selector => dialog.querySelector(selector);
   const canvas = $("canvas"), ctx = canvas.getContext("2d");
@@ -42,13 +43,18 @@
     if(window.dgr?.mobDataURL)image.src=window.dgr.mobDataURL({shape,c:colors[i],c2:"#3a263f",elite:i===8},80);
     return image;
   });
-  const camera={x:0,y:0}, cameraKeys=new Set();
+  const camera={x:0,y:0}, cameraKeys=new Set(), droneKeys=new Set();
+  const movementKeys={KeyW:"w",KeyA:"a",KeyS:"s",KeyD:"d"};
   let edge, cameraTime=0;
   const range = (n,min,max) => Math.min(max,Math.max(min,n));
   const distance = (a,b) => Math.hypot(a.x-b.x,a.y-b.y);
   const heroEvery = 30;
   const names = new Map();
-  const myName = () => String(window.knx?.me?.()?.nick || SAVE.nick || "기사").slice(0,18);
+  function myName() {
+    let nick;
+    try { nick=typeof window.knx.me==="function"?window.knx.me()?.nick:window.knx.me?.nick; } catch {}
+    return String(nick||(typeof SAVE!=="undefined"&&SAVE.nick)||"기사").slice(0,18);
+  }
   const playerName = id => names.get(id) || (id === slot ? myName() : "AI " + (id+1));
   const selected = new Set();
   let state, room, role="", slot=0, frame, previous, lastPublish, command="drone", drag, view;
@@ -61,8 +67,24 @@
     rules:[["지휘","지휘소에서 적 본진을 선택해 일반 병력을 보냅니다"],["정밀 조작","드래그로 유닛을 선택하고 우클릭으로 공격 이동"],["승리","본진 섬멸전 또는 1시간 무한 생산"]],
     start:()=>{disconnect();begin();}
   });
+  briefing.briefing.querySelector(".arena-launch").textContent="혼자 경기 시작";
   function level(kills) {
-    return species.findLastIndex(type=>kills>=type[1]);
+    let rank=0;
+    while(rank+1<species.length&&kills>=species[rank+1][1])rank++;
+    return rank;
+  }
+  function showStarted() {
+    const live=$("[data-live]");
+    live.textContent="경기 시작! · WASD 드론 이동 · 방향키 시점 이동";
+    live.hidden=false;
+    $("[data-message]").textContent="교전 중 · 병력이 자동으로 생산됩니다.";
+    $("[data-play]").hidden=true;
+    $("[data-start]").hidden=true;
+  }
+  function stopWithError(error) {
+    console.error("Blood match",error);
+    disconnect();
+    $("[data-message]").textContent="경기를 진행할 수 없어요. 경기 시작 버튼으로 다시 시도해 주세요.";
   }
   function unitFor(owner,id,hero=false) {
     const stats=hero?["영웅",0,310,36,155,145,"★"]:species[level(owner.kills)];
@@ -73,13 +95,14 @@
   function begin() {
     if (role==="guest") return;
     briefing.play();
+    showStarted();
     cancelAnimationFrame(frame);
     state={time:0,rule:$("[data-rule]").value,online:role==="host",done:false,nextId:0,units:[],
       players:bases.map((base,id)=>({id,...base,kills:0,hp:baseHP,respawn:0,spawn:0,nextHero:heroEvery,order:null,pad:-1}))};
     Object.assign(camera,bases[slot]); cameraTime=0;
     selected.clear(); command="drone"; drag=null;
     previous=performance.now(); lastPublish=0;
-    frame=requestAnimationFrame(tick);
+    runFrame(()=>tick(previous));
   }
   function alive(p) { return state.rule==="hour" || p.hp>0; }
   function walk(object,to,speed,dt) {
@@ -107,6 +130,11 @@
     if (!state || state.done) return;
     const owner=state.players[id];
     if (!alive(owner)) return;
+    if(message.kind==="steer"){
+      owner.steer={x:Math.sign(Number(message.x)||0),y:Math.sign(Number(message.y)||0)};
+      if(owner.steer.x||owner.steer.y)owner.order=null;
+      return;
+    }
     if (message.kind === "home") {
       orderArmy(owner,bases[id],"move");
       return;
@@ -117,7 +145,7 @@
     }
     if (!Number.isFinite(message.x) || !Number.isFinite(message.y)) return;
     const point={x:range(message.x,20,W-20),y:range(message.y,20,H-20)};
-    if (message.kind==="drone") { owner.order=point; return; }
+    if (message.kind==="drone") { owner.steer=null; owner.order=point; return; }
     if (!["attack","move"].includes(message.kind) || !Array.isArray(message.ids)) return;
     const ids=new Set(message.ids.slice(0,45));
     for (const unit of state.units) {
@@ -146,7 +174,11 @@
           p.nextOrder=state.time+8+p.id%3;
         }
       }
-      if (p.order && walk(p,p.order,240,dt)) p.order=null;
+      if(p.steer?.x||p.steer?.y){
+        const scale=240*dt/Math.hypot(p.steer.x,p.steer.y);
+        p.x=range(p.x+p.steer.x*scale,20,W-20);
+        p.y=range(p.y+p.steer.y*scale,20,H-20);
+      } else if (p.order && walk(p,p.order,240,dt)) p.order=null;
       p.spawn-=dt;
       if (p.spawn<=0 && state.units.filter(u=>u.owner===p.id && !u.hero).length<cap) {
         const unit=unitFor(p,++state.nextId);
@@ -196,6 +228,9 @@
     const standings=(state.rule==="elim" && standing.length===1 ? standing : state.players.slice()).sort((a,b)=>b.kills-a.kills);
     state.done=true; state.winner=standings[0].id;
   }
+  function runFrame(callback) {
+    try {callback();} catch(error){stopWithError(error);}
+  }
   function tick(now) {
     const dt=Math.min(.05,(now-previous)/1000);
     previous=now;
@@ -203,7 +238,7 @@
       state.time+=dt; updatePlayers(dt); updateUnits(dt); result();
       if (state.done || now-lastPublish>100) {
         if (role==="host") room?.publish({
-          version:2,time:Math.round(state.time*10)/10,rule:state.rule,done:state.done,winner:state.winner,
+          version:3,time:Math.round(state.time*10)/10,rule:state.rule,done:state.done,winner:state.winner,
           players:state.players.map(p=>[Math.round(p.x),Math.round(p.y),p.kills,p.hp,p.respawn,playerName(p.id)]),
           units:state.units.map(u=>[u.id,u.owner,Math.round(u.x),Math.round(u.y),u.hp,u.max,u.hero?8:species.findIndex(type=>type[6]===u.shape)])
         });
@@ -211,7 +246,12 @@
       }
     }
     pan(now);draw();
-    if (!state.done) frame=requestAnimationFrame(tick);
+    if(state.time>=4||state.done)$("[data-live]").hidden=true;
+    if (!state.done) frame=requestAnimationFrame(next=>runFrame(()=>tick(next)));
+    else {
+      $("[data-message]").textContent=`경기 종료 · ${state.winner+1}번 본진 승리`;
+      $("[data-play]").hidden=false;
+    }
   }
   function pan(now) {
     const dt=cameraTime?Math.min(.05,(now-cameraTime)/1000):0;
@@ -220,11 +260,16 @@
     const y=Number(cameraKeys.has("ArrowDown"))-Number(cameraKeys.has("ArrowUp"))+(edge?.y||0);
     const step=760*dt/Math.max(1,Math.hypot(x,y));
     camera.x+=x*step;camera.y+=y*step;
+    if(droneKeys.size&&!x&&!y){
+      const player=state.players[slot];
+      if(player){camera.x=player.x;camera.y=player.y;}
+    }
   }
   function guestFrame(now) {
     if(!state||role!=="guest"){frame=0;return;}
     pan(now);draw();
-    frame=requestAnimationFrame(guestFrame);
+    if(state.time>=4||state.done)$("[data-live]").hidden=true;
+    frame=state.done?0:requestAnimationFrame(next=>runFrame(()=>guestFrame(next)));
   }
   function draw() {
     if (!state) return;
@@ -320,16 +365,33 @@
     }:null;
   });
   canvas.addEventListener("pointerleave",()=>{edge=null;});
+  function sendSteering(){
+    send({x:Number(droneKeys.has("d"))-Number(droneKeys.has("a")),
+      y:Number(droneKeys.has("s"))-Number(droneKeys.has("w"))},"steer");
+  }
+  function droneKey(event){
+    return movementKeys[event.code]||(/^[wasd]$/i.test(event.key)?event.key.toLowerCase():null);
+  }
   window.addEventListener("keydown",event=>{
     if(!dialog.open||!state||event.target.matches?.("input,select"))return;
-    if(event.key.startsWith("Arrow")){
+    const key=droneKey(event);
+    if(key){
+      event.preventDefault();event.stopImmediatePropagation();
+      if(!droneKeys.has(key)){droneKeys.add(key);sendSteering();}
+    } else if(event.key.startsWith("Arrow")){
       event.preventDefault();event.stopImmediatePropagation();cameraKeys.add(event.key);
     } else if(event.code==="KeyB"&&!event.repeat){
       event.preventDefault();event.stopImmediatePropagation();recall();
     }
   },true);
-  window.addEventListener("keyup",event=>cameraKeys.delete(event.key),true);
-  window.addEventListener("blur",()=>{cameraKeys.clear();edge=null;});
+  window.addEventListener("keyup",event=>{
+    cameraKeys.delete(event.key);
+    if(droneKeys.delete(droneKey(event))&&state)sendSteering();
+  },true);
+  window.addEventListener("blur",()=>{
+    cameraKeys.clear();edge=null;
+    if(droneKeys.size){droneKeys.clear();if(state)sendSteering();}
+  });
   function recall(){
     if(!state||state.done)return;
     Object.assign(camera,bases[slot]);
@@ -359,7 +421,7 @@
   });
   function disconnect() {
     room?.close();room=null;role="";slot=0;state=null;selected.clear();humans.clear();
-    cancelAnimationFrame(frame);frame=0;cameraKeys.clear();edge=null;cameraTime=0;$("[data-start]").hidden=true;briefing.show();
+    cancelAnimationFrame(frame);frame=0;cameraKeys.clear();droneKeys.clear();edge=null;cameraTime=0;$("[data-start]").hidden=true;$("[data-live]").hidden=true;$("[data-play]").hidden=false;briefing.show();
   }
   function connect(nextRole) {
     disconnect();names.clear();role=nextRole;$("[data-message]").textContent="연결 중…";
@@ -371,16 +433,16 @@
       input:issue,
       state(snapshot) {
         if (snapshot?.players?.length!==10 || !Array.isArray(snapshot.units)) return;
-        if(snapshot.version!==2){
+        if(snapshot.version!==3){
           disconnect();$("[data-message]").textContent="방장도 새로고침한 뒤 다시 입장해 주세요.";return;
         }
         briefing.play();
-        if(!state)Object.assign(camera,bases[slot]);
+        if(!state||(state.done&&!snapshot.done)){Object.assign(camera,bases[slot]);showStarted();}
         state={...snapshot,
           players:snapshot.players.map(([x,y,kills,hp,respawn,name],id)=>{if(name)names.set(id,name);return {id,x,y,kills,hp,respawn};}),
           units:snapshot.units.map(([id,owner,x,y,hp,max,type])=>({id,owner,x,y,hp,max,hero:type===8,shape:type===8?"★":species[type]?.[6]||"◆"}))
         };
-        if(!frame)frame=requestAnimationFrame(guestFrame);
+        if(!frame)frame=requestAnimationFrame(now=>runFrame(()=>guestFrame(now)));
       }
     });
     if(role==="host")room.host({listed: $("[data-public]").checked});
