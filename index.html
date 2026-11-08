@@ -7367,8 +7367,8 @@ function buildStage() {
   const b = $("#w-solo-btns").firstElementChild; if (b) b.textContent = `${s.id} 시작하기`;
 }
 function buildMode() {
-  const m = SAVE.mode === "multi" ? "multi" : SAVE.mode === "pvp" ? "pvp" : SAVE.mode === "td" || SAVE.mode === "maze" ? "td" : "solo", mm = SAVE.mode === "maze" ? "maze" : m, n = m === "td" ? clamp(SAVE.tdn || 4, 1, 5) : [2, 3, 4, 5].includes(SAVE.players) ? SAVE.players : 4, fl = FLOORS[SAVE.floor] ? SAVE.floor : "3f", pn = SAVE.pvpn === 2 ? 2 : 1;
-  $("#mode-seg").innerHTML = [["solo", "혼자"], ["multi", "다 같이"], ["pvp", "대결"], ["td", "소용돌이"], ["maze", "미로"]].map(([k, l]) => `<button role="radio" aria-checked="${k === mm}" data-act="mode" data-m="${k}">${l}</button>`).join("");
+  const m = SAVE.mode === "multi" ? "multi" : SAVE.mode === "pvp" ? "pvp" : SAVE.mode === "td" || SAVE.mode === "maze" ? "td" : "solo", mm = SAVE.mode === "maze" ? (SAVE.mzmap === "floor" ? "floor" : "maze") : m, n = m === "td" ? clamp(SAVE.tdn || 4, 1, 5) : [2, 3, 4, 5].includes(SAVE.players) ? SAVE.players : 4, fl = FLOORS[SAVE.floor] ? SAVE.floor : "3f", pn = SAVE.pvpn === 2 ? 2 : 1;
+  $("#mode-seg").innerHTML = [["solo", "혼자"], ["multi", "다 같이"], ["pvp", "대결"], ["td", "소용돌이"], ["maze", "미로"], ["floor", "라운드비 층 길"]].map(([k, l]) => `<button role="radio" aria-checked="${k === mm}" data-act="mode" data-m="${k}">${l}</button>`).join("");
   $("#wn-seg").innerHTML = (m === "td" ? [1, 2, 3, 4, 5] : [2, 3, 4, 5]).map(k => `<button role="radio" aria-checked="${k === n}" data-act="${m === "td" ? "tdn" : "wn"}" data-n="${k}">${k}명</button>`).join("");
   $("#pvp-seg").innerHTML = [[1, "1 대 1"], [2, "2 대 2 (나 + AI 동료)"]].map(([k, l]) => `<button role="radio" aria-checked="${k === pn}" data-act="pvn" data-n="${k}">${l}</button>`).join("");
   $("#wf-seg").innerHTML = Object.keys(FLOORS).map(k => `<button role="radio" aria-checked="${k === fl}" data-act="wf" data-f="${k}">${FLOORS[k].name}</button>`).join("");
@@ -7776,7 +7776,7 @@ const A = {
   stg: b => { const k = Number(b.dataset.k); if (!(k <= SAVE.sc)) { toast("앞 스테이지를 클리어하면 열려요"); sfx("click"); return; } SAVE.stg = k; persist(true); buildStage(); sfx("click"); },
   "stage-next": () => { const o = UI.lastWorld; if (!o || o.stage == null) return; const k = Math.min(STAGES.length - 1, o.stage + 1); SAVE.stg = k; persist(true); startWorld({...o, stage:k}); },
   "w-lobby": () => lobbyStart(),
-  mode: b => { SAVE.mode = b.dataset.m === "multi" ? "multi" : b.dataset.m === "pvp" ? "pvp" : b.dataset.m === "td" || b.dataset.m === "maze" ? b.dataset.m : "solo"; persist(true); buildMode(); sfx("click"); },
+  mode: b => { const mode = b.dataset.m; if (mode === "floor" || mode === "maze") SAVE.mzmap = mode === "floor" ? "floor" : "rand"; SAVE.mode = mode === "floor" ? "maze" : ["multi","pvp","td","maze"].includes(mode) ? mode : "solo"; persist(true); buildMode(); sfx("click"); },
   pvn: b => { SAVE.pvpn = Number(b.dataset.n) === 2 ? 2 : 1; persist(true); buildMode(); sfx("click"); },
   "w-pvp": () => startWorld({pvp:true, total:(SAVE.pvpn === 2 ? 4 : 2), humans:[{name:SAVE.nick || "나", meta:metaOf(SAVE.ups), kn:SAVE.kn, col:SAVE.col}], diff:SAVE.diff, floor:SAVE.floor}),
   "pv-atk": () => {   // 총공격: 병력 하나하나가 자기와 가장 가까운 적(문·건물·병력·본캐릭)으로
@@ -40243,16 +40243,11 @@ function flrLabels(g, map, c0, time) {   // 원래 "전원실" 글자 자리 —
 }
 
 /* ----- 맵 고르기(미로 모드 시작 화면) ----- */
-function flrEnsureSel() {
-  const box = $("#td-opts"); if (!box || $("#fm-row")) return;
-  box.insertAdjacentHTML("afterbegin", `<div class="row" id="fm-row" hidden><span class="small dim">방어전 맵</span><div class="seg" id="fm-seg" role="radiogroup" aria-label="방어전 맵"></div></div><p class="small dim" id="fm-desc" hidden></p>`);
-}
 function flrSelUi() {
-  flrEnsureSel(); const mz = SAVE.mode === "maze", td = mz || SAVE.mode === "td", row = $("#fm-row"), desc = $("#fm-desc");
-  const back = $('#scr-select .sel-head [data-act="to-title"]'); if (back && td) back.textContent = "나가기";   // 시작 화면에서도 한눈에 보이는 나가기(→ 로비)
-  if (!row) return; row.hidden = desc.hidden = !td; if (!td) return;
-  const on = flrOn(); $("#fm-seg").innerHTML = [["vortex", "소용돌이"], ["rand", "미로"], ["floor", FLR_NAME]].map(([k, l]) => `<button role="radio" aria-checked="${k === (on ? "floor" : mz ? "rand" : "vortex")}" data-act="flr-map" data-m="${k}">${l}</button>`).join("");
-  desc.innerHTML = on ? `<b>${FLR_NAME}</b> — 라운드비 3F·4F 배치도 위에 그려진 <b>한 줄 긴 길</b>이에요. 4F '시작'(실외기실 앞)에서 출발해 4F를 구불구불 돌고, 큰 복도를 따라 3F로 넘어와 3F '끝'(실외기실)까지 가요. 길이 합쳐지는 곳 없이 하나라서 귀신이 오래 걸어요 · 터렛은 길만 피해 아무 데나 지어요 · <span class="faint">이 맵 판은 순위에 올리지 않아요(맵이 달라 미로 순위와 섞으면 불공평해요) · 내 최고 기록은 이 기기에 남아요</span>` : mz ? "판마다 모양이 달라지는 네모난 미로예요." : "바깥에서 전원실까지 이어지는 나선형 길이에요.";
+  const td = SAVE.mode === "maze" || SAVE.mode === "td";
+  const back = $('#scr-select .sel-head [data-act="to-title"]');
+  if (back && td) back.textContent = "나가기";
+  const on = flrOn();
   if (on) {
     $("#wi-title").textContent = "방어전 · " + FLR_NAME;
     $("#wi-text").textContent = "라운드비 3F·4F 배치도 위의 굵은 파란 길을 따라 귀신 떼가 4F '시작'에서 3F '끝'(실외기실)으로 몰려와요. 내 기사(캐릭터)가 직접 걸어 다니며 길과 건물 바깥만 피해 아무 데나 터렛을 짓고, 귀신도 직접 때려요. 길이 하나뿐이라 막을 곳이 한 줄이에요 — 길목을 골라 두껍게 막아 보세요. 균열 게이지가 100%가 되면 끝, 30스테이지를 버티면 새벽 6시 출근이에요.";
@@ -40299,7 +40294,6 @@ function flrLeaveModal() {
 }
 Object.assign(A, {
   "flr-open": () => { SAVE.mzmap = "floor"; setMode("maze"); A["to-select"](); },
-  "flr-map": b => { const map = b.dataset.m; SAVE.mzmap = map === "floor" ? "floor" : "rand"; setMode(map === "vortex" ? "td" : "maze"); persist(true); buildMode(); sfx("click"); },
   "exit-td": () => {
     if (UI.screen !== "td") return;
     if (TDU.ended || !TDU.V) { tdEnd(); A["to-title"](); return; }
@@ -42236,11 +42230,11 @@ setTimeout(prefetchRank, 1200);   // 랭킹 화면이 바로 뜨도록 미리 �
 try { const kp = window.knx && knx.start && knx.start(); if (kp && kp.catch) kp.catch(e => console.error('knx.start', e)); } catch (e) { console.error('knx.start', e); }   /* ===SHELL_BOOT=== */
 </script>
 
-<link rel="stylesheet" href="brawl.css?v=tactics2">
+<link rel="stylesheet" href="brawl.css?v=tactical7">
 <link rel="stylesheet" href="server-rooms.css?v=1">
 <script src="server-rooms.js?v=tactics2"></script>
-<script src="arena-room.js?v=tactics2"></script>
-<script src="brawl.js?v=tactics2"></script>
-<script src="blood.js?v=tactics2"></script>
+<script src="arena-room.js?v=briefing1"></script>
+<script src="brawl.js?v=briefing1"></script>
+<script src="blood.js?v=briefing1"></script>
 <link rel="stylesheet" href="shooters.css?v=tactics2">
-<script src="shooters.js?v=tactics2"></script>
+<script src="shooters.js?v=tactical7"></script>

@@ -126,3 +126,30 @@ document.addEventListener("contextmenu", event => {
   document.body.append(marker);
   setTimeout(() => marker.remove(), 420);
 }, true);
+
+window.roundbArenaBriefing = function (screen, config) {
+  const canvas = screen.querySelector("canvas");
+  const briefing = document.createElement("section");
+  briefing.className = "arena-briefing";
+  briefing.style.setProperty("--arena-accent", config.accent);
+  briefing.innerHTML = `
+    <div class="arena-intro">
+      <span class="arena-eyebrow">${config.category}</span>
+      <h2>${config.title}</h2>
+      <p>${config.summary}</p>
+      <div class="arena-rules">${config.rules.map(([label, detail])=>`<div><strong>${label}</strong><span>${detail}</span></div>`).join("")}</div>
+      <button type="button" class="arena-launch">AI와 바로 시작</button>
+    </div>
+    <div class="arena-map-preview">
+      <img src="${config.preview || "img/td/floorplan_path.webp"}" alt="${config.map} 전장 미리보기">
+      <span>${config.map}</span>
+    </div>`;
+  briefing.querySelector(".arena-launch").addEventListener("click", config.start);
+  canvas.before(briefing);
+  screen.classList.add("arena-has-briefing");
+  return {
+    briefing,
+    show() { screen.classList.remove("arena-playing"); },
+    play() { screen.classList.add("arena-playing"); }
+  };
+};

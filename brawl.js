@@ -20,11 +20,11 @@
       <button type="button" data-room="start" hidden>온라인 시작</button></div>
     <p data-room-status role="status"></p>
     <canvas aria-label="라운드비 3층·4층 대난투 경기장"></canvas>
-    <div class="brawl-skills" aria-label="기사 스킬">
+    <div class="brawl-skills arena-combat" aria-label="기사 스킬">
       <button type="button" data-skill="0">1</button><button type="button" data-skill="1">2</button>
       <button type="button" data-skill="2">3</button><button type="button" data-skill="3">4</button>
     </div>
-    <div class="brawl-controls">
+    <div class="brawl-controls arena-combat">
       <button type="button" data-act="dash">돌진 · Shift</button>
       <button type="button" data-act="floor">층 이동 · E</button>
     </div>
@@ -67,7 +67,31 @@
     const route=lobby.findPath(floorOf(actor),actor.x/worldScale,actor.y/worldScale,x/worldScale,y/worldScale);
     return (route||[]).map(point=>({x:point.x*worldScale,y:point.y*worldScale}));
   }
+  let selectedKnight = Math.max(0, Math.min(9, Number(lobby.ME?.kn) || 0));
+  const briefing = roundbArenaBriefing(dialog,{
+    accent:"#ffcf70",category:"개인전 · 10인 · 3분",title:"라운드비 대난투",
+    summary:"3층과 4층을 오가며 마지막까지 버티는 기사 배틀. 아래에서 AI전에 사용할 기사를 고르세요.",
+    map:"3층 라운지 · 4층 공유오피스",
+    rules:[["전투","기본공격은 자동, 고유 스킬은 1–4"],["회피","우클릭 또는 Shift로 짧게 돌진"],["이동","E로 층을 바꾸고 상대를 추격"]],
+    start:()=>{disconnect();start();}
+  });
+  const roster=document.createElement("div");
+  roster.className="arena-roster";
+  roster.setAttribute("aria-label","AI전 기사 선택");
+  KNIGHTS.forEach((knight,id)=>{
+    const button=document.createElement("button"), portrait=document.createElement("img");
+    button.type="button"; portrait.src=kSrc(id,false);portrait.alt="";
+    button.append(portrait,document.createTextNode(knight.n));
+    button.setAttribute("aria-pressed",String(id===selectedKnight));
+    button.addEventListener("click",()=>{
+      selectedKnight=id;
+      [...roster.children].forEach((item,index)=>item.setAttribute("aria-pressed",String(index===id)));
+    });
+    roster.append(button);
+  });
+  briefing.briefing.append(roster);
   function start() {
+    briefing.play();
     lobby.init();
     if (!lobby.FL["3f"] || !lobby.FL["4f"]) return;
     cancelAnimationFrame(frame);
@@ -79,7 +103,7 @@
     roundId = crypto.randomUUID();
     reward = "";
     running = true;
-    const selected = role ? 0 : Math.max(0, Math.min(9, Number(lobby.ME?.kn) || 0));
+    const selected = role ? 0 : selectedKnight;
     fighters = pictures.map((image, id) => {
       const floor = floors[Math.floor(id / 5)];
       const point = spawn(floor, id % 5);
@@ -431,6 +455,7 @@
     remote.clear(); cancelAnimationFrame(frame); pressed.clear(); player = null;
     result.hidden = true;
     startButton.hidden = true;
+    briefing.show();
   }
   function connect(nextRole) {
     disconnect();
@@ -458,6 +483,7 @@
       },
       state(snapshot) {
         if (!Array.isArray(snapshot?.fighters) || snapshot.fighters.length !== 10) return;
+        briefing.play();
         fighters = snapshot.fighters.map((actor,id)=>({...actor,id,image:pictures[id],name:KNIGHTS[id].n}));
         player = fighters[localSlot];
         elapsed = snapshot.elapsed;

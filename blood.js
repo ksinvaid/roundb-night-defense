@@ -26,9 +26,9 @@
     </div>
     <p data-message role="status">처치 수가 오르면 다음 유닛이 생산됩니다.</p>
     <canvas aria-label="진화 블러드 전장"></canvas>
-    <div class="brawl-controls"><button type="button" data-command="drone">드론 이동</button>
+    <div class="brawl-controls arena-combat"><button type="button" data-command="drone">드론 이동</button>
       <button type="button" data-command="attack">공격 이동</button><button type="button" data-command="move">이동</button></div>
-    <section class="blood-command" aria-label="전장 밖 지휘소"><strong>지휘소 · 전체 병력 명령</strong>
+    <section class="blood-command arena-combat" aria-label="전장 밖 지휘소"><strong>지휘소 · 전체 병력 명령</strong>
       <div class="blood-targets">${bases.map((_,i)=>`<button type="button" data-target="${i}">${i+1}번</button>`).join("")}</div>
       <div class="blood-officer"><img alt="" src="${kSrc(4,false)}"><span>지휘관 대기 중</span></div>
     </section>
@@ -46,6 +46,14 @@
   const selected = new Set();
   let state, room, role="", slot=0, frame, previous, lastPublish, command="drone", drag, view;
   const humans = new Set();
+  const preview = "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}"><rect width="${W}" height="${H}" fill="#22384c"/><path d="M0 750H${W}" stroke="#87a6be" stroke-width="12" stroke-dasharray="45 40"/>${bases.map((base,id)=>`<circle cx="${base.x}" cy="${base.y}" r="88" fill="${colors[id]}"/><text x="${base.x}" y="${base.y+25}" text-anchor="middle" fill="#17223a" font-size="70" font-family="sans-serif">${id+1}</text>`).join("")}</svg>`);
+  const briefing=roundbArenaBriefing(dialog,{
+    accent:"#9edfd3",category:"전략전 · 10개 본진",title:"진화 블러드",
+    summary:"드론이 병력을 생산하고 처치 수에 따라 새 병종을 해금합니다. 지휘관은 전장 밖에서 일반 병력에 진격 명령을 내립니다.",
+    map:"10개 본진 배치",preview,
+    rules:[["지휘","지휘소에서 적 본진을 선택해 일반 병력을 보냅니다"],["정밀 조작","드래그로 유닛을 선택하고 우클릭으로 공격 이동"],["승리","본진 섬멸전 또는 1시간 무한 생산"]],
+    start:()=>{disconnect();begin();}
+  });
   function level(kills) {
     return species.findLastIndex(type=>kills>=type[1]);
   }
@@ -57,6 +65,7 @@
   }
   function begin() {
     if (role==="guest") return;
+    briefing.play();
     cancelAnimationFrame(frame);
     state={time:0,rule:$("[data-rule]").value,online:role==="host",done:false,nextId:0,units:[],
       players:bases.map((base,id)=>({id,...base,kills:0,hp:baseHP,respawn:0,spawn:0,nextHero:heroEvery,order:null,pad:-1}))};
@@ -273,7 +282,7 @@
   });
   function disconnect() {
     room?.close();room=null;role="";slot=0;state=null;selected.clear();humans.clear();
-    cancelAnimationFrame(frame);$("[data-start]").hidden=true;
+    cancelAnimationFrame(frame);$("[data-start]").hidden=true;briefing.show();
   }
   function connect(nextRole) {
     disconnect();names.clear();role=nextRole;$("[data-message]").textContent="연결 중…";
@@ -285,6 +294,7 @@
       input:issue,
       state(snapshot) {
         if (snapshot?.players?.length!==10 || !Array.isArray(snapshot.units)) return;
+        briefing.play();
         state={...snapshot,
           players:snapshot.players.map(([x,y,kills,hp,respawn,name],id)=>{if(name)names.set(id,name);return {id,x,y,kills,hp,respawn};}),
           units:snapshot.units.map(([id,owner,x,y,hp,max,type])=>({id,owner,x,y,hp,max,hero:type===8,shape:type===8?"★":species[type]?.[6]||"◆"}))

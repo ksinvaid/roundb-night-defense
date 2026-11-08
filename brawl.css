@@ -70,3 +70,38 @@ section.brawl canvas { flex: 1 0 40dvh; height: auto; min-height: 0; }
 .shooter-loot-key img { width:18px; height:18px; }
 .rb-context-ping { position:fixed; z-index:2147482999; width:26px; height:26px; border:2px solid #ffe18e; border-radius:50%; pointer-events:none; animation:rb-context-ping .42s ease-out both; }
 @keyframes rb-context-ping { from { opacity:.95; transform:translate(-50%,-50%) scale(.35); } to { opacity:0; transform:translate(-50%,-50%) scale(1.35); } }
+
+.arena-briefing {
+  display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:clamp(14px,3vw,40px);
+  width:min(1160px,100%); box-sizing:border-box; margin:auto; padding:clamp(16px,3vw,38px);
+  background:linear-gradient(130deg,#222746,#10182b); border:1px solid #505777; border-radius:16px;
+}
+.arena-intro { display:grid; gap:12px; align-content:center; }
+.arena-intro h2 { font-size:clamp(30px,5vw,58px); line-height:1.03; margin:0; color:#fff6e5; }
+.arena-intro p { color:#dae0f8; margin:0; font-size:14px; }
+.arena-eyebrow { color:var(--arena-accent); font-weight:900; font-size:13px; letter-spacing:.07em; }
+.arena-rules { display:grid; gap:6px; }
+.arena-rules div { display:grid; grid-template-columns:80px 1fr; gap:7px; padding:7px 9px; background:#ffffff0d; border-radius:6px; }
+.arena-rules strong { color:var(--arena-accent); }
+.arena-rules span { font-size:12px; }
+.arena-briefing .arena-launch { background:var(--arena-accent); color:#17203a; border-color:transparent; justify-self:start; min-height:44px; }
+.arena-map-preview { display:grid; align-content:center; gap:7px; padding:10px; border:1px solid #58617e; border-radius:12px; background:#0c1324; }
+.arena-map-preview img { width:100%; max-height:350px; object-fit:contain; border-radius:8px; }
+.arena-map-preview span { color:#d4ddef; font-size:12px; text-align:center; }
+.arena-has-briefing:not(.arena-playing) canvas, .arena-has-briefing:not(.arena-playing) .arena-combat { display:none; }
+.arena-playing .arena-briefing { display:none; }
+.arena-roster { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:5px; grid-column:1/-1; }
+.arena-roster button { display:flex; align-items:center; gap:4px; min-width:0; padding:4px 6px; font-size:12px; }
+.arena-roster img { width:29px; height:35px; object-fit:contain; }
+.arena-roster button[aria-pressed=true] { border-color:#f6cd68; background:#4b3d55; color:#ffe394; }
+@media(max-width:640px) {
+  .arena-briefing { grid-template-columns:1fr; margin:8px 0; padding:14px; gap:12px; }
+  .arena-map-preview img { max-height:165px; }
+  .arena-roster { grid-template-columns:repeat(3,minmax(0,1fr)); }
+}
+
+.shooter-tactical { display:flex; flex-wrap:wrap; align-items:center; gap:6px; padding:6px 8px; border:1px solid #5b7397; border-radius:8px; background:#24324f; }
+.shooter-tactical[hidden], .shooter-tactical [hidden] { display:none; }
+.shooter-tactical [data-tactical] { margin-right:auto; font-weight:800; }
+.shooter-tactical button:disabled { opacity:.48; cursor:default; }
+.shooter-tactical button { touch-action:none; }

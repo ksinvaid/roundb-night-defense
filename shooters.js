@@ -77,6 +77,7 @@
     dialog.innerHTML=`
       <header><strong>${name}</strong><span data-hud></span><button type="button" data-action="exit">로비로</button></header>
       <div class="brawl-controls">
+        ${fps?'<select data-match aria-label="총격전 방식"><option value="objective">설치·해체전 · 최대 7라운드</option><option value="deathmatch">팀 데스매치 · 20점</option></select>':""}
         <button type="button" data-action="solo">AI와 플레이</button><button type="button" data-action="host">온라인 방 만들기</button>
         <label class="arena-public"><input type="checkbox" data-public> 공개방</label>
       <input data-code maxlength="6" aria-label="초대 코드" placeholder="초대 코드"><button type="button" data-action="join">참가</button>
@@ -87,8 +88,13 @@
         <p>${fps?"WASD 이동 · 마우스 드래그 조준 · 우클릭 조준 확대 · R 재장전":"빛이 비추는 곳에 적이 들어오면 자동 발사합니다. 아이템 가까이에서 멈추면 원형 게이지가 차고 획득합니다. 쓰러지면 팀원을 관전합니다."}</p>
         ${fps?"":`<div class="shooter-loot-key">${lootTypes.map((name,i)=>`<span><img alt="" src="${lootIcons[i].src}">${name}</span>`).join("")}</div>`}
       </details>
+      ${fps?`<div class="shooter-tactical arena-combat" hidden>
+        <span data-tactical role="status"></span>
+        <div data-armory hidden><button type="button" data-action="buy-rifle">주총 · 450</button><button type="button" data-action="buy-armor">방탄 · 300</button><button type="button" data-action="buy-utility">전술 장비 · 200</button></div>
+        <button type="button" data-action="objective">설치·해체 E</button><button type="button" data-action="signature">고유 능력 Q</button>
+      </div>`:""}
       <canvas tabindex="0" aria-label="${name} 전장"></canvas>
-      <div class="rb-shooter-buttons">
+      <div class="rb-shooter-buttons arena-combat">
         <button type="button" data-action="left">◀</button><button type="button" data-action="forward">▲</button>
         <button type="button" data-action="back">▼</button><button type="button" data-action="right">▶</button>
         <button type="button" data-action="reload">재장전 R</button>
@@ -102,19 +108,33 @@
     const keys=new Set(), controls=new Map(), humans=new Map();
     const timer=fps?180:120;
     let room, role="", slot=0, state, frame, prev, publishAt, heldAt=null, heading=0, fire=false, paid="", zoom=false;
+    const preview="data:image/svg+xml,"+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 21 27"><rect width="21" height="27" fill="#4f5967"/>${floorGrid.map((row,y)=>row.map((wall,x)=>wall?`<rect x="${x}" y="${y}" width="1" height="1" fill="#1c283d"/>`:"").join("")).join("")}${spawns.map(([x,y],i)=>`<circle cx="${x}" cy="${y}" r=".36" fill="${colors[Math.floor(i/2)]}"/>`).join("")}</svg>`);
+    const briefing=roundbArenaBriefing(dialog,{
+      accent:fps?"#85c9ff":"#d6bbff",category:fps?"5대5 · 전술 FPS":"2인 5팀 · 마지막 팀 생존",
+      title:name,summary:fps?"라운드비의 두 목표 지점을 공방합니다. 장비를 구매하고, 공격팀은 장치를 설치하며 수비팀은 해체합니다. 4라운드 선승, 최대 7라운드입니다.":"손전등으로 좁은 복도를 살피고, 팀원과 함께 탄약과 장비를 챙겨 살아남으세요.",
+      map:"회의실과 복도 전술도",preview,
+      rules:fps?[["목표","E 설치·해체 · 공격과 수비는 3라운드 뒤 교대"],["조준","우클릭 확대 · 1 주총 / 2 권총 / 3 단검"],["전술","Q 고유 능력 · G 수류탄 · H 연막 · J 섬광"]]:[["교전","손전등으로 비추면 자동 사격"],["획득","아이템 위에서 멈춰 게이지 채우기"],["관전","쓰러지면 생존 중인 팀원 화면으로 전환"]],
+      start:()=>{disconnect();begin();}
+    });
+    const sites=[{label:"A",x:5.5,y:12.5},{label:"B",x:17.5,y:15.5}];
+    const signatures=["연막 전개","적 탐지","전투 자극","응급 회복"];
     const team=i=>fps?i%2:Math.floor(i/2);
     function weapon(p) { return p.w===1?pistol:p.w===2?knife:guns[p.k]; }
     function spawn(p) {
-      const [x,y]=fps?[2.5+Math.floor(p.i/2)*4,p.team?24.5:2.5]:spawns[p.i];
+      const [x,y]=fps?[[2.5,4.5,10.5,12.5,18.5][Math.floor(p.i/2)],p.team===(state?.attack??0)?2.5:24.5]:spawns[p.i];
       Object.assign(p,{x,y,a:y<13?Math.PI/2:-Math.PI/2,hp:100,armor:0,clip:[guns[p.k][1],12,1],
         reserve:[fps?90:16,36,0],w:0,cd:0,load:0,down:0,blind:0,shot:0,loot:-1,progress:0,
-        upgrade:0,mag:0,grenades:[1,1,1],think:0});
+        upgrade:0,mag:0,grenades:[1,1,1],think:0,objective:0,signature:1,stim:0,rifle:true,boughtUtility:false});
     }
     function begin() {
+      briefing.play();
       cancelAnimationFrame(frame);
       const me=Number(window.lbDbg?.ME?.kn)||0;
       state={round:crypto.randomUUID(),t:0,done:false,score:Array(fps?2:5).fill(0),effects:[],loot:[],
-        players:Array.from({length:10},(_,i)=>{const p={i,k:(i+me)%10,team:team(i),kills:0};spawn(p);return p;})};
+        tactical:fps && $("[data-match]").value==="objective",feed:[],
+        players:Array.from({length:10},(_,i)=>({i,k:(i+me)%10,team:team(i),kills:0,credits:650}))};
+      if(state.tactical) nextRound();
+      else state.players.forEach(spawn);
       if(!fps) {
         let n=0;
         for(let y=2;y<26;y+=3) for(let x=2;x<20;x+=3) {
@@ -128,20 +148,73 @@
       for(const key of humans.keys())humans.set(key,{});
       frame=requestAnimationFrame(tick);
     }
+    function nextRound() {
+      state.roundNo=(state.roundNo||0)+1;
+      state.attack=state.roundNo<=3?0:1;
+      state.phase="buy";state.phaseEnd=state.t+10;
+      state.device=null;state.recon=[0,0];state.effects=[];
+      for(const p of state.players) {
+        spawn(p);
+        p.rifle=false;p.w=1;p.grenades=[0,0,0];p.way=null;p.goal=null;
+        if (state.roundNo===4) p.credits=650;
+        if (p.i!==0 && !humans.has(p.i)) {
+          action(p,"buy-rifle");
+          if(p.credits>=300)action(p,"buy-armor");
+        }
+      }
+      for(const [i] of humans)humans.set(i,{a:state.players[i].a});
+      heading=state.players[slot].a;
+    }
+    function roundWin(team, reason) {
+      if(state.phase!=="live")return;
+      state.score[team]++;
+      state.notice=reason;
+      for(const p of state.players)p.credits=Math.min(1600,p.credits+(p.team===team?550:400));
+      if(state.score[team]>=4){state.done=true;state.winner=team;return;}
+      state.phase="break";state.phaseEnd=state.t+3;
+    }
+    function objective(p,dt,input) {
+      if(!state.tactical || state.phase!=="live")return;
+      const moving=Math.hypot(input.dx||0,input.dy||0)>.1;
+      const site=state.device || sites.find(point=>distance(p,point)<1.35);
+      const can=site && (state.device ? p.team!==state.attack&&distance(p,site)<1.45 : p.team===state.attack);
+      if(!input.use || moving || !can){p.objective=0;return;}
+      p.objective+=dt;
+      if(p.objective<(state.device?3.3:2.2))return;
+      p.objective=0;
+      if(state.device){roundWin(p.team,"장치 해체 완료");return;}
+      state.device={x:site.x,y:site.y,label:site.label,end:state.t+30};
+      state.notice=site.label+" 지점 · 장치 설치";
+    }
     function reload(p) {
       if(p.w!==2 && p.reserve[p.w]>0 && p.clip[p.w]<weapon(p)[1]+(p.w===0?p.mag:0) && p.load<=0)p.load=1.05;
     }
     function receive(i,input) {
       if(!state || state.done || !input || !humans.has(i))return;
       humans.set(i,{dx:Math.sign(Number(input.dx)||0),dy:Math.sign(Number(input.dy)||0),
-        a:Number.isFinite(input.a)?input.a:undefined,fire:input.fire===true});
+        a:Number.isFinite(input.a)?input.a:undefined,fire:input.fire===true,use:input.use===true,walk:input.walk===true});
       if(typeof input.action==="string") action(state.players[i],input.action);
     }
     function action(p,key) {
       if(!p?.hp)return;
+      if(state.tactical && state.phase==="buy") {
+        if(key==="buy-rifle" && !p.rifle && p.credits>=450){p.credits-=450;p.rifle=true;p.w=0;}
+        if(key==="buy-armor" && !p.armor && p.credits>=300){p.credits-=300;p.armor=55;}
+        if(key==="buy-utility" && !p.boughtUtility && p.credits>=200){p.credits-=200;p.boughtUtility=true;p.grenades=[1,1,1];}
+      }
       if(key==="reload"){reload(p);return;}
+      if(state.tactical && state.phase!=="live" && !/^[012]$/.test(key))return;
+      if(key==="signature" && state.tactical && p.signature>0){
+        p.signature--;
+        const kind=p.k%4;
+        if(kind===0)state.effects.push({x:p.x+Math.cos(p.a)*1.5,y:p.y+Math.sin(p.a)*1.5,type:1,owner:p.i,at:state.t,end:state.t+6,armed:false});
+        if(kind===1)state.recon[p.team]=state.t+5;
+        if(kind===2)p.stim=6;
+        if(kind===3)for(const ally of state.players)if(ally.hp&&ally.team===p.team&&distance(p,ally)<4)ally.hp=Math.min(100,ally.hp+35);
+        return;
+      }
       if(!fps)return;
-      if(/^[012]$/.test(key)){p.w=Number(key);p.load=0;return;}
+      if(/^[012]$/.test(key)){if(key==="0"&&!p.rifle)return;p.w=Number(key);p.load=0;return;}
       const type=["frag","smoke","flash"].indexOf(key);
       if(type<0 || !p.grenades[type])return;
       p.grenades[type]--;
@@ -157,7 +230,14 @@
       if(!target.hp || source.team===target.team)return;
       const blocked=Math.min(target.armor,Math.round(amount*.65));
       target.armor-=blocked; target.hp=Math.max(0,target.hp-amount+blocked);
-      if(!target.hp){source.kills++;state.score[source.team]++;target.down=state.t+3;}
+      target.hitAt=state.t;
+      if(!target.hp){
+        source.kills++;
+        if(!state.tactical)state.score[source.team]++;
+        else source.credits=Math.min(1600,source.credits+120);
+        target.down=state.t+3;
+        state.feed.unshift([source.k,target.k,source.team]);state.feed.length=Math.min(4,state.feed.length);
+      }
     }
     function visible(a,b) {
       if(!clear(a,b))return false;
@@ -192,9 +272,15 @@
       state.loot=state.loot.filter(q=>q!==item);p.loot=-1;p.progress=0;
     }
     function local() {
-      return {dx:Number(keys.has("d"))-Number(keys.has("a")),dy:Number(keys.has("w"))-Number(keys.has("s")),a:heading,fire};
+      return {dx:Number(keys.has("d"))-Number(keys.has("a")),dy:Number(keys.has("w"))-Number(keys.has("s")),a:heading,fire,use:keys.has("e"),walk:keys.has("shift")};
     }
     function bot(p) {
+      const site=state.tactical ? (state.device || sites[(state.roundNo-1)%sites.length]) : null;
+      const wantsObjective=site && (state.device?p.team!==state.attack:p.team===state.attack);
+      if(wantsObjective && distance(p,site)<1.1) {
+        const enemy=state.players.find(q=>q.hp&&q.team!==p.team&&distance(p,q)<4&&visible(p,q));
+        return {use:true,a:enemy?angle(p,enemy):p.a,fire:!!enemy};
+      }
       if(state.t>=p.think) {
         const enemies=state.players.filter(q=>q.hp&&q.team!==p.team).sort((a,b)=>distance(p,a)-distance(p,b));
         p.goal=enemies[0]?.i;p.think=state.t+.35+p.i*.035;
@@ -202,7 +288,7 @@
           const loot=state.loot.filter(q=>q.type===0||q.type===1).sort((a,b)=>distance(p,a)-distance(p,b))[0];
           p.want=loot&&distance(p,loot)<7?loot.id:null;
         } else p.want=null;
-        const objective=state.loot.find(q=>q.id===p.want)||state.players[p.goal];
+        const objective=state.loot.find(q=>q.id===p.want)||(wantsObjective?site:state.players[p.goal]);
         p.way=objective&&(clear(p,objective)?{x:objective.x,y:objective.y}:route(p,objective));
       }
       const enemy=state.players[p.goal], item=state.loot.find(q=>q.id===p.want), gun=weapon(p);
@@ -214,6 +300,11 @@
     }
     function update(dt) {
       state.t+=dt;
+      if(state.tactical && state.phase!=="live") {
+        if(state.t<state.phaseEnd)return;
+        if(state.phase==="break"){nextRound();return;}
+        state.phase="live";state.phaseEnd=state.t+65;state.notice="교전 시작";
+      }
       for(const e of state.effects) {
         if(!e.armed||state.t<e.at)continue;
         e.armed=false;
@@ -225,22 +316,31 @@
       }
       state.effects=state.effects.filter(e=>state.t<e.end);
       for(const p of state.players) {
-        if(!p.hp){if(fps&&state.t>=p.down)spawn(p);else continue;}
-        p.cd-=dt;p.blind-=dt;p.shot-=dt;
+        if(!p.hp){if(fps&&!state.tactical&&state.t>=p.down)spawn(p);else continue;}
+        p.cd-=dt;p.blind-=dt;p.shot-=dt;p.stim-=dt;
         if(p.load>0&&(p.load-=dt)<=0) {
           const count=Math.min(p.reserve[p.w],weapon(p)[1]+(p.w===0?p.mag:0)-p.clip[p.w]);
           p.clip[p.w]+=count;p.reserve[p.w]-=count;
         }
         const input=p.i===0?local():humans.get(p.i)||bot(p);
         if(Number.isFinite(input.a))p.a=input.a;
+        const movementDt=dt*(input.walk?.58:1)*(p.stim>0?1.32:1);
         const x=input.dx||0,y=input.dy||0,norm=Math.max(1,Math.hypot(x,y));
-        if(input.world)move(p,x/norm,y/norm,dt);
-        else if(fps)move(p,(Math.cos(p.a)*y-Math.sin(p.a)*x)/norm,(Math.sin(p.a)*y+Math.cos(p.a)*x)/norm,dt);
+        if(input.world)move(p,x/norm,y/norm,movementDt);
+        else if(fps)move(p,(Math.cos(p.a)*y-Math.sin(p.a)*x)/norm,(Math.sin(p.a)*y+Math.cos(p.a)*x)/norm,movementDt);
         else move(p,x/norm,-y/norm,dt);
         if(!fps)pickup(p,dt,!!(x||y));
         if(!fps||input.fire)shoot(p);
+        if(p.hp)objective(p,dt,input);
+        if(state.done || state.tactical && state.phase!=="live")return;
       }
       const alive=new Set(state.players.filter(p=>p.hp).map(p=>p.team));
+      if(state.tactical) {
+        if(state.device && state.t>=state.device.end)roundWin(state.attack,"장치 폭발");
+        else if(!alive.has(1-state.attack))roundWin(state.attack,"수비팀 전멸");
+        else if(!state.device && (!alive.has(state.attack)||state.t>=state.phaseEnd))roundWin(1-state.attack,"설치 저지");
+        return;
+      }
       if(state.t>=timer || (fps?Math.max(...state.score)>=20:alive.size<=1)) {
         state.done=true;
         const scores=state.score.map((kills,i)=>({i,kills})).sort((a,b)=>b.kills-a.kills);
@@ -271,13 +371,18 @@
       }
       const p=state.players[slot];
       if(!w || !h || !p) return;
-      if(fps) firstPerson(p,w,h);
+      if(fps) {
+        const watch=state.tactical&&!p.hp&&state.players.find(q=>q.hp&&q.team===p.team);
+        firstPerson(watch||p,w,h);
+        if(state.tactical)tacticalHud(p,watch,w,h);
+        else dialog.querySelector(".shooter-tactical").hidden=true;
+      }
       else {
         const watch=!p.hp && (state.players.find(q=>q.hp&&q.team===p.team)||state.players.find(q=>q.hp));
         topDown(watch||p,w,h);
         if (!p.hp && !state.done) $("[data-message]").textContent=watch?"쓰러졌어요 · 관전 중":"쓰러졌어요 · 결과 집계 중";
       }
-      const remaining=Math.max(0,Math.ceil(timer-state.t));
+      const remaining=Math.max(0,Math.ceil((state.tactical?(state.device?.end??state.phaseEnd):timer)-state.t));
       $("[data-hud]").textContent=`${remaining}초 · 체력 ${p.hp} · 방탄 ${p.armor} · ${weapon(p)[0]} ${p.clip[p.w]}/${p.reserve[p.w]}${fps?" · "+state.score.join(" : "):""}`;
       if(state.done&&paid!==state.round) {
         paid=state.round;
@@ -285,6 +390,39 @@
         const reward=window.knx.reward?.grant(id,{win,secs:state.t,players:10,humans:state.humans||humans.size+1,score:p.kills*120,once:id+":"+state.round});
         $("[data-message]").textContent=(state.winner<0?"무승부":win?"우리 팀 승리":"상대 팀 승리")+` · ${p.kills}킬 · +${reward?.rp||0} RP`;
       }
+    }
+    function tacticalHud(p,watch,w,h) {
+      const controls=dialog.querySelector(".shooter-tactical");
+      controls.hidden=false;
+      const buy=state.phase==="buy"&&!state.done, armory=$("[data-armory]");
+      armory.hidden=!buy;
+      for (const [key,cost,owned] of [["rifle",450,p.rifle],["armor",300,p.armor],["utility",200,p.boughtUtility]])
+        $("[data-action=buy-"+key+"]").disabled=!!owned||p.credits<cost;
+      const side=p.team===state.attack?"공격":"수비", site=state.device||sites.find(q=>distance(q,p)<1.35);
+      const task=state.device?"해체":"설치";
+      const valid=p.hp && state.phase==="live" && site &&
+        (state.device?p.team!==state.attack&&distance(p,site)<1.45:p.team===state.attack);
+      const use=$('[data-action="objective"]');
+      use.disabled=!valid;
+      use.textContent=p.objective>0?task+" "+Math.round(p.objective/(state.device?3.3:2.2)*100)+"%":task+" · E 길게";
+      const signature=$('[data-action="signature"]');
+      signature.textContent=signatures[p.k%4]+" · Q";
+      signature.disabled=!p.signature||!p.hp||state.phase!=="live";
+      const phase=state.done?"경기 종료":buy?"구매 시간":state.phase==="break"?"라운드 종료":state.device?state.device.label+" 장치 작동 중":"교전 중";
+      $("[data-tactical]").textContent=`R${state.roundNo}/7 · ${side} · ${phase} · ${p.credits} 크레딧`;
+      if(!state.done)$("[data-message]").textContent=watch?KNIGHTS[watch.k].n+" 관전 중":!p.hp?"다음 라운드까지 대기":state.notice||phase;
+
+      const unit=Math.min(5,w/95,h/70), x=12, y=12;
+      ctx.save();ctx.fillStyle="#0b1424ee";ctx.fillRect(x-3,y-3,21*unit+6,27*unit+6);
+      for(let row=0;row<27;row++)for(let col=0;col<21;col++)if(floorGrid[row][col]){ctx.fillStyle="#59647b";ctx.fillRect(x+col*unit,y+row*unit,unit,unit);}
+      ctx.font="bold 11px system-ui";ctx.textAlign="center";
+      for(const point of sites){ctx.fillStyle=state.device?.label===point.label?"#ff5e72":"#ffe3a0";ctx.fillText(point.label,x+point.x*unit,y+point.y*unit+3);}
+      for(const q of state.players)if(q.hp&&(q.team===p.team||state.recon?.[p.team]>state.t)){
+        ctx.fillStyle=q===p?"#fff":q.team===p.team?"#83dbff":"#ff6474";ctx.beginPath();ctx.arc(x+q.x*unit,y+q.y*unit,2.5,0,tau);ctx.fill();
+      }
+      ctx.textAlign="right";ctx.fillStyle="#ffe5a9";
+      state.feed.slice(0,3).forEach(([from,to],i)=>ctx.fillText(KNIGHTS[from].n+"  ›  "+KNIGHTS[to].n,w-14,22+i*16));
+      ctx.restore();
     }
     function topDown(p,w,h) {
       const s=Math.min(w/21,h/27), left=(w-s*21)/2, top=(h-s*27)/2;
@@ -364,6 +502,17 @@
       ctx.fillStyle=p.w===2?"#b8c2cf":p.shot>0?"#e5b754":"#4e566b";
       ctx.fillRect(w*.58,h*(.87-gunLength)+kick,w*(p.w===2?.032:.065),h*gunLength);
       if(p.blind>0){ctx.fillStyle="#08090b";ctx.fillRect(0,0,w,h);}
+      if(state.t-p.hitAt<.24){
+        const vignette=ctx.createRadialGradient(w/2,h/2,h*.22,w/2,h/2,Math.hypot(w,h)*.5);
+        vignette.addColorStop(0,"#ef304000");vignette.addColorStop(1,"#ef3040aa");ctx.fillStyle=vignette;ctx.fillRect(0,0,w,h);
+      }
+      if(state.tactical && p.blind<=0)for(const point of sites){
+        const bearing=offset(angle(p,point),p.a);
+        if(Math.abs(bearing)>fov/2||!clear(p,point))continue;
+        const x=w*(.5+bearing/fov),y=h*.63;
+        ctx.save();ctx.textAlign="center";ctx.font="900 15px system-ui";
+        ctx.fillStyle=state.device?.label===point.label?"#ff6e80":"#ffe3a0";ctx.fillText(point.label,x,y);ctx.restore();
+      }
     }
     function send(key) {
       const data={...local(),action:key};
@@ -372,7 +521,7 @@
     }
     function disconnect() {
       room?.close();room=null;role="";slot=0;state=null;humans.clear();keys.clear();controls.clear();fire=false;
-      cancelAnimationFrame(frame);zoom=false;$('[data-action="zoom"]')?.setAttribute("aria-pressed","false");$('[data-action="start"]').hidden=true;
+      cancelAnimationFrame(frame);briefing.show();zoom=false;$('[data-action="zoom"]')?.setAttribute("aria-pressed","false");$('[data-action="start"]').hidden=true;
     }
     function connect(next) {
       disconnect();role=next;$("[data-message]").textContent="연결 중…";
@@ -382,8 +531,8 @@
         accept:()=>!state||state.done,join(i){humans.set(i,{});},leave(i){humans.delete(i);},input:receive,
         state(nextState) {
           if(nextState?.players?.length!==10)return;
-          if(state?.round!==nextState.round){heading=nextState.players[slot].a;dialog.querySelector("details").open=false;$("[data-message]").textContent="교전 시작";}
-          state=nextState;draw();
+          if(state?.round!==nextState.round||state?.roundNo!==nextState.roundNo){heading=nextState.players[slot].a;dialog.querySelector("details").open=false;$("[data-message]").textContent="교전 시작";}
+          briefing.play();state=nextState;draw();
         }
       });
       if(role==="host")room.host({listed: $("[data-public]").checked});else room.join($("[data-code]").value);
@@ -399,7 +548,7 @@
       if(!state||state.done)return;
       heldAt={x:event.clientX,y:event.clientY};
       canvas.setPointerCapture(event.pointerId);
-      if(!fps)aim(event);
+      if(!fps)aim(event);else {fire=true;send();}
     });
     function aim(event) {
       if(fps&&heldAt){heading+=(event.clientX-heldAt.x)*.008;heldAt.x=event.clientX;}
@@ -411,10 +560,10 @@
     }
     canvas.addEventListener("pointermove",event=>{if(state&&(!fps||heldAt))aim(event);});
     canvas.addEventListener("pointerup",()=>{
-      if(fps&&heldAt){fire=true;send();setTimeout(()=>{fire=false;send();},100);}
+      if(fps&&heldAt){fire=false;send();}
       heldAt=null;
     });
-    canvas.addEventListener("pointercancel",()=>{heldAt=null;});
+    canvas.addEventListener("pointercancel",()=>{heldAt=null;fire=false;send();});
     const movement={left:"a",right:"d",forward:"w",back:"s"};
     for(const button of dialog.querySelectorAll(".rb-shooter-buttons button")){
       const key=movement[button.dataset.action];
@@ -432,14 +581,24 @@
       };
       button.addEventListener("pointerup",release);button.addEventListener("pointercancel",release);
     }
+    const objectiveButton=$('[data-action="objective"]');
+    if(objectiveButton){
+      objectiveButton.addEventListener("pointerdown",event=>{
+        objectiveButton.setPointerCapture(event.pointerId);keys.add("e");send();
+      });
+      const release=()=>{keys.delete("e");send();};
+      objectiveButton.addEventListener("pointerup",release);
+      objectiveButton.addEventListener("pointercancel",release);
+      objectiveButton.addEventListener("lostpointercapture",release);
+    }
     window.addEventListener("keydown",event=>{
       if(!dialog.open||!state||event.target.matches?.("input,select"))return;
       const key=event.key.toLowerCase();
-      if(!"wasd r123ghj".includes(key)||key.length!==1)return;
+      if(key!=="shift"&&(!"wasd r123ghjeq".includes(key)||key.length!==1))return;
       event.preventDefault();event.stopImmediatePropagation();
-      if("wasd".includes(key))keys.add(key);
+      if(["w","a","s","d","e","shift"].includes(key))keys.add(key);
       if(key===" ")fire=true;
-      const command={r:"reload",1:"0",2:"1",3:"2",g:"frag",h:"smoke",j:"flash"}[key];
+      const command={r:"reload",1:"0",2:"1",3:"2",g:"frag",h:"smoke",j:"flash",q:"signature"}[key];
       send(event.repeat?undefined:command);
     },true);
     window.addEventListener("keyup",event=>{
@@ -459,10 +618,10 @@
       else if(key==="join")connect("guest");
       else if(key==="start"&&role==="host")begin();
       else if(key==="weapon"&&state)send(String((state.players[slot].w+1)%3));
-      else if(["reload","frag","smoke","flash"].includes(key))send(key);
+      else if(["reload","frag","smoke","flash","signature","buy-rifle","buy-armor","buy-utility"].includes(key))send(key);
     });
     dialog.addEventListener("close",disconnect);
-    games.register({id,name,tag:fps?"라운드비 4층 5대5 FPS":"손전등과 전리품 · 2인 5팀",kind:"main",open:()=>{dialog.showScreen();draw();}});
+    games.register({id,name,tag:fps?"5대5 설치·해체전 · 최대 7라운드":"손전등과 전리품 · 2인 5팀",kind:"main",open:()=>{dialog.showScreen();draw();}});
   }
   create("night-beam","암전 순찰",false);
   create("office-strike","라운드비 총격전",true);
