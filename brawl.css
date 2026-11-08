@@ -105,3 +105,15 @@ section.brawl canvas { flex: 1 0 40dvh; height: auto; min-height: 0; }
 .shooter-tactical [data-tactical] { margin-right:auto; font-weight:800; }
 .shooter-tactical button:disabled { opacity:.48; cursor:default; }
 .shooter-tactical button { touch-action:none; }
+
+.shooter-matchbar { display:flex; gap:8px; align-items:center; flex-wrap:wrap; font-size:13px; }
+.shooter-matchbar [data-pickup] { color:#ffe09b; font-weight:800; }
+.shooter-feed { position:absolute; z-index:2; right:20px; top:27%; list-style:none; padding:0; margin:0; pointer-events:none; font-size:clamp(10px,1.2vw,14px); text-align:right; }
+.shooter-feed li { background:#0b1324ec; color:#fff; border-right:3px solid #ffc76b; padding:5px 9px; margin-bottom:3px; }
+.shooter-feed b { color:#ffda89; margin:0 5px; }
+.shooter-scoreboard { position:absolute; z-index:4; inset:50% auto auto 50%; transform:translate(-50%,-50%); width:min(92vw,610px); max-height:70vh; overflow:auto; background:#101827f5; border:1px solid #627391; border-radius:10px; box-shadow:0 12px 40px #0008; padding:8px; }
+.shooter-scoreboard table { width:100%; border-collapse:collapse; font-size:clamp(11px,2vw,15px); }
+.shooter-scoreboard th,.shooter-scoreboard td { padding:6px; text-align:center; border-bottom:1px solid #485674; }
+.shooter-scoreboard .mine { background:#293c61; color:#ffdc8a; }
+.shooter-link-status { color:#ffe09b; font-weight:800; }
+.rb-shooter [hidden] { display:none; }
