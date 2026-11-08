@@ -11,6 +11,11 @@
   const knife = ["전술 단검",1,36,.5,1.2];
   const colors = ["#ffb66d","#75bdff","#9bea93","#f590c9","#d2b3ff"];
   const lootTypes = ["탄약","방탄조끼","탄강화","응급키트","확장 탄창"];
+  const lootIcons = [
+    '<path d="M9 19h6v-9l-3-5-3 5zM9 15h6"/>','<path d="M5 6l4-2 3 4 3-4 4 2v13H5z"/>',
+    '<path d="M13 3L6 13h5l-1 8 8-11h-5z"/>','<rect x="4" y="5" width="16" height="14" rx="3"/><path d="M12 8v8m-4-4h8"/>',
+    '<path d="M7 4h10v11l-4 5H7zM9 8h6m-6 4h6"/>'
+  ].map(shape=>{const img=new Image();img.src="data:image/svg+xml,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#fff5d2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+shape+'</svg>');return img;});
   const lootGrades = ["일반","희귀","특급"];
   const lootColors = ["#dbe6ee","#60afff","#efbcff"];
   const tau = 2*Math.PI;
@@ -78,12 +83,16 @@
         <button type="button" data-action="start" hidden>온라인 시작</button>
       </div>
       <p data-message role="status">${fps?"5대5 · 20점 선승 · 3분":"2인 5팀 · 마지막까지 생존 · 2분"}</p>
+      <details class="shooter-guide" ${fps?"":"open"}><summary>조작과 아이템 안내</summary>
+        <p>${fps?"WASD 이동 · 마우스 드래그 조준 · 우클릭 조준 확대 · R 재장전":"빛이 비추는 곳에 적이 들어오면 자동 발사합니다. 아이템 가까이에서 멈추면 원형 게이지가 차고 획득합니다. 쓰러지면 팀원을 관전합니다."}</p>
+        ${fps?"":`<div class="shooter-loot-key">${lootTypes.map((name,i)=>`<span><img alt="" src="${lootIcons[i].src}">${name}</span>`).join("")}</div>`}
+      </details>
       <canvas tabindex="0" aria-label="${name} 전장"></canvas>
       <div class="rb-shooter-buttons">
         <button type="button" data-action="left">◀</button><button type="button" data-action="forward">▲</button>
         <button type="button" data-action="back">▼</button><button type="button" data-action="right">▶</button>
         <button type="button" data-action="reload">재장전 R</button>
-        ${fps?`<button type="button" data-action="fire">발사</button><button type="button" data-action="weapon">무기 1–3</button>
+        ${fps?`<button type="button" data-action="fire">발사</button><button type="button" data-action="zoom" aria-pressed="false">조준 확대</button><button type="button" data-action="weapon">무기 1–3</button>
           <button type="button" data-action="frag">수류탄 G</button><button type="button" data-action="smoke">연막탄 H</button><button type="button" data-action="flash">섬광탄 J</button>`:""}
       </div>
       <p>${fps?"WASD 이동 · 마우스 드래그 조준 · 클릭 또는 Space 발사 · 1 주총 / 2 권총 / 3 칼":"WASD 또는 이동 버튼 · 마우스·터치로 조준 · 시야에 들어오면 자동 발사 · 아이템 위에서 멈춰 획득"}</p>`;
@@ -92,7 +101,7 @@
     const canvas=$("canvas"), ctx=canvas.getContext("2d");
     const keys=new Set(), controls=new Map(), humans=new Map();
     const timer=fps?180:120;
-    let room, role="", slot=0, state, frame, prev, publishAt, heldAt=null, heading=0, fire=false, paid="";
+    let room, role="", slot=0, state, frame, prev, publishAt, heldAt=null, heading=0, fire=false, paid="", zoom=false;
     const team=i=>fps?i%2:Math.floor(i/2);
     function weapon(p) { return p.w===1?pistol:p.w===2?knife:guns[p.k]; }
     function spawn(p) {
@@ -113,6 +122,8 @@
           state.loot.push({id:n,x:x+.5,y:y+.5,type:n%5,grade:(x*y+n)%9===0?2:n%4===0?1:0});n++;
         }
       }
+      $("[data-message]").textContent="교전 시작";
+      dialog.querySelector("details").open=false;
       heading=state.players[slot].a; prev=performance.now();publishAt=0;paid="";
       for(const key of humans.keys())humans.set(key,{});
       frame=requestAnimationFrame(tick);
@@ -246,11 +257,26 @@
       if(!state.done)frame=requestAnimationFrame(tick);
     }
     function draw() {
-      if(!state)return;
       const w=canvas.clientWidth,h=canvas.clientHeight;
       if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;}
+      if(!w||!h)return;
+      if(!state){
+        ctx.fillStyle="#111c31";ctx.fillRect(0,0,w,h);
+        ctx.textAlign="center";ctx.fillStyle="#ffdf94";ctx.font="800 28px system-ui";
+        ctx.fillText(name,w/2,h*.43);
+        ctx.fillStyle="#d7e7f7";ctx.font="600 14px system-ui";
+        ctx.fillText("AI와 플레이하거나 온라인 방을 열어 시작하세요",w/2,h*.52);
+        ctx.textAlign="start";
+        return;
+      }
       const p=state.players[slot];
-      if(fps) firstPerson(p,w,h); else topDown(p,w,h);
+      if(!w || !h || !p) return;
+      if(fps) firstPerson(p,w,h);
+      else {
+        const watch=!p.hp && (state.players.find(q=>q.hp&&q.team===p.team)||state.players.find(q=>q.hp));
+        topDown(watch||p,w,h);
+        if (!p.hp && !state.done) $("[data-message]").textContent=watch?"쓰러졌어요 · 관전 중":"쓰러졌어요 · 결과 집계 중";
+      }
       const remaining=Math.max(0,Math.ceil(timer-state.t));
       $("[data-hud]").textContent=`${remaining}초 · 체력 ${p.hp} · 방탄 ${p.armor} · ${weapon(p)[0]} ${p.clip[p.w]}/${p.reserve[p.w]}${fps?" · "+state.score.join(" : "):""}`;
       if(state.done&&paid!==state.round) {
@@ -277,8 +303,12 @@
         ctx.fillStyle="#474456";ctx.fillRect(x(col),y(row),s,s);
       }
       for(const item of state.loot)if(visible(p,item)) {
-        ctx.fillStyle=lootColors[item.grade];ctx.font="bold 11px sans-serif";
-        ctx.fillText(lootGrades[item.grade]+" "+lootTypes[item.type],x(item.x)-14,y(item.y));
+        const px=x(item.x),py=y(item.y),r=Math.max(8,s*.29);
+        ctx.fillStyle="#101929";ctx.strokeStyle=lootColors[item.grade];ctx.lineWidth=2;
+        ctx.beginPath();ctx.arc(px,py,r,0,tau);ctx.fill();ctx.stroke();
+        const icon=lootIcons[item.type];
+        if(icon.complete&&icon.naturalWidth)ctx.drawImage(icon,px-r*.72,py-r*.72,r*1.44,r*1.44);
+        if(distance(p,item)<1.25){ctx.fillStyle=lootColors[item.grade];ctx.font="bold 11px sans-serif";ctx.textAlign="center";ctx.fillText(lootGrades[item.grade]+" "+lootTypes[item.type],px,py+r+12);ctx.textAlign="start";}
       }
       for(const q of state.players)if(q.hp&&visible(p,q)) actor(q,x(q.x),y(q.y),s);
       ctx.restore();
@@ -293,7 +323,7 @@
     }
     function firstPerson(p,w,h) {
       ctx.fillStyle="#303344";ctx.fillRect(0,0,w,h/2);ctx.fillStyle="#635746";ctx.fillRect(0,h/2,w,h/2);
-      const fov=1.12, columns=Math.min(280,w), width=w/columns, depths=[];
+      const fov=zoom?.56:1.12, columns=Math.min(280,w), width=w/columns, depths=[];
       for(let i=0;i<columns;i++){
         const a=p.a+fov*(i/columns-.5),dx=Math.cos(a),dy=Math.sin(a);
         let d=.035;
@@ -342,7 +372,7 @@
     }
     function disconnect() {
       room?.close();room=null;role="";slot=0;state=null;humans.clear();keys.clear();controls.clear();fire=false;
-      cancelAnimationFrame(frame);$('[data-action="start"]').hidden=true;
+      cancelAnimationFrame(frame);zoom=false;$('[data-action="zoom"]')?.setAttribute("aria-pressed","false");$('[data-action="start"]').hidden=true;
     }
     function connect(next) {
       disconnect();role=next;$("[data-message]").textContent="연결 중…";
@@ -352,13 +382,20 @@
         accept:()=>!state||state.done,join(i){humans.set(i,{});},leave(i){humans.delete(i);},input:receive,
         state(nextState) {
           if(nextState?.players?.length!==10)return;
-          if(state?.round!==nextState.round)heading=nextState.players[slot].a;
+          if(state?.round!==nextState.round){heading=nextState.players[slot].a;dialog.querySelector("details").open=false;$("[data-message]").textContent="교전 시작";}
           state=nextState;draw();
         }
       });
       if(role==="host")room.host({listed: $("[data-public]").checked});else room.join($("[data-code]").value);
     }
+    function toggleZoom() {
+      if(!fps || !state)return;
+      zoom=!zoom; $('[data-action="zoom"]').setAttribute("aria-pressed",String(zoom)); draw();
+    }
+    canvas.addEventListener("contextmenu",event=>event.preventDefault());
     canvas.addEventListener("pointerdown",event=>{
+      if(event.button===2){if(fps)toggleZoom();else if(state)aim(event);return;}
+      if(event.button!==0)return;
       if(!state||state.done)return;
       heldAt={x:event.clientX,y:event.clientY};
       canvas.setPointerCapture(event.pointerId);
@@ -416,6 +453,7 @@
   dialog.addEventListener("click",event=>{
       const key=event.target.closest("button")?.dataset.action;
       if(key==="exit")dialog.close();
+      else if(key==="zoom")toggleZoom();
       else if(key==="solo"){disconnect();begin();}
       else if(key==="host")connect("host");
       else if(key==="join")connect("guest");
@@ -424,9 +462,9 @@
       else if(["reload","frag","smoke","flash"].includes(key))send(key);
     });
     dialog.addEventListener("close",disconnect);
-    games.register({id,name,tag:fps?"라운드비 4층 5대5 FPS":"손전등과 전리품 · 2인 5팀",kind:"main",open:()=>dialog.showScreen()});
+    games.register({id,name,tag:fps?"라운드비 4층 5대5 FPS":"손전등과 전리품 · 2인 5팀",kind:"main",open:()=>{dialog.showScreen();draw();}});
   }
   create("night-beam","암전 순찰",false);
-  create("office-strike","라운드비 돌입전",true);
+  create("office-strike","라운드비 총격전",true);
   for(const button of document.querySelectorAll("[data-shooter]"))button.addEventListener("click",()=>games.open(button.dataset.shooter));
 })();

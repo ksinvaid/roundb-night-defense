@@ -28,7 +28,11 @@
     <canvas aria-label="진화 블러드 전장"></canvas>
     <div class="brawl-controls"><button type="button" data-command="drone">드론 이동</button>
       <button type="button" data-command="attack">공격 이동</button><button type="button" data-command="move">이동</button></div>
-    <p>드론을 눌러 이동 · 유닛은 드래그로 선택 · 명령판의 마법진에 드론을 올리면 일반 병사가 해당 본진으로 진격합니다.</p>`;
+    <section class="blood-command" aria-label="전장 밖 지휘소"><strong>지휘소 · 전체 병력 명령</strong>
+      <div class="blood-targets">${bases.map((_,i)=>`<button type="button" data-target="${i}">${i+1}번</button>`).join("")}</div>
+      <div class="blood-officer"><img alt="" src="${kSrc(4,false)}"><span>지휘관 대기 중</span></div>
+    </section>
+    <p>유닛 드래그 선택 · 우클릭 이동 / 공격 이동 · 지휘소에서 본진을 고르면 지휘관이 일반 병력을 보냅니다.</p>`;
   document.body.append(dialog);
   const $ = selector => dialog.querySelector(selector);
   const canvas = $("canvas"), ctx = canvas.getContext("2d");
@@ -36,7 +40,9 @@
   const range = (n,min,max) => Math.min(max,Math.max(min,n));
   const distance = (a,b) => Math.hypot(a.x-b.x,a.y-b.y);
   const heroEvery = 30;
-  const pads = bases.map((_,i)=>({x:875+(i%5)*137,y:680+Math.floor(i/5)*128}));
+  const names = new Map();
+  const myName = () => String(window.knx?.me?.()?.nick || SAVE.nick || "기사").slice(0,18);
+  const playerName = id => names.get(id) || (id === slot ? myName() : "AI " + (id+1));
   const selected = new Set();
   let state, room, role="", slot=0, frame, previous, lastPublish, command="drone", drag, view;
   const humans = new Set();
@@ -73,9 +79,19 @@
     owner.rally={...target,kind:"attack"};
   }
   function issue(id,message) {
-    if (!state || state.done || !message || !Number.isFinite(message.x) || !Number.isFinite(message.y)) return;
+    if (!message) return;
+    if (message.kind === "identity") {
+      if (typeof message.name === "string") names.set(id,message.name.trim().slice(0,18)||"기사");
+      return;
+    }
+    if (!state || state.done) return;
     const owner=state.players[id];
     if (!alive(owner)) return;
+    if (message.kind === "army") {
+      if (Number.isInteger(message.target) && bases[message.target] && message.target !== id) orderArmy(owner,bases[message.target]);
+      return;
+    }
+    if (!Number.isFinite(message.x) || !Number.isFinite(message.y)) return;
     const point={x:range(message.x,20,W-20),y:range(message.y,20,H-20)};
     if (message.kind==="drone") { owner.order=point; return; }
     if (!["attack","move"].includes(message.kind) || !Array.isArray(message.ids)) return;
@@ -84,8 +100,8 @@
       if (unit.owner===id && ids.has(unit.id)) unit.order={...point,kind:message.kind};
     }
   }
-  function send(point) {
-    const input={...point,kind:command,ids:[...selected]};
+  function send(point, kind=command) {
+    const input={...point,kind,ids:[...selected]};
     if (role==="guest") room.input(input);
     else issue(slot,input);
   }
@@ -107,9 +123,6 @@
         }
       }
       if (p.order && walk(p,p.order,240,dt)) p.order=null;
-      const pad=pads.findIndex(point=>distance(p,point)<38);
-      if (pad>=0 && pad!==p.pad) orderArmy(p,bases[pad]);
-      p.pad=pad;
       p.spawn-=dt;
       if (p.spawn<=0 && state.units.filter(u=>u.owner===p.id && !u.hero).length<cap) {
         const unit=unitFor(p,++state.nextId);
@@ -167,7 +180,7 @@
       if (state.done || now-lastPublish>100) {
         if (role==="host") room?.publish({
           time:Math.round(state.time*10)/10,rule:state.rule,done:state.done,winner:state.winner,
-          players:state.players.map(p=>[Math.round(p.x),Math.round(p.y),p.kills,p.hp,p.respawn]),
+          players:state.players.map(p=>[Math.round(p.x),Math.round(p.y),p.kills,p.hp,p.respawn,playerName(p.id)]),
           units:state.units.map(u=>[u.id,u.owner,Math.round(u.x),Math.round(u.y),u.hp,u.max,u.hero?8:species.findIndex(type=>type[6]===u.shape)])
         });
         lastPublish=now;
@@ -192,14 +205,8 @@
     ctx.strokeStyle="#33435a";ctx.lineWidth=2;
     for (let x=0;x<W;x+=100) {ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
     for (let y=0;y<H;y+=100) {ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
-    ctx.fillStyle="#302a55";ctx.fillRect(790,600,790,280);
-    label("공격 명령판",805,622,"#f3e9ff",27,"left");
-    pads.forEach((point,id)=>{
-      ctx.strokeStyle=colors[id];ctx.lineWidth=4;
-      ctx.beginPath();ctx.arc(point.x,point.y,35,0,Math.PI*2);ctx.stroke();
-      ctx.beginPath();ctx.arc(point.x,point.y,27,0,Math.PI*2);ctx.stroke();
-      label(String(id+1),point.x,point.y+8,colors[id],27);
-    });
+    ctx.fillStyle="#243e50";ctx.fillRect(0,H*.46,W,H*.08);
+    ctx.strokeStyle="#526c7d";ctx.setLineDash([22,18]);ctx.beginPath();ctx.moveTo(0,H/2);ctx.lineTo(W,H/2);ctx.stroke();ctx.setLineDash([]);
     state.players.forEach(p=>{
       const base=bases[p.id], color=colors[p.id];
       ctx.fillStyle=alive(p)?color:"#53535d";ctx.fillRect(base.x-54,base.y-36,108,72);
@@ -210,7 +217,7 @@
       ctx.fillStyle=color;ctx.fillRect(p.x-39,p.y-10,78,9);
       const image=images[p.id];
       if (image.complete && image.naturalWidth) ctx.drawImage(image,p.x-24,p.y-79,48,72);
-      label((p.id===slot?"나 · ":"")+(p.id+1)+"번 드론",p.x,p.y+39,color,24);
+      label((p.id===slot?"나 · ":"")+playerName(p.id),p.x,p.y+39,color,24);
     });
     for (const unit of state.units) {
       label(unit.shape,unit.x,unit.y,colors[unit.owner],unit.hero?35:24);
@@ -238,9 +245,12 @@
   }
   canvas.addEventListener("pointerdown",event=>{
     if (!view || !state || state.done) return;
+    if (event.button===2) { send(point(event),selected.size ? "attack" : "drone"); return; }
+    if (event.button!==0) return;
     const p=point(event);
     drag={start:p,end:p};canvas.setPointerCapture(event.pointerId);
   });
+  canvas.addEventListener("contextmenu",event=>event.preventDefault());
   canvas.addEventListener("pointermove",event=>{if(drag)drag.end=point(event);});
   canvas.addEventListener("pointercancel",()=>{drag=null;});
   canvas.addEventListener("pointerup",event=>{
@@ -266,17 +276,17 @@
     cancelAnimationFrame(frame);$("[data-start]").hidden=true;
   }
   function connect(nextRole) {
-    disconnect();role=nextRole;$("[data-message]").textContent="연결 중…";
+    disconnect();names.clear();role=nextRole;$("[data-message]").textContent="연결 중…";
     room=createArenaRoom("blood",{
       error(message){disconnect();$("[data-message]").textContent=message;},
-      ready(id,code){slot=id;$("[data-message]").textContent=id?"방장이 시작하기를 기다리는 중":"초대 코드 "+code;$("[data-start]").hidden=!!id;},
+      ready(id,code){slot=id;if(id)room.input({kind:"identity",name:myName()});$("[data-message]").textContent=id?"방장이 시작하기를 기다리는 중":"초대 코드 "+code;$("[data-start]").hidden=!!id;},
       accept:()=>!state || state.done,
       join(id){humans.add(id);},leave(id){humans.delete(id);},
       input:issue,
       state(snapshot) {
         if (snapshot?.players?.length!==10 || !Array.isArray(snapshot.units)) return;
         state={...snapshot,
-          players:snapshot.players.map(([x,y,kills,hp,respawn],id)=>({id,x,y,kills,hp,respawn})),
+          players:snapshot.players.map(([x,y,kills,hp,respawn,name],id)=>{if(name)names.set(id,name);return {id,x,y,kills,hp,respawn};}),
           units:snapshot.units.map(([id,owner,x,y,hp,max,type])=>({id,owner,x,y,hp,max,hero:type===8,shape:type===8?"★":species[type]?.[6]||"◆"}))
         };
         draw();
@@ -289,6 +299,16 @@
   dialog.addEventListener("click",event=>{
     const button=event.target.closest("button");
     if(!button)return;
+    if (button.hasAttribute("data-target") && state && !state.done) {
+      const target=Number(button.dataset.target);
+      if (target===slot) return;
+      const message={kind:"army",target};
+      if(role==="guest")room.input(message);else issue(slot,message);
+      const officer=$(".blood-officer");
+      officer.querySelector("span").textContent=`${playerName(target)} 본진으로 진격`;
+      officer.animate([{transform:"translateX(0)"},{transform:"translateX(26px)"},{transform:"translateX(0)"}],{duration:460});
+      dialog.querySelectorAll("[data-target]").forEach(b=>b.setAttribute("aria-pressed",String(b===button)));
+    }
     if(button.hasAttribute("data-exit"))dialog.close();
     if(button.hasAttribute("data-play")){disconnect();begin();}
     if(button.hasAttribute("data-host"))connect("host");

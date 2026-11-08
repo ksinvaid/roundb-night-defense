@@ -57,3 +57,16 @@ section.brawl {
 }
 section.brawl[hidden] { display: none; }
 section.brawl canvas { flex: 1 0 40dvh; height: auto; min-height: 0; }
+
+.blood-command { display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:8px; margin-top:8px; border:1px solid #677da0; border-radius:10px; background:#253654; }
+.blood-targets { display:flex; flex-wrap:wrap; gap:4px; }
+.blood-targets button[aria-pressed="true"], .rb-shooter [aria-pressed="true"] { background:#f4cd6a; color:#151b2c; }
+.blood-officer { display:flex; align-items:center; gap:5px; font-size:12px; }
+.blood-officer img { width:32px; height:36px; object-fit:contain; }
+.shooter-guide { border:1px solid #51617c; border-radius:10px; padding:7px 10px; margin:4px 0; }
+.shooter-guide summary { cursor:pointer; font-weight:800; }
+.shooter-loot-key { display:flex; flex-wrap:wrap; gap:6px; }
+.shooter-loot-key span { display:flex; align-items:center; gap:3px; background:#283750; border-radius:6px; padding:3px 6px; font-size:11px; }
+.shooter-loot-key img { width:18px; height:18px; }
+.rb-context-ping { position:fixed; z-index:2147482999; width:26px; height:26px; border:2px solid #ffe18e; border-radius:50%; pointer-events:none; animation:rb-context-ping .42s ease-out both; }
+@keyframes rb-context-ping { from { opacity:.95; transform:translate(-50%,-50%) scale(.35); } to { opacity:0; transform:translate(-50%,-50%) scale(1.35); } }

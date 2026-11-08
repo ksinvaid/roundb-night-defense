@@ -3854,6 +3854,7 @@ html[data-lowfx="1"]{scroll-behavior:auto}
           <button type="button" class="lb-game-shortcut" data-game-spot="3f-studio"><strong>LORD 영주전</strong><small>영지를 넓히고 용 사냥</small></button>
           <button type="button" class="lb-game-shortcut" data-game-spot="3f-desks"><strong>서바이버</strong><small>몰려오는 공실 귀신 버티기</small></button>
           <button type="button" class="lb-game-shortcut" data-game-spot="3f-ac"><strong>소용돌이·미로</strong><small>터렛을 지어 길목 방어</small></button>
+          <button type="button" class="lb-game-shortcut" data-act="flr-open"><strong>라운드비 층 길</strong><small>3·4층 배치도 방어전</small></button>
           <button type="button" class="lb-game-shortcut" data-open-brawl><strong>⚔ 대난투</strong><small>기사 10인전 · 스킬 4개</small></button>
           <button type="button" class="lb-game-shortcut" data-shooter="night-beam"><strong>암전 순찰</strong><small>손전등 전술전 · 2인 5팀</small></button>
         </div>
@@ -3891,7 +3892,7 @@ html[data-lowfx="1"]{scroll-behavior:auto}
           <button type="button" class="lb-game-shortcut" data-game-spot="4f-wall"><strong>대결</strong><small>유닛을 보내 상대 팀 방 공략</small></button>
           <button type="button" class="lb-game-shortcut" data-game-spot="4f-ac"><strong>로봇대전</strong><small>컨베이어에 로봇 올려 대결</small></button>
           <button type="button" class="lb-game-shortcut" data-open-blood><strong>◉ 진화 블러드</strong><small>자동 생산 · 드론 지휘</small></button>
-          <button type="button" class="lb-game-shortcut" data-shooter="office-strike"><strong>라운드비 돌입전</strong><small>4층 공유오피스 · 3D 5대5</small></button>
+          <button type="button" class="lb-game-shortcut" data-shooter="office-strike"><strong>라운드비 총격전</strong><small>4층 공유오피스 · 3D 5대5</small></button>
         </div>
       </div>
       <div class="lb-sheet" id="lb-sheet" hidden></div>
@@ -9190,11 +9191,15 @@ function tdSpawn(W, type, lane, o) {
   const hp = o.hp != null ? o.hp : b.hp * TD_SCALE_HP(s) * tdDK(W, s, "hp") * (W.mut.hp || 1) * (o.hpx || 1);
   const e = {id:W.nid++, type, lane, d:o.d || 0, x:ln.pts[0][0], y:ln.pts[0][1], hp, max:hp, r:b.r * (o.rs || 1), spd:b.spd * W.map.spdK * W.D.spd * (W.mut.spd || 1) * (o.spdx || 1), slow:0, slowF:1, stun:0, mark:0, weak:0, boss:b.boss ? 1 : 0, bk:o.bk || "", ar:b.ar || 0,
     leak:o.leak != null ? o.leak : b.leak, gold:hp * TD_TUNE.kGold * Math.pow(TD_SCALE_HP(s), -TD_TUNE.gDecay) * TD_TUNE.goldMul * W.D.gold * (W.mut.gold || 1) * (o.goldx || 1) * (b.boss ? .6 : 1), wob:W.rng() * 6, flash:0, dead:false, bonus:o.bonus ? 1 : 0, t0:0, t1:0, lat:b.boss ? 0 : (W.rng() - .5) * 56};
+  if (W.diff === "hell" && !e.bonus) {
+    if (!e.boss && s >= 4 && e.id % (s >= 20 ? 4 : 5) === 0) { e.phaseAt = W.t + 2.7; e.spd *= 1.22; }
+    if (type === "dragon" && s === TD_STAGES) e.siegeAt = W.t + 8;
+  }
   W.en.push(e); W.pool[W.stage] = (W.pool[W.stage] || 0) + hp; return e;
 }
 function tdStartStage(W) {
-  const s = ++W.stage, pl = W.plan[s], D = W.D, mut = W.mut, L = W.map.lanes.length; W.wt = 0; W.q = []; W.ev.push({k:"stage", s, kind:pl.kind, n:pl.n});
-  for (const p of W.pl) { p.gold += Math.round(TD_TUNE.sbA + TD_TUNE.sbB * s); p.ready = false; }
+  const s = ++W.stage, pl = W.plan[s], D = W.D, mut = W.mut, L = W.map.lanes.length; W.wt = 0; W.q = []; W.ev.push({k:"stage", s, kind:pl.kind, n:W.diff === "hell" && pl.kind === "final" ? pl.n + " · 터렛 공성" : W.diff === "hell" && s >= 4 && pl.kind !== "bonus" ? pl.n + " · 점멸 병력" : pl.n});
+  for (const p of W.pl) { p.gold += Math.round((TD_TUNE.sbA + TD_TUNE.sbB * s) * (W.diff === "hell" ? .76 : 1)); p.ready = false; }
   if (pl.kind === "bonus") { const n = 30 + Math.round(s * .3); for (let i = 0; i < n; i++) W.q.push({t:i * .55, type:"ghost", lane:i % L, o:{bonus:1, hpx:.7, leak:0, goldx:7, spdx:1.9}}); W.wdur = n * .55; return; }
   const thick = pl.mod === "thick", fast = pl.mod === "fast", focus = pl.mod === "focus", boss = pl.kind === "boss" || pl.kind === "final";
   const ar = TD_ARCH[pl.arch || "tide"], dur = ar.dur * (boss ? .9 : 1), target = tdPool(W, s) * (boss ? TD_TUNE.bossFrac * .6 : 1);
@@ -9264,6 +9269,28 @@ function tdStep(W, dt) {
   const scr = [];
   for (const e of W.en) {
     if (e.dead) continue; if (e.flash > 0) e.flash -= dt; e.wob += dt * 6; if (e.slow > 0) { e.slow -= dt; if (e.slow <= 0) e.slowF = 1; } if (e.mark > 0) e.mark -= dt; if (e.weak > 0) e.weak -= dt;
+    if (e.phaseAt && W.t >= e.phaseAt) {
+      e.phaseAt = W.t + 5;
+      e.d = Math.min(W.map.lanes[e.lane].len - 1, e.d + 180 + W.stage * 4);
+      e.stun = 0; e.slow = 0; e.slowF = 1; e.t1 = .65;
+      ev.push({k:"rushs", x:e.x, y:e.y, phase:1});
+    }
+    if (e.siegeAt && W.t >= e.siegeAt) {
+      if (!e.siegeTarget) {
+        const target = W.tu.filter(t => Math.hypot(t.x-e.x,t.y-e.y)<550)
+          .sort((a,b) => Math.hypot(a.x-e.x,a.y-e.y)-Math.hypot(b.x-e.x,b.y-e.y))[0];
+        if (target) { e.siegeTarget=target; e.siegeAt=W.t+2.5; ev.push({k:"rushs",x:target.x,y:target.y,siege:1}); }
+        else e.siegeAt=W.t+1;
+      } else {
+        const t=e.siegeTarget; e.siegeTarget=null; e.siegeAt=W.t+6;
+        const index=W.tu.indexOf(t);
+        if (index>=0) {
+          W.tu.splice(index,1); tdThDel(W,t); W.tv++; W.nTu=W.tu.length;
+          if (W.pl[t.ow]) W.pl[t.ow].nTu=Math.max(0,W.pl[t.ow].nTu-1);
+          ev.push({k:"tuDel",i:t.id,x:t.x,y:t.y}); ev.push({k:"rushs",x:t.x,y:t.y,siege:2});
+        }
+      }
+    }
     if (e.type === "screamer") scr.push(e);
     if (e.boss && e.bk) {
       e.t0 += dt;
@@ -9329,7 +9356,11 @@ function tdStep(W, dt) {
       ev.push({k:"splash", x:best.x, y:best.y, r:sp, c:tu.f});
     } else {
       tdHurt(W, best, dmg * (d.boss && best.boss ? d.boss : 1), tu.ow, d.pierce);
-      if (d.push && !best.dead) best.d = Math.max(0, best.d - d.push * (best.boss ? .3 : 1));
+      if (d.push && !best.dead) {
+        const resistance = W.diff === "hell" ? (best.boss ? .04 : W.t < (best.pushUntil || 0) ? 0 : best.phaseAt ? .12 : .38) : best.boss ? .3 : 1;
+        best.d = Math.max(0, best.d - d.push * resistance);
+        if (W.diff === "hell" && resistance > 0) best.pushUntil = W.t + 1.9;
+      }
       if (d.chain) { let prev = best; const hit = new Set([best.id]); for (let c = 0; c < d.chain; c++) { let nb = null, nd = 1e9; query(prev.x, prev.y, 150, e => { if (hit.has(e.id)) return; const dx = e.x - prev.x, dy = e.y - prev.y, dd = dx * dx + dy * dy; if (dd < 22500 && dd < nd) { nd = dd; nb = e; } }); if (!nb) break; hit.add(nb.id); ev.push({k:"arc", x1:prev.x, y1:prev.y, x2:nb.x, y2:nb.y}); tdHurt(W, nb, dmg * Math.pow(.75, c + 1), tu.ow, d.pierce); prev = nb; } }
     }
   }
@@ -9409,7 +9440,7 @@ function tdView(W, rect) {
   const V = {t:Math.round(W.t * 10) / 10, s:W.stage, ph:W.ph, cd:Math.max(0, Math.round(W.cd * 10) / 10), g:Math.round(W.gauge * 10) / 10, o:W.over, fx:[W.fx.rally, W.fx.slow, W.fx.shield].map(v => Math.round(v * 10) / 10), kills:W.kills,
     pl:W.pl.map(p => [Math.floor(p.gold), p.nTu, p.kills, Math.round(p.skCd * 10) / 10, p.ready ? 1 : 0, p.ai ? 1 : 0, Math.round(p.x), Math.round(p.y), p.q.length, p.moving, p.face]),
     up:W.pl.map(p => p.up.slice()), tv:W.tv, nx:W.plan[Math.min(TD_STAGES, W.stage + 1)] || null, tn:W.tu.length, en:[], ne:0};
-  for (const e of W.en) { if (e.dead) continue; V.ne++; if (rect && (e.x < rect[0] || e.x > rect[2] || e.y < rect[1] || e.y > rect[3])) continue; V.en.push([e.id, TD_ETYPES.indexOf(e.type), Math.round(e.x * 10) / 10, Math.round(e.y * 10) / 10, Math.round(e.hp), Math.round(e.max), (e.stun > 0 ? 1 : 0) | (e.slow > 0 ? 2 : 0) | (e.boss ? 4 : 0) | (e.mark > 0 ? 8 : 0) | (e.flash > 0 ? 16 : 0) | (e.bonus ? 32 : 0), ["", "call", "rush", "regen"].indexOf(e.bk)]); }
+  for (const e of W.en) { if (e.dead) continue; V.ne++; if (rect && (e.x < rect[0] || e.x > rect[2] || e.y < rect[1] || e.y > rect[3])) continue; V.en.push([e.id, TD_ETYPES.indexOf(e.type), Math.round(e.x * 10) / 10, Math.round(e.y * 10) / 10, Math.round(e.hp), Math.round(e.max), (e.stun > 0 ? 1 : 0) | (e.slow > 0 ? 2 : 0) | (e.boss ? 4 : 0) | (e.mark > 0 ? 8 : 0) | (e.flash > 0 ? 16 : 0) | (e.bonus ? 32 : 0) | (e.phaseAt ? 64 : 0), ["", "call", "rush", "regen"].indexOf(e.bk)]); }
   if (W.over) V.res = {sc:tdScore(W), pl:W.pl.map(p => [p.kills, p.built, Math.round(p.dealt)])};
   return V;
 }
@@ -9540,6 +9571,7 @@ function tdDraw(time) {
   en.sort((a, b) => a[2] - b[2]);
   for (const [r, x, y] of en) { const type = TD_ETYPES[r[1]], b = TD_EN[type], fg = r[6], e = {id:r[0], type, x, y, r:b.r, wob:time * 6 + r[0], flash:fg & 16 ? .1 : 0, slow:fg & 2 ? 1 : 0, slowF:.6, stun:fg & 1 ? 1 : 0, atk:0, hp:r[4], max:r[5], boss:fg & 4 ? 1 : 0, bk:bk[r[7]] || ""};
     drawEnemy(g, e, time, 1);
+    if (fg & 64) { g.strokeStyle = "#bd9dff"; g.lineWidth = 2; g.setLineDash([5,4]); ell(g,x,y,e.r*1.38,e.r*1.22); g.stroke(); g.setLineDash([]); }
     if (fg & 32) { g.strokeStyle = "rgba(255,210,74,.95)"; g.lineWidth = 3; ell(g, x, y, e.r * 1.25, e.r * 1.1); g.stroke(); g.fillStyle = "#ffd24a"; g.font = "700 12px sans-serif"; g.textAlign = "center"; g.fillText("₩", x, y - e.r * 1.3); }
     if (fg & 8) { g.strokeStyle = "rgba(255,70,70,.95)"; g.lineWidth = 2.5; ell(g, x, y, e.r * 1.4, e.r * 1.4); g.stroke(); } }
   // 건설 기사(기사단 캐릭터)
@@ -9628,7 +9660,12 @@ function tdConsume(evs) {
     else if (k === "fail") { if (e.id === TDU.me) { if (TDU.pend.length) TDU.pend.shift(); tdFail(e.why); } }
     else if (k === "skill") { tdRing(e.x, e.y, TD_SK[TD_SKEYS[e.s]].tgt ? 260 : 380, "rgba(106,168,255,.95)", .7, true); sfx("skill"); toast(`${TDU.names[e.id] || "동료"} · ${TD_SK[TD_SKEYS[e.s]].n}!`); }
     else if (k === "early") toast(`서둘러 출근! 모두 +₩${e.g}`);
-    else if (k === "summon") sfx("summon"); else if (k === "rushs") sfx("rushs");
+    else if (k === "summon") sfx("summon"); else if (k === "rushs") {
+      if (e.siege === 1) { tdRing(e.x,e.y,92,"#ff4966",2.5,true); tdFloat(e.x,e.y-45,"드래곤 조준","#ff8b9b"); }
+      if (e.siege === 2) { tdRing(e.x,e.y,130,"#ff744c",.7,true); tdFloat(e.x,e.y-45,"터렛 파괴","#ff8b9b"); addShakeTd(9); }
+      if (e.phase) tdRing(e.x,e.y,95,"#bda0ff",.55,true);
+      tdSfx("rushs",220);
+    }
   }
 }
 
@@ -37217,7 +37254,7 @@ function bindInput() {
   window.addEventListener("blur", () => { V.keys = {}; V.atk = false; V.atkKey = false; });
   const cv = V.cv;
   cv.addEventListener("pointermove", e => { if (e.pointerType === "touch") return; const r = cv.getBoundingClientRect(); V.mouse.x = e.clientX - r.left; V.mouse.y = e.clientY - r.top; V.mouse.t = performance.now(); V.mouse.on = true; });
-  cv.addEventListener("pointerdown", e => { if (e.pointerType === "touch") return; if (e.button === 0 && !V.ui) { V.atk = true; V.mouse.on = true; const r = cv.getBoundingClientRect(); V.mouse.x = e.clientX - r.left; V.mouse.y = e.clientY - r.top; V.mouse.t = performance.now(); } else if (e.button === 2 && !V.ui) { V.castQ[0] = V.castQ[0] || 0; } });
+  cv.addEventListener("pointerdown", e => { if (e.pointerType === "touch") return; if (e.button === 0 && !V.ui) { V.atk = true; V.mouse.on = true; const r = cv.getBoundingClientRect(); V.mouse.x = e.clientX - r.left; V.mouse.y = e.clientY - r.top; V.mouse.t = performance.now(); } else if (e.button === 2 && !V.ui) { V.dashQ = true; } });
   window.addEventListener("pointerup", e => { if (e.pointerType !== "touch" && e.button === 0) V.atk = false; });
   cv.addEventListener("contextmenu", e => e.preventDefault());
   /* 스킬·공격·물약 버튼 */
@@ -40208,18 +40245,18 @@ function flrLabels(g, map, c0, time) {   // 원래 "전원실" 글자 자리 —
 /* ----- 맵 고르기(미로 모드 시작 화면) ----- */
 function flrEnsureSel() {
   const box = $("#td-opts"); if (!box || $("#fm-row")) return;
-  box.insertAdjacentHTML("beforeend", `<div class="row" id="fm-row" hidden><span class="small dim">맵 (미로 모드)</span><div class="seg" id="fm-seg" role="radiogroup" aria-label="미로 맵"></div></div><p class="small dim" id="fm-desc" hidden></p>`);
+  box.insertAdjacentHTML("afterbegin", `<div class="row" id="fm-row" hidden><span class="small dim">방어전 맵</span><div class="seg" id="fm-seg" role="radiogroup" aria-label="방어전 맵"></div></div><p class="small dim" id="fm-desc" hidden></p>`);
 }
 function flrSelUi() {
   flrEnsureSel(); const mz = SAVE.mode === "maze", td = mz || SAVE.mode === "td", row = $("#fm-row"), desc = $("#fm-desc");
   const back = $('#scr-select .sel-head [data-act="to-title"]'); if (back && td) back.textContent = "나가기";   // 시작 화면에서도 한눈에 보이는 나가기(→ 로비)
-  if (!row) return; row.hidden = desc.hidden = !mz; if (!mz) return;
-  const on = flrOn(); $("#fm-seg").innerHTML = [["rand", "무작위 미로"], ["floor", FLR_NAME + " (신규)"]].map(([k, l]) => `<button role="radio" aria-checked="${(k === "floor") === on}" data-act="flr-map" data-m="${k}">${l}</button>`).join("");
-  desc.innerHTML = on ? `<b>${FLR_NAME}</b> — 라운드비 3F·4F 배치도 위에 그려진 <b>한 줄 긴 길</b>이에요. 4F '시작'(실외기실 앞)에서 출발해 4F를 구불구불 돌고, 큰 복도를 따라 3F로 넘어와 3F '끝'(실외기실)까지 가요. 길이 합쳐지는 곳 없이 하나라서 귀신이 오래 걸어요 · 터렛은 길만 피해 아무 데나 지어요 · <span class="faint">이 맵 판은 순위에 올리지 않아요(맵이 달라 미로 순위와 섞으면 불공평해요) · 내 최고 기록은 이 기기에 남아요</span>` : `판마다 모양이 달라지는 네모난 미로예요. 길이 합쳐지는 구간이 있어요.`;
+  if (!row) return; row.hidden = desc.hidden = !td; if (!td) return;
+  const on = flrOn(); $("#fm-seg").innerHTML = [["vortex", "소용돌이"], ["rand", "미로"], ["floor", FLR_NAME]].map(([k, l]) => `<button role="radio" aria-checked="${k === (on ? "floor" : mz ? "rand" : "vortex")}" data-act="flr-map" data-m="${k}">${l}</button>`).join("");
+  desc.innerHTML = on ? `<b>${FLR_NAME}</b> — 라운드비 3F·4F 배치도 위에 그려진 <b>한 줄 긴 길</b>이에요. 4F '시작'(실외기실 앞)에서 출발해 4F를 구불구불 돌고, 큰 복도를 따라 3F로 넘어와 3F '끝'(실외기실)까지 가요. 길이 합쳐지는 곳 없이 하나라서 귀신이 오래 걸어요 · 터렛은 길만 피해 아무 데나 지어요 · <span class="faint">이 맵 판은 순위에 올리지 않아요(맵이 달라 미로 순위와 섞으면 불공평해요) · 내 최고 기록은 이 기기에 남아요</span>` : mz ? "판마다 모양이 달라지는 네모난 미로예요." : "바깥에서 전원실까지 이어지는 나선형 길이에요.";
   if (on) {
-    $("#wi-title").textContent = "미로 방어전 · " + FLR_NAME;
+    $("#wi-title").textContent = "방어전 · " + FLR_NAME;
     $("#wi-text").textContent = "라운드비 3F·4F 배치도 위의 굵은 파란 길을 따라 귀신 떼가 4F '시작'에서 3F '끝'(실외기실)으로 몰려와요. 내 기사(캐릭터)가 직접 걸어 다니며 길과 건물 바깥만 피해 아무 데나 터렛을 짓고, 귀신도 직접 때려요. 길이 하나뿐이라 막을 곳이 한 줄이에요 — 길목을 골라 두껍게 막아 보세요. 균열 게이지가 100%가 되면 끝, 30스테이지를 버티면 새벽 6시 출근이에요.";
-    $("#mode-desc").textContent = "배치도 위 한 줄 길 협동 모드예요. '미로'의 새 맵이에요.";
+    $("#mode-desc").textContent = "라운드비 3·4층 배치도 위에서 지키는 방어전이에요.";
     $("#sel-title").textContent = FLR_NAME + "을 막아 볼까요?";
   }
 }
@@ -40261,7 +40298,8 @@ function flrLeaveModal() {
   return `<div class="modal" role="dialog" aria-modal="true" aria-label="나가기"><div><h2 class="disp" style="font-size:28px">나갈까요?</h2><p class="dim small">${net ? "같이 하는 중이라 멈출 수 없어요. 나가면 내 자리는 AI가 이어받아요." : "이 판은 저장되지 않아요. 시간은 멈춰 있어요."}</p><div class="row" style="justify-content:center"><button class="btn btn-red" data-act="td-resume">계속하기</button><button class="btn" data-act="leave-td">나가기 (로비로)</button></div></div></div>`;
 }
 Object.assign(A, {
-  "flr-map": b => { SAVE.mzmap = b.dataset.m === "floor" ? "floor" : "rand"; persist(true); buildMode(); sfx("click"); },
+  "flr-open": () => { SAVE.mzmap = "floor"; setMode("maze"); A["to-select"](); },
+  "flr-map": b => { const map = b.dataset.m; SAVE.mzmap = map === "floor" ? "floor" : "rand"; setMode(map === "vortex" ? "td" : "maze"); persist(true); buildMode(); sfx("click"); },
   "exit-td": () => {
     if (UI.screen !== "td") return;
     if (TDU.ended || !TDU.V) { tdEnd(); A["to-title"](); return; }
@@ -42198,11 +42236,11 @@ setTimeout(prefetchRank, 1200);   // 랭킹 화면이 바로 뜨도록 미리 �
 try { const kp = window.knx && knx.start && knx.start(); if (kp && kp.catch) kp.catch(e => console.error('knx.start', e)); } catch (e) { console.error('knx.start', e); }   /* ===SHELL_BOOT=== */
 </script>
 
-<link rel="stylesheet" href="brawl.css?v=full3">
+<link rel="stylesheet" href="brawl.css?v=tactics2">
 <link rel="stylesheet" href="server-rooms.css?v=1">
-<script src="server-rooms.js?v=1"></script>
-<script src="arena-room.js?v=rooms1"></script>
-<script src="brawl.js?v=rooms1"></script>
-<script src="blood.js?v=rooms1"></script>
-<link rel="stylesheet" href="shooters.css?v=full3">
-<script src="shooters.js?v=rooms1"></script>
+<script src="server-rooms.js?v=tactics2"></script>
+<script src="arena-room.js?v=tactics2"></script>
+<script src="brawl.js?v=tactics2"></script>
+<script src="blood.js?v=tactics2"></script>
+<link rel="stylesheet" href="shooters.css?v=tactics2">
+<script src="shooters.js?v=tactics2"></script>

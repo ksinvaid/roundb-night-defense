@@ -1,7 +1,7 @@
 (() => {
   const names = {
     dungeon: "던전 인 라운드비", survivor: "서바이버", brawl: "대난투",
-    blood: "진화 블러드", "night-beam": "암전 순찰", "office-strike": "라운드비 돌입전"
+    blood: "진화 블러드", "night-beam": "암전 순찰", "office-strike": "라운드비 총격전"
   };
   const entries = new Map([
     ["dungeon", code => { dgn.open(); dgnNet.joinByCode(code); }],

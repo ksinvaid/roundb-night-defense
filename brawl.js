@@ -28,7 +28,7 @@
       <button type="button" data-act="dash">돌진 · Shift</button>
       <button type="button" data-act="floor">층 이동 · E</button>
     </div>
-    <p>WASD·방향키 또는 바닥 터치로 이동 · 기본공격 자동 · 스킬 1–4</p>
+    <p>WASD·방향키 / 바닥 클릭 이동 · 우클릭·Shift로 회피 돌진 · 기본공격 자동 · 스킬 1–4</p>
     <div class="brawl-result" hidden><strong data-result></strong><button type="button" data-restart>다시 하기</button></div>`;
   document.body.append(dialog);
   const canvas = dialog.querySelector("canvas");
@@ -123,6 +123,7 @@
     actor.effect = {range,color,kind,x:target?.x,y:target?.y};
   }
   function damage(actor,target,amount) {
+    if (target.dash > 1.25) return;
     const protection = target.shield > 0 ? .65 : 1;
     target.hp = Math.max(0,target.hp-Math.max(1,Math.round(amount*protection*(actor.boost>0?1.3:1))));
     if (!target.hp) {
@@ -158,7 +159,7 @@
     const area = ["aoe","zone","cone","beam"].includes(effect.kind);
     const aim = targets[0] && Math.atan2(targets[0].y-actor.y,targets[0].x-actor.x);
     const directional = effect.kind==="cone" || effect.kind==="beam";
-    flash(actor,range,effect.col || "#c8a4ff",area ? null : targets[0]);
+    flash(actor,range,effect.col || "#c8a4ff",targets[0],effect.kind);
     for (const target of area?targets:targets.slice(0,1)) {
       const angle = Math.atan2(target.y-actor.y,target.x-actor.x)-aim;
       if (directional && Math.abs(Math.atan2(Math.sin(angle),Math.cos(angle)))>(effect.kind==="beam"?.19:(effect.angle||100)*Math.PI/360)) continue;
@@ -260,11 +261,16 @@
         actor.route = path(actor,target.x,target.y);
         actor.repath = .38 + actor.id * .025;
       }
+      if (actor.hp < 95 && actor.dash <= 0 && distance(target) < 150 && actor.id % 2) {
+        actor.dash = 1.5;
+        const away = path(actor,actor.x+(actor.x-target.x)*2,actor.y+(actor.y-target.y)*2);
+        if (away.length) actor.route = away;
+      }
       if (elapsed > 1.2 && distance(target) < 215) {
         const slot = actor.skills.findIndex(cd=>cd<=0);
         if (slot>=0) cast(actor,slot);
       }
-      follow(actor, actor.route, 210 + actor.id * 5, dt);
+      follow(actor, actor.route, actor.dash > 1.25 ? 620 : 210 + actor.id * 5, dt);
     }
   }
   function follow(actor, route, speed, dt) {
@@ -322,6 +328,11 @@
         ctx.drawImage(actor.image, -w/2, -size, w, size);
         ctx.restore();
       }
+      if (actor.dash > 1.25) {
+        ctx.save();ctx.strokeStyle="#a8ecff";ctx.globalAlpha=.7;
+        for(let i=0;i<3;i++){ctx.beginPath();ctx.ellipse(x,y-8-i*4,20+i*4,5+i,0,0,Math.PI*2);ctx.stroke();}
+        ctx.restore();
+      }
       if (attack > 0) {
         const reach = effect?.x == null ? size : Math.max(size * .7, Math.hypot(dx, dy) * scale / worldScale);
         ctx.save();
@@ -334,9 +345,11 @@
         ctx.lineWidth = 4;
         ctx.beginPath();
         ctx.moveTo(reach * .25, -size * .35);
-        if (effect?.kind === "proj") {
+        if (effect?.kind === "proj" || effect?.kind === "beam") {
           ctx.moveTo(reach * (1 - attack), 0);
           ctx.lineTo(reach, 0);
+        } else if (effect?.kind === "aoe" || effect?.kind === "orbit") {
+          for(let i=0;i<4;i++){ctx.moveTo(0,0);ctx.lineTo(Math.cos(i*Math.PI/2)*reach,Math.sin(i*Math.PI/2)*reach);}
         } else {
           ctx.quadraticCurveTo(reach * .82, -size * .48, reach, size * .15);
         }
@@ -374,7 +387,7 @@
     const done = alive.length <= 1 || elapsed >= duration;
     if (role === "host" && (done || now-lastSend >= 70)) {
       lastSend = now;
-      room.publish({roundId,elapsed,done,humans:remote.size+1,fighters:fighters.map(({x,y,hp,floor,flash,effect,skills,kills,summon,orbit,place})=>({x,y,hp,floor,flash,effect,skills,kills,summon,orbit,place}))});
+      room.publish({roundId,elapsed,done,humans:remote.size+1,fighters:fighters.map(({x,y,hp,floor,flash,effect,skills,kills,summon,orbit,place,dash})=>({x,y,hp,floor,flash,effect,skills,kills,summon,orbit,place,dash}))});
     }
     if (done) {
       running = false;
@@ -461,7 +474,9 @@
     if (role === "host") room.host({listed: dialog.querySelector("[data-public]").checked});
     else room.join(dialog.querySelector("[data-code]").value);
   }
+  canvas.addEventListener("contextmenu", event => event.preventDefault());
   canvas.addEventListener("pointerdown", event => {
+    if (event.button !== 0 && event.button !== 2) return;
     if (!running || !result.hidden || !canvas.brawlViews) return;
     const box = canvas.getBoundingClientRect(), map = floorOf(player);
     const view=canvas.brawlViews.find(v=>v.floor===player.floor);
@@ -471,6 +486,7 @@
     const y = ((event.clientY-box.top-top)/scale + map.view[1])*worldScale;
     if (role === "guest") room?.input({tx:x,ty:y});
     else destination = path(player,x,y);
+    if (event.button === 2) control("dash");
   });
   const keys = new Set(["w","a","s","d","arrowup","arrowdown","arrowleft","arrowright","shift","e","1","2","3","4"]);
   window.addEventListener("keydown", event => {

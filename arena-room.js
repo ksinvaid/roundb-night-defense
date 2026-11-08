@@ -110,3 +110,19 @@ window.roundbArenaScreen = function (screen) {
     previousFocus?.focus();
   };
 };
+
+
+// Preserve native editing shortcuts, while game surfaces own their right-click menu.
+document.addEventListener("contextmenu", event => {
+  if (!event.target.closest?.("#app, section.brawl") ||
+      event.target.closest("input, textarea, [contenteditable=true]")) return;
+  event.preventDefault();
+  if (!event.target.closest("canvas") || event.target.closest("section.brawl, #scr-dungeon")) return;
+  const marker = document.createElement("span");
+  marker.className = "rb-context-ping";
+  marker.setAttribute("aria-hidden", "true");
+  marker.style.left = event.clientX + "px";
+  marker.style.top = event.clientY + "px";
+  document.body.append(marker);
+  setTimeout(() => marker.remove(), 420);
+}, true);
