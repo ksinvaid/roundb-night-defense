@@ -117,3 +117,7 @@ section.brawl canvas { flex: 1 0 40dvh; height: auto; min-height: 0; }
 .shooter-scoreboard .mine { background:#293c61; color:#ffdc8a; }
 .shooter-link-status { color:#ffe09b; font-weight:800; }
 .rb-shooter [hidden] { display:none; }
+
+.shooter-tactical [data-armory]:not([hidden]) { display:flex; flex-wrap:wrap; gap:5px; }
+.shooter-tactical [data-armory] b,.shooter-tactical [data-armory] small { display:block; }
+.shooter-tactical [data-armory] small { font-size:10px; color:#e0cfa7; }

@@ -7,6 +7,10 @@
     ["돌격 자동소총",32,11,.20,7],["철벽 단축 산탄총",8,28,.52,4.6],
     ["정밀 지정사수총",12,22,.42,10],["방패 중기관총",55,7,.13,6.5]
   ];
+  const shop = [
+    {gun:1,role:"기관단총",cost:350},{gun:2,role:"산탄총",cost:400},
+    {gun:0,role:"카빈",cost:450},{gun:4,role:"기관총",cost:550},{gun:3,role:"저격총",cost:650}
+  ];
   const pistol = ["권총",12,13,.36,6];
   const knife = ["전술 단검",1,36,.5,1.2];
   const colors = ["#ffb66d","#75bdff","#9bea93","#f590c9","#d2b3ff"];
@@ -90,7 +94,7 @@
       </details>
       ${fps?`<div class="shooter-tactical arena-combat" hidden>
         <span data-tactical role="status"></span>
-        <div data-armory hidden><button type="button" data-action="buy-rifle">주총 · 450</button><button type="button" data-action="buy-armor">방탄 · 300</button><button type="button" data-action="buy-utility">전술 장비 · 200</button></div>
+        <div data-armory hidden>${shop.map(({gun,role,cost})=>`<button type="button" data-action="buy-gun-${gun}"><b>${guns[gun][0]}</b><small>${role} · ${cost} C</small></button>`).join("")}<button type="button" data-action="buy-armor">방탄 · 300</button><button type="button" data-action="buy-utility">전술 장비 · 200</button></div>
         <button type="button" data-action="objective">설치·해체 E</button><button type="button" data-action="signature">고유 능력 Q</button>
       </div>`:""}
       <aside data-scoreboard class="arena-combat shooter-scoreboard" hidden aria-label="전적판"></aside>
@@ -128,7 +132,7 @@
     function weapon(p) { return p.w===1?pistol:p.w===2?knife:guns[p.primary]; }
     function spawn(p) {
       const [x,y]=fps?[[2.5,4.5,10.5,12.5,18.5][Math.floor(p.i/2)],p.team===(state?.attack??0)?2.5:24.5]:spawns[p.i];
-      Object.assign(p,{primary:p.k,damageBy:{},x,y,a:y<13?Math.PI/2:-Math.PI/2,hp:100,armor:0,clip:[guns[p.k][1],12,1],
+      Object.assign(p,{primary:p.k,recoil:0,moveError:0,damageBy:{},x,y,a:y<13?Math.PI/2:-Math.PI/2,hp:100,armor:0,clip:[guns[p.k][1],12,1],
         reserve:[fps?90:16,36,0],w:0,cd:0,load:0,down:0,blind:0,shot:0,loot:-1,progress:0,
         upgrade:0,mag:0,grenades:[1,1,1],think:0,objective:0,signature:1,stim:0,rifle:true,boughtUtility:false});
     }
@@ -137,7 +141,7 @@
       cancelAnimationFrame(frame);
       const me=Number(window.lbDbg?.ME?.kn)||0;
       state={round:crypto.randomUUID(),t:0,done:false,score:Array(fps?2:5).fill(0),effects:[],loot:[],
-        tactical:fps && $("[data-match]").value==="objective",feed:[],drops:[],
+        tactical:fps && $("[data-match]").value==="objective",feed:[],drops:[],combatVersion:3,
         players:Array.from({length:10},(_,i)=>({i,k:(i+me)%10,team:team(i),kills:0,deaths:0,assists:0,credits:650}))};
       if(state.tactical) nextRound();
       else state.players.forEach(spawn);
@@ -164,7 +168,7 @@
         p.rifle=false;p.w=1;p.grenades=[0,0,0];p.way=null;p.goal=null;
         if (state.roundNo===4) p.credits=650;
         if (p.i!==0 && !humans.has(p.i)) {
-          action(p,"buy-rifle");
+          action(p,p.credits>=750?"buy-gun-3":p.credits>=450?"buy-gun-0":"buy-gun-1");
           if(p.credits>=300)action(p,"buy-armor");
         }
       }
@@ -204,7 +208,11 @@
     function action(p,key) {
       if(!p?.hp)return;
       if(state.tactical && state.phase==="buy") {
-        if(key==="buy-rifle" && !p.rifle && p.credits>=450){p.credits-=450;p.rifle=true;p.w=0;}
+        const offer=shop.find(item=>key==="buy-gun-"+item.gun);
+        if(offer && !p.rifle && p.credits>=offer.cost){
+          p.credits-=offer.cost;p.primary=offer.gun;p.rifle=true;p.w=0;
+          p.clip[0]=guns[offer.gun][1];p.reserve[0]=90;p.load=0;
+        }
         if(key==="buy-armor" && !p.armor && p.credits>=300){p.credits-=300;p.armor=55;}
         if(key==="buy-utility" && !p.boughtUtility && p.credits>=200){p.credits-=200;p.boughtUtility=true;p.grenades=[1,1,1];}
       }
@@ -269,14 +277,21 @@
       return !state.effects.some(e=>e.type===1 && !e.armed &&
         Array.from({length:10},(_,i)=>i/9).some(t=>Math.hypot(e.x-a.x-(b.x-a.x)*t,e.y-a.y-(b.y-a.y)*t)<1.35));
     }
-    function target(p,max,cone) {
+    function target(p,max,cone,heading=p.a) {
       return state.players.filter(q=>q.hp && q.team!==p.team && distance(p,q)<=max &&
-        Math.abs(offset(angle(p,q),p.a))<=cone && visible(p,q)).sort((a,b)=>distance(p,a)-distance(p,b))[0];
+        Math.abs(offset(angle(p,q),heading))<=cone && visible(p,q)).sort((a,b)=>distance(p,a)-distance(p,b))[0];
+    }
+    function shotSpread(p) {
+      const mobility=p.w===0&&[1,7].includes(p.primary)?.6:1;
+      return .008+p.moveError*mobility+p.recoil*.012;
     }
     function shoot(p) {
       if(p.cd>0||p.load>0||p.blind>0)return;
       if(!p.clip[p.w]){reload(p);return;}
-      const gun=weapon(p), enemy=target(p,gun[4],fps?.10:.38);
+      const gun=weapon(p), firearm=fps&&p.w!==2;
+      const heading=p.a+(firearm?(Math.random()*2-1)*shotSpread(p):0);
+      const enemy=target(p,gun[4],fps?.06:.38,heading);
+      if(firearm)p.recoil=Math.min(6,p.recoil+1.35);
       if(!fps && !enemy)return;
       p.cd=gun[3];p.shot=.16;
       if(p.w!==2)p.clip[p.w]--;
@@ -351,6 +366,8 @@
         if(Number.isFinite(input.a))p.a=input.a;
         const movementDt=dt*(input.walk?.58:1)*(p.stim>0?1.32:1);
         const x=input.dx||0,y=input.dy||0,norm=Math.max(1,Math.hypot(x,y));
+        p.moveError=x||y?(input.walk?.042:.105):Math.max(0,p.moveError-dt*.72);
+        p.recoil=Math.max(0,p.recoil-dt*3.4);
         if(input.world)move(p,x/norm,y/norm,movementDt);
         else if(fps)move(p,(Math.cos(p.a)*y-Math.sin(p.a)*x)/norm,(Math.sin(p.a)*y+Math.cos(p.a)*x)/norm,movementDt);
         else move(p,x/norm,-y/norm,dt);
@@ -446,7 +463,10 @@
       controls.hidden=false;
       const buy=state.phase==="buy"&&!state.done, armory=$("[data-armory]");
       armory.hidden=!buy;
-      for (const [key,cost,owned] of [["rifle",450,p.rifle],["armor",300,p.armor],["utility",200,p.boughtUtility]])
+      for(const {gun,cost} of shop){
+        $("[data-action=buy-gun-"+gun+"]").disabled=p.rifle||p.credits<cost;
+      }
+      for (const [key,cost,owned] of [["armor",300,p.armor],["utility",200,p.boughtUtility]])
         $("[data-action=buy-"+key+"]").disabled=!!owned||p.credits<cost;
       const side=p.team===state.attack?"공격":"수비", site=state.device||sites.find(q=>distance(q,p)<1.35);
       const task=state.device?"해체":"설치";
@@ -563,7 +583,12 @@
       if(state.effects.some(e=>e.type===1&&!e.armed&&distance(p,e)<1.45)){
         ctx.fillStyle="#7b7e8de8";ctx.fillRect(0,0,w,h);
       }
-      ctx.strokeStyle="#f8ead7";ctx.beginPath();ctx.moveTo(w/2-7,h/2);ctx.lineTo(w/2+7,h/2);ctx.moveTo(w/2,h/2-7);ctx.lineTo(w/2,h/2+7);ctx.stroke();
+      const gap=Math.min(38,5+(p.w===2?0:shotSpread(p))*160);
+      ctx.strokeStyle="#f8ead7";ctx.beginPath();
+      for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+        ctx.moveTo(w/2+dx*gap,h/2+dy*gap);ctx.lineTo(w/2+dx*(gap+5),h/2+dy*(gap+5));
+      }
+      ctx.stroke();
       drawViewWeapon(p,w,h);
       if(state.t-p.confirmedAt<.16){
         ctx.strokeStyle="#fff0a8";ctx.lineWidth=2;ctx.beginPath();
@@ -642,7 +667,7 @@
         accept:()=>!state||state.done,join(i){humans.set(i,{});},leave(i){humans.delete(i);},input:receive,
         state(nextState) {
           if(nextState?.players?.length!==10)return;
-          if(!Array.isArray(nextState.drops)){
+          if(nextState.combatVersion!==3){
             disconnect();$("[data-message]").textContent="방장이 이전 버전이에요. 둘 다 새로고침하고 다시 입장해 주세요.";return;
           }
           if(state?.round!==nextState.round||state?.roundNo!==nextState.roundNo){heading=nextState.players[slot].a;dialog.querySelector("details").open=false;$("[data-message]").textContent="교전 시작";}
@@ -759,7 +784,7 @@
       else if(key==="join")connect("guest");
       else if(key==="start"&&role==="host")begin();
       else if(key==="weapon"&&state)send(String((state.players[slot].w+1)%3));
-      else if(["reload","frag","smoke","flash","signature","buy-rifle","buy-armor","buy-utility"].includes(key))send(key);
+      else if(key?.startsWith("buy-")||["reload","frag","smoke","flash","signature"].includes(key))send(key);
     });
     dialog.addEventListener("close",disconnect);
     games.register({id,name,tag:fps?"5대5 설치·해체전 · 최대 7라운드":"손전등과 전리품 · 2인 5팀",kind:"main",open:()=>{dialog.showScreen();draw();}});
