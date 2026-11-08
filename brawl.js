@@ -29,7 +29,10 @@
       <button type="button" data-act="floor">층 이동 · E</button>
     </div>
     <p>WASD·방향키 / 바닥 클릭 이동 · 우클릭·Shift로 회피 돌진 · 기본공격 자동 · 스킬 1–4</p>
-    <div class="brawl-result" hidden><strong data-result></strong><button type="button" data-restart>다시 하기</button></div>`;
+    <section class="brawl-result arena-combat" hidden aria-label="대난투 경기 보상"><div>
+      <small>대난투 · 경기 종료</small><strong data-result></strong><b data-reward></b>
+      <p data-result-stats></p><button type="button" data-restart>다시 하기</button>
+      <button type="button" data-close>로비로</button></div></section>`;
   document.body.append(dialog);
   const canvas = dialog.querySelector("canvas");
   const ctx = canvas.getContext("2d");
@@ -125,8 +128,15 @@
     const map = floorOf(actor);
     const nextX = actor.x + dx / distance * step;
     const nextY = actor.y + dy / distance * step;
+    const prevX=actor.x,prevY=actor.y;
     if (passable(map,nextX,actor.y)) actor.x = nextX;
     if (passable(map,actor.x,nextY)) actor.y = nextY;
+    const moved=Math.hypot(actor.x-prevX,actor.y-prevY);
+    if(moved>.05){
+      actor.step=(actor.step||0)+moved*.17;
+      actor.walkAt=elapsed;
+      if(Math.abs(dx)>1)actor.face=Math.sign(dx);
+    }
   }
   function attack(actor) {
     if (!actor.hp || actor.cooldown > 0) return;
@@ -344,11 +354,19 @@
       const dy = effect?.y == null ? 0 : effect.y - actor.y;
       const facing = Math.atan2(dy, dx);
       const attack = Math.min(1, actor.flash * 5);
+      const stride=elapsed-actor.walkAt<.12?Math.sin(actor.step):0;
+      ctx.fillStyle="#11172b9e";ctx.beginPath();ctx.ellipse(x,y+1,size*.36,6,0,Math.PI*2);ctx.fill();
+      if(actor===player){
+        ctx.strokeStyle="#ffe17c";ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(x,y+1,size*.42,8,0,Math.PI*2);ctx.stroke();
+        ctx.fillStyle="#ffe17c";ctx.beginPath();ctx.moveTo(x-8,y-size-16);ctx.lineTo(x+8,y-size-16);ctx.lineTo(x,y-size-6);ctx.fill();
+      }
       if (actor.image.complete && actor.image.naturalWidth) {
         const w = size * actor.image.naturalWidth / actor.image.naturalHeight;
         ctx.save();
         ctx.translate(x + Math.cos(facing) * attack * 9, y + Math.sin(facing) * attack * 9);
-        ctx.rotate(Math.cos(facing) * attack * .22);
+        ctx.translate(0,-Math.abs(stride)*3);
+        ctx.rotate(Math.cos(facing)*attack*.22+stride*.055);
+        ctx.scale(actor.face||1,1);
         ctx.drawImage(actor.image, -w/2, -size, w, size);
         ctx.restore();
       }
@@ -411,7 +429,7 @@
     const done = alive.length <= 1 || elapsed >= duration;
     if (role === "host" && (done || now-lastSend >= 70)) {
       lastSend = now;
-      room.publish({roundId,elapsed,done,humans:remote.size+1,fighters:fighters.map(({x,y,hp,floor,flash,effect,skills,kills,summon,orbit,place,dash})=>({x,y,hp,floor,flash,effect,skills,kills,summon,orbit,place,dash}))});
+      room.publish({roundId,elapsed,done,humans:remote.size+1,fighters:fighters.map(({x,y,hp,floor,flash,effect,skills,kills,summon,orbit,place,dash,step,walkAt,face})=>({x,y,hp,floor,flash,effect,skills,kills,summon,orbit,place,dash,step,walkAt,face}))});
     }
     if (done) {
       running = false;
@@ -439,11 +457,13 @@
         const info={mode:role?"multi":"solo",win,place,players:10,humans,online:humans>1,score:player.kills*120,secs:elapsed};
         const rp = window.knx.reward.grant("brawl",{...info,once:"brawl:"+roundId}).rp;
         window.knx.bus.emit("game:end",{id:"brawl",result:{...info,rp}});
-        reward = " · +" + rp + " RP";
+        reward = "+" + rp + " RP";
       }
       result.querySelector("[data-result]").textContent = (!player.hp ? "탈락! 다시 도전해 보세요." :
         winners.length > 1 ? "시간 종료 · 공동 1위" :
-        win ? "승리! 대난투의 최강 기사" : `시간 종료 · ${winners[0]?.name || "생존자 없음"}`) + reward;
+        win ? "승리! 대난투의 최강 기사" : `시간 종료 · ${winners[0]?.name || "생존자 없음"}`);
+      result.querySelector("[data-reward]").textContent=reward;
+      result.querySelector("[data-result-stats]").textContent=`${player.kills}킬 · ${Math.round(elapsed)}초 경기`;
       result.hidden = false;
   }
   function lobbyMenu() {

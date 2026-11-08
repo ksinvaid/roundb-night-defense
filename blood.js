@@ -1,7 +1,7 @@
 (() => {
   const games = window.knx?.games;
   if (!games) return;
-  const W = 2300, H = 1500, limit = 3600, baseHP = 1400, cap = 32;
+  const W = 3500, H = 2400, limit = 3600, baseHP = 1400, cap = 32;
   const species = [
     ["보병",0,42,7,90,115,"◆"], ["크롤러",8,50,8,75,135,"✦"],
     ["저격수",20,55,12,165,120,"▲"], ["블롭",38,78,13,100,112,"●"],
@@ -10,7 +10,7 @@
   ];
   const colors = ["#fbc95b","#84c8ff","#ff8293","#a4e585","#c6a5ff","#ffb58c","#8ef1df","#ffc3ef","#d1e079","#bccaff"];
   const bases = Array.from({length:10}, (_,i) => ({
-    x:190+(i%5)*480, y:i<5?145:1355
+    x:320+(i%5)*715, y:i<5?210:H-210
   }));
   const dialog = document.createElement("section");
   dialog.className = "brawl blood";
@@ -28,15 +28,22 @@
     <canvas aria-label="진화 블러드 전장"></canvas>
     <div class="brawl-controls arena-combat"><button type="button" data-command="drone">드론 이동</button>
       <button type="button" data-command="attack">공격 이동</button><button type="button" data-command="move">이동</button></div>
-    <section class="blood-command arena-combat" aria-label="전장 밖 지휘소"><strong>지휘소 · 전체 병력 명령</strong>
+    <section class="blood-command arena-combat" aria-label="병력 지휘소"><strong>병력 지휘소</strong><button type="button" data-home>본진 복귀 · B</button>
       <div class="blood-targets">${bases.map((_,i)=>`<button type="button" data-target="${i}">${i+1}번</button>`).join("")}</div>
       <div class="blood-officer"><img alt="" src="${kSrc(4,false)}"><span>지휘관 대기 중</span></div>
     </section>
-    <p>유닛 드래그 선택 · 우클릭 이동 / 공격 이동 · 지휘소에서 본진을 고르면 지휘관이 일반 병력을 보냅니다.</p>`;
+    <p>화면 가장자리 / 방향키로 시점 이동 · 유닛 드래그 선택 · 우클릭 이동 / 공격 이동 · 지휘소에서 본진을 고르면 지휘관이 일반 병력을 보냅니다.</p>`;
   document.body.append(dialog);
   const $ = selector => dialog.querySelector(selector);
   const canvas = $("canvas"), ctx = canvas.getContext("2d");
   const images = Array.from({length:10},(_,i)=>{const img=new Image();img.src=kSrc(i,false);return img;});
+  const art = ["humanoid","bug","drone","blob","golem","jaws","crane","bird","skull"].map((shape,i)=>{
+    const image=new Image();
+    if(window.dgr?.mobDataURL)image.src=window.dgr.mobDataURL({shape,c:colors[i],c2:"#3a263f",elite:i===8},80);
+    return image;
+  });
+  const camera={x:0,y:0}, cameraKeys=new Set();
+  let edge, cameraTime=0;
   const range = (n,min,max) => Math.min(max,Math.max(min,n));
   const distance = (a,b) => Math.hypot(a.x-b.x,a.y-b.y);
   const heroEvery = 30;
@@ -46,7 +53,7 @@
   const selected = new Set();
   let state, room, role="", slot=0, frame, previous, lastPublish, command="drone", drag, view;
   const humans = new Set();
-  const preview = "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}"><rect width="${W}" height="${H}" fill="#22384c"/><path d="M0 750H${W}" stroke="#87a6be" stroke-width="12" stroke-dasharray="45 40"/>${bases.map((base,id)=>`<circle cx="${base.x}" cy="${base.y}" r="88" fill="${colors[id]}"/><text x="${base.x}" y="${base.y+25}" text-anchor="middle" fill="#17223a" font-size="70" font-family="sans-serif">${id+1}</text>`).join("")}</svg>`);
+  const preview = "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}"><rect width="${W}" height="${H}" fill="#22384c"/><path d="M0 ${H/2}H${W}" stroke="#87a6be" stroke-width="12" stroke-dasharray="45 40"/>${bases.map((base,id)=>`<circle cx="${base.x}" cy="${base.y}" r="88" fill="${colors[id]}"/><text x="${base.x}" y="${base.y+25}" text-anchor="middle" fill="#17223a" font-size="70" font-family="sans-serif">${id+1}</text>`).join("")}</svg>`);
   const briefing=roundbArenaBriefing(dialog,{
     accent:"#9edfd3",category:"전략전 · 10개 본진",title:"진화 블러드",
     summary:"드론이 병력을 생산하고 처치 수에 따라 새 병종을 해금합니다. 지휘관은 전장 밖에서 일반 병력에 진격 명령을 내립니다.",
@@ -69,6 +76,7 @@
     cancelAnimationFrame(frame);
     state={time:0,rule:$("[data-rule]").value,online:role==="host",done:false,nextId:0,units:[],
       players:bases.map((base,id)=>({id,...base,kills:0,hp:baseHP,respawn:0,spawn:0,nextHero:heroEvery,order:null,pad:-1}))};
+    Object.assign(camera,bases[slot]); cameraTime=0;
     selected.clear(); command="drone"; drag=null;
     previous=performance.now(); lastPublish=0;
     frame=requestAnimationFrame(tick);
@@ -81,11 +89,14 @@
     object.x+=(to.x-object.x)*step/d; object.y+=(to.y-object.y)*step/d;
     return step===d;
   }
-  function orderArmy(owner,target) {
+  function formation(point,id,kind) {
+    return {x:point.x+(id%7-3)*19,y:point.y+(Math.floor(id/7)%5-2)*18,kind};
+  }
+  function orderArmy(owner,target,kind="attack") {
     for (const unit of state.units) {
-      if (unit.owner===owner.id && !unit.hero) unit.order={...target,kind:"attack"};
+      if (unit.owner===owner.id && !unit.hero) unit.order=formation(target,unit.id,kind);
     }
-    owner.rally={...target,kind:"attack"};
+    owner.rally={...target,kind};
   }
   function issue(id,message) {
     if (!message) return;
@@ -96,6 +107,10 @@
     if (!state || state.done) return;
     const owner=state.players[id];
     if (!alive(owner)) return;
+    if (message.kind === "home") {
+      orderArmy(owner,bases[id],"move");
+      return;
+    }
     if (message.kind === "army") {
       if (Number.isInteger(message.target) && bases[message.target] && message.target !== id) orderArmy(owner,bases[message.target]);
       return;
@@ -127,7 +142,7 @@
         const target=options.sort((a,b)=>distance(p,a)-distance(p,b))[0];
         if (target) {
           orderArmy(p,bases[target.id]);
-          p.order={x:(bases[p.id].x+bases[target.id].x)/2,y:p.id<5?430:1070};
+          p.order={x:(bases[p.id].x+bases[target.id].x)/2,y:p.id<5?H*.32:H*.68};
           p.nextOrder=state.time+8+p.id%3;
         }
       }
@@ -135,7 +150,7 @@
       p.spawn-=dt;
       if (p.spawn<=0 && state.units.filter(u=>u.owner===p.id && !u.hero).length<cap) {
         const unit=unitFor(p,++state.nextId);
-        unit.order=p.rally;
+        unit.order=p.rally&&formation(p.rally,unit.id,p.rally.kind);
         state.units.push(unit);
         p.spawn=1.4;
       }
@@ -150,18 +165,18 @@
       if (unit.hp<=0) continue;
       unit.cd-=dt;
       const owner=state.players[unit.owner];
-      let target=null, best=unit.reach;
+      let target=null, best=unit.reach*unit.reach;
       if (unit.order?.kind!=="move") {
         for (const foe of state.units) {
           if (foe.owner===unit.owner || foe.hp<=0) continue;
-          const d=distance(unit,foe);
+          const d=(unit.x-foe.x)**2+(unit.y-foe.y)**2;
           if (d<=best) { best=d; target=foe; }
         }
         if (!target && state.rule==="elim") {
           for (const opponent of state.players) {
             if (opponent===owner || !alive(opponent)) continue;
             const d=distance(unit,bases[opponent.id])-28;
-            if (d<=best) { best=d; target=opponent; }
+            if (d*d<=best) { best=d*d; target=opponent; }
           }
         }
       }
@@ -188,15 +203,28 @@
       state.time+=dt; updatePlayers(dt); updateUnits(dt); result();
       if (state.done || now-lastPublish>100) {
         if (role==="host") room?.publish({
-          time:Math.round(state.time*10)/10,rule:state.rule,done:state.done,winner:state.winner,
+          version:2,time:Math.round(state.time*10)/10,rule:state.rule,done:state.done,winner:state.winner,
           players:state.players.map(p=>[Math.round(p.x),Math.round(p.y),p.kills,p.hp,p.respawn,playerName(p.id)]),
           units:state.units.map(u=>[u.id,u.owner,Math.round(u.x),Math.round(u.y),u.hp,u.max,u.hero?8:species.findIndex(type=>type[6]===u.shape)])
         });
         lastPublish=now;
       }
     }
-    draw();
+    pan(now);draw();
     if (!state.done) frame=requestAnimationFrame(tick);
+  }
+  function pan(now) {
+    const dt=cameraTime?Math.min(.05,(now-cameraTime)/1000):0;
+    cameraTime=now;
+    const x=Number(cameraKeys.has("ArrowRight"))-Number(cameraKeys.has("ArrowLeft"))+(edge?.x||0);
+    const y=Number(cameraKeys.has("ArrowDown"))-Number(cameraKeys.has("ArrowUp"))+(edge?.y||0);
+    const step=760*dt/Math.max(1,Math.hypot(x,y));
+    camera.x+=x*step;camera.y+=y*step;
+  }
+  function guestFrame(now) {
+    if(!state||role!=="guest"){frame=0;return;}
+    pan(now);draw();
+    frame=requestAnimationFrame(guestFrame);
   }
   function draw() {
     if (!state) return;
@@ -205,12 +233,21 @@
     if (canvas.width!==Math.round(width*dpr) || canvas.height!==Math.round(height*dpr)) {
       canvas.width=Math.round(width*dpr); canvas.height=Math.round(height*dpr);
     }
-    const scale=Math.min(width/W,height/H), left=(width-W*scale)/2, top=(height-H*scale)/2;
+    if(!width||!height)return;
+    const scale=Math.max(width/W,height/H,.52);
+    const halfW=width/(2*scale),halfH=height/(2*scale);
+    camera.x=range(camera.x,halfW,W-halfW);camera.y=range(camera.y,halfH,H-halfH);
+    const left=width/2-camera.x*scale,top=height/2-camera.y*scale;
+    const visible=(x,y)=>x>=camera.x-halfW-100&&x<=camera.x+halfW+100&&y>=camera.y-halfH-100&&y<=camera.y+halfH+100;
     view={scale,left,top};
     ctx.setTransform(dpr,0,0,dpr,0,0);
     ctx.clearRect(0,0,width,height);
     ctx.translate(left,top); ctx.scale(scale,scale);
-    ctx.fillStyle="#242e42";ctx.fillRect(0,0,W,H);
+    ctx.fillStyle="#253631";ctx.fillRect(0,0,W,H);
+    for(let lane=0;lane<5;lane++){
+      ctx.fillStyle=lane%2?"#35474a":"#394c48";
+      ctx.fillRect(bases[lane].x-115,0,230,H);
+    }
     ctx.strokeStyle="#33435a";ctx.lineWidth=2;
     for (let x=0;x<W;x+=100) {ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
     for (let y=0;y<H;y+=100) {ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
@@ -218,7 +255,9 @@
     ctx.strokeStyle="#526c7d";ctx.setLineDash([22,18]);ctx.beginPath();ctx.moveTo(0,H/2);ctx.lineTo(W,H/2);ctx.stroke();ctx.setLineDash([]);
     state.players.forEach(p=>{
       const base=bases[p.id], color=colors[p.id];
-      ctx.fillStyle=alive(p)?color:"#53535d";ctx.fillRect(base.x-54,base.y-36,108,72);
+      ctx.fillStyle="#18282c";ctx.fillRect(base.x-86,base.y-66,172,132);
+      ctx.strokeStyle=alive(p)?color:"#53535d";ctx.lineWidth=5;ctx.strokeRect(base.x-86,base.y-66,172,132);
+      ctx.fillStyle="#354953";ctx.fillRect(base.x-52,base.y-37,104,68);
       label("본진 "+(p.id+1),base.x,base.y+9,"#171926",25);
       if (state.rule==="elim") bar(base.x,base.y+46,p.hp/baseHP,color,108);
       if (!alive(p)) return;
@@ -229,7 +268,14 @@
       label((p.id===slot?"나 · ":"")+playerName(p.id),p.x,p.y+39,color,24);
     });
     for (const unit of state.units) {
-      label(unit.shape,unit.x,unit.y,colors[unit.owner],unit.hero?35:24);
+      if(!visible(unit.x,unit.y))continue;
+      const type=unit.hero?8:species.findIndex(entry=>entry[6]===unit.shape);
+      const sprite=art[type],size=unit.hero?73:44+Math.max(0,type)*2;
+      ctx.fillStyle="#102025aa";ctx.beginPath();ctx.ellipse(unit.x,unit.y+5,size*.43,9,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle=selected.has(unit.id)?"#fff":colors[unit.owner];ctx.lineWidth=3;ctx.stroke();
+      const bob=Math.sin(state.time*12+unit.id)*2;
+      if(sprite?.complete&&sprite.naturalWidth)ctx.drawImage(sprite,unit.x-size/2,unit.y-size+8+bob,size,size);
+      else if(images[unit.owner].naturalWidth)ctx.drawImage(images[unit.owner],unit.x-size/2,unit.y-size+8,size,size);
       if (unit.hero || selected.has(unit.id)) bar(unit.x,unit.y+7,unit.hp/unit.max,"#f7fbff",27);
     }
     if (drag) {
@@ -239,6 +285,11 @@
     const me=state.players[slot], time=Math.max(0,Math.ceil(limit-state.time));
     const text=state.done ? `${state.winner+1}번 본진 승리` :
       `${Math.floor(time/60)}:${String(time%60).padStart(2,"0")} · ${me.kills}킬 · ${species[level(me.kills)][0]}${!alive(me)&&me.respawn?" · 부활 "+Math.max(0,Math.ceil(me.respawn-state.time))+"초":""}`;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    const mw=Math.min(145,width*.25),mh=mw*H/W,mx=width-mw-12,my=12;
+    ctx.fillStyle="#101c27e8";ctx.fillRect(mx,my,mw,mh);
+    for(const base of bases){ctx.fillStyle=colors[bases.indexOf(base)];ctx.fillRect(mx+base.x/W*mw-2,my+base.y/H*mh-2,4,4);}
+    ctx.strokeStyle="#fff";ctx.lineWidth=1;ctx.strokeRect(mx-left/scale/W*mw,my-top/scale/H*mh,width/scale/W*mw,height/scale/H*mh);
     if ($("[data-hud]").textContent!==text) $("[data-hud]").textContent=text;
   }
   function label(text,x,y,color,size,align="center") {
@@ -260,7 +311,32 @@
     drag={start:p,end:p};canvas.setPointerCapture(event.pointerId);
   });
   canvas.addEventListener("contextmenu",event=>event.preventDefault());
-  canvas.addEventListener("pointermove",event=>{if(drag)drag.end=point(event);});
+  canvas.addEventListener("pointermove",event=>{
+    if(drag)drag.end=point(event);
+    const box=canvas.getBoundingClientRect(), margin=30;
+    edge=event.pointerType==="mouse"&&!drag?{
+      x:Number(event.clientX>box.right-margin)-Number(event.clientX<box.left+margin),
+      y:Number(event.clientY>box.bottom-margin)-Number(event.clientY<box.top+margin)
+    }:null;
+  });
+  canvas.addEventListener("pointerleave",()=>{edge=null;});
+  window.addEventListener("keydown",event=>{
+    if(!dialog.open||!state||event.target.matches?.("input,select"))return;
+    if(event.key.startsWith("Arrow")){
+      event.preventDefault();event.stopImmediatePropagation();cameraKeys.add(event.key);
+    } else if(event.code==="KeyB"&&!event.repeat){
+      event.preventDefault();event.stopImmediatePropagation();recall();
+    }
+  },true);
+  window.addEventListener("keyup",event=>cameraKeys.delete(event.key),true);
+  window.addEventListener("blur",()=>{cameraKeys.clear();edge=null;});
+  function recall(){
+    if(!state||state.done)return;
+    Object.assign(camera,bases[slot]);
+    send({},"home");
+    $(".blood-officer span").textContent="일반 병력 본진 복귀 · 신규 병력도 집결";
+    dialog.querySelectorAll("[data-target]").forEach(button=>button.setAttribute("aria-pressed","false"));
+  }
   canvas.addEventListener("pointercancel",()=>{drag=null;});
   canvas.addEventListener("pointerup",event=>{
     if (!drag) return;
@@ -272,7 +348,8 @@
         unit.y>=Math.min(start.y,end.y) && unit.y<=Math.max(start.y,end.y)) selected.add(unit.id);
       command="attack";
     } else if (distance(end,state.players[slot])<36) {
-      selected.clear(); command="drone";
+      Object.assign(camera,bases[slot]); cameraTime=0;
+    selected.clear(); command="drone";
     } else {
       const unit=units.find(u=>distance(u,end)<19);
       if (unit) {selected.clear();selected.add(unit.id);command="attack";}
@@ -282,7 +359,7 @@
   });
   function disconnect() {
     room?.close();room=null;role="";slot=0;state=null;selected.clear();humans.clear();
-    cancelAnimationFrame(frame);$("[data-start]").hidden=true;briefing.show();
+    cancelAnimationFrame(frame);frame=0;cameraKeys.clear();edge=null;cameraTime=0;$("[data-start]").hidden=true;briefing.show();
   }
   function connect(nextRole) {
     disconnect();names.clear();role=nextRole;$("[data-message]").textContent="연결 중…";
@@ -294,12 +371,16 @@
       input:issue,
       state(snapshot) {
         if (snapshot?.players?.length!==10 || !Array.isArray(snapshot.units)) return;
+        if(snapshot.version!==2){
+          disconnect();$("[data-message]").textContent="방장도 새로고침한 뒤 다시 입장해 주세요.";return;
+        }
         briefing.play();
+        if(!state)Object.assign(camera,bases[slot]);
         state={...snapshot,
           players:snapshot.players.map(([x,y,kills,hp,respawn,name],id)=>{if(name)names.set(id,name);return {id,x,y,kills,hp,respawn};}),
           units:snapshot.units.map(([id,owner,x,y,hp,max,type])=>({id,owner,x,y,hp,max,hero:type===8,shape:type===8?"★":species[type]?.[6]||"◆"}))
         };
-        draw();
+        if(!frame)frame=requestAnimationFrame(guestFrame);
       }
     });
     if(role==="host")room.host({listed: $("[data-public]").checked});
@@ -311,7 +392,7 @@
     if(!button)return;
     if (button.hasAttribute("data-target") && state && !state.done) {
       const target=Number(button.dataset.target);
-      if (target===slot) return;
+      if (target===slot) {recall();return;}
       const message={kind:"army",target};
       if(role==="guest")room.input(message);else issue(slot,message);
       const officer=$(".blood-officer");
@@ -319,6 +400,7 @@
       officer.animate([{transform:"translateX(0)"},{transform:"translateX(26px)"},{transform:"translateX(0)"}],{duration:460});
       dialog.querySelectorAll("[data-target]").forEach(b=>b.setAttribute("aria-pressed",String(b===button)));
     }
+    if(button.hasAttribute("data-home"))recall();
     if(button.hasAttribute("data-exit"))dialog.close();
     if(button.hasAttribute("data-play")){disconnect();begin();}
     if(button.hasAttribute("data-host"))connect("host");
