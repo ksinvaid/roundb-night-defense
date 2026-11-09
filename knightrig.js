@@ -107,11 +107,11 @@
     if (dur) { if (o.loop) t = ((t % dur) + dur) % dur; else if (t < 0 || t >= dur) { pose = "idle"; t = o.t || 0; } }
     if (pose === "walk" || pose === "run") {
       const run = pose === "run", w = (run ? 2 * Math.PI / .46 : 2 * Math.PI / .72) * (o.speed || 1), ph = t * w, s = Math.sin(ph), c = Math.cos(ph);
-      const la = run ? .62 : .46, aa = run ? .8 : .5;
+      const la = run ? .72 : .58, aa = run ? .95 : .7;
       const sl = Math.max(0, s), sr = Math.max(0, -s);   // 한 발씩 번갈아 옆으로 내딛고 들었다 놓는다
       J.legL = sl * la; J.legR = -sr * la; J.armL = .08 + sr * aa; J.armR = -(.08 + sl * aa);
       J.liftL = sl; J.liftR = sr;
-      J.by = -Math.abs(s) * (run ? .035 : .022); J.rot = s * (run ? .05 : .028) + (run ? .06 : 0);
+      J.by = -Math.abs(s) * (run ? .04 : .028); J.rot = s * (run ? .05 : .028) + (run ? .06 : 0);
       J.head = -J.rot * .6 + Math.sin(ph * 2) * .01; J.sy = 1 + (Math.abs(c) - .5) * .012;
       J.plant = Math.max(0, 1 - Math.abs(s) * 3);   // 발이 바닥에 닿는 순간(다리가 가운데일 때) 그림자 눌림
     } else if (pose === "attack") {
@@ -189,7 +189,7 @@
     ctx.translate(0, J.by * H);
     if (J.sy !== 1) { ctx.translate(cx, H); ctx.scale(1, J.sy); ctx.translate(-cx, -H); }
     if (J.rot) { ctx.translate(cx, H * .72); ctx.rotate(J.rot); ctx.translate(-cx, -H * .72); }
-    const lift = .055 * H;
+    const lift = .07 * H;
     // 층 순서: 다리 → 팔 → 몸통 → 머리 (몸통 층이 다리·팔 윗부분 이음새를 덮는다)
     drawPiece(ctx, rig.legL, J.legL, 0, -J.liftL * lift, flash);
     drawPiece(ctx, rig.legR, J.legR, 0, -J.liftR * lift, flash);
