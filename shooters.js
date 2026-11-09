@@ -851,6 +851,6 @@
     games.register({id,name,tag:fps?"5대5 설치·해체전 · 최대 7라운드":"손전등과 전리품 · 2인 5팀",kind:"main",open:()=>{dialog.showScreen();draw();}});
   }
   create("night-beam","암전 순찰",false);
-  create("office-strike","라운드비 총격전",true);
-  for(const button of document.querySelectorAll("[data-shooter]"))button.addEventListener("click",()=>games.open(button.dataset.shooter));
+  /* office-strike 는 officestrike.js 로 분리됐다(이 파일의 fps 분기는 night-beam 분리 뒤 shooters.js 를 지울 때 함께 사라진다) */
+  for(const button of document.querySelectorAll("[data-shooter]:not([data-shooter=\"office-strike\"])"))button.addEventListener("click",()=>games.open(button.dataset.shooter));
 })();
