@@ -2,18 +2,18 @@
    방장(또는 혼자 하기)만 step 을 돌리고, 손님은 snapshot 을 받아 그리기만 한다. */
 (function (root) {
   "use strict";
-  const W = 3790, H = 2404, MAXU = 300, CELL = 128, BHP = 3000, DHP = 260, START_BIO = 110, BASE_R = 46;
+  const W = 3790, H = 2404, MAXU = 300, CELL = 128, BHP = 3000, DHP = 260, START_BIO = 110, BASE_R = 64;
   const COLS = Math.ceil(W / CELL), ROWS = Math.ceil(H / CELL);
   /* 8종: 소용돌이 디펜스에 나오는 몬스터(mk = 그림 이름). 약한 것부터 강한 것 순서 */
-  const SP = [
-    {n: "마감 좀비", mk: "zombie", hp: 60, dmg: 8, reach: 34, spd: 95, cd: .8, cost: 20, ep: 0, size: 46, info: "균형 잡힌 기본 근접"},
-    {n: "야간 거미", mk: "crawler", hp: 34, dmg: 6, reach: 26, spd: 150, cd: .45, cost: 12, ep: 1, size: 42, info: "싸고 빠름 · 몸이 약함"},
-    {n: "비명귀", mk: "screamer", hp: 42, dmg: 14, reach: 175, spd: 85, cd: 1, cost: 30, ep: 1, size: 50, info: "비명으로 멀리서 공격"},
-    {n: "분열체", mk: "splitter", hp: 150, dmg: 9, reach: 34, spd: 80, cd: .9, cost: 40, ep: 2, size: 56, info: "튼튼 · 주변까지 피해", splash: 56},
-    {n: "야근 유령", mk: "ghost", hp: 230, dmg: 14, reach: 36, spd: 68, cd: 1, cost: 55, ep: 2, size: 58, info: "받는 피해 30% 감소", armor: .7},
-    {n: "퇴사 거부자", mk: "brute", hp: 190, dmg: 38, reach: 40, spd: 86, cd: 1.1, cost: 75, ep: 3, size: 64, info: "한 방이 아주 강함"},
-    {n: "월요병", mk: "blob", hp: 280, dmg: 24, reach: 130, spd: 54, cd: 1.5, cost: 95, ep: 3, size: 68, info: "기지에 3배 피해 · 느림", bm: 3, um: .7, pb: 1},
-    {n: "야근 대마왕", mk: "mini", hp: 420, dmg: 40, reach: 48, spd: 105, cd: .8, cost: 140, ep: 4, size: 78, info: "최강 · 스스로 회복", regen: 6}
+  const SP = [   // 그림이 커진 만큼 사거리·속도·크기를 같이 키웠다(size = 화면에 그려지는 세계 좌표 크기)
+    {n: "마감 좀비", mk: "zombie", hp: 60, dmg: 8, reach: 54, spd: 119, cd: .8, cost: 20, ep: 0, size: 92, info: "균형 잡힌 기본 근접"},
+    {n: "야간 거미", mk: "crawler", hp: 34, dmg: 6, reach: 42, spd: 188, cd: .45, cost: 12, ep: 1, size: 84, info: "싸고 빠름 · 몸이 약함"},
+    {n: "비명귀", mk: "screamer", hp: 42, dmg: 14, reach: 260, spd: 106, cd: 1, cost: 30, ep: 1, size: 100, info: "비명으로 멀리서 공격"},
+    {n: "분열체", mk: "splitter", hp: 150, dmg: 9, reach: 54, spd: 100, cd: .9, cost: 40, ep: 2, size: 118, info: "튼튼 · 주변까지 피해", splash: 90},
+    {n: "야근 유령", mk: "ghost", hp: 230, dmg: 14, reach: 58, spd: 85, cd: 1, cost: 55, ep: 2, size: 126, info: "받는 피해 30% 감소", armor: .7},
+    {n: "퇴사 거부자", mk: "brute", hp: 190, dmg: 38, reach: 64, spd: 108, cd: 1.1, cost: 75, ep: 3, size: 146, info: "한 방이 아주 강함"},
+    {n: "월요병", mk: "blob", hp: 280, dmg: 24, reach: 190, spd: 68, cd: 1.5, cost: 95, ep: 3, size: 164, info: "기지에 3배 피해 · 느림", bm: 3, um: .7, pb: 1},
+    {n: "야근 대마왕", mk: "mini", hp: 420, dmg: 40, reach: 76, spd: 131, cd: .8, cost: 140, ep: 4, size: 200, info: "최강 · 스스로 회복", regen: 6}
   ];
   const UPC = [2, 3, 5];   // 업그레이드 1·2·3단계 진화P
   const ATK = [1, 1.15, 1.3, 1.5], HPM = [1, 1.2, 1.4, 1.7], SPAWN = [1, .85, .7, .55], CAPB = [0, 8, 16, 26];
@@ -22,9 +22,9 @@
     {n: "외골격", lv: ["체력 +20%", "체력 +40%", "체력 +70%"]},
     {n: "번식", lv: ["생산 빨라짐 · 군체 +8", "생산 더 빨라짐 · 군체 +16", "생산 최고 · 군체 +26"]}
   ];
-  const TEAM = [
-    {c: "#56b4e9", s: "circle"}, {c: "#e69f00", s: "tri"}, {c: "#f0e442", s: "square"}, {c: "#cc79a7", s: "diamond"}, {c: "#ffffff", s: "star"},
-    {c: "#2fbf8f", s: "pent"}, {c: "#e8603a", s: "cross"}, {c: "#c9a46b", s: "tridown"}, {c: "#4d7cff", s: "hex"}, {c: "#b388ff", s: "half"}
+  const TEAM = [   // 밝은 배경에서도, 적록색약(2종) 시뮬에서도 서로 구분되는 10색(색차 26 이상) + 모양 + 번호
+    {c: "#1d62ed", s: "circle"}, {c: "#c61089", s: "tri"}, {c: "#eded1d", s: "square"}, {c: "#2e9e5b", s: "diamond"}, {c: "#aa0909", s: "star"},
+    {c: "#1deded", s: "pent"}, {c: "#263238", s: "cross"}, {c: "#1ded62", s: "tridown"}, {c: "#4799eb", s: "hex"}, {c: "#1d1ded", s: "half"}
   ];
   const KIND = ["rally", "charge", "retreat", "follow"];
   const PERS = [
@@ -67,7 +67,7 @@
     for (let i = 0; i < n; i++) {
       const ai = !humans.has(i), per = ai ? order[k++ % 3] : -1, hm = ai ? [.7, 1, 1.15][diff] : 1;
       const b = bases[i], tc = {x: W / 2 - b.x, y: H / 2 - b.y}, L = Math.hypot(tc.x, tc.y) || 1;
-      const home = {x: b.x + tc.x / L * 240, y: b.y + tc.y / L * 240};
+      const home = {x: b.x + tc.x / L * 320, y: b.y + tc.y / L * 320};
       S.players.push({id: i, ai, persona: per, kn: cfg.knights && cfg.knights[i] != null ? cfg.knights[i] : i % 10, room: b.room, rect: b.rect, name: (cfg.names && cfg.names[i]) || (ai ? "AI " + PERS[per].n : "플레이어 " + (i + 1)),
         bx: b.x, by: b.y, alive: true, bmax: Math.round(BHP * hm), bhp: Math.round(BHP * hm), hitT: -99, hitBy: -1, evT: -9, outT: 0,
         dx: b.x, dy: b.y - 60, dhp: DHP, dmax: DHP, da: true, dres: 0, dcd: 0, dfl: 0, sx: 0, sy: 0, tcd: .5,
@@ -88,7 +88,7 @@
     }
   }
   const T = {k: -1, r: null, x: 0, y: 0, rad: 0};
-  /* 가장 가까운 적(유닛 0 · 드론 1 · 기지 2). prefBase 면 사거리 안의 기지를 먼저 */
+  /* 가장 가까운 적(유닛 0 · 영웅 1 · 기지 2). prefBase 면 사거리 안의 기지를 먼저 */
   function nearestFoe(S, o, x, y, range, prefBase) {
     let best = range * range, k = -1, r = null, rad = 0, tx = 0, ty = 0;
     const x0 = clamp(((x - range) / CELL) | 0, 0, COLS - 1), x1 = clamp(((x + range) / CELL) | 0, 0, COLS - 1);
@@ -99,7 +99,7 @@
         const v = c[i];
         if (v.o === o || v.dead) continue;
         const d2 = (v.x - x) * (v.x - x) + (v.y - y) * (v.y - y);
-        if (d2 < best) { best = d2; k = 0; r = v; rad = 9; tx = v.x; ty = v.y; }
+        if (d2 < best) { best = d2; k = 0; r = v; rad = 16; tx = v.x; ty = v.y; }
       }
     }
     let baseBest = 1e18;
@@ -107,7 +107,7 @@
       if (q.id === o || !q.alive) continue;
       if (q.da) {
         const d2 = (q.dx - x) * (q.dx - x) + (q.dy - y) * (q.dy - y);
-        if (d2 < best && !(prefBase && baseBest < 1e18)) { best = d2; k = 1; r = q; rad = 13; tx = q.dx; ty = q.dy; }
+        if (d2 < best && !(prefBase && baseBest < 1e18)) { best = d2; k = 1; r = q; rad = 24; tx = q.dx; ty = q.dy; }
       }
       const dd = Math.hypot(q.bx - x, q.by - y) - BASE_R;
       if (dd < range) {
@@ -127,15 +127,15 @@
     if (v.hp <= 0) {
       v.dead = true; kp.kills++; kp.bio += sp.cost * .45;
       if (++kp.kc % 8 === 0) kp.ep++;
-      ev(S, {k: "die", x: v.x, y: v.y, o: v.o, by: kp.id});
+      ev(S, {k: "die", x: v.x, y: v.y, o: v.o, by: kp.id, t: v.t});
     }
   }
-  function hurtDrone(S, q, dmg, kp) {
+  function hurtHero(S, q, dmg, kp) {
     if (!q.da) return;
     q.dhp -= dmg; q.dfl = .14;
     if (q.dhp <= 0) {
       q.da = false; q.dres = S.time + 7; q.deaths++;
-      ev(S, {k: "drone", o: q.id, x: q.dx, y: q.dy, by: kp.id});
+      ev(S, {k: "hero", o: q.id, x: q.dx, y: q.dy, by: kp.id});
     }
   }
   function destroyBase(S, q, kp) {
@@ -166,7 +166,7 @@
         }
         ev(S, {k: "ring", x: vx, y: vy, r: sp.splash, o: u.o});
       }
-    } else if (T.k === 1) hurtDrone(S, T.r, dmg, kp);
+    } else if (T.k === 1) hurtHero(S, T.r, dmg, kp);
     else if (T.k === 2) hurtBase(S, T.r, dmg * (sp.bm || 1), kp);
   }
 
@@ -190,27 +190,27 @@
       if (sp.regen && u.hp < u.mx) u.hp = Math.min(u.mx, u.hp + sp.regen * dt);
       if (u.os !== p.oseq) { u.os = p.oseq; u.pu = 0; }
       let mode = od.k;
-      if (mode === "retreat" && (u.x - p.bx) ** 2 + (u.y - p.by) ** 2 < 170 * 170) mode = "rally";
-      const aggro = mode === "charge" ? 250 : mode === "retreat" ? 0 : 170;
+      if (mode === "retreat" && (u.x - p.bx) ** 2 + (u.y - p.by) ** 2 < 250 * 250) mode = "rally";
+      const aggro = mode === "charge" ? 360 : mode === "retreat" ? 0 : 250;
       let has = false;
-      if (aggro > 0) has = nearestFoe(S, u.o, u.x, u.y, Math.max(aggro, sp.reach + 24), !!sp.pb);
-      if (has && (mode === "rally" || mode === "follow") && (T.x - od.x) ** 2 + (T.y - od.y) ** 2 > 400 * 400) has = false;
+      if (aggro > 0) has = nearestFoe(S, u.o, u.x, u.y, Math.max(aggro, sp.reach + 40), !!sp.pb);
+      if (has && (mode === "rally" || mode === "follow") && (T.x - od.x) ** 2 + (T.y - od.y) ** 2 > 560 * 560) has = false;
       if (has) {
         const dx = T.x - u.x, dy = T.y - u.y, dc = Math.hypot(dx, dy) || 1, de = dc - T.rad;
         if (de <= sp.reach) {
-          if (u.cd <= 0) { u.cd = sp.cd * (.9 + Math.random() * .2); strike(S, u, sp, p); }
+          if (u.cd <= 0) { u.cd = sp.cd * (.9 + Math.random() * .2); strike(S, u, sp, p); u.at = S.time; }
         } else {
           const stop = sp.reach > 100 ? sp.reach * .85 : 0, step = Math.min(sp.spd * dt, Math.max(0, de - stop));
           u.x += dx / dc * step; u.y += dy / dc * step;
         }
       } else {
-        let gx, gy, hold = 14;
+        let gx, gy, hold = 24;
         if (mode === "charge") {
-          if (!u.pu && (od.x - u.x) ** 2 + (od.y - u.y) ** 2 < 170 * 170) u.pu = 1;
+          if (!u.pu && (od.x - u.x) ** 2 + (od.y - u.y) ** 2 < 250 * 250) u.pu = 1;
           const b = u.pu ? nearestBase(S, u) : null;
-          if (b) { gx = b.bx; gy = b.by; hold = 30; } else { gx = od.x; gy = od.y; }
+          if (b) { gx = b.bx; gy = b.by; hold = 50; } else { gx = od.x; gy = od.y; }
         } else {
-          gx = od.x + ((u.id % 9) - 4) * 17; gy = od.y + ((((u.id / 9) | 0) % 5) - 2) * 17;
+          gx = od.x + ((u.id % 9) - 4) * 32; gy = od.y + ((((u.id / 9) | 0) % 5) - 2) * 32;
         }
         const dx = gx - u.x, dy = gy - u.y, dc = Math.hypot(dx, dy);
         if (dc > hold) {
@@ -225,7 +225,8 @@
         for (const w of S.cells[yy * COLS + xx]) {
           if (w === u || w.dead) continue;
           const ex = u.x - w.x, ey = u.y - w.y, d2 = ex * ex + ey * ey;
-          if (d2 < 169 && d2 > .01) { const d = Math.sqrt(d2), f = (13 - d) * .35; u.x += ex / d * f; u.y += ey / d * f; seen++; }
+          const rr = (sp.size + SP[w.t].size) * .2;
+          if (d2 < rr * rr && d2 > .01) { const d = Math.sqrt(d2), f = (rr - d) * .3; u.x += ex / d * f; u.y += ey / d * f; seen++; }
           else if (d2 <= .01) { u.x += Math.random() - .5; u.y += Math.random() - .5; }
           if (seen >= 10) break;
         }
@@ -244,20 +245,20 @@
     let sx = p.sx, sy = p.sy;
     const m = Math.hypot(sx, sy);
     if (m > 1) { sx /= m; sy /= m; }
-    p.dx = clamp(p.dx + sx * 210 * dt, 20, W - 20); p.dy = clamp(p.dy + sy * 210 * dt, 20, H - 20);
+    p.dx = clamp(p.dx + sx * 270 * dt, 20, W - 20); p.dy = clamp(p.dy + sy * 270 * dt, 20, H - 20);
     p.dcd -= dt;
-    if (p.dcd <= 0 && nearestFoe(S, p.id, p.dx, p.dy, 160, false)) {
+    if (p.dcd <= 0 && nearestFoe(S, p.id, p.dx, p.dy, 240, false)) {
       p.dcd = .5;
       const dmg = 16 * ATK[p.up[0]];
       ev(S, {k: "shot", x: p.dx, y: p.dy, x2: T.x, y2: T.y, o: p.id, d: 1});
-      if (T.k === 0) hurt(S, T.r, dmg, p); else if (T.k === 1) hurtDrone(S, T.r, dmg, p); else hurtBase(S, T.r, dmg * 1.5, p);
+      if (T.k === 0) hurt(S, T.r, dmg, p); else if (T.k === 1) hurtHero(S, T.r, dmg, p); else hurtBase(S, T.r, dmg * 1.5, p);
     }
-    // 드론 주변 아군 회복
-    const x0 = clamp(((p.dx - 230) / CELL) | 0, 0, COLS - 1), x1 = clamp(((p.dx + 230) / CELL) | 0, 0, COLS - 1);
-    const y0 = clamp(((p.dy - 230) / CELL) | 0, 0, ROWS - 1), y1 = clamp(((p.dy + 230) / CELL) | 0, 0, ROWS - 1);
+    // 영웅 주변 아군 회복
+    const x0 = clamp(((p.dx - 300) / CELL) | 0, 0, COLS - 1), x1 = clamp(((p.dx + 300) / CELL) | 0, 0, COLS - 1);
+    const y0 = clamp(((p.dy - 300) / CELL) | 0, 0, ROWS - 1), y1 = clamp(((p.dy + 300) / CELL) | 0, 0, ROWS - 1);
     for (let cy = y0; cy <= y1; cy++) for (let cx = x0; cx <= x1; cx++) for (const u of S.cells[cy * COLS + cx]) {
       if (u.o !== p.id || u.dead || u.hp >= u.mx) continue;
-      if ((u.x - p.dx) ** 2 + (u.y - p.dy) ** 2 < 230 * 230) u.hp = Math.min(u.mx, u.hp + 4 * dt);
+      if ((u.x - p.dx) ** 2 + (u.y - p.dy) ** 2 < 300 * 300) u.hp = Math.min(u.mx, u.hp + 4 * dt);
     }
   }
 
@@ -322,7 +323,7 @@
     aiEvolve(S, p);
     const foes = S.players.filter(q => q.alive && q.id !== p.id);
     if (!foes.length) return;
-    // 드론: 군체 중심을 따라다니고, 다치면 기지로
+    // 영웅: 군체 중심을 따라다니고, 다치면 기지로
     let mx = 0, my = 0, c = 0;
     for (const u of S.units) if (u.o === p.id && !u.dead) { mx += u.x; my += u.y; c++; }
     const gx = c ? mx / c : p.home.x, gy = c ? my / c : p.home.y;
@@ -330,9 +331,9 @@
     // 기지가 맞고 있으면 방어
     if (t - p.hitT < 3) {
       let near = 0;
-      for (const u of S.units) if (u.o !== p.id && !u.dead && (u.x - p.bx) ** 2 + (u.y - p.by) ** 2 < 420 * 420) near++;
+      for (const u of S.units) if (u.o !== p.id && !u.dead && (u.x - p.bx) ** 2 + (u.y - p.by) ** 2 < 520 * 520) near++;
       if (near >= 2 || t - p.hitT < .8) {
-        if (p.ord.k !== "rally" || Math.hypot(p.ord.x - p.bx, p.ord.y - p.by) > 480) setOrder(S, p, "rally", p.home.x, p.home.y);
+        if (p.ord.k !== "rally" || Math.hypot(p.ord.x - p.bx, p.ord.y - p.by) > 620) setOrder(S, p, "rally", p.home.x, p.home.y);
         p.defT = t + 9;
         return;
       }
@@ -373,12 +374,12 @@
     const pres = new Array(S.n);
     for (const nd of S.nodes) {
       pres.fill(0);
-      const x0 = clamp(((nd.x - 130) / CELL) | 0, 0, COLS - 1), x1 = clamp(((nd.x + 130) / CELL) | 0, 0, COLS - 1);
-      const y0 = clamp(((nd.y - 130) / CELL) | 0, 0, ROWS - 1), y1 = clamp(((nd.y + 130) / CELL) | 0, 0, ROWS - 1);
+      const x0 = clamp(((nd.x - 190) / CELL) | 0, 0, COLS - 1), x1 = clamp(((nd.x + 190) / CELL) | 0, 0, COLS - 1);
+      const y0 = clamp(((nd.y - 190) / CELL) | 0, 0, ROWS - 1), y1 = clamp(((nd.y + 190) / CELL) | 0, 0, ROWS - 1);
       for (let cy = y0; cy <= y1; cy++) for (let cx = x0; cx <= x1; cx++) for (const u of S.cells[cy * COLS + cx]) {
-        if ((u.x - nd.x) ** 2 + (u.y - nd.y) ** 2 < 120 * 120) pres[u.o]++;
+        if ((u.x - nd.x) ** 2 + (u.y - nd.y) ** 2 < 160 * 160) pres[u.o]++;
       }
-      for (const q of S.players) if (q.da && (q.dx - nd.x) ** 2 + (q.dy - nd.y) ** 2 < 130 * 130) pres[q.id] += 3;
+      for (const q of S.players) if (q.da && (q.dx - nd.x) ** 2 + (q.dy - nd.y) ** 2 < 170 * 170) pres[q.id] += 3;
       let who = -1, cnt = 0;
       for (let i = 0; i < S.n; i++) if (pres[i] > 0) { cnt++; who = i; }
       if (cnt === 1 && nd.o !== who) {
@@ -428,10 +429,10 @@
       if (p.ord.k === "follow") { p.ord.x = p.da ? p.dx : p.bx; p.ord.y = p.da ? p.dy : p.by; }
       stepDrone(S, p, dt);
       // 기지 포탑
-      if ((p.tcd -= dt) <= 0 && nearestFoe(S, p.id, p.bx, p.by, 250, false) && T.k !== 2) {
+      if ((p.tcd -= dt) <= 0 && nearestFoe(S, p.id, p.bx, p.by, 330, false) && T.k !== 2) {
         p.tcd = .6;
         ev(S, {k: "shot", x: p.bx, y: p.by, x2: T.x, y2: T.y, o: p.id, d: 2});
-        if (T.k === 0) hurt(S, T.r, 22, p); else hurtDrone(S, T.r, 22, p);
+        if (T.k === 0) hurt(S, T.r, 22, p); else hurtHero(S, T.r, 22, p);
       }
       // 자동 생산
       if ((p.spawnT -= dt) <= 0) {
@@ -442,7 +443,7 @@
           const sp = SP[t];
           if (p.bio >= sp.cost) {
             p.bio -= sp.cost; p.rr = (t + 1) % 8; p.pop++;
-            const a = Math.random() * 6.283, d = 52 + Math.random() * 22, hp = sp.hp * HPM[p.up[1]];
+            const a = Math.random() * 6.283, d = 96 + Math.random() * 40, hp = sp.hp * HPM[p.up[1]];
             S.units.push({id: S.nextId++, o: p.id, t, x: clamp(p.bx + Math.cos(a) * d, 10, W - 10), y: clamp(p.by + Math.sin(a) * d, 10, H - 10), hp, mx: hp, cd: Math.random() * .5, fl: 0, dead: false, os: 0, pu: 0});
             p.spawnT = 1.5 * SPAWN[p.up[2]];
           } else p.spawnT = .25;
@@ -465,7 +466,7 @@
       Math.round(p.bhp), p.kills, p.destroyed, p.alive ? 1 : 0, Math.round(p.bio), p.ep, maskOf(p.un), maskOf(p.on), p.up[0] * 100 + p.up[1] * 10 + p.up[2],
       KIND.indexOf(p.ord.k), Math.round(p.ord.x), Math.round(p.ord.y), p.bmax, S.time - p.hitT < 3 ? 1 : 0, p.deaths]);
     const un = [];
-    for (const u of S.units) if (!u.dead) un.push(u.id, Math.round(u.x), Math.round(u.y), (u.o * 8 + u.t) * 100 + clamp(Math.round(u.hp / u.mx * 99), 1, 99));
+    for (const u of S.units) if (!u.dead) un.push(u.id, Math.round(u.x), Math.round(u.y), (u.o * 8 + u.t) * 100 + clamp(Math.round(u.hp / u.mx * 99), 1, 99) + (S.time - (u.at || -9) < .4 ? 8000 : 0));
     const nd = [];
     for (const n of S.nodes) nd.push(n.o, n.co, Math.round(n.pr * 100));
     return {v: 4, t: Math.round(S.time * 10) / 10, d: S.done ? 1 : 0, w: S.winner, ru: S.rule === "time" ? 1 : 0, df: S.diff, n: S.n, mid: S.mid,
