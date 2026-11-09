@@ -49,21 +49,25 @@ function knurl(g, x, y, w, h) { g.save(); g.beginPath(); g.rect(x, y, w, h); g.c
 
 const SIZE = {pistol: [300, 190], smg: [420, 200], shot: [540, 200], rifle: [560, 210], lmg: [600, 220], sniper: [640, 210], knife: [360, 140], frag: [170, 210], smoke: [150, 220], flash: [150, 220], bomb: [280, 190], kit: [230, 170], armor: [200, 200]};
 const DRAW = {
-  pistol(g) {
+  pistol(g, part) {
+    const mag = () => { blk(g, 100, 150, 46, 30, 3, ST_POLY); blk(g, 94, 172, 58, 10, 3); };
+    if (part === "mag") { mag(); return {}; }
     poly(g, [[92, 86], [200, 86], [190, 106], [168, 110], [150, 172], [96, 178], [104, 120]], ST_POLY, 86, 178); knurl(g, 100, 124, 44, 46);
     guard(g, 168, 108, 14); g.fillStyle = "#a5b0c0"; g.fillRect(163, 94, 5, 15);
     blk(g, 70, 50, 176, 36, 9); for (let i = 0; i < 6; i++) { g.fillStyle = "rgba(0,0,0,.5)"; g.fillRect(86 + i * 7, 58, 3, 22); g.fillStyle = "rgba(255,255,255,.14)"; g.fillRect(89 + i * 7, 58, 1.5, 22); }
     g.fillStyle = "rgba(0,0,0,.5)"; g.fillRect(150, 58, 40, 14); g.fillStyle = "#0a0c10"; g.fillRect(150, 60, 38, 10);   // 배출구
     blk(g, 246, 58, 24, 16, 4); g.fillStyle = "#07090c"; g.fillRect(268, 62, 5, 8);
     blk(g, 74, 42, 16, 10, 2); blk(g, 226, 42, 12, 10, 2); g.fillStyle = "#e6eef8"; g.fillRect(80, 44, 3, 5); g.fillRect(231, 44, 3, 5);
-    blk(g, 94, 172, 58, 10, 3); screws(g, [[120, 140], [176, 70]]);
-    return {gx: 120, gy: 130, fx: null, fy: null, mx: 274, my: 66, ex: 168, ey: 64, mag: {x: 98, y: 118, w: 52, h: 60}};
+    if (!part) blk(g, 94, 172, 58, 10, 3); screws(g, [[120, 140], [176, 70]]);
+    return {gx: 120, gy: 130, fx: null, fy: null, mx: 274, my: 66, ex: 168, ey: 64, mag: {x: 98, y: 150, w: 52, h: 34}};
   },
-  smg(g) {
+  smg(g, part) {
+    const mag = () => { blk(g, 168, 104, 38, 80, 6, ST_POLY); for (let i = 0; i < 5; i++) { g.fillStyle = "rgba(0,0,0,.35)"; g.fillRect(172, 114 + i * 14, 30, 3); } };
+    if (part === "mag") { mag(); return {}; }
     g.strokeStyle = "#2b323d"; g.lineWidth = 7; g.lineCap = "round"; g.beginPath(); g.moveTo(98, 70); g.lineTo(38, 72); g.lineTo(32, 112); g.lineTo(96, 98); g.stroke();
     g.strokeStyle = "#7d889a"; g.lineWidth = 2; g.beginPath(); g.moveTo(98, 69); g.lineTo(38, 71); g.lineTo(32, 111); g.lineTo(96, 97); g.stroke();
     poly(g, [[110, 104], [150, 104], [142, 162], [112, 162]], ST_POLY, 104, 162); knurl(g, 116, 112, 28, 46);
-    blk(g, 168, 104, 38, 80, 6, ST_POLY); for (let i = 0; i < 5; i++) { g.fillStyle = "rgba(0,0,0,.35)"; g.fillRect(172, 114 + i * 14, 30, 3); }
+    if (!part) mag();
     guard(g, 160, 106, 13); poly(g, [[316, 92], [338, 92], [334, 128], [318, 128]], ST_POLY, 92, 128);
     blk(g, 96, 56, 200, 50, 8); ticks(g, 120, 50, 14, 10); g.fillStyle = "#0a0c10"; g.fillRect(230, 66, 34, 8);
     blk(g, 296, 66, 64, 26, 5); for (let i = 0; i < 5; i++) { g.fillStyle = "rgba(0,0,0,.6)"; g.beginPath(); g.ellipse(310 + i * 10, 79, 3, 7, 0, 0, TAU); g.fill(); }
@@ -80,9 +84,11 @@ const DRAW = {
     blk(g, 500, 62, 14, 22, 3); g.fillStyle = "#f0e2b0"; g.beginPath(); g.arc(504, 63, 4, 0, TAU); g.fill();
     return {gx: 150, gy: 126, fx: 310, fy: 96, mx: 514, my: 73, ex: 166, ey: 76, mag: null};
   },
-  rifle(g) {
+  rifle(g, part) {
+    const mag = () => { poly(g, [[190, 104], [236, 104], [250, 178], [206, 184]], ST_POLY, 104, 184); for (let i = 0; i < 4; i++) { g.strokeStyle = "rgba(0,0,0,.35)"; g.lineWidth = 2; g.beginPath(); g.moveTo(198 + i * 3, 120 + i * 14); g.lineTo(240 + i * 3, 120 + i * 14); g.stroke(); } };
+    if (part === "mag") { mag(); return {}; }
     poly(g, [[112, 68], [40, 72], [34, 126], [112, 110]], ST_POLY, 68, 126); knurl(g, 44, 80, 60, 40);
-    poly(g, [[190, 104], [236, 104], [250, 178], [206, 184]], ST_POLY, 104, 184); for (let i = 0; i < 4; i++) { g.strokeStyle = "rgba(0,0,0,.35)"; g.lineWidth = 2; g.beginPath(); g.moveTo(198 + i * 3, 120 + i * 14); g.lineTo(240 + i * 3, 120 + i * 14); g.stroke(); }
+    if (!part) mag();
     poly(g, [[126, 104], [160, 104], [150, 168], [120, 168]], ST_POLY, 104, 168); knurl(g, 128, 112, 26, 50); guard(g, 176, 108, 13);
     blk(g, 112, 60, 140, 46, 6); g.fillStyle = "#0a0c10"; g.fillRect(190, 72, 34, 9); screws(g, [[124, 76], [240, 96]]);
     blk(g, 250, 64, 130, 40, 5); for (let i = 0; i < 6; i++) { g.fillStyle = "rgba(0,0,0,.6)"; g.beginPath(); g.ellipse(268 + i * 18, 84, 5, 11, 0, 0, TAU); g.fill(); }
@@ -90,22 +96,26 @@ const DRAW = {
     ticks(g, 124, 54, 20, 13); blk(g, 176, 30, 70, 26, 8, ST_POLY); lens(g, 241, 43, 9); lens(g, 185, 43, 6); blk(g, 424, 46, 10, 22, 2);
     return {gx: 142, gy: 134, fx: 312, fy: 100, mx: 490, my: 79, ex: 206, ey: 76, mag: {x: 192, y: 104, w: 56, h: 80}};
   },
-  lmg(g) {
+  lmg(g, part) {
+    const mag = () => { blk(g, 170, 108, 96, 74, 9, ST_POLY); for (let i = 0; i < 9; i++) { g.fillStyle = "#c19a45"; g.fillRect(180 + i * 9, 120, 6, 42); g.fillStyle = "#6b4a1a"; g.fillRect(180 + i * 9, 150, 6, 12); } };
+    if (part === "mag") { mag(); return {}; }
     poly(g, [[116, 70], [40, 74], [34, 130], [116, 114]], ST_POLY, 70, 130); knurl(g, 46, 84, 60, 40);
     poly(g, [[130, 108], [166, 108], [156, 172], [124, 172]], ST_POLY, 108, 172); guard(g, 182, 112, 13);
     g.strokeStyle = "#1b2029"; g.lineWidth = 5; g.beginPath(); g.moveTo(452, 90); g.lineTo(430, 156); g.moveTo(466, 90); g.lineTo(492, 156); g.stroke();
-    blk(g, 170, 108, 96, 74, 9, ST_POLY); for (let i = 0; i < 9; i++) { g.fillStyle = "#c19a45"; g.fillRect(180 + i * 9, 120, 6, 42); g.fillStyle = "#6b4a1a"; g.fillRect(180 + i * 9, 150, 6, 12); }
+    if (!part) mag();
     blk(g, 116, 60, 150, 50, 6); screws(g, [[130, 74], [250, 96]]); blk(g, 264, 62, 172, 44, 8); for (let i = 0; i < 8; i++) { g.fillStyle = "rgba(0,0,0,.65)"; g.beginPath(); g.ellipse(284 + i * 19, 84, 5, 12, 0, 0, TAU); g.fill(); }
     blk(g, 434, 72, 104, 16, 3); blk(g, 536, 64, 42, 30, 4);
     g.strokeStyle = "#242b36"; g.lineWidth = 10; g.beginPath(); g.moveTo(196, 62); g.quadraticCurveTo(246, 20, 300, 62); g.stroke(); g.strokeStyle = "#8793a5"; g.lineWidth = 2; g.beginPath(); g.moveTo(196, 59); g.quadraticCurveTo(246, 17, 300, 59); g.stroke();
     ticks(g, 130, 54, 8, 13);
     return {gx: 146, gy: 140, fx: 344, fy: 108, mx: 578, my: 79, ex: 240, ey: 70, mag: {x: 170, y: 108, w: 96, h: 74}};
   },
-  sniper(g) {
+  sniper(g, part) {
+    const mag = () => { blk(g, 196, 98, 32, 48, 5, ST_POLY); };
+    if (part === "mag") { mag(); return {}; }
     poly(g, [[130, 68], [50, 66], [34, 92], [40, 132], [70, 138], [130, 104]], ST_POLY, 66, 138); knurl(g, 60, 84, 60, 40);
     poly(g, [[134, 102], [170, 102], [158, 160], [128, 160]], ST_POLY, 102, 160); guard(g, 182, 106, 13);
     g.strokeStyle = "#1b2029"; g.lineWidth = 5; g.beginPath(); g.moveTo(336, 86); g.lineTo(316, 140); g.moveTo(348, 86); g.lineTo(372, 140); g.stroke();
-    blk(g, 196, 98, 32, 48, 5, ST_POLY); blk(g, 128, 60, 170, 36, 5); screws(g, [[140, 72], [284, 84]]); blk(g, 296, 72, 232, 13, 3);
+    if (!part) mag(); blk(g, 128, 60, 170, 36, 5); screws(g, [[140, 72], [284, 84]]); blk(g, 296, 72, 232, 13, 3);
     blk(g, 520, 64, 102, 26, 8, ST_POLY); for (let i = 0; i < 6; i++) { g.fillStyle = "rgba(0,0,0,.5)"; g.fillRect(532 + i * 14, 68, 3, 18); }
     blk(g, 160, 22, 172, 28, 12, ST_POLY); blk(g, 150, 17, 28, 38, 6); blk(g, 318, 15, 34, 42, 8); lens(g, 160, 36, 12); lens(g, 336, 36, 14); blk(g, 200, 50, 12, 12, 2); blk(g, 270, 50, 12, 12, 2);
     g.strokeStyle = "#a3aebe"; g.lineWidth = 5; g.beginPath(); g.moveTo(236, 78); g.lineTo(252, 108); g.stroke(); g.fillStyle = "#d3dae6"; g.beginPath(); g.arc(254, 110, 7, 0, TAU); g.fill();
@@ -195,18 +205,23 @@ const skinMap = () => ({...equipped});
 const BASE = {}, SKINNED = {};
 function baseArt(wid) {
   let a = BASE[wid]; if (a) return a; const fn = DRAW[wid], sz = SIZE[wid]; if (!fn) return null;
-  const cv = mkc(sz[0], sz[1]), meta = fn(cv.getContext("2d")); return BASE[wid] = Object.assign({cv, w: sz[0], h: sz[1]}, meta);
+  const cv = mkc(sz[0], sz[1]), meta = fn(cv.getContext("2d")); let noMag = null, magCv = null;
+  if (meta.mag) { noMag = mkc(sz[0], sz[1]); fn(noMag.getContext("2d"), "nomag"); magCv = mkc(sz[0], sz[1]); fn(magCv.getContext("2d"), "mag"); }   // 장전 모션용: 탄창을 뺀 그림 + 탄창만
+  return BASE[wid] = Object.assign({cv, noMag, magCv, w: sz[0], h: sz[1]}, meta);
 }
 function art(wid, skinId) {
   const b = baseArt(wid); if (!b) return null; skinId = skinId || "default"; if (skinId === "default" || !skinIds.includes(skinId) || wid === "armor" || wid === "kit" || wid === "bomb") return b;
   const key = wid + ":" + skinId; if (SKINNED[key]) return SKINNED[key];
-  const cv = mkc(b.w, b.h), g = cv.getContext("2d"); g.drawImage(b.cv, 0, 0);
-  g.globalCompositeOperation = "source-atop"; g.globalAlpha = 1; g.fillStyle = g.createPattern(tile(skinId), "repeat"); g.fillRect(0, 0, b.w, b.h);   // 실루엣 안쪽만 무늬로 덮고
-  g.globalCompositeOperation = "multiply"; g.globalAlpha = .42; g.drawImage(b.cv, 0, 0);   // 원래 그림의 음영을 살짝 입히고
-  g.globalCompositeOperation = "screen"; g.globalAlpha = .34; g.drawImage(b.cv, 0, 0); g.globalAlpha = 1;   // 하이라이트 선을 다시 올린다
-  if (skinId === "gold" || skinId === "neon" || skinId === "marble") { g.globalCompositeOperation = "source-atop"; g.fillStyle = lgr(g, 0, 0, 0, b.h, [[0, "rgba(255,255,255,.28)"], [.35, "rgba(255,255,255,0)"], [1, "rgba(0,0,0,.2)"]]); g.fillRect(0, 0, b.w, b.h); }
-  g.globalCompositeOperation = "source-over";
-  return SKINNED[key] = Object.assign({}, b, {cv});
+  const skinize = src => {
+    const cv = mkc(b.w, b.h), g = cv.getContext("2d"); g.drawImage(src, 0, 0);
+    g.globalCompositeOperation = "source-atop"; g.globalAlpha = 1; g.fillStyle = g.createPattern(tile(skinId), "repeat"); g.fillRect(0, 0, b.w, b.h);   // 실루엣 안쪽만 무늬로 덮고
+    g.globalCompositeOperation = "multiply"; g.globalAlpha = .42; g.drawImage(src, 0, 0);   // 원래 그림의 음영을 살짝 입히고
+    g.globalCompositeOperation = "screen"; g.globalAlpha = .34; g.drawImage(src, 0, 0); g.globalAlpha = 1;   // 하이라이트 선을 다시 올린다
+    if (skinId === "gold" || skinId === "neon" || skinId === "marble") { g.globalCompositeOperation = "source-atop"; g.fillStyle = lgr(g, 0, 0, 0, b.h, [[0, "rgba(255,255,255,.28)"], [.35, "rgba(255,255,255,0)"], [1, "rgba(0,0,0,.2)"]]); g.fillRect(0, 0, b.w, b.h); }
+    g.globalCompositeOperation = "source-over"; return cv;
+  };
+  const cv = skinize(b.cv), noMag = b.noMag ? skinize(b.noMag) : null, magCv = b.magCv ? skinize(b.magCv) : null;
+  return SKINNED[key] = Object.assign({}, b, {cv, noMag, magCv});
 }
 function drawSide(ctx, wid, skinId, x, y, scale, o) {
   const a = art(wid, skinId); if (!a) return; o = o || {}; const sc = scale || 1, yaw = o.yaw || 0, cy = Math.cos(yaw), sy = Math.sin(yaw);
