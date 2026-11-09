@@ -10,7 +10,7 @@
     const {MAPS, KITS, DIFF, R} = Core;
     const ALLY = "#4cc9ff", FOE = "#ffa23c", ME = "#ffe066";
     const SK_TAG = ["기본기", "이동기", "광역·제어", "궁극기"];
-    const MODE_LABEL = {ffa:"개인 난투", team2:"팀전 2:2", team3:"팀전 3:3", surv:"서바이벌"};
+    const MODE_LABEL = {aram:"협곡 대전", ffa:"개인 난투", team2:"팀전 2:2", team3:"팀전 3:3", surv:"서바이벌"};
     const store = {
       get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : v; } catch { return d; } },
       set(k, v) { try { localStorage.setItem(k, v); } catch { /* 저장 불가 */ } }
@@ -24,12 +24,14 @@
     const ready = img => img && img.complete && img.naturalWidth > 0;
 
     /* ---------- 설정(저장) ---------- */
-    const cfg = {mode:"ffa", map:"rand", bots:7, diff:store.get("bw.played", "") ? 1 : 0, kn:0};
+    const cfg = {mode:"aram", team:5, map:"rand", bots:7, diff:store.get("bw.played", "") ? 1 : 0, kn:0};
     try { Object.assign(cfg, JSON.parse(store.get("bw.cfg", "{}"))); } catch { /* 옛 값 무시 */ }
     try { const me = window.lbDbg && window.lbDbg.ME; if (!store.get("bw.cfg", "") && me && Number.isInteger(me.kn)) cfg.kn = clamp(me.kn, 0, 9); } catch { /* 로비 없음 */ }
     cfg.kn = clamp(cfg.kn | 0, 0, 9); cfg.bots = [3, 5, 7, 9].includes(cfg.bots) ? cfg.bots : 7; cfg.diff = clamp(cfg.diff | 0, 0, 2);
     if (!MODE_LABEL[cfg.mode]) cfg.mode = "ffa";
     if (!["3f", "4f", "rand"].includes(cfg.map)) cfg.map = "rand";
+    cfg.team = clamp(cfg.team | 0 || 5, 1, 5);
+    if (store.get("bw.aramDefault", "") !== "1") { cfg.mode = "aram"; store.set("bw.aramDefault", "1"); }   // 협곡 대전이 기본 첫 선택
     let soundOn = store.get("bw.snd", "1") !== "0";
 
     /* ---------- 화면 뼈대 ---------- */
@@ -51,9 +53,10 @@
     <button type="button" class="bw-skip" data-act="skipsum">건너뛰기</button>
   </details>
   <div class="bw-opts" data-opts>
-    <div class="bw-row"><label>모드</label>${chips("mode", [["ffa", "개인 난투"], ["team2", "팀전 2:2"], ["team3", "팀전 3:3"], ["surv", "서바이벌"]])}</div>
+    <div class="bw-row"><label>모드</label>${chips("mode", [["aram", "협곡 대전 (추천)"], ["ffa", "빠른 · 개인 난투"], ["team2", "빠른 · 팀전 2:2"], ["team3", "빠른 · 팀전 3:3"], ["surv", "빠른 · 서바이벌"]])}</div>
     <p class="bw-note" data-modenote></p>
-    <div class="bw-row"><label>전장</label>${chips("map", [["3f", "3층 라운지"], ["4f", "4층 공유오피스"], ["rand", "랜덤"]])}</div>
+    <div class="bw-row" data-teamrow><label>팀 인원</label>${chips("team", [[1, "1:1"], [2, "2:2"], [3, "3:3"], [4, "4:4"], [5, "5:5"]])}</div>
+    <div class="bw-row" data-maprow><label>전장</label>${chips("map", [["3f", "3층 라운지"], ["4f", "4층 공유오피스"], ["rand", "랜덤"]])}</div>
     <div class="bw-row" data-botsrow><label>상대 봇</label>${chips("bots", [[3, "3명"], [5, "5명"], [7, "7명"], [9, "9명"]])}</div>
     <div class="bw-row"><label>난이도</label>${chips("diff", [[0, "쉬움 (연습)"], [1, "보통"], [2, "어려움"]])}</div>
   </div>
@@ -83,21 +86,30 @@
   <div class="bw-view" data-view>
     <canvas data-cv aria-label="라운드비 대난투 전장"></canvas>
     <div class="bw-hud">
-      <div class="bw-me"><img data-meface alt=""><div><i class="bw-hp"><u data-hpfill></u><s data-hpshield></s></i><small data-hptxt></small></div></div>
+      <div class="bw-me"><img data-meface alt=""><div><i class="bw-hp"><u data-hpfill></u><s data-hpshield></s></i><small data-hptxt></small><i class="bw-xp"><u data-xpfill></u></i><small class="bw-aramline" data-aramline></small><span class="bw-myitems" data-myitems></span></div></div>
       <canvas class="bw-mini" data-mini width="96" height="139"></canvas>
       <ul class="bw-feed" data-feed></ul>
       <div class="bw-banner" data-banner></div>
       <div class="bw-hint" data-hint></div>
       <div class="bw-combo" data-combo></div>
       <button type="button" class="bw-prio" data-act="prio"></button>
+      <div class="bw-util" data-util><button type="button" data-act="shop">상점 <kbd>P</kbd></button><button type="button" data-act="recall">귀환 <kbd>B</kbd></button><button type="button" data-act="board">점수 <kbd>Tab</kbd></button></div>
+      <div class="bw-wave" data-wave></div>
+      <div class="bw-anns" data-anns></div>
+      <div class="bw-lvup" data-lvup hidden><b>스킬 강화 <i data-sp>1</i></b>${[0, 1, 2, 3].map(i => `<button type="button" data-learn="${i}"></button>`).join("")}</div>
+      <div class="bw-recall" data-recall hidden><u></u><span>귀환 중… (움직이면 취소)</span></div>
+      <div class="bw-tut" data-tut hidden><b data-tuttext></b><button type="button" data-act="tutskip">건너뛰기</button></div>
       <div class="bw-cutin" data-cutin></div>
       <button type="button" class="bw-skipend" data-act="skipend" hidden>빨리 결과 보기</button>
     </div>
     <div class="bw-stick" data-stick><i></i></div>
     <div class="bw-skills" data-skills>
-      ${[0, 1, 2, 3].map(i => `<button type="button" class="bw-sk${i === 3 ? " ult" : ""}" data-sk="${i}"><kbd>${i + 1}</kbd><span></span><i class="cd"></i><b class="cdn"></b></button>`).join("")}
+      ${[0, 1, 2, 3].map(i => `<button type="button" class="bw-sk${i === 3 ? " ult" : ""}" data-sk="${i}"><kbd>${i + 1}</kbd><span></span><s class="pips"></s><i class="cd"></i><b class="cdn"></b></button>`).join("")}
+      <button type="button" class="bw-spell" data-sm="0"><kbd>G</kbd><span>회복</span><i class="cd"></i><b class="cdn"></b></button><button type="button" class="bw-spell" data-sm="1"><kbd>F</kbd><span>점멸</span><i class="cd"></i><b class="cdn"></b></button>
     </div>
     <div class="bw-result" data-result hidden><div class="bw-card" data-card></div></div>
+    <div class="bw-shop" data-shop hidden><div class="bw-shopbox"><header><b>상점</b><span data-shopgold></span><button type="button" data-act="auto" aria-pressed="true">자동강화</button><button type="button" data-act="shopx">닫기 <kbd>P</kbd></button></header><p data-shopnote></p><div class="bw-items" data-items></div><div class="bw-owned" data-owned></div></div></div>
+    <div class="bw-board" data-board hidden></div>
   </div>
 </div>`;
     document.body.append(dialog);
@@ -128,8 +140,10 @@
         const key = g.dataset.opt, val = String(key === "mode" ? cfg.mode : cfg[key]);
         $$(".bw-chip", g).forEach(c => c.setAttribute("aria-pressed", String(c.dataset.v === val)));
       });
-      $("[data-botsrow]").hidden = cfg.mode === "team2" || cfg.mode === "team3";
+      $("[data-botsrow]").hidden = cfg.mode !== "ffa" && cfg.mode !== "surv";
+      $("[data-teamrow]").hidden = cfg.mode !== "aram"; $("[data-maprow]").hidden = cfg.mode === "aram";
       $("[data-modenote]").textContent = {
+        aram:"1:1~5:5 협곡 대전! 미니언 웨이브와 타워를 밀고, 레벨업·아이템으로 강해져서 상대 넥서스를 부수면 승리 (8~12분). 빈 자리는 봇이 채워요.",
         ffa:"모두가 적이에요. 쓰러져도 3초 뒤 부활 — 3분 안에 가장 많이 처치하면 승리!",
         team2:"2:2 팀전. 같은 팀은 공격이 안 맞아요. 먼저 10처치 하거나 3분 뒤 더 많이 처치한 팀 승리.",
         team3:"3:3 팀전. 같은 팀은 공격이 안 맞아요. 먼저 15처치 하거나 3분 30초 뒤 더 많이 처치한 팀 승리.",
@@ -204,6 +218,7 @@
       const now = performance.now(), me = V.fighters[meIdx], F = V.fighters;
       const near = (x, y, d) => me && Math.hypot(me.x - x, me.y - y) < d;
       for (const e of list) {
+        if (handleAram(e, now)) continue;
         switch (e[0]) {
           case "hit": {
             const [, di, x, y, amt, si, fl = 0] = e, d = F[di], s = F[si];
@@ -312,9 +327,246 @@
     const isAlly = (a, b) => a.team === b.team;
     function tag(f) { const me = V.fighters[meIdx]; return f.i === meIdx ? "▼" : me && isAlly(f, me) ? "▲" : "■"; }
 
+    /* ---------- 협곡 대전(ARAM-lite) 화면: 상점·스킬 강화·방송·점수판·튜토리얼·조준선·구조물 그리기 ---------- */
+    const aramOn = () => !!(V && V.map && V.map.aram);
+    const ITEMS = Core.ITEMS;
+    const PRIO_NAME = ["가까운 적", "약한 영웅", "미니언 막타"];
+    const anns = [];
+    let aimPrev = null, shopOpen = false, boardHeld = false, boardPin = false, tutI = 0, tutAt = 0, tutDone = false, tutOn = false, lastIn = {ax:1, ay:0, ad:260, mx:0, my:0}, nexusAt = 0, shopOpened = false, lastItemsSig = "";
+    function drawIcon(g, name, s) {   // 아이템 아이콘: 캔버스 벡터
+      g.clearRect(0, 0, s, s); g.save(); g.translate(s / 2, s / 2); g.scale(s / 44, s / 44);
+      g.lineWidth = 3; g.lineJoin = "round"; g.lineCap = "round"; g.strokeStyle = "#141a33";
+      const path = pts => { g.beginPath(); pts.forEach((p, i) => i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1])); g.closePath(); };
+      switch (name) {
+        case "sword": g.fillStyle = "#e6ecff"; path([[0, -19], [5, -8], [5, 8], [-5, 8], [-5, -8]]); g.fill(); g.stroke(); g.fillStyle = "#ffd36b"; g.fillRect(-12, 8, 24, 5); g.strokeRect(-12, 8, 24, 5); g.fillRect(-3, 13, 6, 8); break;
+        case "staff": g.strokeStyle = "#b08a62"; g.lineWidth = 5; g.beginPath(); g.moveTo(-10, 18); g.lineTo(8, -8); g.stroke(); g.fillStyle = "#c19bff"; g.strokeStyle = "#141a33"; g.lineWidth = 3; g.beginPath(); g.arc(10, -12, 9, 0, 6.283); g.fill(); g.stroke(); g.fillStyle = "#fff"; g.fillRect(8, -14, 4, 4); break;
+        case "flag": g.strokeStyle = "#b08a62"; g.lineWidth = 4; g.beginPath(); g.moveTo(-10, 20); g.lineTo(-10, -18); g.stroke(); g.fillStyle = "#ff9d4d"; g.strokeStyle = "#141a33"; g.lineWidth = 3; path([[-8, -18], [16, -12], [-8, -2]]); g.fill(); g.stroke(); break;
+        case "heart": g.fillStyle = "#ff7a8a"; g.beginPath(); g.moveTo(0, 16); g.bezierCurveTo(-22, 0, -14, -18, 0, -8); g.bezierCurveTo(14, -18, 22, 0, 0, 16); g.fill(); g.stroke(); break;
+        case "mail": g.fillStyle = "#9fd0ff"; path([[-16, -14], [16, -14], [16, 4], [0, 19], [-16, 4]]); g.fill(); g.stroke(); g.strokeStyle = "#fff"; g.lineWidth = 2; g.beginPath(); g.moveTo(0, -12); g.lineTo(0, 14); g.stroke(); break;
+        case "boot": g.fillStyle = "#ffe066"; path([[-10, -16], [4, -16], [4, 2], [16, 8], [16, 16], [-10, 16]]); g.fill(); g.stroke(); break;
+        case "leaf": g.fillStyle = "#8fe3a8"; g.beginPath(); g.moveTo(-14, 14); g.quadraticCurveTo(-18, -14, 14, -16); g.quadraticCurveTo(18, 14, -14, 14); g.fill(); g.stroke(); g.strokeStyle = "#141a33"; g.lineWidth = 2; g.beginPath(); g.moveTo(-12, 12); g.lineTo(8, -8); g.stroke(); break;
+        case "clock": g.fillStyle = "#fff3d6"; g.beginPath(); g.arc(0, 0, 16, 0, 6.283); g.fill(); g.stroke(); g.lineWidth = 3; g.beginPath(); g.moveTo(0, -10); g.lineTo(0, 0); g.lineTo(8, 5); g.stroke(); break;
+        case "fang": g.fillStyle = "#e6ecff"; path([[-12, -14], [12, -14], [4, 16], [0, 8], [-4, 16]]); g.fill(); g.stroke(); g.fillStyle = "#ff5a6e"; g.beginPath(); g.arc(0, -6, 4, 0, 6.283); g.fill(); break;
+        default: g.fillStyle = "#fff"; g.fillRect(-10, -10, 20, 20);
+      }
+      g.restore();
+    }
+    const shopEl = $("[data-shop]"), itemsEl = $("[data-items]"), ownedEl = $("[data-owned]"), shopGold = $("[data-shopgold]"), shopNote = $("[data-shopnote]");
+    ITEMS.forEach((it, i) => {
+      const b = document.createElement("button"); b.type = "button"; b.className = "bw-item"; b.dataset.buy = i;
+      b.innerHTML = `<canvas width="44" height="44"></canvas><b>${it.n}</b><small>${it.d}</small><em>◎ ${it.cost}</em>`;
+      drawIcon($("canvas", b).getContext("2d"), it.ic, 44); itemsEl.append(b);
+    });
+    const canShop = me => { const fo = V.map.fountain[me.team]; return !me.alive || Math.hypot(me.x - fo.x, me.y - fo.y) < 200; };
+    function paintShop() {
+      const me = V.fighters[meIdx]; if (!me || !me.items) return;
+      const ok = canShop(me);
+      shopGold.textContent = "◎ " + Math.floor(me.gold);
+      shopNote.textContent = ok ? "아이템을 누르면 구매 · 아래 칸을 누르면 70%에 판매" : "분수대(우리 기지)에서만 살 수 있어요 — B 로 귀환하세요";
+      $$(".bw-item", itemsEl).forEach((b, i) => { b.disabled = !ok || me.gold < ITEMS[i].cost || me.items.length >= 6; b.classList.toggle("afford", me.gold >= ITEMS[i].cost); });
+      const sig = me.items.join(",") + "|" + ok;
+      if (ownedEl.dataset.sig !== sig) {
+        ownedEl.dataset.sig = sig; ownedEl.innerHTML = "";
+        for (let k = 0; k < 6; k++) {
+          const slot = document.createElement("button"); slot.type = "button"; slot.className = "bw-slot"; slot.dataset.sell = k; slot.disabled = !ok || me.items[k] === undefined;
+          if (me.items[k] !== undefined) { const c = document.createElement("canvas"); c.width = c.height = 34; drawIcon(c.getContext("2d"), ITEMS[me.items[k]].ic, 34); slot.append(c); slot.title = ITEMS[me.items[k]].n + " (판매)"; }
+          ownedEl.append(slot);
+        }
+      }
+    }
+    function setShop(v) { shopOpen = v; shopEl.hidden = !v; if (v) { shopOpened = true; ownedEl.dataset.sig = ""; paintShop(); } }
+    function cmd(type, arg) {   // 레벨업(l)·구매(b)·판매(s)·자동강화(a) — 손님은 방장에게 요청
+      if (!V) return;
+      if (role === "guest") { if (room) room.input({x:[type, arg], q:++castSeq}); return; }
+      const me = match && match.fighters[meIdx]; if (!me) return;
+      if (type === "l") Core.learn(match, me, arg); else if (type === "b") { if (Core.buy(match, me, arg)) snd("coin", 0); } else if (type === "s") Core.sell(match, me, arg); else if (type === "a") Core.setAuto(match, me, arg);
+    }
+    function castAim(slot) { pend.push({s:slot, ax:lastIn.ax, ay:lastIn.ay, ad:lastIn.ad}); }
+    const PRIORS = [];
+    function pushAnn(txt, col) { anns.push({txt, col, at:performance.now()}); if (anns.length > 3) anns.shift(); }
+    const ANN = {fb:"퍼스트 블러드!", mk2:"더블 킬!", mk3:"트리플 킬!", mk4:"쿼드라 킬!", mk5:"펜타 킬!", spree:"학살 중!", legend:"전설적인 활약!", ace:"에이스!"};
+    function handleAram(e, now) {
+      const F = V.fighters, me = F[meIdx];
+      switch (e[0]) {
+        case "ann": {
+          const [, kind, i, team] = e, f = F[i], mine = me && team === me.team;
+          let txt = ANN[kind];
+          if (kind === "tower") txt = (mine ? "아군" : "적") + " 타워 파괴!";
+          else if (kind === "ace") txt = (mine ? "우리 팀" : "적 팀") + " 에이스!";
+          else if (txt && f) txt = `${tag(f)} ${KITS[f.id].n} · ${txt}`;
+          if (txt) { pushAnn(txt, mine ? ALLY : FOE); snd(kind === "mk5" || kind === "ace" ? "win" : kind === "tower" ? "roar" : "warn", 0); }
+          return true;
+        }
+        case "lvl": { const p = posOf(e[1]); addFx({k:"pillar", x:p.x, y:p.y, col:"#ffe066", life:.7}); addFx({k:"ring", x:p.x, y:p.y, r:70, col:"#ffe066", life:.5, lw:5}); addFx({k:"num", x:p.x, y:p.y - 60, txt:"LEVEL UP! " + e[2], st:1, col:"#ffe066", life:1}); if (e[1] === meIdx) snd("up", 0); return true; }
+        case "cs": { if (e[1] === meIdx) { addFx({k:"num", x:e[3], y:e[4] - 24, txt:"+" + e[2], st:5, col:"#ffd23c", life:.9}); snd("coin", 60); } return true; }
+        case "ehit": { if (e[4]) addFx({k:"num", x:e[1], y:e[2], txt:String(e[3]), st:e[3] >= 40 ? 1 : 0, col:"#fff", life:.6}); if (e[3] > 0 && e[4] === 0) addFx({k:"spark", x:e[1], y:e[2], col:"#fff", col2:"#ffd36b", ang:-1.57, life:.16}); return true; }
+        case "mhit": { if (lowfx && Math.random() < .5) return true; addFx({k:"mbolt", x:e[1], y:e[2], x2:e[3], y2:e[4], col:e[5] === 2 ? "#ffcf70" : "#fff", life:e[5] === 0 ? .12 : .18}); return true; }
+        case "tbolt": { const hs = me && e[5] !== me.team; addFx({k:"mbolt", x:e[1], y:e[2], x2:e[3], y2:e[4], col:hs ? FOE : ALLY, life:.22, big:1}); addFx({k:"ring", x:e[3], y:e[4], r:34, col:hs ? FOE : ALLY, life:.25, lw:4}); snd("beam", 120, e[3], e[4]); return true; }
+        case "tower": { addFx({k:"shock", x:e[3], y:e[4], r:200, col:"#ffd36b", col2:"#fff", life:.8}); addFx({k:"crack", x:e[3], y:e[4], r:160, life:2, seed:Math.random() * 99}); burst(e[3], e[4] - 40, 6, 24, 380); kick(2); stopFor(70); snd("splash", 0); return true; }
+        case "nexus": {
+          nexusAt = now;
+          for (let k = 0; k < 4; k++) addFx({k:"shock", x:e[2], y:e[3], r:200 + k * 110, col:k % 2 ? "#ffd36b" : "#fff", col2:"#ffa23c", life:.9 + k * .25});
+          addFx({k:"crack", x:e[2], y:e[3], r:300, life:2.5, seed:Math.random() * 99}); burst(e[2], e[3] - 50, 6, 40, 520); kick(3); dimUntil = now + 700; punch = .12; snd("roar", 0);
+          return true;
+        }
+        case "buy": { if (e[1] === meIdx) { snd("coin", 0); addFx({k:"ring", x:posOf(e[1]).x, y:posOf(e[1]).y, r:50, col:"#ffd23c", life:.35}); } return true; }
+        case "recall": { const p = posOf(e[1]); addFx({k:"charge", x:p.x, y:p.y + 10, r:60, col:"#cfe9ff", col2:"#fff", life:2.2}); return true; }
+        case "recallx": { if (e[1] === meIdx) say("귀환 취소", 700); return true; }
+        case "tele": { const T = th(F[e[1]] ? F[e[1]].id : 0); addFx({k:"pillar", x:e[2], y:e[3], col:"#cfe9ff", life:.6}); addFx({k:"pillar", x:e[4], y:e[5], col:"#cfe9ff", life:.7}); burst(e[4], e[5] - 20, F[e[1]] ? F[e[1]].id : 0, 10, 160); void T; return true; }
+        case "sum": { const p = posOf(e[1]); addFx({k:"ring", x:p.x, y:p.y, r:60, col:e[2] ? "#fff" : ALLY, life:.4, lw:5}); if (e[2] === 0) for (let k = 0, n = 8 * fxq; k < n; k++) part({x:p.x + (Math.random() - .5) * 40, y:p.y + 6, vy:-80, life:.8, sz:4, sh:"cross", col:"#9fe3ff"}); return true; }
+        case "mdie": { part({x:e[1], y:e[2] - 6, vy:-30, life:.4, sz:5, sh:"dot", col:e[4] === (me ? me.team : 0) ? ALLY : FOE}); return true; }
+        case "wave": return true;
+        case "learn": case "wavex": return true;
+        default: return false;
+      }
+    }
+    /* 구조물·미니언 */
+    function drawEnts(now, me) {
+      const hs = t => me && t !== me.team;
+      for (const b of V.bld) {
+        const enemy = hs(b.team), col = enemy ? FOE : ALLY;
+        ctx.save(); ctx.translate(b.x, b.y);
+        if (!b.alive) { ctx.fillStyle = "rgba(20,16,30,.8)"; ctx.beginPath(); ctx.arc(0, 0, b.rad * .9, 0, 6.283); ctx.fill(); ctx.strokeStyle = "#6a6f8f"; ctx.lineWidth = 3; ctx.setLineDash([5, 5]); ctx.stroke(); ctx.restore(); continue; }
+        if (b.kind === "tower" && enemy) { ctx.strokeStyle = FOE; ctx.globalAlpha = .3; ctx.lineWidth = 3; ctx.setLineDash([14, 10]); ctx.beginPath(); ctx.arc(0, 0, Core.TWR.rng, 0, 6.283); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1; }
+        ctx.globalAlpha = b.locked ? .62 : 1;
+        ctx.fillStyle = "rgba(0,0,0,.35)"; ctx.beginPath(); ctx.ellipse(0, b.rad * .6, b.rad * 1.2, b.rad * .5, 0, 0, 6.283); ctx.fill();
+        if (b.kind === "tower") {
+          ctx.fillStyle = "#262c52"; ctx.strokeStyle = col; ctx.lineWidth = 5; ctx.setLineDash(enemy ? [10, 6] : []); rr(ctx, -23, -72, 46, 78, 9); ctx.fill(); ctx.stroke(); ctx.setLineDash([]);
+          ctx.fillStyle = col; ctx.globalAlpha *= .5 + .5 * Math.sin(now / 260); ctx.beginPath(); ctx.arc(0, -80, 13, 0, 6.283); ctx.fill(); ctx.globalAlpha = b.locked ? .62 : 1;
+          ctx.fillStyle = "#fff"; ctx.font = "bold 20px system-ui"; ctx.textAlign = "center"; ctx.fillText(enemy ? "■" : "▲", 0, -34);
+        } else {
+          const pulse = 1 + Math.sin(now / 300) * .05;
+          ctx.scale(pulse, pulse); ctx.fillStyle = enemy ? "rgba(255,162,60,.22)" : "rgba(76,201,255,.22)"; ctx.strokeStyle = col; ctx.lineWidth = 6; ctx.setLineDash(enemy ? [14, 8] : []);
+          ctx.beginPath(); ctx.moveTo(0, -92); ctx.lineTo(58, -22); ctx.lineTo(0, 46); ctx.lineTo(-58, -22); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.setLineDash([]);
+          ctx.fillStyle = "#fff"; ctx.font = "bold 26px system-ui"; ctx.textAlign = "center"; ctx.fillText(enemy ? "■" : "▲", 0, -14); ctx.scale(1 / pulse, 1 / pulse);
+        }
+        if (b.locked) { ctx.globalAlpha = .85; ctx.strokeStyle = "#cfe9ff"; ctx.lineWidth = 3; ctx.setLineDash([4, 5]); ctx.beginPath(); ctx.arc(0, -20, b.rad + 22, 0, 6.283); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle = "#cfe9ff"; ctx.font = `bold ${12 / zoom}px system-ui`; ctx.textAlign = "center"; ctx.fillText("무적", 0, b.rad + 34); ctx.globalAlpha = 1; }
+        const w = b.kind === "nexus" ? 126 : 86, yy = b.kind === "nexus" ? -112 : -102, pct = clamp(b.hp / b.maxhp, 0, 1);
+        ctx.globalAlpha = 1; ctx.fillStyle = "#0c1128"; ctx.fillRect(-w / 2 - 2, yy - 2, w + 4, 12); ctx.fillStyle = col; ctx.fillRect(-w / 2, yy, w * pct, 8);
+        ctx.fillStyle = "#fff"; ctx.font = `bold ${11 / zoom}px system-ui`; ctx.textAlign = "center"; ctx.lineWidth = 3; ctx.strokeStyle = "#0c1128"; const nm = (b.kind === "nexus" ? "넥서스 " : "타워 ") + Math.round(pct * 100) + "%"; ctx.strokeText(nm, 0, yy - 5); ctx.fillText(nm, 0, yy - 5);
+        ctx.restore();
+      }
+      for (const e of V.mins) {
+        const enemy = hs(e.team), col = enemy ? FOE : ALLY, r = e.rad, bob = Math.sin(now / 140 + e.x) * 1.5;
+        ctx.save(); ctx.translate(e.x, e.y + bob);
+        ctx.fillStyle = "rgba(0,0,0,.3)"; ctx.beginPath(); ctx.ellipse(0, r * .8, r, r * .4, 0, 0, 6.283); ctx.fill();
+        ctx.fillStyle = enemy ? "#5a3a1a" : "#173a52"; ctx.strokeStyle = col; ctx.lineWidth = 3;
+        if (enemy) rr(ctx, -r, -r * 1.5, r * 2, r * 2, 4); else { ctx.beginPath(); ctx.arc(0, -r * .5, r, 0, 6.283); }
+        ctx.fill(); ctx.stroke(); ctx.fillStyle = col;
+        if (e.mt === 0) ctx.fillRect(-2, -r * 1.2, 4, r * .9); else if (e.mt === 1) { ctx.beginPath(); ctx.arc(0, -r * .5, r * .35, 0, 6.283); ctx.fill(); } else { ctx.fillRect(-r * .5, -r * .9, r, r * .5); ctx.fillRect(-3, -r * 1.7, 6, r * .8); }
+        if (e.hp < 99) { ctx.fillStyle = "#0c1128"; ctx.fillRect(-r - 1, -r * 1.5 - 8, r * 2 + 2, 5); ctx.fillStyle = col; ctx.fillRect(-r, -r * 1.5 - 7, r * 2 * e.hp / 100, 3); }
+        ctx.restore();
+      }
+    }
+    function drawAramFloor(map, now) {
+      const MW = map.w, MH = map.h, b = map.bounds;
+      ctx.fillStyle = "#0b1020"; ctx.fillRect(0, 0, MW, MH);
+      ctx.fillStyle = "#363c63"; ctx.fillRect(b[0], b[1], b[2] - b[0], b[3] - b[1]);
+      ctx.strokeStyle = "rgba(255,255,255,.05)"; ctx.lineWidth = 2; ctx.beginPath();
+      for (let x = b[0]; x <= b[2]; x += 55) { ctx.moveTo(x, b[1]); ctx.lineTo(x, b[3]); }
+      for (let y = b[1]; y <= b[3]; y += 55) { ctx.moveTo(b[0], y); ctx.lineTo(b[2], y); }
+      ctx.stroke();
+      ctx.fillStyle = "rgba(255,255,255,.05)"; ctx.fillRect(Core.LX - 110, b[1], 220, b[3] - b[1]);
+      ctx.strokeStyle = "rgba(255,255,255,.22)"; ctx.lineWidth = 4; ctx.setLineDash([26, 22]); ctx.beginPath(); ctx.moveTo(Core.LX, b[1]); ctx.lineTo(Core.LX, b[3]); ctx.stroke(); ctx.setLineDash([]);
+      const me = V.fighters[meIdx], mt = me ? me.team : 0;
+      for (let t = 0; t < 2; t++) {   // 기지 바닥: 우리 = 하늘색 실선, 적 = 주황 빗금
+        const own = t === mt, y0 = t ? b[1] : b[3] - 300;
+        ctx.save(); ctx.globalAlpha = own ? .16 : .3; ctx.fillStyle = own ? ALLY : hatchPattern(); ctx.fillRect(b[0], y0, b[2] - b[0], 300); ctx.restore();
+        const fo = map.fountain[t]; ctx.strokeStyle = own ? ALLY : FOE; ctx.lineWidth = 4; ctx.setLineDash(own ? [] : [12, 8]); ctx.beginPath(); ctx.arc(fo.x, fo.y, own ? 200 : 210, 0, 6.283); ctx.stroke(); ctx.setLineDash([]);
+        ctx.fillStyle = "#fff"; ctx.font = `bold ${13 / zoom}px system-ui`; ctx.textAlign = "center"; ctx.fillText(own ? "▲ 우리 분수대 (회복·상점)" : "■ 적 분수대 (접근 금지)", fo.x, fo.y + (t ? -24 : 30));
+      }
+      ctx.strokeStyle = "#7d8cc8"; ctx.lineWidth = 6; ctx.strokeRect(b[0], b[1], b[2] - b[0], b[3] - b[1]);
+      ctx.fillStyle = "rgba(255,255,255,.3)"; ctx.font = `bold ${14 / zoom}px system-ui`; ctx.textAlign = "center"; ctx.fillText("— 중앙 —", Core.LX, 1100);
+      for (const s of map.solids) {
+        ctx.fillStyle = "rgba(0,0,0,.28)"; ctx.fillRect(s.x + 3, s.y + 9, s.w, s.h); ctx.fillStyle = "#6b4f38"; ctx.fillRect(s.x, s.y + 6, s.w, s.h);
+        ctx.fillStyle = "#b08a62"; rr(ctx, s.x, s.y, s.w, s.h, 4); ctx.fill(); ctx.strokeStyle = "#e0c9a0"; ctx.lineWidth = 1.5; ctx.stroke();
+      }
+    }
+    function drawAim(now, me) {   // 스킬샷 조준선
+      if (!aimPrev || !me || !me.alive) return;
+      const sk = KITS[me.id].skills[aimPrev.slot]; if (!sk) return;
+      const a = aimPrev.cur || lastIn, ang = Math.atan2(a.ay, a.ax), T = th(me.id), x = me.rx !== undefined ? me.rx : me.x, y = me.ry !== undefined ? me.ry : me.y;
+      ctx.save(); ctx.translate(x, y); ctx.fillStyle = T.c; ctx.strokeStyle = "#fff"; ctx.lineWidth = 2.5; ctx.setLineDash([10, 7]); ctx.globalAlpha = .9;
+      const ring = (r, cx, cy) => { ctx.beginPath(); ctx.arc(cx || 0, cy || 0, r, 0, 6.283); ctx.globalAlpha = .16; ctx.fill(); ctx.globalAlpha = .9; ctx.stroke(); };
+      ctx.rotate(ang);
+      switch (sk.t) {
+        case "proj": { const len = sk.rng, w = (sk.r || 10) * 2 * (sk.count > 1 ? 3 : 1); ctx.beginPath(); ctx.rect(20, -w / 2, len, w); ctx.globalAlpha = .16; ctx.fill(); ctx.globalAlpha = .9; ctx.stroke(); break; }
+        case "beam": ctx.beginPath(); ctx.rect(20, -sk.w / 2, sk.len, sk.w); ctx.globalAlpha = .16; ctx.fill(); ctx.globalAlpha = .9; ctx.stroke(); break;
+        case "cone": { const h = (sk.ang || 90) * .00873; ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, sk.rng, -h, h); ctx.closePath(); ctx.globalAlpha = .16; ctx.fill(); ctx.globalAlpha = .9; ctx.stroke(); break; }
+        case "dash": case "blink": { const d = (sk.dist || 200) * (sk.back ? -1 : 1); ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(d, 0); ctx.stroke(); ring(26, d, 0); break; }
+        case "circle": case "zone": if (sk.at === "aim") { ctx.beginPath(); ctx.arc(0, 0, sk.rng, 0, 6.283); ctx.globalAlpha = .45; ctx.stroke(); ctx.globalAlpha = .9; ring(sk.r, Math.min(sk.rng, Math.max(60, a.ad)), 0); } else ring(sk.r); break;
+        case "leap": ctx.beginPath(); ctx.arc(0, 0, sk.rng, 0, 6.283); ctx.stroke(); break;
+        case "trap": ring(sk.r); break;
+        default: ring(70);
+      }
+      ctx.restore();
+    }
+    function drawRecall(now, f) {
+      if (!f.alive || !f.recall) return;
+      const x = f.rx !== undefined ? f.rx : f.x, y = f.ry !== undefined ? f.ry : f.y;
+      ctx.save(); ctx.strokeStyle = "#cfe9ff"; ctx.lineWidth = 4; ctx.setLineDash([6, 6]); ctx.beginPath(); ctx.arc(x, y + 12, 36 + Math.sin(now / 120) * 3, 0, 6.283); ctx.stroke(); ctx.restore();
+    }
+    const hatchFor = () => null;
+    /* HUD */
+    const aramLine = $("[data-aramline]"), xpFill = $("[data-xpfill]"), lvupEl = $("[data-lvup]"), recallEl = $("[data-recall]"), boardEl = $("[data-board]"), annsEl = $("[data-anns]"), tutEl = $("[data-tut]"), itemsRow = $("[data-myitems]"), waveEl = $("[data-wave]");
+    const sumBtns = $$(".bw-spell"), autoBtn = $('[data-act="auto"]');
+    const TUT = [["move", "조이스틱 / WASD 로 협곡 가운데로 움직여 보세요"], ["lasthit", "미니언이 오면 가까이서 '막타'(마지막 일격)를 치면 골드가 들어와요 (자동공격)"], ["skill", "스킬 버튼(1~4)을 써 보세요. 드래그/마우스로 방향을 정해요"], ["shop", "골드가 모이면 분수대에서 상점(P)으로 아이템을 사요. B 는 귀환"], ["tower", "미니언과 함께 적 타워를 부수고 넥서스를 파괴하면 승리!"]];
+    function hudAram(now, me) {
+      dialog.classList.add("bw-aram");
+      const A = me.items !== undefined, sk = KITS[me.id].skills;
+      aramLine.textContent = `Lv ${me.lvl} · ◎ ${Math.floor(me.gold)} · CS ${me.cs}`;
+      xpFill.style.width = (me.lvl >= 12 ? 100 : me.xpPct || 0) + "%";
+      skBtns.forEach((b, i) => {
+        const rk = me.rk[i], mxr = i === 3 ? 2 : 4;
+        $("kbd", b).textContent = touchy ? "" : String(i + 1); $(".pips", b).textContent = "●".repeat(rk) + "○".repeat(Math.max(0, mxr - rk));
+        b.classList.toggle("locked", !rk); if (!rk) b.disabled = true;
+        const tot = sk[i].cd * (1 - .05 * (Math.max(1, rk) - 1)) * 0.9, cd = me.cd[i], pct = cd > 0 ? clamp(cd / tot * 100, 0, 100) : 0;
+        const cdEl = $(".cd", b); cdEl.style.background = `conic-gradient(rgba(5,8,26,.84) ${pct}%, transparent 0)`;
+      });
+      sumBtns.forEach((b, i) => { const cd = me.scd ? me.scd[i] : 0, tot = i ? 80 : 70; $(".cd", b).style.background = `conic-gradient(rgba(5,8,26,.84) ${cd > 0 ? clamp(cd / tot * 100, 0, 100) : 0}%, transparent 0)`; $(".cdn", b).textContent = cd > 0 ? Math.ceil(cd) : ""; b.disabled = !me.alive || cd > 0; });
+      const mxRank = i => i === 3 ? (me.lvl >= 12 ? 2 : me.lvl >= 6 ? 1 : 0) : Math.min(4, Math.ceil(me.lvl / 2));
+      const showLv = me.sp > 0 && !me.autoLearn && me.alive;
+      lvupEl.hidden = !showLv;
+      if (showLv) { $("[data-sp]").textContent = me.sp; $$("[data-learn]", lvupEl).forEach(b => { const i = Number(b.dataset.learn); b.textContent = touchy ? `${i + 1}+` : `${i + 1} ${sk[i].n} +`; b.disabled = me.rk[i] >= mxRank(i); }); }
+      autoBtn.setAttribute("aria-pressed", String(!!me.autoLearn)); autoBtn.textContent = "자동강화 " + (me.autoLearn ? "켬" : "끔");
+      const sig = me.items.join(",");
+      if (sig !== lastItemsSig) { lastItemsSig = sig; itemsRow.innerHTML = ""; me.items.forEach(ix => { const c = document.createElement("canvas"); c.width = c.height = 26; drawIcon(c.getContext("2d"), ITEMS[ix].ic, 26); c.title = ITEMS[ix].n; itemsRow.append(c); }); }
+      recallEl.hidden = !(me.recall && me.alive);
+      if (!recallEl.hidden) { const left = me.recallT !== undefined ? me.recallT : (me.recall || 0); recallEl.firstElementChild.style.width = clamp((1 - (left || 3.5) / 7) * 100, 4, 100) + "%"; }
+      if (shopOpen) paintShop();
+      if (V.wt !== undefined) waveEl.textContent = `다음 웨이브 ${Math.max(0, Math.ceil(V.wt))}초 · 타워 ${V.bld.filter(b => b.alive && b.kind === "tower" && b.team !== me.team).length}기 남음`;
+      // 점수판
+      const showBoard = boardHeld || boardPin;
+      boardEl.hidden = !showBoard;
+      if (showBoard) {
+        const rowOf = f => `<tr class="${f.i === meIdx ? "mine" : ""}"><td>${f.lvl || 1}</td><td class="who"><img src="${kSrcSafe(f.id, true)}" alt=""><span>${tag(f)} ${KITS[f.id].n}</span></td><td>${f.kills}/${f.deaths}/${f.assists}</td><td>${f.cs || 0}</td><td>${Math.floor(f.gold || 0)}</td></tr>`;
+        const grp = t => V.fighters.filter(f => f.team === t).sort((a, b) => b.kills - a.kills).map(rowOf).join("");
+        const html = `<table class="bw-tbl"><thead><tr><th>Lv</th><th>기사</th><th>K/D/A</th><th>CS</th><th>골드</th></tr></thead><tbody><tr class="grp"><td colspan="5">▲ 우리 팀 · 킬 ${V.score[me.team]} · 타워 ${(V.tw || [0, 0])[me.team]}</td></tr>${grp(me.team)}<tr class="grp"><td colspan="5">■ 상대 팀 · 킬 ${V.score[1 - me.team]} · 타워 ${(V.tw || [0, 0])[1 - me.team]}</td></tr>${grp(1 - me.team)}</tbody></table>`;
+        if (boardEl.dataset.v !== html) { boardEl.dataset.v = html; boardEl.innerHTML = html; }
+      }
+      // 방송
+      while (anns.length && now - anns[0].at > 3600) anns.shift();
+      const ah = anns.map(a => `<div style="--c:${a.col}">${a.txt}</div>`).join("");
+      if (annsEl.dataset.v !== ah) { annsEl.dataset.v = ah; annsEl.innerHTML = ah; }
+      // 튜토리얼(첫 판, 건너뛰기 가능)
+      if (tutOn && !tutDone && V.phase === "play" && me.alive) {
+        const done = [anyMove, me.cs > 0 || V.t > 70 && tutI > 0, anySkill, shopOpened || me.items.length > 0 || V.t > 110, (V.tw || [0, 0])[me.team] > 0 || V.t > 200];
+        while (tutI < TUT.length && done[tutI] && (tutI > 0 || V.t > 2)) { tutI++; tutAt = 0; }
+        if (tutI >= TUT.length) { tutDone = true; store.set("bw.tutAram", "1"); } else { if (!tutAt) tutAt = V.t; $("[data-tuttext]").textContent = `(${tutI + 1}/5) ` + TUT[tutI][1]; }
+        tutEl.hidden = tutDone;
+      } else if (tutDone || !tutOn) tutEl.hidden = true;
+    }
+    function aramReset() {
+      const A = aramOn(); dialog.classList.toggle("bw-aram", A);
+      anns.length = 0; shopOpen = false; shopEl.hidden = true; shopOpened = false; boardHeld = boardPin = false; aimPrev = null; tutI = 0; tutAt = 0; lastItemsSig = ""; ownedEl.dataset.sig = "";
+      tutOn = A && store.get("bw.tutAram", "") !== "1"; tutDone = !tutOn; if (A) tipsOn = false;
+      mini.width = A ? 50 : 96; mini.height = A ? 122 : 139; mini.style.width = A ? "50px" : ""; mini.style.height = A ? "122px" : "";
+      if (A && V.fighters[meIdx]) { cam.x = V.fighters[meIdx].x; cam.y = V.fighters[meIdx].y; }
+    }
+
     /* ---------- 시작·끝 ---------- */
     function showMenu() {
-      stopLoop(); stage.hidden = true; menu.hidden = false; dialog.classList.remove("bw-playing");
+      stopLoop(); stage.hidden = true; menu.hidden = false; dialog.classList.remove("bw-playing"); dialog.classList.remove("bw-aram"); match = null; V = null;
       $("[data-result]").hidden = true; resultShown = false;
       paintMenu();
     }
@@ -323,7 +575,7 @@
       const mapId = cfg.map === "rand" ? (Math.random() < .5 ? "3f" : "4f") : cfg.map;
       const players = [{slot:0, kn:cfg.kn}];
       if (role === "host") for (const [slot, r] of remote) players.push({slot, kn:r.kn});
-      match = Core.createMatch({mode:cfg.mode === "ffa" ? "ffa" : cfg.mode === "surv" ? "surv" : "team", map:mapId, size:cfg.bots + 1, teamSize:cfg.mode === "team3" ? 3 : 2, diff:cfg.diff, players});
+      match = Core.createMatch({mode:cfg.mode === "aram" ? "aram" : cfg.mode === "ffa" ? "ffa" : cfg.mode === "surv" ? "surv" : "team", map:mapId, size:cfg.bots + 1, teamSize:cfg.mode === "aram" ? cfg.team : cfg.mode === "team3" ? 3 : 2, diff:cfg.diff, players});
       V = match; meIdx = 0; startRound();
       showStage();
       startLoop();
@@ -333,7 +585,7 @@
       startedAt = performance.now(); $("[data-result]").hidden = true; $('[data-act="skipend"]').hidden = true;
       tipsOn = store.get("bw.tips", "") !== "1"; hint = {i:0, at:0, done:{}}; anyMove = anyAtk = anySkill = false;
       const me = V.fighters[meIdx]; if (me) { cam.x = me.x; cam.y = me.y; }
-      paintSkills(); say("준비!", 2200);
+      paintSkills(); say("준비!", 2200); aramReset();
     }
     function paintSkills() {
       const me = V && V.fighters[meIdx]; if (!me) return;
@@ -360,7 +612,7 @@
         if (V.over && V.res) {
           const row = V.res.rows.find(r => r[0] === meIdx);
           if (row) { place = row[9]; score = row[8]; }
-          win = V.res.mode === "team" ? V.res.winTeam === f.team : place === 1;
+          win = V.res.mode === "team" || V.res.mode === "aram" ? V.res.winTeam === f.team : place === 1;
         } else { place = n; score = Core.pts(f); }
         const humans = V.fighters.filter(x => x.human).length || 1;
         const info = {mode:role ? "multi" : "solo", win, place, players:n, humans, online:humans > 1, score, secs, once:"brawl:" + V.id};
@@ -400,30 +652,47 @@
       }
       const atk = keys.has(" ") || keys.has("j") || mouse.down || atkBtn ? 1 : 0;
       if (atk) anyAtk = true;
-      return {mx, my, ax, ay, ad, atk};
+      return (lastIn = {mx, my, ax, ay, ad, atk});
     }
     function pressSkill(slot) {
       if (!V || !V.fighters[meIdx] || V.over) return;
-      pend.push(slot);
+      pend.push({s:slot});
     }
     function applyInput(f, i) {
       f.inp.mx = i.mx; f.inp.my = i.my; f.aimX = i.ax; f.aimY = i.ay; f.aimD = i.ad; f.inp.atk = 0; f.inp.prio = prio;
-      while (pend.length) f.inp.casts.push(pend.shift());
+      while (pend.length) { const it = pend.shift(); if (it.ax !== undefined) { f.aimX = it.ax; f.aimY = it.ay; f.aimD = it.ad; } f.inp.casts.push(it.s); }
     }
+    function fireAim(slot) { castAim(slot); aimPrev = null; }
     function onKey(event, down) {
       if (!dialog.open || stage.hidden || (event.target.matches && event.target.matches("input, textarea"))) return;
-      const key = event.key.toLowerCase();
-      const used = ["w", "a", "s", "d", "arrowup", "arrowdown", "arrowleft", "arrowright", " ", "j", "shift", "1", "2", "3", "4", "q", "escape"];
-      if (!used.includes(key)) return;
+      const A = aramOn(), key = event.key.toLowerCase(), code = event.code || "";
+      const dig = /^Digit[1-4]$/.test(code) ? Number(code.slice(5)) - 1 : /^Numpad[1-4]$/.test(code) ? Number(code.slice(6)) - 1 : /^[1-4]$/.test(key) ? Number(key) - 1 : -1;
+      const moveKeys = ["w", "a", "s", "d", "arrowup", "arrowdown", "arrowleft", "arrowright"];
+      const used = moveKeys.includes(key) || dig >= 0 || [" ", "j", "shift", "q", "escape"].includes(key) || (A && ["f", "g", "b", "p", "t", "tab"].includes(key));
+      if (!used) return;
       event.preventDefault(); event.stopImmediatePropagation();
-      if (down) {
-        if (event.repeat) return;
-        keys.add(key);
-        if (/^[1-4]$/.test(key)) pressSkill(Number(key) - 1);
-        else if (key === "shift") pressSkill(1);
-        else if (key === "q") togglePrio();
-        else if (key === "escape") exitClick();
-      } else keys.delete(key);
+      if (moveKeys.includes(key)) { if (down) keys.add(key); else keys.delete(key); return; }
+      if (key === "tab") { boardHeld = down; return; }
+      if (dig >= 0) {
+        if (down) {
+          if (event.repeat) return;
+          if (A && event.shiftKey) cmd("l", dig);
+          else if (A) { if (V.fighters[meIdx] && V.fighters[meIdx].alive) aimPrev = {slot:dig, cur:null, src:"key"}; }
+          else pressSkill(dig);
+        } else if (A && aimPrev && aimPrev.slot === dig && aimPrev.src === "key") fireAim(dig);
+        return;
+      }
+      if (!down) { keys.delete(key); return; }
+      if (event.repeat) return;
+      keys.add(key);
+      if (key === "shift") { if (!A) pressSkill(1); }
+      else if (key === "q") { if (!A) togglePrio(); }
+      else if (key === "t") togglePrio();
+      else if (key === "f") castAim(5);
+      else if (key === "g") castAim(4);
+      else if (key === "b") castAim(6);
+      else if (key === "p") setShop(!shopOpen);
+      else if (key === "escape") { if (shopOpen) setShop(false); else exitClick(); }
     }
     window.addEventListener("keydown", e => onKey(e, true), true);
     window.addEventListener("keyup", e => onKey(e, false), true);
@@ -453,7 +722,30 @@
     stickEl.addEventListener("pointermove", e => { if (e.pointerId === stickId) stickMove(e); });
     const stickEnd = e => { if (e.pointerId !== stickId) return; stickId = null; stick.x = stick.y = 0; knob.style.transform = ""; };
     stickEl.addEventListener("pointerup", stickEnd); stickEl.addEventListener("pointercancel", stickEnd);
-    $$(".bw-sk").forEach(b => b.addEventListener("pointerdown", e => { e.preventDefault(); pressSkill(Number(b.dataset.sk)); }));
+    $$(".bw-sk").forEach(b => {   // 협곡: 버튼을 누른 채 끌면 방향·거리 조준, 그냥 누르면 자동 조준
+      let st = null;
+      b.addEventListener("pointerdown", e => {
+        e.preventDefault(); const slot = Number(b.dataset.sk);
+        if (!aramOn()) { pressSkill(slot); return; }
+        if (!V || !V.fighters[meIdx] || !V.fighters[meIdx].alive) return;
+        st = {id:e.pointerId, x0:e.clientX, y0:e.clientY, drag:false, slot}; try { b.setPointerCapture(e.pointerId); } catch { /* 무시 */ }
+        aimPrev = {slot, cur:null, src:"btn"};
+      });
+      b.addEventListener("pointermove", e => {
+        if (!st || e.pointerId !== st.id) return;
+        const dx = e.clientX - st.x0, dy = e.clientY - st.y0, L = Math.hypot(dx, dy);
+        if (L > 16) st.drag = true;
+        if (st.drag && aimPrev) { const sk = KITS[V.fighters[meIdx].id].skills[st.slot]; aimPrev.cur = {ax:dx / L, ay:dy / L, ad:Math.min(1, L / 90) * (sk.rng || sk.dist || 400)}; }
+      });
+      const end = e => {
+        if (!st || e.pointerId !== st.id) return;
+        const s0 = st; st = null;
+        if (e.type !== "pointercancel") { if (s0.drag && aimPrev && aimPrev.cur) pend.push({s:s0.slot, ax:aimPrev.cur.ax, ay:aimPrev.cur.ay, ad:aimPrev.cur.ad}); else pend.push({s:s0.slot}); }
+        aimPrev = null;
+      };
+      b.addEventListener("pointerup", end); b.addEventListener("pointercancel", end);
+    });
+    $$(".bw-spell").forEach(b => b.addEventListener("pointerdown", e => { e.preventDefault(); if (V && V.fighters[meIdx] && V.fighters[meIdx].alive) castAim(4 + Number(b.dataset.sm)); }));
     const coarse = window.matchMedia ? window.matchMedia("(pointer:coarse)") : null;
     function detectTouch() { touchy = !!(coarse && coarse.matches) || (navigator.maxTouchPoints > 0 && window.innerWidth <= 820); dialog.classList.toggle("bw-touchy", touchy); paintPrio(); }
 
@@ -489,7 +781,7 @@
       if (me) applyInput(me, localInput(me));
       if (now >= hitstopUntil) Core.step(match, dt);
       const evs = match.ev.splice(0);
-      if (evs.length) { handleEvents(evs); if (room && role === "host") netEv.push(...evs); if (netEv.length > 60) netEv.splice(0, netEv.length - 60); }
+      if (evs.length) { handleEvents(evs); if (room && role === "host") netEv.push(...evs.filter(e => e[0] !== "mhit" && e[0] !== "mdie" && e[0] !== "ehit")); if (netEv.length > 60) netEv.splice(0, netEv.length - 60); }
       V = match;
       if (room && role === "host" && now - pubAt >= (match.over ? 500 : 66)) { pubAt = now; room.publish(Core.pack(match, netEv.splice(0, 40))); }
       const f = match.fighters[meIdx];
@@ -505,7 +797,7 @@
       const i = localInput(me);
       me.aimX = i.ax; me.aimY = i.ay;
       const msg = {m:[+i.mx.toFixed(2), +i.my.toFixed(2)], a:[+i.ax.toFixed(3), +i.ay.toFixed(3), Math.round(i.ad)], p:prio};
-      if (pend.length) { for (const slot of pend.splice(0)) { room.input(Object.assign({c:slot, q:++castSeq}, msg)); } sendAt = now; }
+      if (pend.length) { for (const it of pend.splice(0)) { room.input(Object.assign({c:it.s, q:++castSeq}, msg, it.ax !== undefined ? {a:[+it.ax.toFixed(3), +it.ay.toFixed(3), Math.round(it.ad)]} : {})); } sendAt = now; }
       else if (now - sendAt > 50) { sendAt = now; room.input(msg); }
     }
 
@@ -541,6 +833,7 @@
       cx = hw * 2 >= MW ? MW / 2 : clamp(cx, hw, MW - hw); cy = hh * 2 >= MH ? MH / 2 : clamp(cy, hh, MH - hh);
       if (shake > .2) { cx += (Math.random() - .5) * shake; cy += (Math.random() - .5) * shake; shake *= .86; }
       ctx.setTransform(dpr * zoom, 0, 0, dpr * zoom, dpr * (W / 2 - cx * zoom), dpr * (H / 2 - cy * zoom));
+      if (map.aram) drawAramFloor(map, now); else {
       const img = planImg(map);
       if (ready(img)) ctx.drawImage(img, 0, 0, MW, MH); else { ctx.fillStyle = "#e6dfcf"; ctx.fillRect(0, 0, MW, MH); }
       ctx.fillStyle = "rgba(14,20,48,.30)"; ctx.fillRect(0, 0, MW, MH);
@@ -555,6 +848,7 @@
           ctx.fillStyle = "#b08a62"; rr(ctx, s.x, s.y, s.w, s.h, 4); ctx.fill();
           ctx.strokeStyle = "#e0c9a0"; ctx.lineWidth = 1.5; ctx.stroke();
         }
+      }
       }
       if (V.zone) {
         ctx.fillStyle = "rgba(150,40,70,.34)";
@@ -613,9 +907,11 @@
         ctx.restore();
         if (hs && t.dur >= .3) { const lx = t.k === "c" ? t.x : ox + Math.cos(t.ang) * 40, ly = t.k === "c" ? t.y : oy + Math.sin(t.ang) * 40; ctx.font = `bold ${16 / zoom}px system-ui`; ctx.textAlign = "center"; ctx.lineWidth = 3; ctx.strokeStyle = "#0c1128"; ctx.strokeText("⚠", lx, ly); ctx.fillStyle = FOE; ctx.fillText("⚠", lx, ly); }
       }
+      if (map.aram) drawEnts(now, me);
       for (const o of fx) if (GROUND[o.k]) drawFx(o, now);
       const order = V.fighters.filter(f => f.alive).sort((a, b) => (a.ry !== undefined ? a.ry : a.y) - (b.ry !== undefined ? b.ry : b.y));
       for (const f of order) drawFighter(f, now);
+      if (map.aram) { for (const f of order) drawRecall(now, f); drawAim(now, me); }
       for (const p of V.proj) drawProj(p, now, ex(p), hostileOf(byKn[p.id]));
       for (const o of fx) if (!GROUND[o.k]) drawFx(o, now);
       ctx.save();
@@ -693,7 +989,7 @@
       ctx.fillStyle = "#0c1128"; ctx.fillRect(x - bw / 2 - 2, by - 2, bw + 4, 10);
       ctx.fillStyle = col; ctx.fillRect(x - bw / 2, by, bw * clamp(f.hp / f.maxhp, 0, 1), 6);
       if (f.shieldV > 0) { ctx.fillStyle = "#e6f3ff"; ctx.fillRect(x - bw / 2, by - 4, bw * clamp(f.shieldV / f.maxhp, 0, 1), 3); }
-      const nm = (mine ? "나 · " : "") + KITS[f.id].n, mark = mine ? "▼" : ally ? "▲" : "■";
+      const nm = (mine ? "나 · " : "") + (f.lvl ? "Lv" + f.lvl + " " : "") + KITS[f.id].n, mark = mine ? "▼" : ally ? "▲" : "■";
       ctx.font = `bold ${12 / zoom}px system-ui`; ctx.textAlign = "center"; ctx.lineWidth = 3.5; ctx.strokeStyle = "#0c1128"; ctx.strokeText(mark + " " + nm, x, by - 7); ctx.fillStyle = col; ctx.fillText(mark + " " + nm, x, by - 7);
       ctx.globalAlpha = 1;
     }
@@ -800,6 +1096,7 @@
         }
         case "mark": ctx.strokeStyle = o.col; ctx.lineWidth = 3; ctx.setLineDash([6, 5]); ctx.beginPath(); ctx.arc(o.x, o.y, 14 + 22 * ease(p), 0, 6.283); ctx.stroke(); break;
         case "pillar": { const wd = 30 * a + 6; ctx.globalCompositeOperation = lowfx ? "source-over" : "lighter"; ctx.fillStyle = o.col; ctx.globalAlpha = a * .6; ctx.fillRect(o.x - wd / 2, o.y - 130 * (.4 + p), wd, 130 * (.4 + p) + 12); break; }
+        case "mbolt": { const kk = Math.min(1, p * 1.6 + .2); ctx.globalCompositeOperation = lowfx ? "source-over" : "lighter"; ctx.strokeStyle = o.col; ctx.lineWidth = o.big ? 8 * a + 2 : 3.5 * a + 1; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(o.x, o.y); ctx.lineTo(o.x + (o.x2 - o.x) * kk, o.y + (o.y2 - o.y) * kk); ctx.stroke(); break; }
         case "num": {
           const sizes = [15, 22, 28, 12, 17, 17], size = (sizes[o.st || 0]) / zoom * 1.1, yy = o.y - p * (o.st === 2 ? 46 : 34), pop = o.st === 2 ? 1 + Math.max(0, .45 - p * 2) : 1;
           ctx.font = `${o.st === 3 ? "italic " : ""}bold ${size * pop}px system-ui`; ctx.textAlign = "center"; ctx.lineWidth = 4; ctx.strokeStyle = "#0c1128"; ctx.strokeText(o.txt, o.x, yy);
@@ -835,10 +1132,11 @@
       const map = V.map, w = mini.width, h = mini.height, sx = w / map.w, sy = h / map.h, me = V.fighters[meIdx];
       mctx.clearRect(0, 0, w, h);
       const img = planImg(map);
-      if (ready(img)) mctx.drawImage(img, 0, 0, w, h); else { mctx.fillStyle = "#cfc8b6"; mctx.fillRect(0, 0, w, h); }
+      if (map.aram) { mctx.fillStyle = "#363c63"; mctx.fillRect(0, 0, w, h); } else if (ready(img)) mctx.drawImage(img, 0, 0, w, h); else { mctx.fillStyle = "#cfc8b6"; mctx.fillRect(0, 0, w, h); }
       mctx.fillStyle = "rgba(14,20,48,.45)"; mctx.fillRect(0, 0, w, h);
       mctx.fillStyle = "rgba(20,28,64,.8)"; for (const s of map.solids) mctx.fillRect(s.x * sx, s.y * sy, s.w * sx, s.h * sy);
       if (V.zone) { mctx.strokeStyle = "#ffd36b"; mctx.lineWidth = 2; mctx.beginPath(); mctx.arc(V.zone.x * sx, V.zone.y * sy, V.zone.r * sx, 0, 6.283); mctx.stroke(); }
+      if (map.aram) { for (const b of V.bld) { if (!b.alive) continue; mctx.fillStyle = me && b.team === me.team ? ALLY : FOE; const q = b.kind === "nexus" ? 6 : 4; mctx.fillRect(b.x * sx - q, b.y * sy - q, q * 2, q * 2); } for (const e of V.mins) { mctx.fillStyle = me && e.team === me.team ? ALLY : FOE; mctx.fillRect(e.x * sx - 1, e.y * sy - 1, 2, 2); } }
       for (const f of V.fighters) {
         if (!f.alive) continue;
         const x = f.x * sx, y = f.y * sy, mine = f.i === meIdx, ally = me && isAlly(f, me);
@@ -853,16 +1151,16 @@
     const HINTS = [[1, "move", "조이스틱 / WASD 로 움직여 보세요"], [5, "", "기본공격은 자동! 가까운 적에게 알아서 나가요"], [12, "skill", "숫자 1~4 (또는 작은 버튼)으로 스킬을 써 보세요 — 2번은 이동기, 4번은 궁극기"], [30, "", "정수기·상자에서 체력을 채우세요"], [44, "", "바닥의 빗금 표시는 적 스킬 예고예요. 피하세요!"]];
     let lastCombo = 0;
     const prioEl = $('[data-act="prio"]');
-    function paintPrio() { prioEl.innerHTML = `자동공격 · <b>${prio ? "약한 적" : "가까운 적"}</b>` + (touchy ? "" : " <kbd>Q</kbd>"); }
-    function togglePrio() { prio = prio ? 0 : 1; paintPrio(); snd("click", 0); }
+    function paintPrio() { prioEl.innerHTML = `자동공격 · <b>${PRIO_NAME[prio] || "가까운 적"}</b>` + (touchy ? "" : ` <kbd>${aramOn() ? "T" : "Q"}</kbd>`); }
+    function togglePrio() { prio = aramOn() ? (prio + 1) % 3 : (prio ? 0 : 1); paintPrio(); snd("click", 0); }
     const fmt = s => { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
     function hud(now) {
       const me = V.fighters[meIdx]; if (!me) return;
       const mode = V.cfg.mode, F = V.fighters;
       clockEl.textContent = V.phase === "ready" ? "준비" : fmt(V.limit - V.t);
-      infoEl.textContent = mode === "team" ? (V.cfg.teamSize === 3 ? MODE_LABEL.team3 : MODE_LABEL.team2) : MODE_LABEL[mode];
+      infoEl.textContent = mode === "team" ? (V.cfg.teamSize === 3 ? MODE_LABEL.team3 : MODE_LABEL.team2) : mode === "aram" ? "협곡 " + V.cfg.teamSize + ":" + V.cfg.teamSize : MODE_LABEL[mode];
       let sc;
-      if (mode === "team") sc = `<b class="a">▲ ${V.score[me.team]}</b><span>:</span><b class="f">■ ${V.score[1 - me.team]}</b>`;
+      if (mode === "team" || mode === "aram") sc = `<b class="a">▲ ${V.score[me.team]}</b><span>:</span><b class="f">■ ${V.score[1 - me.team]}</b>`;
       else if (mode === "surv") sc = `<b>생존 ${F.filter(f => f.alive).length}/${F.length}</b>`;
       else { const top = F.slice().sort((a, b) => b.kills - a.kills)[0]; sc = `<b>내 처치 ${me.kills}</b><small>1위 ${KITS[top.id].n} ${top.kills}</small>`; }
       if (scoreEl.dataset.v !== sc) { scoreEl.dataset.v = sc; scoreEl.innerHTML = sc; }
@@ -871,7 +1169,7 @@
       hpTxt.textContent = `${Math.ceil(me.hp)} / ${me.maxhp}${me.shieldV > 0 ? " (+" + Math.round(me.shieldV) + ")" : ""}`;
       skBtns.forEach((b, i) => {
         const sk = KITS[me.id].skills[i], cd = me.cd[i], pct = cd > 0 ? clamp(cd / (sk.cd * (me.bot ? me.bot.cdMul : 1)) * 100, 0, 100) : 0;
-        $(".cd", b).style.height = pct + "%"; $(".cdn", b).textContent = cd > 0 ? Math.ceil(cd) : "";
+        $(".cd", b).style.background = `conic-gradient(rgba(5,8,26,.84) ${pct}%, transparent 0)`; $(".cdn", b).textContent = cd > 0 ? Math.ceil(cd) : "";
         b.classList.toggle("ready", cd <= 0 && me.alive && me.stun <= 0); b.disabled = !me.alive;
       });
       const cb = me.combo >= 3 && me.alive ? me.combo : 0;
@@ -879,7 +1177,7 @@
       let text = "";
       if (V.over) text = banner.until > now ? banner.txt : "";
       else if (V.phase === "ready") text = V.readyT > 0 ? String(Math.ceil(V.readyT)) : "";
-      else if (!me.alive) text = mode === "surv" ? "탈락! 남은 승부를 지켜봐요" : `쓰러졌어요 · ${Math.max(1, Math.ceil(me.respT))}초 뒤 부활`;
+      else if (!me.alive) text = mode === "surv" ? "탈락! 남은 승부를 지켜봐요" : `쓰러졌어요 · ${Math.max(1, Math.ceil(me.respT))}초 뒤 부활` + (mode === "aram" ? " (상점 이용 가능)" : "");
       else if (banner.until > now) text = banner.txt;
       if (bannerEl.textContent !== text) bannerEl.textContent = text;
       let h = "";
@@ -894,25 +1192,27 @@
       const html = feed.map(e => `<li${e.me ? ' class="me"' : ""}>${e.txt}</li>`).join("");
       if (feedEl.dataset.v !== html) { feedEl.dataset.v = html; feedEl.innerHTML = html; }
       view.classList.toggle("bw-hurt", now - hurtAt < 180);
+      if (V.map.aram && me.items !== undefined) hudAram(now, me);
     }
 
     /* ---------- 결과 ---------- */
     function showResult() {
       const res = V.res, f = V.fighters[meIdx]; if (!res || !f) return;
       const my = res.rows.find(r => r[0] === meIdx), n = res.rows.length;
-      const win = res.mode === "team" ? res.winTeam === f.team : my && my[9] === 1, draw = res.mode === "team" && res.winTeam < 0;
-      const title = draw ? "무승부" : win ? "승리!" : res.mode === "surv" ? "탈락 · " + my[9] + "위" : res.mode === "team" ? "패배" : my[9] + "위 / " + n;
-      const sub = res.mode === "team" ? `▲ ${res.score[f.team]} : ■ ${res.score[1 - f.team]}` : res.mode === "surv" ? (win ? "마지막 생존자!" : "안전지대에서 밀려났거나 쓰러졌어요") : `${my[3]}처치 · ${my[4]}사망`;
+      const isT = res.mode === "team" || res.mode === "aram", A2 = res.mode === "aram";
+      const win = isT ? res.winTeam === f.team : my && my[9] === 1, draw = isT && res.winTeam < 0;
+      const title = draw ? "무승부" : win ? "승리!" : res.mode === "surv" ? "탈락 · " + my[9] + "위" : isT ? "패배" : my[9] + "위 / " + n;
+      const sub = A2 ? `${win ? "상대 넥서스 파괴!" : "우리 넥서스가 무너졌어요"} · 내 ${my[3]}킬 ${my[4]}데스 ${my[6]}어시 · CS ${my[11]}` : res.mode === "team" ? `▲ ${res.score[f.team]} : ■ ${res.score[1 - f.team]}` : res.mode === "surv" ? (win ? "마지막 생존자!" : "안전지대에서 밀려났거나 쓰러졌어요") : `${my[3]}처치 · ${my[4]}사망`;
       const row = r => {
         const k = KITS[r[1]], mine = r[0] === meIdx, ally = isAlly(V.fighters[r[0]], f);
-        return `<tr class="${mine ? "mine" : ""}"><td>${r[9]}</td><td class="who"><img src="${kSrcSafe(r[1], true)}" alt=""><span>${mine ? "▼ 나 · " : ally ? "▲ " : "■ "}${k.n}</span>${r[0] === res.mvp ? "<em>MVP</em>" : ""}</td><td>${r[3]}</td><td>${r[4]}</td><td>${r[5]}</td><td title="치유 ${r[7]}">${r[6]}</td><td><b>${r[8]}</b></td></tr>`;
+        return `<tr class="${mine ? "mine" : ""}"><td>${r[9]}</td><td class="who"><img src="${kSrcSafe(r[1], true)}" alt=""><span>${mine ? "▼ 나 · " : ally ? "▲ " : "■ "}${k.n}${A2 ? " Lv" + r[10] : ""}</span>${r[0] === res.mvp ? "<em>MVP</em>" : ""}</td>${A2 ? `<td>${r[3]}</td><td>${r[4]}</td><td>${r[6]}</td><td>${r[11]}</td>` : `<td>${r[3]}</td><td>${r[4]}</td><td>${r[5]}</td><td title="치유 ${r[7]}">${r[6]}</td>`}<td><b>${r[8]}</b></td></tr>`;
       };
       const canAgain = role !== "guest";
       $("[data-card]").innerHTML = `
         <small>${MODE_LABEL[res.mode === "team" ? (V.cfg.teamSize === 3 ? "team3" : "team2") : res.mode]} · ${V.map.name} · ${Math.floor(res.t / 60)}분 ${res.t % 60}초</small>
         <h2 class="${win ? "win" : ""}">${title}</h2><p class="bw-sub">${sub}</p>
         <p class="bw-reward"><b>${V.rewardText || ""}</b><span>${V.rewardParts || ""}</span></p>
-        <div class="bw-tblw"><table class="bw-tbl"><thead><tr><th>순위</th><th>기사</th><th>처치</th><th>사망</th><th>피해</th><th>지원</th><th>점수</th></tr></thead><tbody>${res.rows.map(row).join("")}</tbody></table></div>
+        <div class="bw-tblw"><table class="bw-tbl"><thead><tr><th>순위</th><th>기사</th>${A2 ? "<th>킬</th><th>데스</th><th>어시</th><th>CS</th>" : "<th>처치</th><th>사망</th><th>피해</th><th>지원</th>"}<th>점수</th></tr></thead><tbody>${res.rows.map(row).join("")}</tbody></table></div>
         <p class="bw-pts">점수 = 처치×100 + 지원×40 + 피해÷6 + 치유÷8</p>
         <div class="bw-btns">${canAgain ? '<button type="button" class="bw-primary" data-act="again">다시 하기</button><button type="button" data-act="settings">설정 바꾸기</button>' : '<span class="bw-wait">방장이 다시 시작하면 이어져요</span>'}<button type="button" data-act="exitnow">나가기</button></div>`;
       $("[data-result]").hidden = false;
@@ -954,7 +1254,8 @@
           if (Array.isArray(msg.m)) { f.inp.mx = num(msg.m[0], -1, 1); f.inp.my = num(msg.m[1], -1, 1); }
           if (Array.isArray(msg.a)) { const ax = num(msg.a[0], -1, 1), ay = num(msg.a[1], -1, 1), d = Math.hypot(ax, ay); if (d > .01) { f.aimX = ax / d; f.aimY = ay / d; } f.aimD = num(msg.a[2], 0, 900); }
           f.inp.prio = msg.p ? 1 : 0;
-          if (Number.isInteger(msg.c) && msg.c >= 0 && msg.c < 4 && Number.isInteger(msg.q) && msg.q !== r.q) { r.q = msg.q; f.inp.casts.push(msg.c); }
+          if (Number.isInteger(msg.c) && msg.c >= 0 && msg.c < 7 && Number.isInteger(msg.q) && msg.q !== r.q) { r.q = msg.q; f.inp.casts.push(msg.c); }
+          if (Array.isArray(msg.x) && Number.isInteger(msg.q) && msg.q !== r.q) { r.q = msg.q; const ty = msg.x[0], ar = msg.x[1]; if (ty === "l") Core.learn(match, f, ar | 0); else if (ty === "b") Core.buy(match, f, ar | 0); else if (ty === "s") Core.sell(match, f, ar | 0); else if (ty === "a") Core.setAuto(match, f, ar); }
         },
         state(snap) {
           if (!snap || snap.v !== 1 || !Array.isArray(snap.f)) return;
@@ -985,11 +1286,20 @@
       }
       const kn = event.target.closest(".bw-kn");
       if (kn) { cfg.kn = Number(kn.dataset.kn); paintMenu(); if (role === "guest" && room) room.input({pick:cfg.kn}); return; }
+      const itB = event.target.closest(".bw-item"); if (itB) { cmd("b", Number(itB.dataset.buy)); return; }
+      const slB = event.target.closest(".bw-slot"); if (slB) { cmd("s", Number(slB.dataset.sell)); return; }
+      const lnB = event.target.closest("[data-learn]"); if (lnB) { cmd("l", Number(lnB.dataset.learn)); return; }
       const b = event.target.closest("[data-act]"); if (!b) return;
       switch (b.dataset.act) {
         case "close": case "exitnow": leave(); break;
         case "exit": exitClick(); break;
         case "prio": togglePrio(); break;
+        case "shop": setShop(!shopOpen); break;
+        case "shopx": setShop(false); break;
+        case "recall": castAim(6); break;
+        case "board": boardPin = !boardPin; break;
+        case "auto": { const me0 = V && V.fighters[meIdx]; if (me0) cmd("a", me0.autoLearn ? 0 : 1); break; }
+        case "tutskip": tutDone = true; tutOn = false; store.set("bw.tutAram", "1"); tutEl.hidden = true; break;
         case "skipsum": $("[data-sum]").open = false; store.set("bw.sum", "0"); break;
         case "snd": soundOn = !soundOn; store.set("bw.snd", soundOn ? "1" : "0"); paintSnd(); break;
         case "solo": teardown(); setStatus(""); begin(); break;
@@ -1018,7 +1328,7 @@
     if (shortcut) shortcut.addEventListener("click", () => games.open("brawl"));
     if (typeof window.knxKeyHints === "function") {
       window.knxKeyHints({id:"brawl", screen:() => dialog.open && !stage.hidden, corner:"bl", bottom:10, title:"대난투 단축키",
-        rows:[["WASD", "이동"], ["마우스", "조준 방향"], ["자동", "가까운 적 기본공격"], ["1~4", "스킬 (4 = 궁극기)"], ["Shift", "2번 이동기"], ["우클릭", "2번 이동기"], ["Q", "자동공격 대상 전환"], ["Esc", "나가기"]]});
+        rows:() => aramOn() ? [["WASD", "이동"], ["자동", "기본공격(대상 T 전환)"], ["1~4", "스킬: 누르는 동안 조준선"], ["Shift+1~4", "스킬 강화"], ["F / G", "점멸 / 회복"], ["B", "귀환 (7초)"], ["P", "상점"], ["Tab", "점수판"], ["Esc", "나가기"]] : [["WASD", "이동"], ["마우스", "조준 방향"], ["자동", "가까운 적 기본공격"], ["1~4", "스킬 (4 = 궁극기)"], ["Shift", "2번 이동기"], ["우클릭", "2번 이동기"], ["Q", "자동공격 대상 전환"], ["Esc", "나가기"]]});
     }
     window.bwDebug = {get V() { return V; }, get match() { return match; }, cfg, begin, Core};
   }
