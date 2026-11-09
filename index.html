@@ -27245,6 +27245,7 @@ function myNick() { const m = nx() && nx().me ? safe(() => nx().me()) : null; re
 function myNo() { const m = nx() && nx().me ? safe(() => nx().me()) : null; return m && m.no ? String(m.no) : ""; }
 function setMyKnight(i, fromId) {
   i = cleanKnLocal(i); if (!ME) return; const old = ME.kn; if (old === i && !fromId) return;
+  try { if (NPC[i]) snDrop(NPC[i]); } catch (e) {}   // 내가 이 기사가 되면 마당 작업·삽을 정리
   if (NPC[old]) { const o = NPC[old]; o.active = true; o.fl = ME.fl; const p = spawnPt(o.fl); o.x = p.x; o.y = p.y; o.path = null; o.state = "idle"; o.wait = 1; o.alpha = 1; o.bub = null; }
   ME.kn = i; if (NPC[i]) { NPC[i].active = false; NPC[i].bub = null; }
 }
@@ -27378,6 +27379,7 @@ function onArrive(e) {
 function updateAi(e, dt) {
   if (!e.active) return;
   e.meetCool -= dt; if (e.hop > 0) e.hop -= dt;
+  if (e.job) { snJob(e, dt); return; }   // 겨울 마당 눈 치우기 작업 중(포털·마당·삽 거치대)
   if (e.pLock) { e.pT -= dt; const p = FL[e.fl].portal; if (e.pT <= 0 && hypot(e.x - p.x, e.y - p.y) > p.r + 14) e.pLock = false; }
   if (e.state === "leave") { e.wt -= dt; e.alpha = clamp(e.wt / .45, 0, 1); e.moving = false; if (e.wt <= 0) { e.active = false; e.dead = true; } return; }
   if (e.state === "warp") {   // 포털로 들어가는 중: 흐려지다가 반대편 포털에서 나타난다
@@ -27406,7 +27408,7 @@ function updateAi(e, dt) {
 function meetCheck() {
   const L = ents.filter(e => e.active && e.alpha > .9 && e.state !== "warp" && e.state !== "warpin");
   for (let i = 0; i < L.length; i++) for (let j = i + 1; j < L.length; j++) {
-    const a = L[i], b = L[j]; if (a.fl !== b.fl || a.meetCool > 0 || b.meetCool > 0) continue;
+    const a = L[i], b = L[j]; if (a.fl !== b.fl || !!a.out !== !!b.out || a.meetCool > 0 || b.meetCool > 0) continue;
     if (a.type === "pres" && b.type === "pres") continue;   // 접속자끼리는 안 멈춤(방 앞에 여럿이 모여 있을 때 인사 말풍선이 도배되지 않게)
     if (hypot(a.x - b.x, a.y - b.y) > 30) continue;
     if (a === ME || b === ME) {
@@ -27480,7 +27482,7 @@ function updateSay(dt) {
 function doorIntro(sp) {
   if (sp.kind !== "game" || S.introCool > 0 || S.introDone[sp.id] > S.t - 40) return;
   const gi = gameInfo(sp.gid); if (!gi.open && gi.gid !== "survivor") return;
-  const cand = NPC.filter(n => n.active && n.fl === ME.fl && n.state !== "warp" && n.state !== "warpin");
+  const cand = NPC.filter(n => n.active && !n.job && n.fl === ME.fl && n.state !== "warp" && n.state !== "warpin");
   if (!cand.length) return;
   cand.sort((a, b) => hypot(a.x - ME.x, a.y - ME.y) - hypot(b.x - ME.x, b.y - ME.y));
   const e = cand[0], Kd = KN[e.kn];
@@ -28164,7 +28166,92 @@ function snTick(dt) {
   const now = performance.now(), raw = SN.last ? Math.min(.2, (now - SN.last) / 1000) : .016; SN.last = now;
   SN.ft += (raw - SN.ft) * .05; SN.qT += raw;
   if (SN.qT > 2) { SN.qT = 0; if (SN.ft > .026) SN.q = Math.max(.25, SN.q * .8); else if (SN.ft < .019 && SN.q < 1) SN.q = Math.min(1, SN.q * 1.15); }   // 느려지면 눈송이를 줄인다
-  snAccum(dt); snFlush(); snFlakeStep(dt); snPuffStep(dt);
+  snAccum(dt); snFlush(); snFlakeStep(dt); snPuffStep(dt); snJobPick(dt);
+}
+/* ── 기사단 NPC 눈 치우기: 입구 포털 → 마당 → 거치대에서 삽 집기 → 쌓인 띠를 굽이굽이 → 반납 → 포털로 복귀(원래 행동으로). 한 번에 최대 2명, 40~120초 간격 ── */
+function snPlan(e) {   // 눈이 많이 쌓인 띠를 골라 서너 줄 왕복 경로를 만든다(거치대에서 첫 줄까지 가는 길 포함)
+  const fl = e.fl, d = FL[fl].dv, o = OUTER[fl];
+  const bands = [
+    {v: 1, c0: o[2] + 24, c1: d[2] - 24, a0: o[1] + 10, a1: o[3] - 10},   // 오른쪽(세로)
+    {v: 1, c0: d[0] + 24, c1: o[0] - 24, a0: o[1] + 10, a1: o[3] - 10},   // 왼쪽
+    {v: 0, c0: o[1] - 42, c1: o[1] - 22, a0: d[0] + 24, a1: d[2] - 24},   // 위(가로)
+    {v: 0, c0: o[3] + 22, c1: d[3] - 24, a0: d[0] + 24, a1: d[2] - 24}    // 아래
+  ];
+  let tot = 0;
+  for (const b of bands) { let sm = 0; for (let i = 0; i < 16; i++) { const c = rnd(b.c0, b.c1), a = rnd(b.a0, b.a1); sm += snDepthAt(fl, b.v ? c : a, b.v ? a : c); } const av = sm / 16; b.w = av * av * av * (b.a1 - b.a0); tot += b.w; }
+  let r = Math.random() * tot, B = bands[0]; for (const b of bands) { r -= b.w; if (r <= 0) { B = b; break; } }
+  const len = Math.min(B.a1 - B.a0, rnd(360, 760)), st = rnd(B.a0, B.a1 - len), en = st + len;
+  const n = Math.max(1, Math.floor((B.c1 - B.c0) / 24) + 1), pts = []; let fwd = Math.random() < .5;
+  for (let i = 0; i < n; i++) {
+    const c = n === 1 ? (B.c0 + B.c1) / 2 : B.c0 + (B.c1 - B.c0) * i / (n - 1), a1 = fwd ? st : en, a2 = fwd ? en : st;
+    pts.push(B.v ? {x: c, y: a1} : {x: a1, y: c}, B.v ? {x: c, y: a2} : {x: a2, y: c}); fwd = !fwd;
+  }
+  return yardRoute(fl, e.x, e.y, pts[0].x, pts[0].y).concat(pts.slice(1));
+}
+function snStartJob(e) {
+  if (!SN.on || !e || e.job || e.out || !RACK[e.fl] || RACK[e.fl].n <= 0) return false;
+  e.job = {s: "door", t: 0, go: 0, w: 0, stuck: 0}; e.state = "job"; e.path = null; e.pause = 0; e.goal = ""; e.wait = 0;
+  bubble(e, SNLINE[e.kn] || "눈 치우고 올게요!", 3.4); return true;
+}
+function snJobPick(dt) {
+  SN.jobT -= dt; if (SN.jobT > 0) return; SN.jobT = rnd(40, 120);
+  if (NPC.filter(n => n.job).length >= 2) { SN.jobT = 15; return; }
+  const cand = NPC.filter(n => n.active && !n.job && !n.out && !n.tp && n.alpha > .9 && (n.state === "idle" || n.state === "walk") && !n.home && RACK[n.fl] && RACK[n.fl].n > 0);
+  if (!cand.length) { SN.jobT = 10; return; }
+  snStartJob(pickOf(cand));
+}
+function snJob(e, dt) {
+  const J = e.job, f = FL[e.fl], R = RACK[e.fl], spd = e.speed * S.speedMul * 1.15; J.t += dt;
+  if (!SN.on || J.t > 300 || !f) { snDrop(e); return; }
+  const move = clear => {   // 경로를 따라 걷는다. 도착하면 true. 삽을 들었으면 지나간 자리의 눈이 치워진다
+    const ox = e.x, oy = e.y, mv = followPath(e, dt, spd); e.moving = mv;
+    if (mv) { e.ph += dt * spd * .085; J.stuck = 0; if (clear && e.shovel) snClear(e.fl, ox, oy, e.x, e.y); } else J.stuck += dt;
+    return !e.path;
+  };
+  switch (J.s) {
+    case "door":   // 건물 안: 입구 포털('밖으로')까지 걷기
+      if (!J.go) { const path = findPath(f, e.x, e.y, f.yp.x, f.yp.y); if (!path) { snDrop(e); return; } e.path = path; J.go = 1; }
+      if (move(false)) { J.s = "out1"; J.w = .45; J.go = 0; e.moving = false; } else if (J.stuck > 3) snDrop(e);
+      return;
+    case "out1":   // 포털로 들어가며 흐려짐 → 마당 포털에서 나타남
+      J.w -= dt; e.alpha = clamp(J.w / .45, 0, 1); e.moving = false;
+      if (J.w <= 0) { burst(e.fl, e.x, e.y, "out"); const q = f.yq; e.out = true; e.x = q.x; e.y = q.y; e.alpha = 0; e.fxT = -1; burst(e.fl, q.x, q.y, "in"); J.s = "out2"; J.w = .45; }
+      return;
+    case "out2": J.w -= dt; e.alpha = 1 - clamp(J.w / .45, 0, 1); if (J.w <= 0) { e.alpha = 1; J.s = "torack"; } return;
+    case "torack":
+      if (!J.go) { e.path = yardRoute(e.fl, e.x, e.y, R.x, R.y + 30); J.go = 1; }
+      if (move(false)) { J.s = "take"; J.w = .7; J.go = 0; e.moving = false; }
+      return;
+    case "take":
+      J.w -= dt; e.moving = false;
+      if (J.w <= 0) { if (rackUse(e)) J.s = "clear"; else J.s = "toportal"; J.go = 0; }
+      return;
+    case "clear":
+      if (!J.go) { e.path = snPlan(e); J.go = 1; }
+      if (move(true)) { J.s = "back"; J.go = 0; } else if (J.stuck > 3) { J.s = "back"; J.go = 0; }
+      return;
+    case "back":
+      if (!J.go) { e.path = yardRoute(e.fl, e.x, e.y, R.x, R.y + 30); J.go = 1; }
+      if (move(true)) { J.s = "ret"; J.w = .6; J.go = 0; e.moving = false; }
+      return;
+    case "ret":
+      J.w -= dt; e.moving = false;
+      if (J.w <= 0) { if (e.shovel) rackUse(e); J.s = "toportal"; J.go = 0; if (Math.random() < .5) bubble(e, pickOf(["휴, 다 치웠어요.", "길이 깔끔해졌네요!", "손이 시려워요…", "이 정도면 됐죠?"]), 2.8); }
+      return;
+    case "toportal":
+      if (!J.go) { e.path = yardRoute(e.fl, e.x, e.y, f.yq.x, f.yq.y); J.go = 1; }
+      if (move(false)) { J.s = "in1"; J.w = .45; J.go = 0; e.moving = false; }
+      return;
+    case "in1":
+      J.w -= dt; e.alpha = clamp(J.w / .45, 0, 1); e.moving = false;
+      if (J.w <= 0) { burst(e.fl, e.x, e.y, "out"); const p = f.yp; e.out = false; e.x = p.x; e.y = p.y; e.alpha = 0; burst(e.fl, p.x, p.y, "in"); J.s = "in2"; J.w = .45; }
+      return;
+    case "in2":
+      J.w -= dt; e.alpha = 1 - clamp(J.w / .45, 0, 1);
+      if (J.w <= 0) { e.alpha = 1; e.job = null; e.state = "idle"; e.wait = rnd(1.5, 4); e.path = null; e.moving = false; }
+      return;
+    default: snDrop(e);
+  }
 }
 /* ===SNOW_END=== */
 function drawPane(fl) {
@@ -28724,7 +28811,7 @@ function bootLobby() {
   };
   go();
 }
-window.lbDbg = {SN, RACK, snSetOn, snClear, snToggle, snWarp, yardRoute, yardClamp, rackUse, SUP, supBoxFor, supRefresh, supClaim, doEmote, bakeFloor, renderBg, BG, S, P, STATS, FL, ents, NPC, PRES, SPOTS, SPOT_BY, K, JOY, get ME() { return ME; }, update, render, isFree, clearPx, findPath, nearestFree, cellXY, warpFloor, walkMeTo, walkToSpot, teleportEnter, enterFromUI, startTp, openPanel, closePanel, togglePanel, renderLife, renderPanels, toWorld, toScreen, heroBox, layoutPanes, hitTest, openPop, closePop, openKnightSheet, openIntro, openPerson, pickKnight, sayNpc, ambientSay, doorIntro, applyPresence, pollPresence, onShow, onHide, init: () => { if (!inited) init(); }, layout, placeDom, KN, gameInfo, spotInfo, weekly, refreshAll, ME_SPEED, get inited() { return inited; },
+window.lbDbg = {snStartJob, snPlan, SN, RACK, snSetOn, snClear, snToggle, snWarp, yardRoute, yardClamp, rackUse, SUP, supBoxFor, supRefresh, supClaim, doEmote, bakeFloor, renderBg, BG, S, P, STATS, FL, ents, NPC, PRES, SPOTS, SPOT_BY, K, JOY, get ME() { return ME; }, update, render, isFree, clearPx, findPath, nearestFree, cellXY, warpFloor, walkMeTo, walkToSpot, teleportEnter, enterFromUI, startTp, openPanel, closePanel, togglePanel, renderLife, renderPanels, toWorld, toScreen, heroBox, layoutPanes, hitTest, openPop, closePop, openKnightSheet, openIntro, openPerson, pickKnight, sayNpc, ambientSay, doorIntro, applyPresence, pollPresence, onShow, onHide, init: () => { if (!inited) init(); }, layout, placeDom, KN, gameInfo, spotInfo, weekly, refreshAll, ME_SPEED, get inited() { return inited; },
   sim(sec, hz) { const dt = 1 / (hz || 30), n = Math.round(sec / dt); for (let i = 0; i < n; i++) update(dt); } };
 bootLobby();
 })();
