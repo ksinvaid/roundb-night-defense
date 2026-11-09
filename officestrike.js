@@ -12,21 +12,21 @@ const r1 = v => Math.round(v * 10) / 10, r2 = v => Math.round(v * 100) / 100, r3
 
 /* ---------- 아레나 4개 (open → solid → doors 순서로 깎는다. 1 벽 · 2 유리 · 3 사물함/집기 · 4 기둥) ---------- */
 const MAP_SPECS = [
-  {id:"office", name:"4층 공유오피스", note:"좌우 큰 사무실이 A·B 지점. 가운데 라운지로 빠르게 돌 수 있어요.", w:30, h:30,
+  {id:"office", name:"4층 공유오피스", note:"좌우 큰 사무실이 A·B 지점. 가운데 라운지로 빠르게 돌 수 있어요.", w:30, h:30, k:1.7, scatter:{step:7, ox:4, oy:4},
    open:[[12,1,17,4],[2,5,27,7],[2,9,9,21],[11,9,18,21],[20,9,27,21],[2,23,27,25],[12,26,17,28]],
    solid:[[10,9,10,21,2],[19,9,19,21,2],[3,11,5,12,3],[7,14,8,15,3],[3,17,5,18,3],[7,19,8,19,3],[24,11,26,12,3],[21,14,22,15,3],[24,17,26,18,3],[21,19,22,19,3],
      [13,12,13,12,4],[16,12,16,12,4],[13,18,13,18,4],[16,18,16,18,4],[14,15,15,15,3],[8,6,8,6,4],[21,6,21,6,4],[8,24,8,24,4],[21,24,21,24,4]],
    doors:[[3,8,4,8],[8,8,8,8],[13,8,16,8],[25,8,26,8],[21,8,21,8],[10,13,10,14],[10,19,10,20],[19,13,19,14],[19,19,19,20],[4,22,5,22],[13,22,16,22],[24,22,25,22]],
    A:[5,15], B:[24,15], atk:[12,1,17,4], def:[12,26,17,28],
    pal:{wall:[176,168,150], glass:[120,172,196], crate:[156,112,64], pillar:[122,128,140], ceil:"#27323f", floor:"#3b414b"}},
-  {id:"meeting", name:"3층 회의실 복도", note:"유리 회의실이 둘러싼 복도. 로비 양끝이 A·B 지점이고 복도로 크게 돌아 들어가요.", w:28, h:28,
+  {id:"meeting", name:"3층 회의실 복도", note:"유리 회의실이 둘러싼 복도. 로비 양끝이 A·B 지점이고 복도로 크게 돌아 들어가요.", w:28, h:28, k:1.7, scatter:{step:7, ox:4, oy:4},
    pre:[[5,5,22,22,2]],
    open:[[2,2,25,4],[2,23,25,25],[2,5,4,22],[23,5,25,22],[6,6,12,10],[15,6,21,10],[6,17,12,21],[15,17,21,21],[6,12,21,15]],
    solid:[[10,13,11,14,3],[16,13,17,14,3],[13,3,14,3,3],[13,24,14,24,3],[3,13,3,14,3],[24,13,24,14,3]],
    doors:[[8,11,9,11],[18,11,19,11],[8,16,9,16],[18,16,19,16],[8,5,9,5],[18,5,19,5],[8,22,9,22],[18,22,19,22],[5,13,5,14],[22,13,22,14],[13,8,14,8],[13,19,14,19]],
    A:[7,14], B:[20,13], atk:[11,2,16,3], def:[11,24,16,25],
    pal:{wall:[204,204,210], glass:[132,184,210], crate:[150,108,72], pillar:[140,146,158], ceil:"#2d3a4a", floor:"#454c5a"}},
-  {id:"garage", name:"지하 주차장", note:"탁 트인 기둥 숲. 차량 뒤에 숨어 가운데 코어를 끼고 위·아래 길로 돌아요.", w:32, h:24,
+  {id:"garage", name:"지하 주차장", note:"탁 트인 기둥 숲. 차량 뒤에 숨어 가운데 코어를 끼고 위·아래 길로 돌아요.", w:32, h:24, k:1.7, scatter:{step:7, ox:4, oy:4},
    open:[[1,1,30,22]],
    solid:[[8,1,8,7,1],[8,16,8,22,1],[23,1,23,7,1],[23,16,23,22,1],[13,9,18,14,4],
      [4,4,6,5,3],[4,18,6,19,3],[10,10,11,13,3],[20,10,21,13,3],[25,4,27,5,3],[25,18,27,19,3],[14,3,17,4,3],[14,19,17,20,3],[19,17,20,17,3],[11,6,12,6,3],
@@ -34,7 +34,7 @@ const MAP_SPECS = [
    doors:[],
    A:[15,6], B:[16,17], atk:[1,9,3,14], def:[28,9,30,14],
    pal:{wall:[116,118,124], glass:[120,160,180], crate:[70,102,150], pillar:[150,142,96], ceil:"#1e232b", floor:"#30343b"}},
-  {id:"cafe", name:"1층 로비 카페", note:"카운터를 낀 가운데 길, 유리 방 두 개가 A·B 지점. 위쪽 통로로 돌아갈 수 있어요.", w:28, h:28,
+  {id:"cafe", name:"1층 로비 카페", note:"카운터를 낀 가운데 길, 유리 방 두 개가 A·B 지점. 위쪽 통로로 돌아갈 수 있어요.", w:28, h:28, k:1.7, scatter:{step:7, ox:4, oy:4},
    open:[[1,1,26,26]],
    solid:[[1,5,10,5,1],[17,5,26,5,1],[1,22,10,22,1],[17,22,26,22,1],
      [1,8,8,8,2],[1,19,8,19,2],[9,8,9,11,2],[9,16,9,19,2],[19,8,26,8,2],[19,19,26,19,2],[18,8,18,11,2],[18,16,18,19,2],
@@ -45,25 +45,35 @@ const MAP_SPECS = [
    pal:{wall:[168,128,98], glass:[128,176,190], crate:[110,80,60], pillar:[132,120,110], ceil:"#33281f", floor:"#4a3f36"}}
 ];
 function buildMap(sp) {
-  const w = sp.w, h = sp.h, g = new Uint8Array(w * h).fill(1);
+  const k = sp.k || 1, sx = v => Math.round(v * k), ex = v => Math.round((v + 1) * k) - 1;
+  const R = r => [sx(r[0]), sx(r[1]), ex(r[2]), ex(r[3])].concat(r.slice(4));
+  const pt = c => [Math.round((c[0] + .5) * k - .5), Math.round((c[1] + .5) * k - .5)];
+  const w = sx(sp.w), h = sx(sp.h), g = new Uint8Array(w * h).fill(1);
   const fill = (x1, y1, x2, y2, t) => { for (let y = y1; y <= y2; y++) for (let x = x1; x <= x2; x++) if (x > 0 && y > 0 && x < w - 1 && y < h - 1) g[y * w + x] = t; };
-  (sp.pre || []).forEach(r => fill(r[0], r[1], r[2], r[3], r[4]));
-  sp.open.forEach(r => fill(r[0], r[1], r[2], r[3], 0));
-  (sp.solid || []).forEach(r => fill(r[0], r[1], r[2], r[3], r[4] || 1));
-  (sp.doors || []).forEach(r => fill(r[0], r[1], r[2], r[3], 0));
   const free = (x, y) => x >= 0 && y >= 0 && x < w && y < h && !g[y * w + x];
+  (sp.pre || []).map(R).forEach(r => fill(r[0], r[1], r[2], r[3], r[4]));
+  sp.open.map(R).forEach(r => fill(r[0], r[1], r[2], r[3], 0));
+  (sp.solid || []).map(R).forEach(r => fill(r[0], r[1], r[2], r[3], r[4] || 1));
+  const aS = pt(sp.A), bS = pt(sp.B), atkR = R(sp.atk), defR = R(sp.def);
+  if (sp.scatter) {  // 큰 방에 엄폐물(2×2 상자·기둥)을 규칙적으로 흩뿌린다 — 사방 6칸이 비어 있을 때만, 지점·스폰 근처는 피한다
+    const st = sp.scatter, ok = (x, y) => { for (let yy = y - 2; yy <= y + 3; yy++) for (let xx = x - 2; xx <= x + 3; xx++) if (!free(xx, yy)) return false; return true; };
+    const away = (x, y) => [aS, bS].every(s => Math.hypot(x + 1 - s[0], y + 1 - s[1]) > 6) && [atkR, defR].every(r => !(x > r[0] - 4 && x < r[2] + 4 && y > r[1] - 4 && y < r[3] + 4));
+    let n = 0;
+    for (let y = st.oy; y < h - 4; y += st.step) for (let x = st.ox + (Math.floor(y / st.step) % 2 ? Math.floor(st.step / 2) : 0); x < w - 4; x += st.step) if (ok(x, y) && away(x, y)) fill(x, y, x + 1, y + 1, n++ % 3 === 2 ? 4 : 3);
+  }
+  (sp.doors || []).map(R).forEach(r => fill(r[0], r[1], r[2], r[3], 0));
   const cellsOf = r => { const o = []; for (let y = r[1]; y <= r[3]; y++) for (let x = r[0]; x <= r[2]; x++) if (free(x, y)) o.push({x: x + .5, y: y + .5}); return o; };
-  const pick = c => Array.from({length: 5}, (_, i) => c[Math.min(c.length - 1, Math.floor((i + .5) * c.length / 5))]);
+  const pick = (c, n) => Array.from({length: n}, (_, i) => c[Math.min(c.length - 1, Math.floor((i + .5) * c.length / n))]);
   const sees = (ax, ay, bx, by) => { const n = Math.ceil(Math.hypot(bx - ax, by - ay) * 6); for (let i = 1; i < n; i++) if (!free(Math.floor(ax + (bx - ax) * i / n), Math.floor(ay + (by - ay) * i / n))) return false; return true; };
   const mk = (l, c) => {
     const s = {l, x: c[0] + .5, y: c[1] + .5, posts: [], escorts: []};
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
       if (!free(x, y)) continue; const d = Math.hypot(x + .5 - s.x, y + .5 - s.y);
-      if (d >= 1.6 && d <= 7 && sees(x + .5, y + .5, s.x, s.y)) { if (d >= 3) s.posts.push({x: x + .5, y: y + .5}); if (d <= 5) s.escorts.push({x: x + .5, y: y + .5}); }
+      if (d >= 2 && d <= 9 && sees(x + .5, y + .5, s.x, s.y)) { if (d >= 4) s.posts.push({x: x + .5, y: y + .5}); if (d <= 6.5) s.escorts.push({x: x + .5, y: y + .5}); }
     }
     return s;
   };
-  return {id: sp.id, name: sp.name, note: sp.note, w, h, grid: g, pal: sp.pal, A: mk("A", sp.A), B: mk("B", sp.B), atk: pick(cellsOf(sp.atk)), def: pick(cellsOf(sp.def)), cx: w / 2, cy: h / 2};
+  return {id: sp.id, name: sp.name, note: sp.note, w, h, grid: g, pal: sp.pal, A: mk("A", aS), B: mk("B", bS), atk: pick(cellsOf(atkR), 10), def: pick(cellsOf(defR), 10), cx: w / 2, cy: h / 2};
 }
 const MAPS = MAP_SPECS.map(buildMap);
 
@@ -89,16 +99,17 @@ const DIFF = {
   normal:{n:"보통", react:.5, aim:.04, turn:5.5, acc:.8, nades:.5, hearing:.6, peek:.5, plantWait:20},
   hard:{n:"어려움", react:.26, aim:.02, turn:8.5, acc:1, nades:.9, hearing:.9, peek:.85, plantWait:14}
 };
-const CFG = {startCredits:1000, cap:6500, winPay:1500, losePay:1000, killPay:200, objPay:300, buyT:12, liveT:100, postT:4.5, bombT:38, plantT:3, defT:6, kitT:3.5, maxRounds:7, toWin:4, swapAfter:3, speed:3.3};
+const CFG = {startCredits:1000, cap:6500, winPay:1500, losePay:1000, killPay:200, objPay:300, buyT:12, liveT:120, postT:4.5, bombT:40, plantT:4, defT:7, kitT:4, maxRounds:7, toWin:4, swapAfter:3, speed:3.3};
 
 /* ---------- 판 하나 ---------- */
 function createMatch(o) {
   const map = MAPS[o.map | 0] || MAPS[0], W = map.w, H = map.h, G = map.grid, DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
-  const humans = new Map(); for (const s of (o.humans || [])) humans.set(s, {});
+  const per = clamp(o.per | 0 || 5, 1, 10), N = per * 2;
+  const humans = new Map(); for (const s of (o.humans || [])) if (s >= 0 && s < N) humans.set(s, {});
   const S = {id: Math.random().toString(36).slice(2, 8), mi: o.map | 0, map, diff: DIFF[o.diff] ? o.diff : "easy", t: 0, phase: "buy", phaseEnd: 0, ro: 0, atk: 0, score: [0, 0], players: [], nades: [], smokes: [], feed: [], ev: [], evId: 0,
-    notice: "", done: false, winner: -1, intel: [{}, {}], loss: [0, 0], plan: null, liveT0: 0, lastEnd: null, defuser: -1, final: false, spotAt: 0,
+    notice: "", done: false, winner: -1, intel: [{}, {}], loss: [0, 0], plan: null, liveT0: 0, lastEnd: null, defuser: -1, final: false, spotAt: 0, n: N,
     bomb: {st: "carried", holder: -1, x: 0, y: 0, site: "", t0: 0, end: 0}};
-  for (let i = 0; i < 10; i++) S.players.push({i, k: (i + (o.me | 0)) % 10, team: i % 2, human: humans.has(i), kills: 0, deaths: 0, assists: 0, hs: 0, plants: 0, defuses: 0, credits: CFG.startCredits, ready: false,
+  for (let i = 0; i < N; i++) S.players.push({i, k: (i + (o.me | 0)) % 10, team: i % 2, human: humans.has(i), kills: 0, deaths: 0, assists: 0, hs: 0, plants: 0, defuses: 0, credits: CFG.startCredits, ready: false,
     x: 1.5, y: 1.5, a: 0, hp: 100, armor: 0, kit: false, pw: null, w: 1, clip: [0, 13], res: [0, 52], gren: [0, 0, 0], cd: 0, load: 0, rec: 0, mf: 0, zoom: false, fireHeld: false, alive: true, blind: 0,
     prog: 0, job: 0, hitAt: -9, hitDir: 0, shotAt: -9, dmgBy: {}, spot: [-9, -9], acc: 1, ai: null});
   const ev = (ty, x, y, a, b) => { S.ev.push([++S.evId, ty, r1(x), r1(y), a == null ? 0 : a, b == null ? 0 : b, S.t]); if (S.ev.length > 60) S.ev.shift(); };
@@ -194,7 +205,7 @@ function createMatch(o) {
     if (q.armor > 0) { q.armor = Math.max(0, q.armor - dmg * .5); dmg *= head ? .8 : .6; }
     dmg = Math.round(dmg); q.hp -= dmg; q.hitAt = S.t; q.hitDir = from;
     if (src && src !== q) q.dmgBy[src.i] = S.t;
-    ev("ht", q.x, q.y, q.i, (head ? 10 : 0) + (src && src !== q ? src.i : 9));
+    ev("ht", q.x, q.y, q.i, (head ? 100 : 0) + (src && src !== q ? src.i : 99));
     if (q.hp > 0) return;
     q.hp = 0; q.alive = false; q.deaths++; q.prog = 0; q.job = 0; q.zoom = false;
     if (src && src !== q) {
@@ -240,7 +251,8 @@ function createMatch(o) {
   function throwNade(p, type, a, speed) {
     if (!p.alive || S.phase !== "live" || !p.gren[type]) return false;
     p.gren[type]--; const v = speed || 9; a = a == null ? p.a : a;
-    S.nades.push({type, x: p.x + Math.cos(a) * .4, y: p.y + Math.sin(a) * .4, vx: Math.cos(a) * v, vy: Math.sin(a) * v, t0: S.t, fuse: type === 0 ? 1.8 : type === 1 ? 1.7 : 1.25, owner: p.i, team: p.team});
+    let nx0 = p.x + Math.cos(a) * .4, ny0 = p.y + Math.sin(a) * .4; if (solid(nx0, ny0) || !los(p.x, p.y, nx0, ny0)) { nx0 = p.x; ny0 = p.y; }
+    S.nades.push({type, x: nx0, y: ny0, vx: Math.cos(a) * v, vy: Math.sin(a) * v, t0: S.t, fuse: type === 0 ? 1.8 : type === 1 ? 1.7 : 1.25, owner: p.i, team: p.team});
     ev("th", p.x, p.y, type, p.i); return true;
   }
   function explode(n) {
@@ -255,8 +267,9 @@ function createMatch(o) {
     ev("fl", n.x, n.y);
     for (const q of S.players) {
       if (!q.alive) continue; const d = Math.hypot(q.x - n.x, q.y - n.y); if (d > 11 || !los(n.x, n.y, q.x, q.y)) continue;
+      if (q.team === n.team && q !== owner) continue;  // 아군 섬광은 무효
       const face = Math.cos(adiff(q.a, angTo(q, n))); if (face < -.25) continue;
-      q.blind = Math.max(q.blind, (1.6 + 2.6 * clamp(face, 0, 1)) * (1 - d / 11 * .55));
+      q.blind = Math.max(q.blind, (1.6 + 2.6 * clamp(face, 0, 1)) * (1 - d / 11 * .55) * (q === owner ? .4 : 1));
     }
   }
   function stepNades(dt) {
@@ -323,10 +336,11 @@ function createMatch(o) {
   function startLive() {
     S.phase = "live"; S.phaseEnd = S.t + CFG.liveT; S.liveT0 = S.t; S.notice = "";
     const pickSite = rnd() < .5 ? map.A : map.B;
-    S.plan = {site: pickSite, other: pickSite === map.A ? map.B : map.A, smoked: false};
+    S.plan = {site: pickSite, other: pickSite === map.A ? map.B : map.A, smoked: false, exec: 44 + rnd() * 20};
     const roles = {}, atk = S.players.filter(p => p.team === S.atk && !p.human && S.bomb.holder !== p.i), def = S.players.filter(p => p.team !== S.atk && !p.human);
-    if (atk.length > 1 && rnd() < DIFF[S.diff].peek) roles[atk[Math.floor(rnd() * atk.length)].i] = "lurk";
-    def.forEach((p, i) => { roles[p.i] = i === def.length - 1 && def.length > 2 ? "rot" : "hold"; p.site = i % 2 ? map.B : map.A; });
+    for (let l = Math.floor(atk.length / 4) + (rnd() < DIFF[S.diff].peek ? 1 : 0); l > 0 && atk.length > 1; l--) roles[atk[Math.floor(rnd() * atk.length)].i] = "lurk";
+    const rots = def.length >= 6 ? 2 : def.length > 2 ? 1 : 0;
+    def.forEach((p, i) => { roles[p.i] = i >= def.length - rots ? "rot" : "hold"; p.site = i % 2 ? map.B : map.A; });
     const used = [];
     for (const p of S.players) {
       if (p.human) continue; p.ai = mkAI(p); p.ai.role = roles[p.i] || (p.team === S.atk ? (S.bomb.holder === p.i ? "plant" : "escort") : "hold");
@@ -352,7 +366,7 @@ function createMatch(o) {
     if (a === 0 && B.st !== "planted") return endRound(1 - S.atk, "공격팀 전멸");
     if (B.st !== "planted" && S.t >= S.phaseEnd) return endRound(1 - S.atk, "시간 초과 · 설치 실패");
   }
-  function siteNear(p) { for (const s of [map.A, map.B]) if (Math.hypot(p.x - s.x, p.y - s.y) < 1.9) return s; return null; }
+  function siteNear(p) { for (const s of [map.A, map.B]) if (Math.hypot(p.x - s.x, p.y - s.y) < 2.3) return s; return null; }
   function doJob(p, dt, use) {
     const B = S.bomb;
     if (S.phase !== "live" || !p.alive || !use || p.mf > .14) { p.prog = 0; p.job = 0; return; }
@@ -379,6 +393,18 @@ function createMatch(o) {
   function goTo(p, x, y, near) {
     const b = p.ai; if (Math.hypot(x - p.x, y - p.y) < (near || .4)) { b.wp = null; return true; }
     const w = nav(p, field(Math.floor(x), Math.floor(y))); b.wp = w || {x, y}; return false;
+  }
+  function pickStage(p, site) {
+    const f = field(Math.floor(site.x), Math.floor(site.y));
+    let cx = Math.floor(p.x), cy = Math.floor(p.y); const v0 = f[cy * W + cx]; if (v0 < 0) return {x: p.x, y: p.y};
+    const goal = v0 * (.4 + rnd() * .25);
+    for (let s = 0; s < 500; s++) {
+      let bv = f[cy * W + cx], bx = -1, by = -1; if (bv <= goal) break;
+      for (const [ox, oy] of DIRS) { const nx = cx + ox, ny = cy + oy; if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue; const v = f[ny * W + nx]; if (v < 0 || v >= bv) continue; if (ox && oy && (G[cy * W + nx] || G[ny * W + cx])) continue; bv = v; bx = nx; by = ny; }
+      if (bx < 0) break; cx = bx; cy = by;
+    }
+    for (let t = 0; t < 10; t++) { const x = cx + Math.round((rnd() - .5) * 7), y = cy + Math.round((rnd() - .5) * 7); if (x > 0 && y > 0 && x < W - 1 && y < H - 1 && !G[y * W + x]) return {x: x + .5, y: y + .5}; }
+    return {x: cx + .5, y: cy + .5};
   }
   function botThink(p) {
     const b = p.ai, T = S.t, D = b.D, foe = 1 - p.team, B = S.bomb, wd = wdef(p), c = ci(p);
@@ -408,15 +434,15 @@ function createMatch(o) {
       b.fire = T >= b.react && p.blind < 1 && (b.ph === 0 || close || D.peek < .3 || b.ph === 1 && D.peek > .8);
       if (b.fire && T < b.pause) b.fire = false;
       else if (b.fire && wd.auto) { b.burst -= .12 / wd.cd; if (b.burst <= 0) { b.pause = T + .25 + rnd() * .35 / D.peek; b.burst = 3 + rnd() * 4 * D.peek; } }
-      if (td > wd.rng * 1.3 && !wd.scope && D.peek > .4) { b.stop = false; goTo(p, tgt.x, tgt.y, 4); }
+      if (td > wd.rng * 1.3 && !wd.scope && D.peek > .4 && (B.st === "planted" || p.team === S.atk && T - S.liveT0 >= S.plan.exec)) { b.stop = false; goTo(p, tgt.x, tgt.y, 4); }
       else if (b.stop) b.wp = null;
       if (p.hp < 30 && td > 5 && b.ph) { const sp = (p.team === S.atk ? map.atk : map.def)[2]; goTo(p, sp.x, sp.y, 1); b.stop = false; }
-      if (p.gren[0] && T > b.nadeAt && td > 5.5 && td < 13 && rnd() < D.nades && T > b.react + .6) { throwNade(p, 0, angTo(p, tgt), clamp(td * .85, 5, 11)); b.nadeAt = T + 9; }
+      if (p.gren[0] && T > b.nadeAt && T - S.liveT0 > 6 && td > 5.5 && td < 13 && rnd() < D.nades && T > b.react + .6) { throwNade(p, 0, angTo(p, tgt), clamp(td * .85, 5, 11)); b.nadeAt = T + 9; }
       return;
     }
     // 목표 행동 (시야에 적 없음)
     b.wantA = b.wp ? Math.atan2(b.wp.y - p.y, b.wp.x - p.x) : b.look + Math.sin(T * .9 + b.scan) * .5;
-    if (b.lastPos && T - b.seenT < 3.5 && D.peek > .35 && (b.role === "escort" || b.role === "plant" || b.role === "lurk" || B.st === "planted" && p.team !== S.atk)) {
+    if (b.lastPos && T - b.seenT < 3.5 && D.peek > .35 && (p.team !== S.atk || T - S.liveT0 >= S.plan.exec || B.st === "planted") && (b.role === "escort" || b.role === "plant" || b.role === "lurk" || B.st === "planted" && p.team !== S.atk)) {
       goTo(p, b.lastPos.x, b.lastPos.y, 1.2); b.wantA = b.wp ? Math.atan2(b.wp.y - p.y, b.wp.x - p.x) : b.wantA; return;
     }
     if (p.team === S.atk) {
@@ -426,16 +452,28 @@ function createMatch(o) {
         if (b.post && !goTo(p, b.post.x, b.post.y, .5)) return; b.stop = true; b.wp = null; return;
       }
       if (B.st === "dropped") { const near = alivesOf(S.atk).filter(q => !q.human || true).sort((x, y) => dst(x, B) - dst(y, B))[0]; if (near === p) { goTo(p, B.x, B.y, .5); return; } }
+      if (T - S.liveT0 < S.plan.exec + (b.role === "lurk" ? 6 : 0) && B.st !== "dropped") {  // 곧바로 지점으로 달려가지 않고 맵 중간에서 자리를 잡는다
+        if (!b.stage) b.stage = pickStage(p, b.role === "lurk" ? S.plan.other : site);
+        if (!goTo(p, b.stage.x, b.stage.y, 1.2)) return;
+        b.stop = true; b.wantA = b.look + Math.sin(T * .7 + b.scan) * .8; return;
+      }
       if (B.st === "carried" && B.holder === p.i) {
         const mates = alivesOf(S.atk).filter(q => q !== p && dst(q, site) < 8).length, ready = mates >= 2 || alivesOf(S.atk).length <= 2 || T - S.liveT0 > D.plantWait;
         if (!ready) { if (b.post) { if (!goTo(p, b.post.x, b.post.y, 1)) return; } b.stop = true; return; }
-        if (!S.plan.smoked && p.gren[1] && dst(p, site) < 9 && dst(p, site) > 4 && los(p.x, p.y, site.x, site.y)) { throwNade(p, 1, angTo(p, site), clamp(dst(p, site) * .8, 4, 9)); S.plan.smoked = true; }
+        if (!S.plan.smoked && p.gren[1] && T - S.liveT0 > 12 && dst(p, site) < 9 && dst(p, site) > 4 && los(p.x, p.y, site.x, site.y)) { throwNade(p, 1, angTo(p, site), clamp(dst(p, site) * .8, 4, 9)); S.plan.smoked = true; }
         if (dst(p, site) < 1.3) { b.use = true; b.stop = true; b.wp = null; b.walk = true; b.wantA = b.look; return; }
         goTo(p, site.x, site.y, .6); return;
       }
-      const target = b.role === "lurk" ? S.plan.other : site;
-      if (b.role === "lurk" && T - S.liveT0 < 24) { if (b.post && !goTo(p, b.post.x, b.post.y, 1)) return; b.stop = true; return; }
-      if (b.post && T - S.liveT0 < 60) { if (!goTo(p, b.post.x, b.post.y, .8)) { if (!S.plan.smoked && p.gren[1] && rnd() < .3 && dst(p, target) < 9) { throwNade(p, 1, angTo(p, target), clamp(dst(p, target) * .8, 4, 9)); S.plan.smoked = true; } if (p.gren[2] && rnd() < .2) throwNade(p, 2, p.a, 7); return; } b.stop = true; b.wantA = b.look + Math.sin(T * .7 + b.scan) * .6; return; }
+      const target = b.role === "lurk" ? S.plan.other : site, util = T - S.liveT0 > 12;
+      if (b.role === "lurk" && T - S.liveT0 < S.plan.exec + 14) { if (b.post && !goTo(p, b.post.x, b.post.y, 1)) return; b.stop = true; return; }
+      if (b.post && T - S.liveT0 < 105) {
+        if (!goTo(p, b.post.x, b.post.y, .8)) return;  // 이동 중에는 도구를 쓰지 않는다
+        if (util && dst(p, target) < 10 && los(p.x, p.y, target.x, target.y)) {
+          if (!S.plan.smoked && p.gren[1] && rnd() < .3) { throwNade(p, 1, angTo(p, target), clamp(dst(p, target) * .8, 4, 9)); S.plan.smoked = true; }
+          if (p.gren[2] && !b.flashed && D.nades > .3) { b.flashed = true; throwNade(p, 2, angTo(p, target), clamp(dst(p, target) * .8, 4, 9)); }
+        }
+        b.stop = true; b.wantA = b.look + Math.sin(T * .7 + b.scan) * .6; return;
+      }
       goTo(p, target.x, target.y, 1.5); return;
     }
     // 수비
@@ -528,7 +566,7 @@ function createMatch(o) {
       stepPlayer(p, dt, inp || {});
     }
     // 겹침 밀어내기
-    if (S.phase === "live") for (let i = 0; i < 10; i++) { const p = S.players[i]; if (!p.alive) continue; for (let j = i + 1; j < 10; j++) { const q = S.players[j]; if (!q.alive) continue;
+    if (S.phase === "live") for (let i = 0; i < N; i++) { const p = S.players[i]; if (!p.alive) continue; for (let j = i + 1; j < N; j++) { const q = S.players[j]; if (!q.alive) continue;
       const dx = q.x - p.x, dy = q.y - p.y, d = Math.hypot(dx, dy); if (d < .46 && d > 1e-4) { const k = (.46 - d) * .5 / d; if (fits(q.x + dx * k, q.y + dy * k)) { q.x += dx * k; q.y += dy * k; } if (fits(p.x - dx * k, p.y - dy * k)) { p.x -= dx * k; p.y -= dy * k; } } } }
     stepNades(dt);
     if (S.t > S.spotAt) { S.spotAt = S.t + .2; if (S.phase === "live") for (const p of S.players) if (p.alive) for (const q of S.players) if (q.alive && q.team !== p.team && dst(p, q) < 30 && canSee(p, q, dst(p, q))) q.spot[p.team] = S.t; }
@@ -540,7 +578,53 @@ function createMatch(o) {
     input(i, v) { const h = humans.get(i); if (!h || !v) return; h.f = +v.f || 0; h.s = +v.s || 0; if (Number.isFinite(v.a)) h.a = v.a; h.fire = v.fire === true; h.zoom = v.zoom === true; h.use = v.use === true; h.walk = v.walk === true; },
     spreadNow, wdef, wkey, cast};
 }
-window.RB_OFFICE_CORE = {MAPS, WP, PRIM, BUYS, DIFF, CFG, createMatch};
+
+/* ---------- 상태 직렬화: 손님마다 '관심 영역'만 보내 10:10(20명)도 가볍게 ---------- */
+const SNAP_V = 8;
+const encFull = p => [p.k, p.team, r2(p.x), r2(p.y), r3(p.a), p.hp, Math.round(p.armor), p.w, p.pw ? PRIM.indexOf(p.pw) : -1, p.clip[0], p.clip[1], p.res[0], p.res[1], p.gren[0] * 100 + p.gren[1] * 10 + p.gren[2],
+  p.alive ? 1 : 0, p.kills, p.deaths, p.assists, p.credits, r2(p.prog), r1(p.blind), p.hs, p.human ? 1 : 0, r2(p.shotAt), p.kit ? 1 : 0, p.zoom ? 1 : 0, r2(p.load), r2(p.mf), r2(p.hitAt), r2(p.hitDir), p.job, r1(p.spot[0]), r1(p.spot[1]), p.ready ? 1 : 0, p.plants, p.defuses];
+const rosterOf = S => S.players.map(p => [p.k, p.team, p.human ? 1 : 0, p.kills, p.deaths, p.assists, p.hs, p.plants, p.defuses, p.credits, p.alive ? 1 : 0, p.ready ? 1 : 0]);
+const GLOBAL_EV = {rn: 1, lv: 1, re: 1, pl: 1, df: 1, bx: 1, bd: 1, bp: 1, end: 1};
+function encodeFor(S, g, withRoster, mem) {
+  const gp = S.players[g], team = gp.team, lite = [];
+  for (const p of S.players) {
+    if (p.i === g || !p.alive) continue;
+    const mate = p.team === team, spot = !mate && S.t - p.spot[team] < 1.4;
+    if (mate || spot || Math.hypot(p.x - gp.x, p.y - gp.y) < 34) lite.push([p.i, r2(p.x), r2(p.y), r2(p.a), p.hp, 1 | (p.zoom ? 2 : 0) | (spot ? 4 : 0), p.w, r2(p.shotAt)]);
+  }
+  if (mem.id !== S.id) { mem.id = S.id; mem.ev = 0; }
+  const evs = S.ev.filter(e => e[0] > mem.ev && (GLOBAL_EV[e[1]] || Math.hypot(e[2] - gp.x, e[3] - gp.y) < 36 || (e[1] === "kl" || e[1] === "ht") && (e[4] === g || e[5] % 100 === g)));
+  mem.ev = S.evId;
+  const o = {v: SNAP_V, id: S.id, mi: S.mi, g, ph: S.phase, t: r2(S.t), pe: r2(S.phaseEnd), ro: S.ro, at: S.atk, sc: S.score, dn: S.done ? 1 : 0, wn: S.winner, nt: S.notice, le: S.lastEnd ? [S.lastEnd.team, S.lastEnd.reason] : null,
+    bm: [S.bomb.st, r2(S.bomb.x), r2(S.bomb.y), S.bomb.holder, S.bomb.site, r2(S.bomb.t0), r2(S.bomb.end)], me: encFull(gp), l: lite,
+    n: S.nades.map(n => [n.type, r2(n.x), r2(n.y), r2(n.t0)]), sm: S.smokes.map(s => [r2(s.x), r2(s.y), s.r, r2(s.t0), r2(s.end)]), fd: S.feed.filter(f => S.t - f[6] < 6).slice(0, 4), ev: evs};
+  if (withRoster) o.rs = rosterOf(S);
+  return o;
+}
+function applyFull(p, a) {
+  Object.assign(p, {x: a[2], y: a[3], a: a[4], hp: a[5], armor: a[6], w: a[7], pw: a[8] < 0 ? null : PRIM[a[8]], clip: [a[9], a[10]], res: [a[11], a[12]], gren: [Math.floor(a[13] / 100), Math.floor(a[13] / 10) % 10, a[13] % 10],
+    alive: !!a[14], kills: a[15], deaths: a[16], assists: a[17], credits: a[18], prog: a[19], blind: a[20], hs: a[21], shotAt: a[23], kit: !!a[24], zoom: !!a[25], load: a[26], mf: a[27], hitAt: a[28], hitDir: a[29], job: a[30], ready: !!a[33], plants: a[34], defuses: a[35]});
+}
+function decodeSnap(s, prev) {
+  const same = prev && prev.id === s.id, ros = s.rs || (same && prev.ros); if (!ros) return null;
+  const map = MAPS[s.mi] || MAPS[0], vt = ros[s.g] ? ros[s.g][1] : 0, lite = new Map((s.l || []).map(a => [a[0], a]));
+  const S = {id: s.id, mi: s.mi, map, t: s.t, phase: s.ph, phaseEnd: s.pe, ro: s.ro, atk: s.at, score: s.sc, done: !!s.dn, winner: s.wn, notice: s.nt, lastEnd: s.le ? {team: s.le[0], reason: s.le[1]} : null, ros, g: s.g,
+    bomb: {st: s.bm[0], x: s.bm[1], y: s.bm[2], holder: s.bm[3], site: s.bm[4], t0: s.bm[5], end: s.bm[6]}, feed: s.fd || [], ev: s.ev || [], n: ros.length,
+    nades: (s.n || []).map(a => ({type: a[0], x: a[1], y: a[2], t0: a[3]})), smokes: (s.sm || []).map(a => ({x: a[0], y: a[1], r: a[2], t0: a[3], end: a[4]}))};
+  S.players = ros.map((r, i) => {
+    const o = same && prev.players[i];
+    const p = {i, k: r[0], team: r[1], human: !!r[2], kills: r[3], deaths: r[4], assists: r[5], hs: r[6], plants: r[7], defuses: r[8], credits: r[9], alive: !!r[10], ready: !!r[11],
+      x: o ? o.x : 1.5, y: o ? o.y : 1.5, a: o ? o.a : 0, hp: o ? o.hp : 100, armor: 0, w: 1, pw: null, clip: [0, 0], res: [0, 0], gren: [0, 0, 0], blind: 0, prog: 0, job: 0, mf: 0, zoom: false, load: 0, shotAt: -9, hitAt: -9, hitDir: 0, kit: false, spot: [-9, -9], hidden: true};
+    const L = lite.get(i);
+    if (i === s.g && s.me) { applyFull(p, s.me); p.hidden = false; }
+    else if (L) { p.x = L[1]; p.y = L[2]; p.a = L[3]; p.hp = L[4]; p.alive = !!(L[5] & 1); p.zoom = !!(L[5] & 2); if (L[5] & 4) p.spot[vt] = s.t; p.w = L[6]; p.shotAt = L[7]; p.hidden = false; }
+    else if (p.team === vt) p.alive = false;  // 아군은 살아 있으면 항상 온다
+    p.rx = o ? o.rx : p.x; p.ry = o ? o.ry : p.y; p.ra = o ? o.ra : p.a;
+    return p;
+  });
+  return S;
+}
+window.RB_OFFICE_CORE = {MAPS, WP, PRIM, BUYS, DIFF, CFG, createMatch, SNAP_V, encodeFor, decodeSnap};
 })();
 
 /* ================= ② 화면 · 조작 · 온라인 ================= */
@@ -549,7 +633,7 @@ window.RB_OFFICE_CORE = {MAPS, WP, PRIM, BUYS, DIFF, CFG, createMatch};
 const C = window.RB_OFFICE_CORE, games = window.knx && window.knx.games;
 if (!C || !games) return;
 const {MAPS, WP, PRIM, BUYS, DIFF, CFG, createMatch} = C;
-const ID = "office-strike", NAME = "라운드비 총격전", VER = 7, TAU = Math.PI * 2;
+const ID = "office-strike", NAME = "라운드비 총격전", VER = C.SNAP_V, TAU = Math.PI * 2;
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 const adiff = (a, b) => Math.atan2(Math.sin(a - b), Math.cos(a - b));
 const r1 = v => Math.round(v * 10) / 10, r2 = v => Math.round(v * 100) / 100, r3 = v => Math.round(v * 1000) / 1000;
@@ -612,7 +696,8 @@ function sfx(name, vol, pan) {
     case "bm": hiss(.5, .6 * v, 900, 90, "lowpass", 0, pan); tone(80, 30, .45, "sine", .55 * v, 0, pan); break;
     case "bx": hiss(1.1, .8 * v, 700, 60, "lowpass", 0, pan); tone(60, 24, 1, "sine", .7 * v, 0, pan); break;
     case "sm": hiss(.7, .2 * v, 2400, 600, "bandpass", 0, pan); break;
-    case "fl": tone(3200, 3200, .9, "sine", .1 * v, 0, pan); hiss(.1, .3 * v, 5000, 2000, "highpass", 0, pan); break;
+    case "ring": tone(2300, 2100, 1.1, "sine", .03 * v); break;
+    case "pop": hiss(.07, .12 * v, 3500, 1500, "bandpass", 0, pan); break;
     case "pl": tone(880, 880, .1, "square", .1 * v); tone(1320, 1320, .16, "square", .1 * v, .12); break;
     case "df": tone(660, 1320, .25, "triangle", .14 * v); break;
     case "bp": tone(1500, 1500, .04, "square", .05 * v); break;
@@ -625,9 +710,9 @@ function sfx(name, vol, pan) {
 
 /* ---------- 화면 뼈대 ---------- */
 let root, canvas, ctx2, $;
-const cfg = {map: 0, diff: "easy", sens: 50};
+const cfg = {map: 0, diff: "easy", sens: 50, per: 5};
 try { Object.assign(cfg, JSON.parse(LS.get("roundb-office-cfg") || "{}")); } catch (e) {}
-cfg.map = clamp(cfg.map | 0, 0, MAPS.length - 1); if (!DIFF[cfg.diff]) cfg.diff = "easy"; cfg.sens = clamp(+cfg.sens || 50, 15, 150);
+cfg.map = clamp(cfg.map | 0, 0, MAPS.length - 1); if (!DIFF[cfg.diff]) cfg.diff = "easy"; cfg.sens = clamp(+cfg.sens || 50, 15, 150); cfg.per = clamp(cfg.per | 0 || 5, 1, 10);
 const saveCfg = () => LS.set("roundb-office-cfg", JSON.stringify(cfg));
 const thumbs = {};
 function thumb(m) {
@@ -655,6 +740,7 @@ function build() {
       <li><b>첫 판</b><span>구매 시간에 무기를 사고 '쉬움'으로 연습해 보세요. 힌트가 화면에 떠요.</span></li></ul>
     <div class="os-label">전장</div><div class="os-maps" data-maps></div>
     <div class="os-label">난이도</div><div class="os-seg" data-diffs></div>
+    <div class="os-label">인원 (한 팀) · 빈 자리는 AI</div><select data-per aria-label="한 팀 인원"></select><p class="os-hint">10:10 은 PC 방장을 권장해요. 폰 방장은 5:5 이하가 안전해요.</p>
     <button type="button" class="os-go" data-a="solo">AI와 바로 시작</button>
     <details class="os-box"><summary>온라인으로 같이 하기 (최대 10명)</summary>
       <div class="os-online"><button type="button" data-a="host">방 만들기</button><label><input type="checkbox" data-public> 공개방</label>
@@ -686,6 +772,7 @@ function build() {
   const mapsBox = $("[data-maps]");
   mapsBox.innerHTML = MAPS.map((m, i) => `<button type="button" data-map="${i}" aria-pressed="${i === cfg.map}"><img alt="" src="${thumb(m)}"><b>${m.name}</b><small>${m.note}</small></button>`).join("");
   $("[data-diffs]").innerHTML = ["easy", "normal", "hard"].map(k => `<button type="button" data-diff="${k}" aria-pressed="${k === cfg.diff}">${DIFF[k].n}${k === "easy" ? " · 연습" : ""}</button>`).join("");
+  const pe = $("[data-per]"); pe.innerHTML = Array.from({length: 10}, (_, i) => `<option value="${i + 1}">${i + 1} : ${i + 1}${i === 9 ? " (PC 방장 권장)" : ""}</option>`).join(""); pe.value = cfg.per; pe.addEventListener("change", () => { cfg.per = clamp(+pe.value | 0, 1, 10); saveCfg(); });
   const sl = $("[data-sens]"); sl.value = cfg.sens; $("[data-sensv]").textContent = cfg.sens + "%";
   sl.addEventListener("input", () => { cfg.sens = +sl.value; $("[data-sensv]").textContent = cfg.sens + "%"; saveCfg(); });
   touchy(); matchMedia("(pointer:coarse)").addEventListener?.("change", touchy); addEventListener("resize", touchy);
@@ -700,7 +787,7 @@ let M = null, GS = null, st = null, room = null, role = "", slot = 0, frame = 0,
 let hd = 0, kick = 0, lastShot = -9, hitAt = -9, hitHead = false, bob = 0, banner = null, curFov = 1.15, specI = -1, buyOpen = false, buyReady = false, buyKey = "", qual = 0, slow = 0, fast = 0, errN = 0, hintOn = false, hintsDone = {}, started = 0;
 const hostSlots = new Set(), keys = new Set(), acts = [], ptrs = new Map(), joy = {on: false, id: -1, ox: 0, oy: 0, f: 0, s: 0};
 const ctl = {fire: false, zoom: false, use: false, padFire: false, padUse: false, padZoom: false};
-let scoreOpen = false, locked = false;
+let scoreOpen = false, locked = false, lockFail = false, pubMem = {}, rosAt = 0;
 
 /* ---------- 레이캐스트 (화면용) ---------- */
 function makeCaster(map) {
@@ -728,27 +815,6 @@ function segSmoke(S, ax, ay, bx, by) {
   return false;
 }
 
-/* ---------- 상태 보내기·받기 ---------- */
-const enc = p => [p.k, p.team, r2(p.x), r2(p.y), r3(p.a), p.hp, Math.round(p.armor), p.w, p.pw ? PRIM.indexOf(p.pw) : -1, p.clip[0], p.clip[1], p.res[0], p.res[1], p.gren[0] * 100 + p.gren[1] * 10 + p.gren[2],
-  p.alive ? 1 : 0, p.kills, p.deaths, p.assists, p.credits, r2(p.prog), r1(p.blind), p.hs, p.human ? 1 : 0, r2(p.shotAt), p.kit ? 1 : 0, p.zoom ? 1 : 0, r2(p.load), r2(p.mf), r2(p.hitAt), r2(p.hitDir), p.job, r1(p.spot[0]), r1(p.spot[1]), p.ready ? 1 : 0, p.plants, p.defuses];
-function encode(S) {
-  return {v: VER, id: S.id, mi: S.mi, ph: S.phase, t: r2(S.t), pe: r2(S.phaseEnd), ro: S.ro, at: S.atk, sc: S.score, dn: S.done ? 1 : 0, wn: S.winner, nt: S.notice, le: S.lastEnd ? [S.lastEnd.team, S.lastEnd.reason] : null,
-    bm: [S.bomb.st, r2(S.bomb.x), r2(S.bomb.y), S.bomb.holder, S.bomb.site, r2(S.bomb.t0), r2(S.bomb.end)], p: S.players.map(enc),
-    n: S.nades.map(n => [n.type, r2(n.x), r2(n.y), r2(n.t0)]), sm: S.smokes.map(s => [r2(s.x), r2(s.y), s.r, r2(s.t0), r2(s.end)]), fd: S.feed, ev: S.ev};
-}
-function decode(s, prev) {
-  const map = MAPS[s.mi] || MAPS[0], S = {id: s.id, mi: s.mi, map, t: s.t, phase: s.ph, phaseEnd: s.pe, ro: s.ro, atk: s.at, score: s.sc, done: !!s.dn, winner: s.wn, notice: s.nt, lastEnd: s.le ? {team: s.le[0], reason: s.le[1]} : null,
-    bomb: {st: s.bm[0], x: s.bm[1], y: s.bm[2], holder: s.bm[3], site: s.bm[4], t0: s.bm[5], end: s.bm[6]}, feed: s.fd || [], ev: s.ev || [],
-    nades: (s.n || []).map(a => ({type: a[0], x: a[1], y: a[2], t0: a[3]})), smokes: (s.sm || []).map(a => ({x: a[0], y: a[1], r: a[2], t0: a[3], end: a[4]}))};
-  S.players = s.p.map((a, i) => {
-    const o = prev && prev.id === s.id && prev.players[i], p = {i, k: a[0], team: a[1], x: a[2], y: a[3], a: a[4], hp: a[5], armor: a[6], w: a[7], pw: a[8] < 0 ? null : PRIM[a[8]], clip: [a[9], a[10]], res: [a[11], a[12]],
-      gren: [Math.floor(a[13] / 100), Math.floor(a[13] / 10) % 10, a[13] % 10], alive: !!a[14], kills: a[15], deaths: a[16], assists: a[17], credits: a[18], prog: a[19], blind: a[20], hs: a[21], human: !!a[22], shotAt: a[23], kit: !!a[24],
-      zoom: !!a[25], load: a[26], mf: a[27], hitAt: a[28], hitDir: a[29], job: a[30], spot: [a[31], a[32]], ready: !!a[33], plants: a[34], defuses: a[35]};
-    p.rx = o ? o.rx : p.x; p.ry = o ? o.ry : p.y; p.ra = o ? o.ra : p.a; return p;
-  });
-  return S;
-}
-
 /* ---------- 입력 ---------- */
 function buildInput() {
   let f = Number(keys.has("w") || keys.has("up")) - Number(keys.has("s") || keys.has("down")), s = Number(keys.has("d") || keys.has("right")) - Number(keys.has("a") || keys.has("left"));
@@ -760,7 +826,9 @@ function doAct(a) {
   if (role === "guest") { room && room.input({...buildInput(), act: a}); sendAt = performance.now(); }
   else if (M) M.act(0, a);
 }
-function toggleBuy() { const S = st; if (!S || S.phase !== "buy") return; buyOpen = !buyOpen; buyKey = ""; }
+function toggleBuy() { const S = st; if (!S || S.phase !== "buy") return; buyOpen = !buyOpen; buyKey = ""; if (!buyOpen) relock(); }
+const needMouse = () => { const S = st; if (!S || !root) return false; const me = S.players[slot]; return !$("[data-result]").hidden || !$("[data-confirm]").hidden || !!(buyOpen && S.phase === "buy" && me && me.alive && !S.done); };
+function relock() { if (touchOnly() || locked || lockFail || !canvas.requestPointerLock) return; try { const r = canvas.requestPointerLock(); if (r && r.catch) r.catch(() => { lockFail = true; }); } catch (e) { lockFail = true; } }
 function keyOf(e) {
   const m = /^(?:Key|Digit)([A-Z0-9])$/.exec(e.code), al = {ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right", Space: " ", Tab: "tab", ShiftLeft: "shift", ShiftRight: "shift"};
   return (m && m[1].toLowerCase()) || al[e.code] || al[e.key] || (e.key || "").toLowerCase();
@@ -768,6 +836,8 @@ function keyOf(e) {
 function onKeyDown(e) {
   if (!root || !root.open || !st || $("[data-stage]").hidden || e.target.matches && e.target.matches("input,select,textarea")) return;
   const k = keyOf(e);
+  if (!$("[data-result]").hidden) { if (k === "enter" || k === " ") { e.preventDefault(); e.stopImmediatePropagation(); if (role !== "guest" && !e.repeat) $('[data-a="again"]').click(); } return; }
+  if (buyOpen && st.phase === "buy" && (k === "enter" || k === " ")) { e.preventDefault(); e.stopImmediatePropagation(); if (!e.repeat) { doAct("ready"); buyOpen = false; relock(); } return; }
   if (k === "tab") { e.preventDefault(); e.stopImmediatePropagation(); scoreOpen = true; return; }
   if (!("wasdeqrb1234567890".includes(k) && k.length === 1) && !["shift", " ", "up", "down", "left", "right"].includes(k)) return;
   e.preventDefault(); e.stopImmediatePropagation();
@@ -782,15 +852,17 @@ function lookBy(dx, touch) { hd += dx * (touch ? .0046 : .0023) * (cfg.sens / 50
 function bindInput() {
   addEventListener("keydown", onKeyDown, true); addEventListener("keyup", onKeyUp, true);
   addEventListener("blur", () => { keys.clear(); ctl.fire = ctl.zoom = false; ctl.padFire = ctl.padUse = false; scoreOpen = false; });
-  document.addEventListener("pointerlockchange", () => { locked = document.pointerLockElement === canvas; if (!locked && running() && !touchOnly()) toast("화면을 클릭하면 시점이 다시 고정돼요", 2500); });
+  document.addEventListener("pointerlockchange", () => { locked = document.pointerLockElement === canvas; if (!locked && running() && !touchOnly() && !needMouse() && !st.done) toast("화면을 클릭하면 시점이 다시 고정돼요", 2500); });
+  document.addEventListener("pointerlockerror", () => { lockFail = true; });
   document.addEventListener("mousemove", e => { if (!running()) return; if (locked || (e.buttons & 1 && ptrs.size === 0 && e.pointerType !== "touch" && !touchOnly() && e.target === canvas)) lookBy(e.movementX || 0, false); });
   const stage = $("[data-stage]");
   canvas.addEventListener("pointerdown", e => {
     if (!running()) return; canvas.focus({preventScroll: true});
     if (e.pointerType === "mouse") {
+      if (needMouse()) return;
       if (e.button === 2) { ctl.zoom = true; return; }
       if (e.button !== 0) return;
-      if (!locked && canvas.requestPointerLock) { try { const r = canvas.requestPointerLock(); if (r && r.catch) r.catch(() => {}); } catch (er) {} }
+      if (!locked && !lockFail && canvas.requestPointerLock) { relock(); return; }
       const me = st.players[slot]; if (me && !me.alive && !st.done) { specI++; return; }
       ctl.fire = true; return;
     }
@@ -842,7 +914,7 @@ function handleEvents(S, me) {
     if (ty === "sh") { sfx(a, b === me.i ? .8 : vol, b === me.i ? 0 : pan); }
     else if (ty === "kn") sfx("k", vol, pan);
     else if (ty === "ht") {
-      const shooter = b % 10, head = b >= 10;
+      const shooter = b % 100, head = b >= 100;
       if (shooter === me.i && a !== me.i) { sfx(head ? "head" : "hit"); hitAt = performance.now(); hitHead = head; }
       if (a === me.i) sfx("hurt", .9);
     }
@@ -852,7 +924,8 @@ function handleEvents(S, me) {
     }
     else if (ty === "rl") { if (a === me.i) sfx("rl", .8); else sfx("rl", vol * .6, pan); }
     else if (ty === "th") sfx("th", vol * .7, pan);
-    else if (ty === "bm" || ty === "bx" || ty === "sm" || ty === "fl") { sfx(ty, ty === "fl" ? 1 : vol, pan); }
+    else if (ty === "fl") { if (me.blind > .3) sfx("ring", .8); else sfx("pop", vol, pan); }
+    else if (ty === "bm" || ty === "bx" || ty === "sm") { sfx(ty, vol, pan); }
     else if (ty === "pl") { sfx("pl"); banner2(S.bomb.site + " 지점 폭탄 설치", me.team === S.atk ? "지키세요! 막으면 이겨요" : "해체하세요!", "#ff7a6a", 2400); if (hintOn && me.team !== S.atk) toast("해체: 폭탄 가까이에서 E(또는 해체 버튼)를 길게 누르세요", 4200); }
     else if (ty === "df") { sfx("df"); banner2("폭탄 해체", "", "#8fd8ff", 1800); }
     else if (ty === "bd") toast("폭탄이 떨어졌어요 — 공격팀이 줍기", 2200);
@@ -861,6 +934,7 @@ function handleEvents(S, me) {
     else if (ty === "rn") { buyOpen = true; buyReady = false; buyKey = ""; banner2("라운드 " + a + " / " + CFG.maxRounds, (b === me.team ? "공격" : "수비") + " · 구매 시간", "#ffe08a", 2200);
       if (hintOn && !hintsDone.buy) { hintsDone.buy = 1; toast("구매 시간! 번호 버튼으로 무기를 사고 '준비 완료'를 누르세요 (소총 2000)", 5200); } }
     else if (ty === "lv") { sfx("go"); buyOpen = false;
+      if (!locked && !touchOnly() && !lockFail && !(hintOn && !hintsDone.live)) toast("화면을 클릭하면 마우스 시점이 고정돼요", 2600);
       if (hintOn && !hintsDone.live) { hintsDone.live = 1; toast(me.team === S.atk ? "공격: 폭탄을 들고 A·B 지점으로! 설치는 E 길게" : "수비: A·B 지점을 지키고, 설치되면 해체하세요", 5000); } }
     else if (ty === "re") { const win = a === me.team; sfx(win ? "win" : "lose"); banner2(win ? "라운드 승리" : "라운드 패배", S.lastEnd ? S.lastEnd.reason : "", win ? "#8ff0c8" : "#ff9a8a", 3000); }
   }
@@ -874,7 +948,7 @@ function draw(dt, now) {
   const ctx = ctx2, W = canvas.width, H = canvas.height;
   if (!st) { ctx.fillStyle = "#0e1624"; ctx.fillRect(0, 0, W, H); return; }
   const S = st, me = S.players[slot]; if (!me) return;
-  let cp = me; if (!me.alive && !S.done) { const mates = S.players.filter(q => q.alive && q.team === me.team), pool = mates.length ? mates : S.players.filter(q => q.alive); if (pool.length) cp = pool[((specI % pool.length) + pool.length) % pool.length]; }
+  let cp = me; if (!me.alive && !S.done) { const mates = S.players.filter(q => q.alive && !q.hidden && q.team === me.team), pool = mates.length ? mates : S.players.filter(q => q.alive && !q.hidden); if (pool.length) cp = pool[((specI % pool.length) + pool.length) % pool.length]; }
   const map = S.map, cast = getCaster(map), lut = getLut(map), pal = map.pal, self = cp === me;
   const camA = self ? hd : cp.ra, cx = cp.rx, cy = cp.ry, wd = WP[cp.w === 2 ? "knife" : (cp.w === 0 && cp.pw) ? cp.pw : "pistol"];
   const aspect = W / H, baseFov = aspect < 1 ? 1.3 : 1.12, tf = cp.zoom ? (aspect < 1 ? wd.fov * 1.12 : wd.fov) : baseFov;
@@ -905,7 +979,7 @@ function draw(dt, now) {
   // 스프라이트
   const list = [], tanSafe = a => Math.abs(a) < 1.45;
   const place = (ox, oy) => { const dx = ox - cx, dy = oy - cy, d = Math.hypot(dx, dy), da = adiff(Math.atan2(dy, dx), camA), perp = d * Math.cos(da); if (perp < .12 || !tanSafe(da) || Math.abs(da) > fov / 2 + .6) return null; return {perp, sx: W / 2 + Math.tan(da) * proj, d}; };
-  for (const q of S.players) { if (!q.alive || q === cp) continue; const p = place(q.rx, q.ry); if (p && !segSmoke(S, cx, cy, q.rx, q.ry)) list.push({ty: 0, o: q, ...p}); }
+  for (const q of S.players) { if (!q.alive || q.hidden || q === cp) continue; const p = place(q.rx, q.ry); if (p && !segSmoke(S, cx, cy, q.rx, q.ry)) list.push({ty: 0, o: q, ...p}); }
   for (const s of S.smokes) { if (S.t >= s.end) continue; const p = place(s.x, s.y); if (p) list.push({ty: 1, o: s, ...p}); }
   for (const n of S.nades) { const p = place(n.x, n.y); if (p) list.push({ty: 2, o: n, ...p}); }
   if (S.bomb.st === "planted" || S.bomb.st === "dropped") { const p = place(S.bomb.x, S.bomb.y); if (p) list.push({ty: 3, o: S.bomb, ...p}); }
@@ -964,7 +1038,7 @@ function draw(dt, now) {
     const rel = adiff(me.hitDir, camA), a = 1 - (S.t - me.hitAt) / .9, R = Math.min(W, H) * .26; ctx.strokeStyle = `rgba(255,60,70,${a})`; ctx.lineWidth = 8; ctx.beginPath(); ctx.arc(W / 2, H / 2, R, rel - Math.PI / 2 - .35, rel - Math.PI / 2 + .35); ctx.stroke();
     ctx.fillStyle = `rgba(255,60,70,${a * .25})`; ctx.fillRect(0, 0, W, H);
   }
-  if (me.blind > 0) { ctx.fillStyle = `rgba(255,255,255,${clamp(me.blind / 1.2, 0, 1) * .97})`; ctx.fillRect(0, 0, W, H); }
+  if (me.blind > 0) { ctx.fillStyle = `rgba(0,0,0,${clamp(me.blind / 1.3, 0, 1) * .97})`; ctx.fillRect(0, 0, W, H); }   // 섬광탄: 눈이 안 아프게 흰색 대신 검은 화면
   drawCross(ctx, W, H, cp, wd, proj, S, self);
   drawHud(ctx, W, H, S, me, cp, map, now, proj, camA);
 }
@@ -1001,7 +1075,7 @@ function drawMini(ctx, W, H, S, me, cp, map, camA, size, ox, oy) {
   ctx.strokeStyle = "#8aa0c8"; ctx.lineWidth = 1; ctx.strokeRect(ox, oy, mw, mh);
   ctx.font = "800 10px system-ui"; ctx.textAlign = "center"; for (const s of [map.A, map.B]) { ctx.fillStyle = S.bomb.st === "planted" && S.bomb.site === s.l ? "#ff5a6a" : "#ffe08a"; ctx.fillText(s.l, ox + s.x * sc, oy + s.y * sc + 3); }
   for (const q of S.players) {
-    if (!q.alive) continue; const mine = q.team === me.team, seen = S.t - (q.spot[me.team] || -9) < 1.4; if (!mine && !seen) continue;
+    if (!q.alive || q.hidden) continue; const mine = q.team === me.team, seen = S.t - (q.spot[me.team] || -9) < 1.4; if (!mine && !seen) continue;
     const x = ox + q.rx * sc, y = oy + q.ry * sc; ctx.fillStyle = TEAM[q.team].c; ctx.strokeStyle = "#06090f"; ctx.lineWidth = 1.5; ctx.beginPath();
     if (q.team === 0) { ctx.moveTo(x, y - 4); ctx.lineTo(x + 3.6, y + 3); ctx.lineTo(x - 3.6, y + 3); ctx.closePath(); } else ctx.arc(x, y, 3.4, 0, TAU);
     ctx.fill(); ctx.stroke();
@@ -1028,25 +1102,25 @@ function drawHud(ctx, W, H, S, me, cp, map, now, proj, camA) {
   const mini = compact ? 88 : 132; drawMini(ctx, W, H, S, me, cp, map, camA, mini, 8, 8);
   // 상태
   const hx = compact ? 8 : 12, hy = compact ? 8 + mini * (map.h / Math.max(map.w, map.h)) + 22 : H - 54;
-  const wk = cp.w === 2 ? "knife" : (cp.w === 0 && cp.pw) ? cp.pw : "pistol", d = WP[wk], ci2 = wk === "pistol" ? 1 : 0;
-  txt("체력 " + cp.hp, hx, hy, compact ? 14 : 22, cp.hp < 35 ? "#ff7a8a" : "#f5f1e6", "left"); ctx.fillStyle = "rgba(8,13,22,.7)"; ctx.fillRect(hx, hy + 5, 96, 6); ctx.fillStyle = cp.hp < 35 ? "#ff5a6a" : "#7bd88f"; ctx.fillRect(hx, hy + 5, 96 * cp.hp / 100, 6);
-  ctx.fillStyle = "#8fc4ff"; ctx.fillRect(hx, hy + 13, 96 * cp.armor / 100, 4);
-  txt("방탄 " + cp.armor + " · " + cp.credits + " 크레딧", hx, hy + 31, 12, "#cfe0f5", "left");
+  const wk = me.w === 2 ? "knife" : (me.w === 0 && me.pw) ? me.pw : "pistol", d = WP[wk], ci2 = wk === "pistol" ? 1 : 0;
+  txt("체력 " + me.hp, hx, hy, compact ? 14 : 22, me.hp < 35 ? "#ff7a8a" : "#f5f1e6", "left"); ctx.fillStyle = "rgba(8,13,22,.7)"; ctx.fillRect(hx, hy + 5, 96, 6); ctx.fillStyle = me.hp < 35 ? "#ff5a6a" : "#7bd88f"; ctx.fillRect(hx, hy + 5, 96 * me.hp / 100, 6);
+  ctx.fillStyle = "#8fc4ff"; ctx.fillRect(hx, hy + 13, 96 * me.armor / 100, 4);
+  txt("방탄 " + me.armor + " · " + me.credits + " 크레딧", hx, hy + 31, 12, "#cfe0f5", "left");
   const ax = compact ? hx : W - 14, ay = compact ? hy + 49 : H - 54;
-  if (d.t !== "k") { txt(`${d.n}  ${cp.clip[ci2]} / ${cp.res[ci2]}${cp.load > 0 ? " · 장전 중" : ""}`, ax, ay, compact ? 13 : 20, cp.clip[ci2] === 0 ? "#ff8a7a" : "#f5f1e6", compact ? "left" : "right"); }
+  if (d.t !== "k") { txt(`${d.n}  ${me.clip[ci2]} / ${me.res[ci2]}${me.load > 0 ? " · 장전 중" : ""}`, ax, ay, compact ? 13 : 20, me.clip[ci2] === 0 ? "#ff8a7a" : "#f5f1e6", compact ? "left" : "right"); }
   else txt(d.n, ax, ay, compact ? 13 : 20, "#f5f1e6", compact ? "left" : "right");
-  txt(`수류탄 ${cp.gren[0]} · 연막 ${cp.gren[1]} · 섬광 ${cp.gren[2]}${cp.kit ? " · 해체키트" : ""}`, ax, ay + 18, 11, "#cfe0f5", compact ? "left" : "right");
+  txt(`수류탄 ${me.gren[0]} · 연막 ${me.gren[1]} · 섬광 ${me.gren[2]}${me.kit ? " · 해체키트" : ""}`, ax, ay + 18, 11, "#cfe0f5", compact ? "left" : "right");
   // 킬피드
-  let fy = compact ? 156 : 14, shownN = 0; ctx.textAlign = "right";
+  let fy = compact ? 156 : 46, shownN = 0; ctx.textAlign = "right";
   for (const f of S.feed) { if (S.t - f[6] > 6 || compact && shownN >= 3) continue; shownN++; const label = compact ? `${f[4] === 0 ? "▲" : "●"} ${kname(f[0])} ${f[3] ? "◉" : "▸"} ${f[5] === 0 ? "▲" : "●"} ${kname(f[1])}` : `${f[4] === 0 ? "▲" : "●"} ${kname(f[0])}  ${f[3] ? "헤드샷 " : ""}${f[2]} ▸ ${f[5] === 0 ? "▲" : "●"} ${kname(f[1])}`; ctx.font = "700 12px system-ui"; const tw = ctx.measureText(label).width + 12; ctx.fillStyle = "rgba(8,13,22,.78)"; ctx.fillRect(W - 8 - tw, fy - 12, tw, 18); ctx.fillStyle = f[4] === 0 ? TEAM[0].c : TEAM[1].c; ctx.fillText(label, W - 14, fy); fy += 21; }
   // 설치·해체 진행
   const job = jobNow(S, cp);
-  if (cp.prog > 0) { const bw2 = 190, x = W / 2 - bw2 / 2, y = H * .62; ctx.fillStyle = "rgba(8,13,22,.8)"; ctx.fillRect(x, y, bw2, 16); ctx.fillStyle = cp.job === 2 ? "#8fd8ff" : "#ffcf6a"; ctx.fillRect(x, y, bw2 * cp.prog, 16); txt(cp.job === 2 ? "해체 중..." : "설치 중...", W / 2, y - 6, 14, "#fff"); }
+  if (me.prog > 0) { const bw2 = 190, x = W / 2 - bw2 / 2, y = H * .62; ctx.fillStyle = "rgba(8,13,22,.8)"; ctx.fillRect(x, y, bw2, 16); ctx.fillStyle = me.job === 2 ? "#8fd8ff" : "#ffcf6a"; ctx.fillRect(x, y, bw2 * me.prog, 16); txt(me.job === 2 ? "해체 중..." : "설치 중...", W / 2, y - 6, 14, "#fff"); }
   else if (job && cp === me) txt(job === 1 ? "E 길게 눌러 설치 (움직이지 마세요)" : "E 길게 눌러 해체", W / 2, H * .62, 15, "#ffe08a");
   // 배너
   if (banner) { const t = now - banner.t0; if (t > banner.dur) banner = null; else { const a = clamp(Math.min(t / 140, (banner.dur - t) / 400), 0, 1); ctx.globalAlpha = a; txt(banner.text, W / 2, H * .3, compact ? 30 : 42, banner.color); if (banner.sub) txt(banner.sub, W / 2, H * .3 + 24, 15, "#f0f4ff"); ctx.globalAlpha = 1; } }
   if (S.phase === "buy" && !me.ready && cp === me) txt(`구매 시간 ${secs}초 · B 로 구매`, W / 2, H * .46, 16, "#ffe08a");
-  if (cp !== me && !S.done) txt(`관전: ${kname(cp.k)} (화면을 누르면 다음)`, W / 2, H - (compact ? 160 : 24), 14, "#fff");
+  if (cp !== me && !S.done) txt(`관전: ${kname(me.k)} (화면을 누르면 다음)`, W / 2, H - (compact ? 160 : 24), 14, "#fff");
   if (S.phase === "post" && S.lastEnd && !banner) txt(S.lastEnd.reason, W / 2, H * .3, 24, "#fff");
   ctx.textAlign = "start";
 }
@@ -1059,7 +1133,7 @@ function jobNow(S, p) {
 /* ---------- DOM 갱신: 구매창·점수판·결과·버튼 ---------- */
 const score = p => p.kills * 3 + p.assists + p.plants * 2 + p.defuses * 2 + p.hs;
 function tableHTML(S, meI, full) {
-  const rows = t => S.players.filter(p => p.team === t).sort((a, b) => score(b) - score(a)).map(p => `<tr class="${p.i === meI ? "me" : ""}"><td>${TEAM[t].g} ${kname(p.k)}${p.human ? " (사람)" : ""}${p.alive ? "" : " ✕"}</td><td>${p.kills}</td><td>${p.deaths}</td><td>${p.assists}</td><td>${p.hs}</td><td>${score(p)}</td></tr>`).join("");
+  const rows = t => S.players.filter(p => p.team === t).sort((a, b) => score(b) - score(a)).map(p => `<tr class="${p.i === meI ? "me" : ""}"><td>${TEAM[t].g} ${kname(p.k)}${p.i >= 10 ? " ②" : ""}${p.human ? " (사람)" : ""}${p.alive ? "" : " ✕"}</td><td>${p.kills}</td><td>${p.deaths}</td><td>${p.assists}</td><td>${p.hs}</td><td>${score(p)}</td></tr>`).join("");
   return [0, 1].map(t => `<table><caption style="color:${TEAM[t].c}">${TEAM[t].g} ${TEAM[t].n}팀 · ${S.score[t]}승${S.atk === t ? " · 공격" : " · 수비"}</caption><thead><tr><th>기사</th><th>킬</th><th>데스</th><th>어시</th><th>헤드</th><th>점수</th></tr></thead><tbody>${rows(t)}</tbody></table>`).join("");
 }
 function updateDom(S, me) {
@@ -1068,14 +1142,15 @@ function updateDom(S, me) {
   if (job) { useB.hidden = false; useB.textContent = job === 1 ? "설치" : "해체"; } else useB.hidden = true;
   buyB.hidden = S.phase !== "buy" || !me.alive;
   const showBuy = buyOpen && S.phase === "buy" && me.alive && !S.done; buyEl.hidden = !showBuy;
+  if (needMouse() && locked) { try { document.exitPointerLock(); } catch (er) {} }   // 구매·결과·나가기 창에서는 마우스 고정을 풀어 커서로 클릭할 수 있게
   if (showBuy) {
-    const sig = [me.credits, me.pw, me.armor, me.kit, me.gren.join(""), me.ready, me.team === S.atk].join("|");
+    const sig = [me.credits, me.pw, me.armor, me.kit, me.gren.join(""), me.ready, me.team === S.atk, S.ro].join("|");
     if (sig !== buyKey) {
       buyKey = sig;
-      buyEl.innerHTML = `<div class="os-bh"><b>구매 · ${me.credits} 크레딧</b><button type="button" data-x="close">닫기 B</button></div><div class="os-bg">` + BUYS.filter(b => !b.def || me.team !== S.atk).map(b => {
+      buyEl.innerHTML = `<div class="os-bh"><b>구매 · ${me.credits} 크레딧</b><button type="button" data-x="close">닫기 B</button></div><p class="os-note">${S.ro === CFG.swapAfter + 1 ? "공수 교대: 크레딧과 장비가 처음 상태로 돌아갔어요." : "살아남으면 무기·방탄·도구가 다음 라운드로 이어져요. 죽으면 사라져서 다시 사야 해요."}</p><div class="os-bg">` + BUYS.filter(b => !b.def || me.team !== S.atk).map(b => {
         const owned = PRIM.includes(b.id) ? me.pw === b.id : b.id === "armor" ? me.armor >= 100 : b.id === "kit" ? me.kit : b.id === "frag" ? me.gren[0] >= 1 : b.id === "smoke" ? me.gren[1] >= 1 : me.gren[2] >= 2;
         return `<button type="button" data-buy="${b.id}" ${owned || me.credits < b.price ? "disabled" : ""}><kbd>${b.key}</kbd><span>${b.n}</span><small>${owned ? "보유" : b.price}</small></button>`;
-      }).join("") + `</div><button type="button" class="os-ready" data-x="ready" ${me.ready ? "disabled" : ""}>${me.ready ? "다른 사람 기다리는 중" : "준비 완료 (시작하기)"}</button>`;
+      }).join("") + `</div><button type="button" class="os-ready" data-x="ready" ${me.ready ? "disabled" : ""}>${me.ready ? "다른 사람 기다리는 중" : "준비 완료 · 시작하기 [Enter]"}</button>`;
     }
   }
   const sb = $("[data-score]"); sb.hidden = !scoreOpen; if (scoreOpen) { const html = tableHTML(S, me.i); if (sb.dataset.h !== html) { sb.innerHTML = html; sb.dataset.h = html; } }
@@ -1092,7 +1167,7 @@ function showResult(S, me) {
   const mvp = S.players.filter(p => p.team === S.winner).sort((a, b) => score(b) - score(a))[0];
   $("[data-rp]").textContent = `${me.kills}킬 · ${me.deaths}데스 · ${me.assists}어시 · 헤드샷 ${me.hs}${mvp ? " · MVP " + kname(mvp.k) : ""} · +${(r && r.rp) || 0} RP`;
   $("[data-rtable]").innerHTML = tableHTML(S, me.i, true);
-  const again = $('[data-a="again"]'); again.disabled = role === "guest"; again.textContent = role === "guest" ? "방장이 다시 시작해요" : "다시 하기";
+  const again = $('[data-a="again"]'); again.disabled = role === "guest"; again.textContent = role === "guest" ? "방장이 다시 시작해요" : "다시 하기 [Enter]";
   el.hidden = false; document.exitPointerLock && locked && document.exitPointerLock();
 }
 function payout(S, me, quit) {
@@ -1119,7 +1194,10 @@ function loop(now) {
       acc += dt; let n = 0; while (acc >= .02 && n < 4) { M.step(.02); acc -= .02; n++; } if (n === 4) acc = 0;
       for (const p of S.players) { p.rx = p.x; p.ry = p.y; p.ra = p.a; }
       st = S;
-      if (role === "host" && (now - pubAt > 66 || S.done)) { pubAt = now; room && room.publish(encode(S)); }
+      if (role === "host" && room && (now - pubAt > (S.n > 12 ? 95 : 75) || S.done)) {
+        pubAt = now; const withR = now - rosAt > 1000 || S.done; if (withR) rosAt = now;
+        room.publishEach(g => { if (g >= S.n) return null; const mem = pubMem[g] || (pubMem[g] = {}); if (mem.m !== S.id) { mem.m = S.id; mem.rs = false; } const need = withR || !mem.rs; mem.rs = true; return C.encodeFor(S, g, need, mem); });
+      }
     }
     if (!st) return;
     const me = st.players[slot]; if (!me) return;
@@ -1134,7 +1212,7 @@ function showStage(on) { $("[data-menu]").hidden = on; $("[data-stage]").hidden 
 function begin() {
   loadImgs(); cancelAnimationFrame(frame);
   const me = Number(window.lbDbg && window.lbDbg.ME && window.lbDbg.ME.kn) || 0;
-  M = createMatch({map: cfg.map, diff: cfg.diff, humans: [0, ...hostSlots], me}); GS = null; st = M.S; slot = 0; evSeen = 0; evFor = ""; shown = ""; buyOpen = true; buyReady = false; buyKey = ""; hd = st.players[0].a; kick = 0; banner = null; errN = 0; acc = 0; paid = ""; scoreOpen = false; specI = 0;
+  M = createMatch({map: cfg.map, diff: cfg.diff, humans: [0, ...hostSlots], per: cfg.per, me}); GS = null; pubMem = {}; rosAt = 0; st = M.S; slot = 0; evSeen = 0; evFor = ""; shown = ""; buyOpen = true; buyReady = false; buyKey = ""; hd = st.players[0].a; kick = 0; banner = null; errN = 0; acc = 0; paid = ""; scoreOpen = false; specI = 0;
   hintOn = !LS.get("roundb-office-seen"); hintsDone = {}; started = performance.now();
   for (const p of st.players) { p.rx = p.x; p.ry = p.y; p.ra = p.a; }
   $("[data-result]").hidden = true; showStage(true); sizeCanvas(); last = performance.now(); frame = requestAnimationFrame(loop);
@@ -1143,7 +1221,7 @@ function begin() {
 }
 function sizeCanvas() { canvas.width = Math.max(240, canvas.clientWidth); canvas.height = Math.max(160, canvas.clientHeight); }
 function disconnect(msg) {
-  cancelAnimationFrame(frame); frame = 0; try { room && room.close(); } catch (e) {} room = null; role = ""; slot = 0; M = null; GS = null; st = null; hostSlots.clear(); keys.clear(); ptrs.clear(); joy.on = false; ctl.fire = ctl.zoom = ctl.padFire = ctl.padUse = ctl.padZoom = false; acts.length = 0;
+  cancelAnimationFrame(frame); frame = 0; try { room && room.close(); } catch (e) {} room = null; role = ""; slot = 0; M = null; GS = null; st = null; hostSlots.clear(); { const pe = root && $("[data-per]"); if (pe) pe.disabled = false; } keys.clear(); ptrs.clear(); joy.on = false; ctl.fire = ctl.zoom = ctl.padFire = ctl.padUse = ctl.padZoom = false; acts.length = 0;
   document.exitPointerLock && document.pointerLockElement && document.exitPointerLock();
   if (root) { showStage(false); $("[data-result]").hidden = true; $("[data-confirm]").hidden = true; $('[data-a="start"]').hidden = true; $("[data-joy]").classList.remove("on"); setMsg(msg || ""); }
 }
@@ -1152,18 +1230,19 @@ function connect(next) {
   room = createArenaRoom(ID, {
     error(m) { disconnect(m); },
     ready(i, code) { slot = i; setMsg(i ? "방장이 시작하기를 기다리는 중 · 초대 코드 " + code : "초대 코드 " + code + " · 참가자 1명 · 준비되면 '온라인 시작'"); $('[data-a="start"]').hidden = !!i; },
-    accept: () => !M || M.S.done, join(i) { hostSlots.add(i); if (M) M.setHuman(i, true); setMsg("참가자 " + (hostSlots.size + 1) + "명 · 준비되면 '온라인 시작'"); },
+    accept: i => i < 2 * cfg.per && (!M || M.S.done), join(i) { hostSlots.add(i); if (M) M.setHuman(i, true); setMsg("참가자 " + (hostSlots.size + 1) + "명 · 준비되면 '온라인 시작'"); },
     leave(i) { hostSlots.delete(i); if (M) M.setHuman(i, false); setMsg("참가자 " + (hostSlots.size + 1) + "명"); },
     input(i, v) { if (!M) return; M.input(i, v); if (v && typeof v.act === "string") M.act(i, v.act); },
     state(s) {
       if (!s || s.v !== VER) { disconnect("방장이 다른 버전이에요. 둘 다 새로고침한 뒤 다시 들어와 주세요."); return; }
-      if (!Array.isArray(s.p) || s.p.length !== 10) return;
-      const first = !st; GS = decode(s, GS); st = GS; role = "guest";
+      const nd = C.decodeSnap(s, GS); if (!nd) return;
+      const first = !st; GS = nd; st = GS; role = "guest"; slot = s.g;
       if (first) { loadImgs(); showStage(true); sizeCanvas(); hintOn = !LS.get("roundb-office-seen"); hintsDone = {}; hd = GS.players[slot].a; started = performance.now(); cancelAnimationFrame(frame); last = performance.now(); frame = requestAnimationFrame(loop); toast("온라인 경기 시작", 2500); }
       if (shown && shown !== GS.id) { $("[data-result]").hidden = true; paid = ""; }
     }
   });
-  if (next === "host") room.host({listed: $("[data-public]").checked}); else room.join($("[data-code]").value);
+  $("[data-per]").disabled = true;
+  if (next === "host") room.host({listed: $("[data-public]").checked, max: 2 * cfg.per}); else room.join($("[data-code]").value);
 }
 function askExit() {
   if (!running() || st.done) { root.close(); return; }
@@ -1177,8 +1256,8 @@ function onClick(e) {
   if (t.dataset.map != null) { cfg.map = +t.dataset.map; saveCfg(); for (const b of root.querySelectorAll("[data-map]")) b.setAttribute("aria-pressed", String(+b.dataset.map === cfg.map)); return; }
   if (t.dataset.diff) { cfg.diff = t.dataset.diff; saveCfg(); for (const b of root.querySelectorAll("[data-diff]")) b.setAttribute("aria-pressed", String(b.dataset.diff === cfg.diff)); return; }
   if (t.dataset.buy) { doAct("buy:" + t.dataset.buy); return; }
-  if (t.dataset.x === "close") { buyOpen = false; return; }
-  if (t.dataset.x === "ready") { doAct("ready"); buyOpen = false; return; }
+  if (t.dataset.x === "close") { buyOpen = false; relock(); return; }
+  if (t.dataset.x === "ready") { doAct("ready"); buyOpen = false; relock(); return; }
   if (a === "exit") askExit();
   else if (a === "stay") $("[data-confirm]").hidden = true;
   else if (a === "leave" || a === "leave2") leave();
@@ -1199,5 +1278,9 @@ try {
   if (window.roundbRooms) window.roundbRooms.register(ID, code => { open(); $("[data-code]").value = code; connect("guest"); });
   for (const b of document.querySelectorAll('[data-shooter="office-strike"]')) b.addEventListener("click", () => games.open(ID));
 } catch (e) { console.error(NAME, e); }
-window.RB_OFFICE_UI = {cfg, dbg: () => ({M, st, slot, qual, role, encode, decode})};
+window.RB_OFFICE_UI = {cfg, dbg: () => ({M, st, slot, qual, role, C, locked, lockFail})};
+try {  // 공용 단축키 안내(index.html knxKeyHints): 모서리 목록 + [⌨ 단축키] 토글, 저장키 roundb.keyhints.v1
+  if (window.knxKeyHints) window.knxKeyHints({id: "officestrike", screen: () => !!(root && root.open && st && !$("[data-stage]").hidden), corner: "bl", bottom: 96, title: "총격전 단축키",
+    rows: [["WASD", "이동"], ["마우스", "시점 (클릭=고정)"], ["좌클릭", "발사"], ["우클릭", "조준"], ["R", "장전"], ["E 길게", "설치·해체"], ["1·2·3", "주무기·권총·단검"], ["4·5·6", "수류탄·연막·섬광"], ["B", "구매창"], ["Enter", "준비 완료"], ["Tab", "점수판"], ["Shift", "걷기"]]});
+} catch (e) { console.error(NAME, e); }
 })();
