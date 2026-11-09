@@ -85,7 +85,7 @@
 
     /* ---------- 그림: 배치도 · 몬스터(소용돌이 디펜스) · 기사 ---------- */
     const plan = new Image(); plan.src = "img/plan.jpg";
-    const WALK = 6, ATKF = 3, SS = 1.5, FRW = 1.6, spSet = [], spUrl = [];   // 종마다 걷기 6장 + 공격 3장 + 피격(흰색) 1장을 큰 크기로 미리 그려 둔다
+    const WALK = 8, ATKF = 3, SS = 1.5, FRW = 1.6, spSet = [], spUrl = [];   // 종마다 걷기 6장 + 공격 3장 + 피격(흰색) 1장을 큰 크기로 미리 그려 둔다
     let artReady = false;
     function loadArt() {
       if (artReady) return;
@@ -222,6 +222,7 @@
       if (kind !== "follow" && !quiet) addFx({k: "ring", x: px, y: py, r: kind === "charge" ? 90 : 60, c: kind === "charge" ? "#ff5a48" : kind === "retreat" ? "#2a7fd8" : "#1f9b72", d: .5});
       snd("click");
       heroSay({rally: "집결!", charge: "돌격!!", retreat: "후퇴!", follow: "따라와!"}[kind] || "", 1.6);
+      if (kind === "charge") me.cmdT0 = nowS();
       dialog.querySelectorAll("[data-cmd]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.cmd === kind)));
     }
     const orderHere = kind => { const me = V && V.players[slot]; if (!me) return; if (kind === "rally") order("rally", me.da ? me.dx : me.bx, me.da ? me.dy : me.by); else order(kind); };
@@ -373,7 +374,7 @@
           const wasAlive = old ? old.alive : true, wasDa = old ? old.da : true, wasHit = old ? old.hitFlag : 0;
           Object.assign(p, {name: s.nm[i], kn: s.kn ? s.kn[i] : i % 10, ai: s.ai[i] > 0, persona: s.ai[i] - 1, tdx: a[0], tdy: a[1], da: a[2] > 0, dhp: a[2], dres: t + a[3], bhp: a[4], kills: a[5], destroyed: a[6], alive: !!a[7],
             bio: a[8], ep: a[9], un: SIM.unmask(a[10]), on: SIM.unmask(a[11]), up: [(a[12] / 100) | 0, ((a[12] / 10) | 0) % 10, a[12] % 10],
-            ord: {k: SIM.KIND[a[13]] || "rally", x: a[14], y: a[15]}, bmax: a[16], hitFlag: a[17], hitT: a[17] ? t : -99, deaths: a[18]});
+            ord: {k: SIM.KIND[a[13]] || "rally", x: a[14], y: a[15]}, bmax: a[16], hitFlag: a[17], hitT: a[17] ? t : -99, deaths: a[18], atkFlag: a[19]});
           if (old) {
             if (wasAlive && !p.alive) onEvent({k: "boom", o: i, x: p.bx, y: p.by, by: -1});
             if (wasDa && !p.da && p.alive) onEvent({k: "hero", o: i, x: p.dx, y: p.dy});
@@ -552,7 +553,7 @@
       const chip = (cls, l, v) => `<span class="bd-chip ${cls}"><small>${l}</small><b>${v}</b></span>`;
       const income = SIM.incomeOf(me.nodes, 1).toFixed(1);
       const h = chip(left <= 30 ? "warn" : "", "남은 시간", `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}`) + chip("bio", "혈액", `${Math.floor(me.bio)} (+${income}/초)`) + chip("ep", "진화P", me.ep) +
-        chip(me.pop >= cap ? "warn" : "", "군체", `${me.pop}/${cap}`) + chip(pct < 35 || hot ? "warn" : "", "내 기지", `${me.alive ? pct + "%" : "파괴됨"}`) + chip("", "거점", `${me.nodes}/${total}`) + chip("", "남은 적 기지", foes) + chip("", "처치", me.kills);
+        chip(me.pop >= cap ? "warn" : "", "군체", `${me.pop}/${cap}`) + chip(pct < 35 || hot ? "warn" : "", "내 기지", `${me.alive ? pct + "%" : "파괴됨"}`) + chip("opt", "거점", `${me.nodes}/${total}`) + chip("", "남은 적 기지", foes) + chip("opt", "처치", me.kills);
       if (resEl.innerHTML !== h) resEl.innerHTML = h;
       edgeEl.classList.toggle("on", hot);
       recenterBtn.hidden = !camFree || !me.alive;
@@ -612,11 +613,12 @@
     }
     function bubbleAt(text, x, y, size) {
       ctx.font = `800 ${size}px system-ui, sans-serif`;
-      const w = ctx.measureText(text).width + size * 1.6, h = size * 1.7;
-      rrect(x - w / 2, y - h, w, h, size * .6); ctx.fillStyle = "#fff"; ctx.fill(); ctx.lineWidth = 5; ctx.strokeStyle = "#ff8a00"; ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(x - size * .45, y - 2); ctx.lineTo(x, y + size * .7); ctx.lineTo(x + size * .45, y - 2); ctx.fillStyle = "#fff"; ctx.fill(); ctx.stroke();
-      rrect(x - w / 2 + 3, y - h + 3, w - 6, h - 6, size * .5); ctx.fillStyle = "#fff"; ctx.fill();
-      ctx.fillStyle = "#3a2200"; ctx.textAlign = "center"; ctx.fillText(text, x, y - h * .3);
+      const w = ctx.measureText(text).width + size * 1.6, h = size * 1.7, half = vw.w / 2 / vw.scale;
+      const bx = clamp(x, cam.x - half + w / 2 + 8, cam.x + half - w / 2 - 8), tip = clamp(x, bx - w / 2 + size, bx + w / 2 - size);   // 화면 밖으로 잘리지 않게
+      rrect(bx - w / 2, y - h, w, h, size * .6); ctx.fillStyle = "#fff"; ctx.fill(); ctx.lineWidth = 5; ctx.strokeStyle = "#ff8a00"; ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(tip - size * .45, y - 2); ctx.lineTo(x, y + size * .7); ctx.lineTo(tip + size * .45, y - 2); ctx.fillStyle = "#fff"; ctx.fill(); ctx.stroke();
+      rrect(bx - w / 2 + 3, y - h + 3, w - 6, h - 6, size * .5); ctx.fillStyle = "#fff"; ctx.fill();
+      ctx.fillStyle = "#3a2200"; ctx.textAlign = "center"; ctx.fillText(text, bx, y - h * .3);
     }
     function draw(t, dt) {
       const w = cv.clientWidth, h = cv.clientHeight;
@@ -701,7 +703,8 @@
           if (attacking) frame = set.atk[Math.floor(t * 9 + u.id) % ATKF];
           else if (moving) { const ph = Math.floor(t * 10 + u.id) % (2 * WALK - 2); frame = set.walk[ph < WALK ? ph : 2 * WALK - 2 - ph]; }
           const bob = moving ? Math.abs(Math.sin(t * 10 + u.id)) * s * .05 : Math.sin(t * 2 + u.id) * s * .012, tilt = moving ? Math.sin(t * 10 + u.id) * .06 : attacking ? Math.sin(t * 26 + u.id) * .09 : 0;
-          ctx.save(); ctx.translate(u.x, u.y + s * .12 - bob); ctx.rotate(tilt); ctx.scale(u.face, attacking ? 1.05 : 1);
+          const lunge = attacking ? Math.sin(t * 18 + u.id) * s * .09 * u.face : 0, sqz = attacking ? 1 + Math.sin(t * 18 + u.id) * .06 : moving ? 1 + Math.sin(t * 10 + u.id) * .035 : 1;
+          ctx.save(); ctx.translate(u.x + lunge, u.y + s * .12 - bob); ctx.rotate(tilt); ctx.scale(u.face * (2 - sqz), sqz);
           ctx.drawImage(frame, -set.wf / 2, -set.hf * 75 / 92, set.wf, set.hf);
           if (u.fl > 0) { ctx.globalAlpha = Math.min(.85, u.fl * 7); ctx.drawImage(set.flash, -set.wf / 2, -set.hf * 75 / 92, set.wf, set.hf); ctx.globalAlpha = 1; }
           ctx.restore();
@@ -709,24 +712,38 @@
         ctx.drawImage(badges[u.o], u.x - bs / 2, u.y + s * .12 - (set ? set.hf * .5 : s * .6) - bs, bs, bs);
         if (u.hp < u.mx * .995) bar(u.x, u.y + s * .24, s * .55, clamp(5 / scale, 5, 10), u.hp / u.mx, u.o === slot ? "#35d08f" : "#ff5a48");
       }
-      // 영웅: 기사단 캐릭터. 군체보다 훨씬 크고, 이름표·체력바·발밑 링·말풍선·걷기 모션으로 눈에 띄게
-      const heroes = players.filter(p => p.alive && p.da && vis(p.dx, p.dy, 200)).sort((a, b) => a.dy - b.dy), HG = 210;
+      // 영웅: 기사단 캐릭터(관절 리그: 걷기·공격·피격). 몸집은 군체보다 크되 답답하지 않게, 이름표·링·체력바·말풍선으로 눈에 띄게
+      const heroes = players.filter(p => p.alive && p.da && vis(p.dx, p.dy, 160)).sort((a, b) => a.dy - b.dy), HG = 150, rig = window.KnightRig;
       for (const p of heroes) {
-        if (p.px === undefined) { p.px = p.dx; p.py = p.dy; p.face = 1; p.walk = -9; }
+        if (p.px === undefined) { p.px = p.dx; p.py = p.dy; p.face = 1; p.walk = -9; p.lastHp = p.dhp; p.hurtT0 = -9; p.atkOn = false; p.atkT0 = -9; }
         const mvx = p.dx - p.px;
         if (Math.hypot(mvx, p.dy - p.py) > .25) { p.walk = t; if (Math.abs(mvx) > .15) p.face = mvx < 0 ? -1 : 1; }
         p.px = p.dx; p.py = p.dy;
-        const mine = p.id === slot, moving = t - p.walk < .18, im = knImg(p.kn), ratio = im.naturalWidth ? im.naturalWidth / im.naturalHeight : .58, wid = HG * ratio, col = TEAM[p.id].c;
-        if (mine && !lowfx) { const g = ctx.createRadialGradient(p.dx, p.dy - 70, 20, p.dx, p.dy - 70, 190); g.addColorStop(0, "rgba(255,226,120,.55)"); g.addColorStop(1, "rgba(255,226,120,0)"); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.dx, p.dy - 70, 190, 0, 6.2832); ctx.fill(); }
-        ctx.fillStyle = "rgba(16,21,28,.4)"; ctx.beginPath(); ctx.ellipse(p.dx, p.dy + 30, 46, 15, 0, 0, 6.2832); ctx.fill();
-        ringAt(p.dx, p.dy + 28, 54, 20, col, 8);
-        if (mine) { ctx.strokeStyle = "#10151c"; ctx.lineWidth = 11; ctx.beginPath(); ctx.ellipse(p.dx, p.dy + 28, 74 + Math.sin(t * 6) * 4, 28 + Math.sin(t * 6) * 2, 0, 0, 6.2832); ctx.stroke(); ctx.strokeStyle = "#fff"; ctx.lineWidth = 6; ctx.stroke(); }
-        const bob = moving ? Math.abs(Math.sin(t * 11)) * 15 : Math.sin(t * 2.2 + p.id) * 3, tilt = moving ? Math.sin(t * 11) * .12 : 0, sq = moving ? 1 + Math.sin(t * 22) * .035 : 1 + Math.sin(t * 2.2) * .01;
-        ctx.save(); ctx.translate(p.dx, p.dy + 34); ctx.rotate(tilt); ctx.scale(p.face, sq);
-        if (im.complete && im.naturalWidth) ctx.drawImage(im, -wid / 2, -HG - bob, wid, HG); else { ctx.fillStyle = col; ctx.beginPath(); ctx.arc(0, -HG / 2, 40, 0, 6.2832); ctx.fill(); }
-        ctx.restore();
-        bar(p.dx, p.dy + 48, 96, 12, p.dhp / p.dmax, mine ? "#35d08f" : "#ff5a48");
-        const top = p.dy + 34 - HG - bob - 10;
+        if (p.dhp < p.lastHp - .5) p.hurtT0 = t;
+        p.lastHp = p.dhp;
+        const atkNow = p.at !== undefined ? V.time - p.at < .45 : !!p.atkFlag;
+        if (atkNow && !p.atkOn) { p.atkOn = true; p.atkT0 = t; } else if (!atkNow && p.atkOn && t - p.atkT0 > .55) p.atkOn = false;
+        const mine = p.id === slot, moving = t - p.walk < .18, col = TEAM[p.id].c;
+        if (mine && !lowfx) { const g = ctx.createRadialGradient(p.dx, p.dy - 50, 15, p.dx, p.dy - 50, 140); g.addColorStop(0, "rgba(255,226,120,.5)"); g.addColorStop(1, "rgba(255,226,120,0)"); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.dx, p.dy - 50, 140, 0, 6.2832); ctx.fill(); }
+        ringAt(p.dx, p.dy + 26, 42, 16, col, 7);
+        if (mine) { ctx.strokeStyle = "#10151c"; ctx.lineWidth = 10; ctx.beginPath(); ctx.ellipse(p.dx, p.dy + 26, 58 + Math.sin(t * 6) * 3, 22 + Math.sin(t * 6) * 2, 0, 0, 6.2832); ctx.stroke(); ctx.strokeStyle = "#fff"; ctx.lineWidth = 5; ctx.stroke(); }
+        const cmd = p.cmdT0 !== undefined && t - p.cmdT0 >= 0 && t - p.cmdT0 < .6;
+        let pose = "idle", pt = t;
+        if (t - p.hurtT0 < .35) { pose = "hurt"; pt = t - p.hurtT0; }
+        else if (cmd) { pose = "attack"; pt = t - p.cmdT0; }
+        else if (p.atkOn) { pose = "attack"; pt = t - p.atkT0; }
+        else if (moving) pose = "walk";
+        if (mine && window.__bloodPose) { pose = window.__bloodPose.pose; pt = window.__bloodPose.t; }   // 시험용: 자세·시간을 고정해 프레임을 확인
+        if (rig && rig.ready(p.kn)) rig.draw(ctx, p.kn, {x: p.dx, y: p.dy + 34, height: HG, facing: p.face, pose, t: pt, loop: p.atkOn && !cmd, flash: pose === "hurt" ? .6 : 0, arc: true});
+        else {
+          const im = knImg(p.kn), ratio = im.naturalWidth ? im.naturalWidth / im.naturalHeight : .58, wid = HG * ratio;
+          if (rig) rig.preload([p.kn]);
+          ctx.save(); ctx.translate(p.dx, p.dy + 34); ctx.scale(p.face, 1);
+          if (im.complete && im.naturalWidth) ctx.drawImage(im, -wid / 2, -HG, wid, HG); else { ctx.fillStyle = col; ctx.beginPath(); ctx.arc(0, -HG / 2, 30, 0, 6.2832); ctx.fill(); }
+          ctx.restore();
+        }
+        bar(p.dx, p.dy + 46, 80, 11, p.dhp / p.dmax, mine ? "#35d08f" : "#ff5a48");
+        const top = p.dy + 34 - HG - 8;
         plate((mine ? "나 · " : "") + (mine ? knName(p.kn) : p.name), p.dx, top, lsz * 1.05, col, p.id);
         if (mine && bubble && nowS() < bubble.until && bubble.text) bubbleAt(bubble.text, p.dx, top - lsz * 2.1, lsz * 1.1);
       }

@@ -163,9 +163,14 @@ section.bd .bd-sym { display: inline-block; width: 14px; height: 14px; vertical-
   section.bd .bd-evo-h small { display: none; }
   section.bd .bd-br button { min-height: 44px; }
   section.bd .bd-hint { bottom: 212px; }
-  section.bd .bd-evobanner { top: 142px; font-size: 13px; padding: 6px 12px; }
-  section.bd .bd-evobanner b { font-size: 15px; }
-  section.bd .bd-banner { top: 236px; }
+  section.bd .bd-chip { padding: 1px 7px; font-size: 11px; gap: 4px; }
+  section.bd .bd-chip small { font-size: 10px; }
+  section.bd .bd-chip b { font-size: 12px; }
+  section.bd .bd-chip.opt { display: none; }
+  section.bd .bd-evobanner { top: 84px; font-size: 12px; padding: 4px 10px; border-width: 2px; }
+  section.bd .bd-evobanner b { font-size: 14px; }
+  section.bd .bd-banner { top: 150px; }
+  section.bd .bd-banner div { padding: 3px 10px; font-size: 12px; }
   section.bd .bd-recenter { top: 89px; }
   section.bd .bd-evotip { right: 4px; bottom: 84px; max-width: 160px; font-size: 12px; }
 }

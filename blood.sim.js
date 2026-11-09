@@ -2,18 +2,18 @@
    방장(또는 혼자 하기)만 step 을 돌리고, 손님은 snapshot 을 받아 그리기만 한다. */
 (function (root) {
   "use strict";
-  const W = 3790, H = 2404, MAXU = 300, CELL = 128, BHP = 3000, DHP = 260, START_BIO = 110, BASE_R = 64;
+  const W = 3790, H = 2404, MAXU = 300, CELL = 128, BHP = 3000, DHP = 260, START_BIO = 110, BASE_R = 56;
   const COLS = Math.ceil(W / CELL), ROWS = Math.ceil(H / CELL);
   /* 8종: 소용돌이 디펜스에 나오는 몬스터(mk = 그림 이름). 약한 것부터 강한 것 순서 */
   const SP = [   // 그림이 커진 만큼 사거리·속도·크기를 같이 키웠다(size = 화면에 그려지는 세계 좌표 크기)
-    {n: "마감 좀비", mk: "zombie", hp: 60, dmg: 8, reach: 54, spd: 119, cd: .8, cost: 20, ep: 0, size: 92, info: "균형 잡힌 기본 근접"},
-    {n: "야간 거미", mk: "crawler", hp: 34, dmg: 6, reach: 42, spd: 188, cd: .45, cost: 12, ep: 1, size: 84, info: "싸고 빠름 · 몸이 약함"},
-    {n: "비명귀", mk: "screamer", hp: 42, dmg: 14, reach: 260, spd: 106, cd: 1, cost: 30, ep: 1, size: 100, info: "비명으로 멀리서 공격"},
-    {n: "분열체", mk: "splitter", hp: 150, dmg: 9, reach: 54, spd: 100, cd: .9, cost: 40, ep: 2, size: 118, info: "튼튼 · 주변까지 피해", splash: 90},
-    {n: "야근 유령", mk: "ghost", hp: 230, dmg: 14, reach: 58, spd: 85, cd: 1, cost: 55, ep: 2, size: 126, info: "받는 피해 30% 감소", armor: .7},
-    {n: "퇴사 거부자", mk: "brute", hp: 190, dmg: 38, reach: 64, spd: 108, cd: 1.1, cost: 75, ep: 3, size: 146, info: "한 방이 아주 강함"},
-    {n: "월요병", mk: "blob", hp: 280, dmg: 24, reach: 190, spd: 68, cd: 1.5, cost: 95, ep: 3, size: 164, info: "기지에 3배 피해 · 느림", bm: 3, um: .7, pb: 1},
-    {n: "야근 대마왕", mk: "mini", hp: 420, dmg: 40, reach: 76, spd: 131, cd: .8, cost: 140, ep: 4, size: 200, info: "최강 · 스스로 회복", regen: 6}
+    {n: "마감 좀비", mk: "zombie", hp: 60, dmg: 8, reach: 54, spd: 119, cd: .8, cost: 20, ep: 0, size: 64, info: "균형 잡힌 기본 근접"},
+    {n: "야간 거미", mk: "crawler", hp: 34, dmg: 6, reach: 42, spd: 188, cd: .45, cost: 12, ep: 1, size: 59, info: "싸고 빠름 · 몸이 약함"},
+    {n: "비명귀", mk: "screamer", hp: 42, dmg: 14, reach: 260, spd: 106, cd: 1, cost: 30, ep: 1, size: 70, info: "비명으로 멀리서 공격"},
+    {n: "분열체", mk: "splitter", hp: 150, dmg: 9, reach: 54, spd: 100, cd: .9, cost: 40, ep: 2, size: 83, info: "튼튼 · 주변까지 피해", splash: 90},
+    {n: "야근 유령", mk: "ghost", hp: 230, dmg: 14, reach: 58, spd: 85, cd: 1, cost: 55, ep: 2, size: 88, info: "받는 피해 30% 감소", armor: .7},
+    {n: "퇴사 거부자", mk: "brute", hp: 190, dmg: 38, reach: 64, spd: 108, cd: 1.1, cost: 75, ep: 3, size: 102, info: "한 방이 아주 강함"},
+    {n: "월요병", mk: "blob", hp: 280, dmg: 24, reach: 190, spd: 68, cd: 1.5, cost: 95, ep: 3, size: 115, info: "기지에 3배 피해 · 느림", bm: 3, um: .7, pb: 1},
+    {n: "야근 대마왕", mk: "mini", hp: 420, dmg: 40, reach: 76, spd: 131, cd: .8, cost: 140, ep: 4, size: 140, info: "최강 · 스스로 회복", regen: 6}
   ];
   const UPC = [2, 3, 5];   // 업그레이드 1·2·3단계 진화P
   const ATK = [1, 1.15, 1.3, 1.5], HPM = [1, 1.2, 1.4, 1.7], SPAWN = [1, .85, .7, .55], CAPB = [0, 8, 16, 26];
@@ -248,7 +248,7 @@
     p.dx = clamp(p.dx + sx * 270 * dt, 20, W - 20); p.dy = clamp(p.dy + sy * 270 * dt, 20, H - 20);
     p.dcd -= dt;
     if (p.dcd <= 0 && nearestFoe(S, p.id, p.dx, p.dy, 240, false)) {
-      p.dcd = .5;
+      p.dcd = .5; p.at = S.time;
       const dmg = 16 * ATK[p.up[0]];
       ev(S, {k: "shot", x: p.dx, y: p.dy, x2: T.x, y2: T.y, o: p.id, d: 1});
       if (T.k === 0) hurt(S, T.r, dmg, p); else if (T.k === 1) hurtHero(S, T.r, dmg, p); else hurtBase(S, T.r, dmg * 1.5, p);
@@ -464,7 +464,7 @@
   function snapshot(S) {
     const ps = S.players.map(p => [Math.round(p.dx), Math.round(p.dy), p.da ? Math.max(1, Math.round(p.dhp / p.dmax * 100)) : 0, p.da ? 0 : Math.max(0, Math.ceil(p.dres - S.time)),
       Math.round(p.bhp), p.kills, p.destroyed, p.alive ? 1 : 0, Math.round(p.bio), p.ep, maskOf(p.un), maskOf(p.on), p.up[0] * 100 + p.up[1] * 10 + p.up[2],
-      KIND.indexOf(p.ord.k), Math.round(p.ord.x), Math.round(p.ord.y), p.bmax, S.time - p.hitT < 3 ? 1 : 0, p.deaths]);
+      KIND.indexOf(p.ord.k), Math.round(p.ord.x), Math.round(p.ord.y), p.bmax, S.time - p.hitT < 3 ? 1 : 0, p.deaths, S.time - (p.at || -9) < .4 ? 1 : 0]);
     const un = [];
     for (const u of S.units) if (!u.dead) un.push(u.id, Math.round(u.x), Math.round(u.y), (u.o * 8 + u.t) * 100 + clamp(Math.round(u.hp / u.mx * 99), 1, 99) + (S.time - (u.at || -9) < .4 ? 8000 : 0));
     const nd = [];
