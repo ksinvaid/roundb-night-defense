@@ -3805,6 +3805,13 @@ html[data-lowfx="1"] :is([class*=spin],[class*=load],[class*=wait],[class*=busy]
 html[data-lowfx="1"]{scroll-behavior:auto}
 /* ===MF_CSS_END=== */
 
+
+/* 4차: 이모트 막대 */
+.lb-emo{position:absolute;left:10px;bottom:46px;z-index:6;display:flex;flex-direction:column;gap:6px}
+.lb-emo button{width:46px;height:46px;border-radius:14px;border:3px solid var(--ink);background:rgba(250,246,238,.94);font-size:22px;line-height:1;cursor:pointer;box-shadow:0 3px 0 var(--ink);padding:0}
+.lb-emo button:hover{background:#fff3c4}.lb-emo button:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink)}
+.lb-chip{display:none!important}
+@media (max-width:640px){.lb-emo{bottom:8px;left:8px;flex-direction:row}.lb-emo button{width:40px;height:40px;font-size:19px}}
 </style>
 
 <div id="app">
@@ -27520,6 +27527,7 @@ function updateMe(dt) {
   if (!m.tp && portalOn(m) && (!m.pLock || m.after)) warpFloor(FL[m.fl].portal.to);
 }
 function update(dt) {
+  try { ensureEmo(); updateSupply(dt); } catch (e) { console.error('supply', e); }
   S.t += dt; S.mt += dt;
   updateMe(dt);
   for (const e of ents) if (e !== ME) updateAi(e, dt);
@@ -27652,6 +27660,7 @@ function drawGear(cx, cy, r, t) {
 }
 function drawSpots(f, t) {
   if (f.k === "4f") { drawGear(1148, 756, 11, t); drawGear(1128, 776, 8, -t * 1.2); }
+  return;   // 4차: 방 표시(점선·강조) 제거
   const pulse = reducedMotion() ? .6 : .5 + .5 * Math.sin(t * 3.2), lw = 3 / S.s, bs = S.chh / CH;
   for (const sp of f.spots) {
     const info = spotInfo(sp), h = sp.hot, nearMe = ME.near === sp, hov = S.hover === sp;
@@ -27749,6 +27758,88 @@ function paneBg(fl) {   // 칸 크기로 한 번 줄여 둔 배경(매 프레임
   const c = document.createElement("canvas"); c.width = Math.max(2, Math.round(p.w * S.dpr)); c.height = Math.max(2, Math.round(p.h * S.dpr));
   const q = c.getContext("2d"); q.imageSmoothingEnabled = true; q.imageSmoothingQuality = "high"; q.drawImage(BG[fl], 0, 0, c.width, c.height); p.bgs = c; return c;
 }
+/* ===SUPPLY_BOX_START=== 4차: RP 보급박스(10분 주기, 모두 같은 때·같은 자리) + 이모트 막대 */
+const SUP = {len: 600000, show: 120000, key: "roundb.supply.v1", cap: 8, box: null, fx: [], goT: 0, welcome: 0, last: ""};
+const supNow = () => { try { const n = nx(); return n && n.net && n.net.now ? n.net.now() : Date.now(); } catch (e) { return Date.now(); } };
+const supHash = k => { let h = (k * 2654435761) >>> 0; h ^= h >>> 15; h = Math.imul(h, 2246822519) >>> 0; h ^= h >>> 13; return h >>> 0; };
+const supDay = () => { const d = new Date(supNow() + 9 * 36e5); return d.getUTCFullYear() * 10000 + (d.getUTCMonth() + 1) * 100 + d.getUTCDate(); };
+function supLoad() { try { const o = JSON.parse(localStorage.getItem(SUP.key) || "{}"); return {k: o.k | 0, d: o.d | 0, n: o.d === supDay() ? o.n | 0 : 0, w: o.w | 0}; } catch (e) { return {k: 0, d: 0, n: 0, w: 0}; } }
+function supSave(o) { try { localStorage.setItem(SUP.key, JSON.stringify(o)); } catch (e) {} }
+function supBoxFor(k) {   // 슬롯 k 의 박스: 슬롯 시작 0~4분 사이에 나타나 2분 머문다
+  const h = supHash(k), st = k * SUP.len + (h % 240000), fl = (h >>> 8) & 1 ? "3f" : "4f", f = FL[fl], sps = f && f.spots && f.spots.length ? f.spots : null;
+  if (!sps) return null;
+  const sp = sps[(h >>> 12) % sps.length], a = ((h >>> 20) % 360) * Math.PI / 180, r = 50 + ((h >>> 4) % 50);
+  return {id: "s" + k, k, fl, x: sp.stand[0] + Math.cos(a) * r, y: sp.stand[1] + Math.sin(a) * r * .6, st, en: st + SUP.show, rp: 2 + ((h >>> 16) % 5), kind: "slot"};
+}
+function supRefresh() {
+  const now = supNow(), st = supLoad(), k = Math.floor(now / SUP.len); let b = null;
+  for (const kk of [k, k - 1]) { const c = supBoxFor(kk); if (c && now >= c.st && now < c.en && st.k !== kk && st.n < SUP.cap) { b = c; break; } }
+  if (!b && SUP.welcome && now < SUP.welcome + SUP.show) b = SUP.wbox || null;
+  if (b && (!SUP.box || SUP.box.id !== b.id)) { SUP.box = b; try { toast("📦 RP 보급박스가 나타났어요! " + (b.fl === "3f" ? "3층 라운지" : "4층 공유오피스") + " · 눌러서 먹어요"); } catch (e) {} }
+  else if (!b) SUP.box = null;
+}
+function supMake(fl) {   // 첫 방문 환영 박스: 내 근처에, 하루 한 번
+  const f = FL[fl], x = clamp(ME.x + 120, f.view[0] + 80, f.view[2] - 80), y = clamp(ME.y + 40, f.view[1] + 80, f.view[3] - 80), now = supNow();
+  SUP.welcome = now; SUP.wbox = {id: "w" + supDay(), k: -1, fl, x, y, st: now, en: now + SUP.show, rp: 3, kind: "welcome"};
+}
+function supClaim() {
+  const b = SUP.box; if (!b) return false; const st = supLoad();
+  if (b.kind === "slot") { if (st.k === b.k || st.n >= SUP.cap) return false; st.k = b.k; st.n += 1; st.d = supDay(); } else { if (st.w === supDay()) return false; st.w = supDay(); st.d = supDay(); }
+  supSave(st);
+  try { const K = nx(); if (K && K.id && typeof K.id.addRp === "function") K.id.addRp(b.rp); else SAVE.rp = (SAVE.rp || 0) + b.rp; persist(true); } catch (e) {}
+  for (let i = 0; i < 26; i++) SUP.fx.push({fl: b.fl, x: b.x, y: b.y - 14, vx: (Math.random() - .5) * 220, vy: -80 - Math.random() * 190, t: 0, c: ["#f6c453", "#7ad7ff", "#ff9bd2", "#a8f08a"][i % 4]});
+  try { toast("📦 보급박스 +" + b.rp + " RP!" + (b.kind === "slot" ? " (오늘 " + st.n + "/" + SUP.cap + ")" : "")); sfx("up"); } catch (e) {}
+  if (b.kind === "welcome") SUP.wbox = null; SUP.box = null; SUP.goT = 0; return true;
+}
+function supNear() { const b = SUP.box; return !!(b && ME && ME.fl === b.fl && hypot(ME.x - b.x, ME.y - b.y) < 120); }
+function supKey() { if (!SUP.box) return false; if (supNear()) { supClaim(); return true; } try { toast("보급박스 쪽으로 가까이 가서 E 를 눌러요"); } catch (e) {} return false; }
+function supClick(px, py) {   // 박스를 누르면 걸어가서 먹는다
+  const b = SUP.box; if (!b) return false; const w = toWorld(px, py); if (!w || w.fl !== b.fl || hypot(w.x - b.x, w.y - b.y) > 78) return false;
+  if (supNear()) { supClaim(); return true; } S.hint = 0; walkMeTo(b.x, b.y, null, b.fl); SUP.goT = 12; return true;
+}
+function updateSupply(dt) {
+  if (!ME || !FL[ME.fl]) return;
+  if (!SUP.t0) SUP.t0 = performance.now();
+  if (!SUP.welcome && !SUP.box && performance.now() - SUP.t0 > 15000 && supLoad().w !== supDay()) supMake(ME.fl);
+  SUP.cd = (SUP.cd || 0) - dt; if (SUP.cd <= 0) { SUP.cd = 1; supRefresh(); }
+  if (SUP.box && SUP.goT > 0) { SUP.goT -= dt; if (supNear() && hypot(ME.x - SUP.box.x, ME.y - SUP.box.y) < 48) supClaim(); }
+  for (const p of SUP.fx) { p.t += dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 520 * dt; }
+  SUP.fx = SUP.fx.filter(p => p.t < 1.1);
+}
+function drawSupply(fl, t) {
+  const b = SUP.box; if (b && b.fl === fl) {
+    const left = Math.max(0, (b.en - supNow()) / SUP.show), bob = Math.sin(t * 4) * 4, x = b.x, y = b.y + bob, near = supNear(), s = 1 + (near ? .12 : 0);
+    g.save();
+    const gr = g.createRadialGradient(x, y - 14, 4, x, y - 14, 110); gr.addColorStop(0, "rgba(255,226,120,.55)"); gr.addColorStop(1, "rgba(255,226,120,0)"); g.fillStyle = gr; g.beginPath(); g.arc(x, y - 14, 110, 0, 6.2832); g.fill();
+    g.fillStyle = "rgba(0,0,0,.25)"; g.beginPath(); g.ellipse(x, b.y + 12, 42, 12, 0, 0, 6.2832); g.fill();
+    g.translate(x, y); g.scale(s * 1.7, s * 1.7);
+    g.lineWidth = 3; g.strokeStyle = "#14141c"; g.fillStyle = "#ffb454"; rr(g, -22, -30, 44, 34, 6); g.fill(); g.stroke();
+    g.fillStyle = "#ffd98a"; rr(g, -22, -30, 44, 12, 6); g.fill(); g.stroke();
+    g.fillStyle = "#ff6f91"; g.fillRect(-4, -30, 8, 34); g.strokeRect(-4, -30, 8, 34);
+    g.fillStyle = "#14141c"; g.font = "800 12px " + FONT; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("RP", 0, -9);
+    g.restore();
+    g.save(); g.lineWidth = 4; g.strokeStyle = "rgba(20,20,28,.35)"; g.beginPath(); g.arc(x, y - 14, 58, 0, 6.2832); g.stroke(); g.strokeStyle = left > .25 ? "#f6c453" : "#ff7a5c"; g.beginPath(); g.arc(x, y - 14, 58, -1.5708, -1.5708 + 6.2832 * left); g.stroke(); g.restore();
+  }
+  for (const p of SUP.fx) if (p.fl === fl) { g.globalAlpha = Math.max(0, 1 - p.t / 1.1); g.fillStyle = p.c; g.fillRect(p.x - 3, p.y - 3, 6, 6); g.globalAlpha = 1; }
+}
+/* 이모트: 내 기사 머리 위 말풍선+폴짝, 가까운 기사단 NPC 가 반응 */
+const EMO = [["👋", "인사", ["안녕하세요!", "반가워요~", "오늘도 힘내요!"]], ["🙌", "하이파이브", ["하이파이브! 🙌", "짝! 좋아요!", "손바닥이 얼얼해요!"]], ["💃", "춤추기", ["오~ 춤 잘 추시네요!", "저도 같이 출까요?", "분위기 좋은데요!"]], ["❤️", "응원", ["고마워요! 힘이 나요!", "저도 응원해요!", "함께라서 든든해요!"]]];
+function doEmote(i) {
+  const e = EMO[i % EMO.length]; if (!ME || ME.tp) return;
+  bubble(ME, e[0] + " " + e[1], 2.6); ME.hop = .4; try { sfx("click"); } catch (er) {}
+  let best = null, bd = 190;
+  for (const n of ents) if (n.type === "npc" && n.active && n.fl === ME.fl) { const d = hypot(n.x - ME.x, n.y - ME.y); if (d < bd) { bd = d; best = n; } }
+  if (best) setTimeout(() => { try { bubble(best, e[2][Math.floor(Math.random() * e[2].length)], 3.2); best.hop = .3; } catch (er) {} }, 700);
+}
+function ensureEmo() {
+  if (!stage || document.getElementById("lb-emo")) return;
+  const d = document.createElement("div"); d.id = "lb-emo"; d.className = "lb-emo"; d.setAttribute("role", "group"); d.setAttribute("aria-label", "이모트");
+  d.innerHTML = EMO.map((e, i) => `<button type="button" data-emo="${i}" title="${e[1]}" aria-label="${e[1]}">${e[0]}</button>`).join("");
+  d.addEventListener("click", ev => { const b = ev.target.closest("[data-emo]"); if (b) { ev.stopPropagation(); doEmote(+b.dataset.emo); } });
+  d.addEventListener("pointerdown", ev => ev.stopPropagation());
+  stage.appendChild(d);
+}
+/* ===SUPPLY_BOX_END=== */
 function drawPane(fl) {
   const p = P[fl], f = FL[fl], s = p.s, t = S.t, dpr = S.dpr, mine = ME.fl === fl;
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -27758,7 +27849,7 @@ function drawPane(fl) {
   g.setTransform(dpr * s, 0, 0, dpr * s, dpr * (p.x - f.view[0] * s), dpr * (p.y - f.view[1] * s));
   g.imageSmoothingEnabled = true;
   if (fl === "3f") drawTorches(t);
-  drawSpots(f, t); drawPortal(f, t);
+  drawSpots(f, t); drawPortal(f, t); drawSupply(fl, t);
   if (S.tgt && S.tgt.fl === fl) { const T = S.tgt, a = 1 - Math.min(1, T.t / (T.bad ? .6 : 1.6)), r = (T.bad ? 10 : 8 + 8 * (T.t % .8) / .8) * Math.max(1, S.chh / CH); g.save(); g.lineWidth = 3 / s; g.strokeStyle = T.bad ? `rgba(255,120,80,${a})` : `rgba(246,196,83,${Math.max(.4, a)})`; g.beginPath(); if (T.bad) { g.moveTo(T.x - 8, T.y - 8); g.lineTo(T.x + 8, T.y + 8); g.moveTo(T.x + 8, T.y - 8); g.lineTo(T.x - 8, T.y + 8); } else g.ellipse(T.x, T.y, r * 1.6, r * .8, 0, 0, 6.2832); g.stroke(); g.restore(); }
   const vis = ents.filter(e => e.fl === fl && e.active && e.alpha > .02).sort((a, b) => a.y - b.y);
   for (const e of vis) { e.fxs += (e.fxT - e.fxs) * Math.min(1, .35); drawEntShadow(e); }
@@ -27833,6 +27924,8 @@ function chipHTML(sp) {
 }
 function refreshChips() {
   if (!ov) return;
+  if (chipEls.size) { for (const c of chipEls.values()) c.remove(); chipEls.clear(); }
+  return;   // 4차: 지도 위 방·메뉴 핀(이름표)은 좌우 사이드 메뉴·카드와 중복이라 없앴다
   for (const sp of SPOTS) {
     let c = chipEls.get(sp.id);
     if (!c) { c = document.createElement("button"); c.type = "button"; c.className = "lb-chip"; c.dataset.sp = sp.id; ov.appendChild(c); chipEls.set(sp.id, c); }
@@ -27888,7 +27981,7 @@ function placePop() {   // 내 캐릭터 머리 위(자리가 없으면 아래)�
   pop.style.left = Math.round(left) + "px"; pop.style.top = Math.round(top) + "px"; S.popH = ph;
 }
 function openPop(sp) {
-  if (!pop) return;
+  if (!pop || !sp || !sp.isPortal) return;   // 4차: 방 팝업 없음(핀 제거)
   S.popSpot = sp; pop.innerHTML = popHTML(sp); pop.hidden = false; pop.classList.remove("in"); void pop.offsetWidth; pop.classList.add("in");
   pop.setAttribute("aria-label", spotInfo(sp).name); placePop();
   if (sp.kind === "game") { S.introSpot = sp; S.introT = 1.3; }
@@ -28042,9 +28135,10 @@ function onKey(e, down) {
   const c = e.code; let used = true;
   if (c === "ArrowLeft" || c === "KeyA") K.left = down ? 1 : 0; else if (c === "ArrowRight" || c === "KeyD") K.right = down ? 1 : 0;
   else if (c === "ArrowUp" || c === "KeyW") K.up = down ? 1 : 0; else if (c === "ArrowDown" || c === "KeyS") K.down = down ? 1 : 0;
+  else if (down && !e.repeat && /^Digit[1-4]$/.test(c)) { doEmote(+c.slice(5) - 1); }
   else if (down && !e.repeat && (c === "Enter" || c === "Space" || c === "KeyE")) {
     if (S.modal || (e.target && e.target.closest && e.target.closest("button,a,[role=button],[role=link]"))) used = false;   // 버튼에 초점이 있으면 그 버튼이 알아서 눌리게 둔다
-    else if (S.popSpot) popPrimary(); else if (ME.near) { S.dismissed = null; openPop(ME.near); } else used = false;
+    else if (SUP.box && supKey()) used = true; else if (S.popSpot) popPrimary(); else if (ME.near) { S.dismissed = null; openPop(ME.near); } else used = false;
   } else used = false;
   if (used && S.modal) { K.left = K.right = K.up = K.down = 0; }
   if (used) e.preventDefault();
@@ -28206,7 +28300,8 @@ function init() {
     if (e.button != null && e.button > 0) return;
     if (S.panel) { closePanel(); return; }   // 지도를 누르면 패널부터 닫는다
     if (S.modal || ME.tp) return;
-    const r = cv.getBoundingClientRect(), h = hitTest(e.clientX - r.left, e.clientY - r.top);
+    const r = cv.getBoundingClientRect(); if (supClick(e.clientX - r.left, e.clientY - r.top)) return;
+    const h = hitTest(e.clientX - r.left, e.clientY - r.top);
     pd = {id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now(), ent: h.ent || null};
     if (h.ent || !h.w) return;
     S.drag = true; S.hint = 0; S.dismissed = null; walkMeTo(h.w.x, h.w.y, null, h.w.fl);
@@ -28300,7 +28395,7 @@ function bootLobby() {
   };
   go();
 }
-window.lbDbg = {bakeFloor, renderBg, BG, S, P, STATS, FL, ents, NPC, PRES, SPOTS, SPOT_BY, K, JOY, get ME() { return ME; }, update, render, isFree, clearPx, findPath, nearestFree, cellXY, warpFloor, walkMeTo, walkToSpot, teleportEnter, enterFromUI, startTp, openPanel, closePanel, togglePanel, renderLife, renderPanels, toWorld, toScreen, heroBox, layoutPanes, hitTest, openPop, closePop, openKnightSheet, openIntro, openPerson, pickKnight, sayNpc, ambientSay, doorIntro, applyPresence, pollPresence, onShow, onHide, init: () => { if (!inited) init(); }, layout, placeDom, KN, gameInfo, spotInfo, weekly, refreshAll, ME_SPEED, get inited() { return inited; },
+window.lbDbg = {SUP, supBoxFor, supRefresh, supClaim, doEmote, bakeFloor, renderBg, BG, S, P, STATS, FL, ents, NPC, PRES, SPOTS, SPOT_BY, K, JOY, get ME() { return ME; }, update, render, isFree, clearPx, findPath, nearestFree, cellXY, warpFloor, walkMeTo, walkToSpot, teleportEnter, enterFromUI, startTp, openPanel, closePanel, togglePanel, renderLife, renderPanels, toWorld, toScreen, heroBox, layoutPanes, hitTest, openPop, closePop, openKnightSheet, openIntro, openPerson, pickKnight, sayNpc, ambientSay, doorIntro, applyPresence, pollPresence, onShow, onHide, init: () => { if (!inited) init(); }, layout, placeDom, KN, gameInfo, spotInfo, weekly, refreshAll, ME_SPEED, get inited() { return inited; },
   sim(sec, hz) { const dt = 1 / (hz || 30), n = Math.round(sec / dt); for (let i = 0; i < n; i++) update(dt); } };
 bootLobby();
 })();
