@@ -755,7 +755,7 @@
         <div class="np-hud arena-combat">
           <div class="np-banner" data-banner></div>
           <div class="np-left"><div class="np-gun" data-gun><canvas width="96" height="40" data-gunart></canvas><div data-guntxt></div></div><div class="np-skill" data-skillbar></div><div class="np-slots" data-slots></div></div>
-          <canvas class="np-mini" width="132" height="96" aria-label="미니맵"></canvas>
+          <canvas class="np-mini" width="168" height="120" aria-label="미니맵 — 흰 화살촉이 나, 부채꼴이 시야"></canvas>
           <ol class="np-feed" data-feed></ol>
           <div class="np-tut" data-tut hidden><div class="np-tut-head"><b data-tut-step></b><button type="button" data-a="tut-skip">건너뛰기</button></div><p data-tut-text></p><div class="np-tut-list" data-tut-list></div></div>
           <div class="np-prompt" data-prompt hidden></div>
@@ -1535,19 +1535,54 @@
       cam.x -= kx; cam.y -= ky; gunEl.classList.toggle("fire", fireT > 0);
       drawMini(v, myTeam);
     }
+    const lastFoe = new Map(); let lastFoeId = "";
     function drawMini(v, myTeam) {
-      const M = S.M, k = Math.min(132 / M.w, 96 / M.h); mctx.clearRect(0, 0, 132, 96); mctx.fillStyle = "#070a12e0"; mctx.fillRect(0, 0, 132, 96);
-      for (let y = 0; y < M.h; y++) for (let x = 0; x < M.w; x++) if (exp[y * M.w + x]) { const c = M.g[y * M.w + x]; mctx.fillStyle = c === 1 ? "#26304a" : c === 4 ? "#7b5a3a" : "#566786"; mctx.fillRect(x * k, y * k, k + .4, k + .4); }
-      const kn = (x, y) => exp[Math.floor(y) * M.w + Math.floor(x)];
-      for (const l of S.loot) if (l.on && kn(l.x, l.y)) { mctx.fillStyle = l.type === 7 ? "#ffffff" : "#F0E442"; mctx.fillRect(l.x * k - 1.5, l.y * k - 1.5, 3, 3); }
-      for (const g of S.guns) if (kn(g.x, g.y)) { mctx.fillStyle = "#8fe0ff"; mctx.fillRect(g.x * k - 2.5, g.y * k - 1.2, 5, 2.6); }
-      for (let t = 0; t < 2; t++) { const sp = M.spawn[t], x = sp[0] + .5, y = sp[1] + .5; if (t === myTeam || kn(x, y)) { mctx.fillStyle = t === myTeam ? "#56B4E9" : "#D55E00"; mctx.fillRect(x * k - 1, y * k - 4, 1.4, 6); mctx.fillRect(x * k, y * k - 4, 4, 3); } }
-      for (const r of rings) { mctx.strokeStyle = `rgba(255,255,255,${1 - r.t})`; mctx.beginPath(); mctx.arc(r.x * k, r.y * k, 2 + r.t * 5, 0, TAU); mctx.stroke(); }
-      for (const p of S.players) if (p.st !== ST.out && p.st !== ST.esc && (p.team === myTeam || teamSees(myTeam, p))) {
-        const [x, y] = gp(p), mine = p.team === myTeam; mctx.fillStyle = mine ? "#56B4E9" : "#D55E00"; mctx.strokeStyle = "#000"; mctx.lineWidth = .8; mctx.beginPath();
-        if (mine) mctx.arc(x * k, y * k, 2.2, 0, TAU); else { mctx.moveTo(x * k - 2.6, y * k - 2); mctx.lineTo(x * k + 2.6, y * k - 2); mctx.lineTo(x * k, y * k + 2.8); mctx.closePath(); }
-        mctx.fill(); mctx.stroke();
+      const W = mini.width, H = mini.height, M = S.M, k = Math.min(W / M.w, H / M.h), ox = (W - M.w * k) / 2, oy = (H - M.h * k) / 2, ns = performance.now() / 1000, me = S.players[meIdx];
+      const X = x => ox + x * k, Y = y => oy + y * k, kn = (x, y) => exp[Math.floor(y) * M.w + Math.floor(x)];
+      if (lastFoeId !== S.id) { lastFoe.clear(); lastFoeId = S.id; }
+      mctx.clearRect(0, 0, W, H); mctx.fillStyle = "rgba(7,10,18,.94)"; mctx.fillRect(0, 0, W, H);
+      for (let y = 0; y < M.h; y++) for (let x = 0; x < M.w; x++) if (exp[y * M.w + x]) { const c = M.g[y * M.w + x]; mctx.fillStyle = c === 1 ? "#2b3652" : c === 4 ? "#8a6a44" : "#627597"; mctx.fillRect(X(x), Y(y), k + .4, k + .4); }
+      const shape = (type, x, y, r) => {
+        mctx.beginPath();
+        if (type === 8) { mctx.moveTo(x, y - r); mctx.lineTo(x + r, y + r); mctx.lineTo(x - r, y + r); mctx.closePath(); }
+        else if (type === 9) mctx.arc(x, y, r * .9, 0, TAU);
+        else if (type === 10) { mctx.moveTo(x, y - r * 1.2); mctx.lineTo(x + r, y); mctx.lineTo(x, y + r * 1.2); mctx.lineTo(x - r, y); mctx.closePath(); }
+        else if (type === 7) { mctx.rect(x - r * .35, y - r, r * .7, r * 2); mctx.rect(x - r, y - r * .35, r * 2, r * .7); }
+        else mctx.rect(x - r, y - r * .75, r * 2, r * 1.5);
+        mctx.fill(); mctx.lineWidth = .8; mctx.strokeStyle = "#000"; mctx.stroke();
+      };
+      const COL = {5: "#F0E442", 7: "#ffffff", 8: "#8fc3f0", 9: "#ff9a3c", 10: "#2ec7ff"};
+      for (const l of S.loot) if (l.on && kn(l.x, l.y)) { mctx.fillStyle = COL[l.type] || "#F0E442"; shape(l.type, X(l.x), Y(l.y), 2.6); }
+      for (const g of S.guns) if (kn(g.x, g.y)) { mctx.fillStyle = "#8fe0ff"; mctx.fillRect(X(g.x) - 3.2, Y(g.y) - 1.4, 6.4, 2.8); mctx.strokeStyle = "#000"; mctx.lineWidth = .8; mctx.strokeRect(X(g.x) - 3.2, Y(g.y) - 1.4, 6.4, 2.8); }
+      for (let t = 0; t < 2; t++) { const sp = M.spawn[t], x = sp[0] + .5, y = sp[1] + .5; if (t === myTeam || kn(x, y)) { mctx.fillStyle = t === myTeam ? "#56B4E9" : "#D55E00"; mctx.fillRect(X(x) - 1, Y(y) - 6, 1.6, 9); mctx.fillRect(X(x), Y(y) - 6, 5, 4); } }
+      for (const g of S.grens) { mctx.fillStyle = "#ff9a3c"; mctx.beginPath(); mctx.arc(X(g.x), Y(g.y), 2.6, 0, TAU); mctx.fill(); mctx.strokeStyle = "#000"; mctx.lineWidth = .8; mctx.stroke(); }
+      for (const r of rings) { mctx.strokeStyle = `rgba(255,255,255,${.95 * (1 - r.t)})`; mctx.lineWidth = 1.6; mctx.beginPath(); mctx.arc(X(r.x), Y(r.y), 3 + r.t * 8, 0, TAU); mctx.stroke(); }
+      // 내 시야 부채꼴(손전등 각도와 같은 폴리곤)
+      const alive = me && me.st !== ST.out && me.st !== ST.esc && v === me;
+      if (alive) {
+        const lightOnNow = me.light && !(me.blind > 0), pts = polyOf(me, lightOnNow ? core.rangeOf(me) : (me.blind > 0 ? .9 : C.near), lightOnNow ? C.half : 0, 18);
+        mctx.beginPath(); pts.forEach(([x, y], i) => i ? mctx.lineTo(X(x), Y(y)) : mctx.moveTo(X(x), Y(y))); mctx.closePath(); mctx.fillStyle = "rgba(255,236,150,.34)"; mctx.fill(); mctx.strokeStyle = "rgba(255,240,170,.9)"; mctx.lineWidth = 1.1; mctx.stroke();
       }
+      // 적: 보이는 동안 빨간 ▼, 잠깐 잔상
+      for (const p of S.players) if (p.team !== myTeam && p.st !== ST.out && p.st !== ST.esc) { if (teamSees(myTeam, p)) { const [x, y] = gp(p); lastFoe.set(p.i, {x, y, t: ns}); } } else lastFoe.delete(p.i);
+      const foe = (x, y, al) => { mctx.globalAlpha = al; mctx.fillStyle = "#D55E00"; mctx.strokeStyle = "#fff"; mctx.lineWidth = 1.2; mctx.beginPath(); mctx.moveTo(X(x) - 4.2, Y(y) - 3.4); mctx.lineTo(X(x) + 4.2, Y(y) - 3.4); mctx.lineTo(X(x), Y(y) + 4.6); mctx.closePath(); mctx.fill(); mctx.stroke(); mctx.globalAlpha = 1; };
+      for (const [i, f] of lastFoe) { const p = S.players[i], age = ns - f.t; if (p && p.st !== ST.out && age < 3.2 && !(teamSees(myTeam, p))) foe(f.x, f.y, .4 * (1 - age / 3.2)); }
+      for (const p of S.players) if (p.team !== myTeam && p.st !== ST.out && p.st !== ST.esc && teamSees(myTeam, p)) { const [x, y] = gp(p); foe(x, y, 1); }
+      // 아군: 파란 ● + 방향 막대
+      for (const p of S.players) if (p.team === myTeam && p !== me && p.st !== ST.out && p.st !== ST.esc) {
+        const [x, y] = gp(p), a = role === "guest" && p.ra !== undefined ? p.ra : p.a;
+        mctx.strokeStyle = "#56B4E9"; mctx.lineWidth = 2; mctx.beginPath(); mctx.moveTo(X(x), Y(y)); mctx.lineTo(X(x) + Math.cos(a) * 7, Y(y) + Math.sin(a) * 7); mctx.stroke();
+        mctx.fillStyle = "#56B4E9"; mctx.strokeStyle = "#000"; mctx.lineWidth = 1; mctx.beginPath(); mctx.arc(X(x), Y(y), 3.2, 0, TAU); mctx.fill(); mctx.stroke();
+      }
+      // 나: 흰 화살촉(바라보는 방향) + 맥박 링 + '나'
+      const me2 = alive ? me : (v || me);
+      if (me2) {
+        const [x, y] = gp(me2), a = me2 === me ? aim : me2.a, px = X(x), py = Y(y), pr = 8 + 2.5 * Math.sin(ns * 5);
+        mctx.strokeStyle = `rgba(255,255,255,${.75 - .25 * Math.sin(ns * 5)})`; mctx.lineWidth = 1.6; mctx.beginPath(); mctx.arc(px, py, pr, 0, TAU); mctx.stroke();
+        mctx.save(); mctx.translate(px, py); mctx.rotate(a); mctx.fillStyle = "#ffffff"; mctx.strokeStyle = "#0b1a30"; mctx.lineWidth = 1.8; mctx.beginPath(); mctx.moveTo(8, 0); mctx.lineTo(-5.5, -5.6); mctx.lineTo(-2.2, 0); mctx.lineTo(-5.5, 5.6); mctx.closePath(); mctx.fill(); mctx.stroke(); mctx.restore();
+        mctx.font = "bold 10px sans-serif"; mctx.textAlign = "center"; mctx.lineWidth = 3; mctx.strokeStyle = "#05070d"; const ly = py - pr - 2 < 10 ? py + pr + 10 : py - pr - 2; mctx.strokeText("나", px, ly); mctx.fillStyle = "#ffffff"; mctx.fillText("나", px, ly);
+      }
+      mctx.strokeStyle = "rgba(160,180,215,.9)"; mctx.lineWidth = 2; mctx.strokeRect(1, 1, W - 2, H - 2);
     }
     gunEl.addEventListener("pointerdown", e => { e.preventDefault(); try { gunEl.setPointerCapture(e.pointerId); } catch (x) {} inspectStart(true); });
     const gunUp = () => { if (inspUntil > performance.now() + 5000) inspUntil = performance.now() + 500; }; gunEl.addEventListener("pointerup", gunUp); gunEl.addEventListener("pointercancel", gunUp);

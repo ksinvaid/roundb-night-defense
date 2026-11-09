@@ -158,3 +158,8 @@ section.np[hidden], .np [hidden] { display: none !important; }
 .np-mid { grid-template-columns: repeat(2, minmax(44px, 1fr)); }
 @media (max-width: 820px) { .np-mid button { min-height: 44px; font-size: 11px; } .np-mid { gap: 4px; } }
 @media (pointer: fine) and (min-width: 821px) { .np-mid { grid-template-columns: repeat(6, 1fr); } }
+
+/* ---- 미니맵 키움 ---- */
+.np-mini { width: 168px; height: 120px; top: 38px; border: 0; border-radius: 6px; }
+.np-left { max-width: calc(100% - 186px); }
+.np-feed { top: 170px; }
