@@ -27055,7 +27055,7 @@ function rawFree(f, x, y) {   // 구울 때만: 걸을 수 있는 사각형 합�
 }
 function mkFloor(k) {
   const m = MAP.floors[k], v = m.view, vw = v[2] - v[0], vh = v[3] - v[1];
-  return {k, name: m.name, view: v, vw, vh, free: m.free, block: m.block, portal: m.portal, cols: Math.ceil(vw / CELL), rows: Math.ceil(vh / CELL), mw: Math.ceil(vw / RS), mh: Math.ceil(vh / RS), spots: [], baked: false};
+  return {k, name: m.name, view: v, vw, vh, dv: v.slice(), dvw: vw, dvh: vh, free: m.free, block: m.block, portal: m.portal, cols: Math.ceil(vw / CELL), rows: Math.ceil(vh / CELL), mw: Math.ceil(vw / RS), mh: Math.ceil(vh / RS), spots: [], baked: false};
 }
 function bakeFloor(f) {   // 처음 로비를 열 때 한 번: 거리 지도 → 격자 → 연결 덩어리
   if (f.baked) return; const v = f.view, mw = f.mw, mh = f.mh;
@@ -27275,14 +27275,13 @@ function followPath(e, dt, spd) {
 }
 /* 내 캐릭터가 설 수 있는 곳: 건물 바깥 사각형(OUTER)에서 안쪽으로 조금 */
 function heroBox(fl) { const o = OUTER[fl]; return [o[0] + 16, o[1] + 14, o[2] - 16, o[3] - 12]; }
-function heroClamp(fl, x, y) { const b = heroBox(fl); return {x: clamp(x, b[0], b[2]), y: clamp(y, b[1], b[3])}; }
+function heroClamp(fl, x, y, out) { if (out) return yardClamp(fl, x, y); const b = heroBox(fl); return {x: clamp(x, b[0], b[2]), y: clamp(y, b[1], b[3])}; }
 /* 목표 점으로 곧장 — 길찾기 없음(즉시 반응). 다른 층이면 포털까지 가서 건너간 뒤 이어서 간다 */
 function walkMeTo(x, y, spot, fl) {
   fl = fl || ME.fl; if (!FL[fl] || ME.tp) return false;
-  const c = heroClamp(fl, x, y);
-  ME.goalSpot = spot || null; S.tgt = {fl, x: c.x, y: c.y, t: 0, bad: false};
-  if (fl !== ME.fl) { ME.after = {fl, x: c.x, y: c.y}; const p = FL[ME.fl].portal; ME.path = [{x: p.x, y: p.y}]; }
-  else { ME.after = null; ME.path = [{x: c.x, y: c.y}]; }
+  const zo = yardAt(fl, x, y), c = heroClamp(fl, x, y, zo);   // 마당(건물 바깥)을 눌렀나
+  ME.goalSpot = spot || null; S.tgt = {fl, x: c.x, y: c.y, t: 0, bad: false}; ME.pend = null;
+  ME.goal = {fl, x: c.x, y: c.y, out: zo}; legTo(ME);   // 같은 곳이면 곧장, 층·마당이 다르면 포털을 거쳐서
   S.dismissed = (spot && S.dismissed === spot.id) ? null : S.dismissed;
   return true;
 }
@@ -27309,8 +27308,9 @@ function spawnGhosts(from, to) {
 function startTp(toFl, tx, ty, cb, dur, opt) {
   const m = ME; if (!m || m.tp || !FL[toFl]) return false;
   dur = reducedMotion() ? Math.min(dur || .4, .18) : (dur || .4);
-  const c = heroClamp(toFl, tx, ty), from = {fl: m.fl, x: m.x, y: m.y};
-  m.tp = {t: 0, dur, from, to: {fl: toFl, x: c.x, y: c.y}, cb: cb || null, hit: false, portal: !!(opt && opt.portal)};
+  const c = heroClamp(toFl, tx, ty, opt && opt.out), from = {fl: m.fl, x: m.x, y: m.y};
+  m.tp = {t: 0, dur, from, to: {fl: toFl, x: c.x, y: c.y, out: !!(opt && opt.out)}, cb: cb || null, hit: false, portal: !!(opt && opt.portal), pPt: (opt && opt.pPt) || null};
+  if (!(opt && opt.portal)) { m.after = null; m.goal = null; m.pend = null; m.leg = null; }
   m.path = null; m.goalSpot = null; m.vx = m.vy = 0; m.moving = false; S.tgt = null; S.hint = 0; S.drag = false;
   closePop(); S.popSpot = null;
   burst(from.fl, from.x, from.y, "tp"); spawnGhosts(from, m.tp.to);
@@ -27320,9 +27320,9 @@ function startTp(toFl, tx, ty, cb, dur, opt) {
 function updateTp(dt) {
   const m = ME, T = m.tp; T.t += dt; const half = T.dur * .45;
   if (!T.hit && T.t >= half) {
-    T.hit = true; const oldFl = m.fl; m.fl = T.to.fl; m.x = T.to.x; m.y = T.to.y; S.viewFl = m.fl;
+    T.hit = true; const oldFl = m.fl; if (m.out && !T.to.out && m.shovel) rackUse(m); m.fl = T.to.fl; m.out = !!T.to.out; m.x = T.to.x; m.y = T.to.y; S.viewFl = m.fl;
     burst(m.fl, m.x, m.y, "tp");
-    if (T.portal) { m.pLock = true; m.pT = .9; STATS.portalUses++; }
+    if (T.portal) { m.pLock = true; m.pT = .9; m.pPt = T.pPt || null; STATS.portalUses++; }
     if (oldFl !== m.fl) { try { const x = nx(); if (x && x.bus) x.bus.emit("lobby:floor", {floor: m.fl}); } catch (e) {} }
   }
   const end = T.dur * .85;
@@ -27330,7 +27330,7 @@ function updateTp(dt) {
   else { const k = clamp((T.t - half) / Math.max(.02, end - half), 0, 1); m.alpha = Math.min(1, k * 1.5); m.tsx = .2 + .8 * Math.min(1, k * 1.3); m.tsy = 1.4 - .4 * Math.min(1, k * 1.3); }
   if (T.t >= T.dur * .85) {
     const cb = T.cb; m.tp = null; m.alpha = 1; m.tsx = m.tsy = 1;
-    if (m.after && m.after.fl === m.fl) { const a = m.after; m.after = null; m.path = [{x: a.x, y: a.y}]; S.tgt = {fl: a.fl, x: a.x, y: a.y, t: 0, bad: false}; }
+    if (m.after && m.goal) { const a = m.goal; legTo(m); S.tgt = {fl: a.fl, x: a.x, y: a.y, t: 0, bad: false}; }
     if (cb) { try { cb(); } catch (e) { console.error(e); } }
   }
 }
@@ -27495,7 +27495,7 @@ const shortTag = t => { t = String(t || ""); const i = t.search(/[.!?。]\s|[.!?
 
 /* ───────── 문 앞 · 팝업 열기/닫기 판정 ───────── */
 function updateDock(dt) {
-  const m = ME; if (m.tp) { m.near = null; return; }   // 순간이동 중에는 문 앞 판정을 멈춘다(출발 층에서 '다른 층이라 멀어졌다'고 잘못 읽어 닫은 문을 다시 여는 것 방지)
+  const m = ME; if (m.tp || m.out) { m.near = null; if (m.out && S.popSpot) closePop(); return; }   // 순간이동 중에는 문 앞 판정을 멈춘다(출발 층에서 '다른 층이라 멀어졌다'고 잘못 읽어 닫은 문을 다시 여는 것 방지)
   let near = null, nd = 1e9;
   for (const sp of FL[m.fl].spots) { const d = hypot(m.x - sp.stand[0], m.y - sp.stand[1]); if (d < DOCK_R && d < nd) { near = sp; nd = d; } }
   m.near = near;
@@ -27513,11 +27513,11 @@ function updateDock(dt) {
 function updateMe(dt) {
   const m = ME; m.meetCool -= dt; if (m.hop > 0) m.hop -= dt;
   if (m.tp) { updateTp(dt); return; }
-  if (m.pLock) { m.pT -= dt; const p = FL[m.fl].portal; if (m.pT <= 0 && hypot(m.x - p.x, m.y - p.y) > portalR(p) + 14) m.pLock = false; }
+  if (m.pLock) { m.pT -= dt; const p = m.pPt || FL[m.fl].portal; if (m.pT <= 0 && hypot(m.x - p.x, m.y - p.y) > (m.pPt ? yPR(p) : portalR(p)) + 14) m.pLock = false; }
   const ix = (K.right - K.left) + JOY.x, iy = (K.down - K.up) + JOY.y, mag = hypot(ix, iy);
   let tvx = 0, tvy = 0, goal = null;
   if (mag > .12 && !S.modal) {
-    if (m.path) { m.path = null; m.goalSpot = null; m.after = null; S.tgt = null; }
+    if (m.path) { m.path = null; m.goalSpot = null; m.after = null; m.goal = null; m.pend = null; m.leg = null; S.tgt = null; }
     const k = Math.min(1, mag); tvx = ix / mag * ME_SPEED * k; tvy = iy / mag * ME_SPEED * k; S.hint = 0;
   } else if (m.path && m.path.length) {
     goal = m.path[0]; const dx = goal.x - m.x, dy = goal.y - m.y, d = hypot(dx, dy);
@@ -27529,16 +27529,25 @@ function updateMe(dt) {
   let sx = m.vx * dt, sy = m.vy * dt;
   if (goal) {
     const dx = goal.x - m.x, dy = goal.y - m.y, d = hypot(dx, dy);
-    if (hypot(sx, sy) >= d - .01) { sx = dx; sy = dy; m.path.shift(); m.vx = m.vy = 0; if (!m.path.length) { m.path = null; m.goalSpot = null; if (!m.after) S.tgt = null; } }
+    if (hypot(sx, sy) >= d - .01) { sx = dx; sy = dy; m.path.shift(); m.vx = m.vy = 0; if (!m.path.length) { m.path = null; m.goalSpot = null; if (!m.after) { S.tgt = null; m.goal = null; } } }
   }
-  m.x += sx; m.y += sy;
-  const b = heroBox(m.fl); if (m.x < b[0]) { m.x = b[0]; m.vx = Math.max(0, m.vx); } else if (m.x > b[2]) { m.x = b[2]; m.vx = Math.min(0, m.vx); }
+  const ox = m.x, oy = m.y; m.x += sx; m.y += sy;
+  const b = m.out ? yBox(m.fl) : heroBox(m.fl); if (m.x < b[0]) { m.x = b[0]; m.vx = Math.max(0, m.vx); } else if (m.x > b[2]) { m.x = b[2]; m.vx = Math.min(0, m.vx); }
   if (m.y < b[1]) { m.y = b[1]; m.vy = Math.max(0, m.vy); } else if (m.y > b[3]) { m.y = b[3]; m.vy = Math.min(0, m.vy); }
+  if (m.out) {   // 마당: 건물 벽은 못 뚫고, 삽을 들고 걸으면 지나간 자리의 눈이 치워진다
+    yardBlock(m, ox, oy); if (m.shovel && (m.x !== ox || m.y !== oy)) snClear(m.fl, ox, oy, m.x, m.y);
+    if (m.pend && !m.path) { if (rackNear(m)) rackUse(m); m.pend = null; }
+  }
   const sp = hypot(m.vx, m.vy); m.moving = sp > 14; if (m.moving) { m.ph += dt * sp * .03; if (Math.abs(m.vx) > 8) m.fxT = m.vx > 0 ? 1 : -1; }
-  if (!m.tp && portalOn(m) && (!m.pLock || m.after)) warpFloor(FL[m.fl].portal.to);
+  if (!m.tp) {   // 마당 포털은 스치기만 하면 안 넘어간다: 그 포털로 가는 길이었거나(leg) 0.45초 멈춰 섰을 때만
+    if (m.out) { if (snPortalOn(m, FL[m.fl].yq)) { m.pDw = (m.pDw || 0) + dt; if (m.leg === "yq" || (!m.pLock && m.pDw > .45)) snWarp(m, false); } else m.pDw = 0; }
+    else if (SN.on && snPortalOn(m, FL[m.fl].yp)) { m.pDw = (m.pDw || 0) + dt; if (m.leg === "yp" || (!m.pLock && m.pDw > .45)) snWarp(m, true); }
+    else { m.pDw = 0; if (portalOn(m) && (!m.pLock || m.leg === "fp")) warpFloor(FL[m.fl].portal.to); }
+  }
 }
 function update(dt) {
   try { ensureEmo(); updateSupply(dt); } catch (e) { console.error('supply', e); }
+  try { snTick(dt); } catch (e) { console.error('snow', e); }
   S.t += dt; S.mt += dt;
   updateMe(dt);
   for (const e of ents) if (e !== ME) updateAi(e, dt);
@@ -27559,21 +27568,21 @@ function update(dt) {
 function layoutPanes() {
   const a = FL["3f"], b = FL["4f"], gap = S.cw < 520 ? 10 : 18, pad = S.cw < 520 ? 4 : 8;
   const AW = Math.max(100, S.cw - S.rw - pad * 2), AH = Math.max(100, S.ch - pad * 2);
-  const sh = Math.min((AW - gap) / (a.vw + b.vw), AH / Math.max(a.vh, b.vh)), sv = Math.min(AW / Math.max(a.vw, b.vw), (AH - gap) / (a.vh + b.vh));
+  const sh = Math.min((AW - gap) / (a.dvw + b.dvw), AH / Math.max(a.dvh, b.dvh)), sv = Math.min(AW / Math.max(a.dvw, b.dvw), (AH - gap) / (a.dvh + b.dvh));
   const lay = sh >= sv ? "h" : "v", s = Math.min(.9, Math.max(.05, lay === "h" ? sh : sv));
   S.lay = lay; S.s = s; S.chh = Math.max(CH, MINCH / s); S.cpt = s < .43;
   if (lay === "h") {
-    const tw = (a.vw + b.vw) * s + gap, x0 = pad + (AW - tw) / 2, th = Math.max(a.vh, b.vh) * s, y0 = pad + (AH - th) / 2;
-    Object.assign(P["3f"], {x: x0, y: y0, w: a.vw * s, h: a.vh * s, s}); Object.assign(P["4f"], {x: x0 + a.vw * s + gap, y: y0, w: b.vw * s, h: b.vh * s, s});
+    const tw = (a.dvw + b.dvw) * s + gap, x0 = pad + (AW - tw) / 2, th = Math.max(a.dvh, b.dvh) * s, y0 = pad + (AH - th) / 2;
+    Object.assign(P["3f"], {x: x0, y: y0, w: a.dvw * s, h: a.dvh * s, s}); Object.assign(P["4f"], {x: x0 + a.dvw * s + gap, y: y0, w: b.dvw * s, h: b.dvh * s, s});
   } else {
-    const th = (a.vh + b.vh) * s + gap, y0 = pad + (AH - th) / 2, x0 = pad + (AW - Math.max(a.vw, b.vw) * s) / 2;
-    Object.assign(P["3f"], {x: x0, y: y0, w: a.vw * s, h: a.vh * s, s}); Object.assign(P["4f"], {x: x0, y: y0 + a.vh * s + gap, w: b.vw * s, h: b.vh * s, s});
+    const th = (a.dvh + b.dvh) * s + gap, y0 = pad + (AH - th) / 2, x0 = pad + (AW - Math.max(a.dvw, b.dvw) * s) / 2;
+    Object.assign(P["3f"], {x: x0, y: y0, w: a.dvw * s, h: a.dvh * s, s}); Object.assign(P["4f"], {x: x0, y: y0 + a.dvh * s + gap, w: b.dvw * s, h: b.dvh * s, s});
   }
   for (const k of FLOORS) { const sig = [Math.round(P[k].w * S.dpr), Math.round(P[k].h * S.dpr)].join("x"); if (P[k].bgSig !== sig) { P[k].bgSig = sig; P[k].bgs = null; } }
 }
-const toScreen = (fl, x, y) => { const p = P[fl], v = FL[fl].view; return {x: p.x + (x - v[0]) * p.s, y: p.y + (y - v[1]) * p.s}; };
+const toScreen = (fl, x, y) => { const p = P[fl], v = FL[fl].dv; return {x: p.x + (x - v[0]) * p.s, y: p.y + (y - v[1]) * p.s}; };
 function toWorld(px, py) {   // 화면 점 → {fl,x,y}. 두 칸 밖이면 null
-  for (const fl of FLOORS) { const p = P[fl], v = FL[fl].view; if (px >= p.x && px <= p.x + p.w && py >= p.y && py <= p.y + p.h) return {fl, x: v[0] + (px - p.x) / p.s, y: v[1] + (py - p.y) / p.s}; }
+  for (const fl of FLOORS) { const p = P[fl], v = FL[fl].dv; if (px >= p.x && px <= p.x + p.w && py >= p.y && py <= p.y + p.h) return {fl, x: v[0] + (px - p.x) / p.s, y: v[1] + (py - p.y) / p.s}; }
   return null;
 }
 
@@ -27586,18 +27595,18 @@ const LIGHTS = {
 function rr(c, x, y, w, h, r) { c.beginPath(); rrp(c, x, y, w, h, r); }
 function rrp(c, x, y, w, h, r) { c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
 function renderBg(k) {
-  const f = FL[k], v = f.view, c = document.createElement("canvas"); c.width = f.vw; c.height = f.vh;
+  const f = FL[k], v = f.dv, vw = f.dvw, vh = f.dvh, c = document.createElement("canvas"); c.width = vw; c.height = vh;
   const q = c.getContext("2d"), o = OUTER[k];
   q.fillStyle = "#f4eefb"; q.fillRect(0, 0, c.width, c.height);
-  if (planImg && planImg.naturalWidth) q.drawImage(planImg, v[0], v[1], f.vw, f.vh, 0, 0, f.vw, f.vh);
+  if (planImg && planImg.naturalWidth) q.drawImage(planImg, v[0], v[1], vw, vh, 0, 0, vw, vh);
   q.translate(-v[0], -v[1]);
   // 건물 바깥: 밤하늘 + 이웃 건물 불빛(창가 불빛)
-  q.save(); q.beginPath(); q.rect(v[0], v[1], f.vw, f.vh); rrp(q, o[0], o[1], o[2] - o[0], o[3] - o[1], 16); q.fillStyle = "#e9e2f6"; q.fill("evenodd"); q.restore();
+  q.save(); q.beginPath(); q.rect(v[0], v[1], vw, vh); rrp(q, o[0], o[1], o[2] - o[0], o[3] - o[1], 16); q.fillStyle = "#e9e2f6"; q.fill("evenodd"); q.restore();
   let seed = k === "3f" ? 7 : 19; const rd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
   for (let i = 0; i < 90; i++) {
     const side = Math.floor(rd() * 4); let x, y;
-    if (side === 0) { x = v[0] + rd() * (o[0] - v[0] - 8); y = v[1] + rd() * f.vh; } else if (side === 1) { x = o[2] + 8 + rd() * (v[2] - o[2] - 10); y = v[1] + rd() * f.vh; }
-    else if (side === 2) { x = v[0] + rd() * f.vw; y = v[1] + rd() * (o[1] - v[1] - 8); } else { x = v[0] + rd() * f.vw; y = o[3] + 8 + rd() * (v[3] - o[3] - 10); }
+    if (side === 0) { x = v[0] + rd() * (o[0] - v[0] - 8); y = v[1] + rd() * vh; } else if (side === 1) { x = o[2] + 8 + rd() * (v[2] - o[2] - 10); y = v[1] + rd() * vh; }
+    else if (side === 2) { x = v[0] + rd() * vw; y = v[1] + rd() * (o[1] - v[1] - 8); } else { x = v[0] + rd() * vw; y = o[3] + 8 + rd() * (v[3] - o[3] - 10); }
     if (x > o[0] - 2 && x < o[2] + 2 && y > o[1] - 2 && y < o[3] + 2) continue;
     q.fillStyle = rd() < .6 ? "rgba(255,196,140,.7)" : "rgba(176,196,240,.65)"; q.fillRect(x, y, 3 + rd() * 3, 4 + rd() * 4);
   }
@@ -27701,6 +27710,7 @@ function drawEnt(e, t) {
   if (e.moving && !rm) g.rotate(Math.sin(e.ph) * .035);
   if (img) g.drawImage(img, -w / 2, -CHh * sq, w, CHh * sq);
   else { g.fillStyle = "#6aa8ff"; g.strokeStyle = "#14141c"; g.lineWidth = 3; g.beginPath(); g.arc(0, -CHh * .6, 22 * CHh / CH, 0, 6.2832); g.fill(); g.stroke(); }
+  if (e.shovel) drawShovel(CHh, bob);
   g.restore();
 }
 function drawGhost(gh) {   // 순간이동 잔상: 밝게 겹쳐 그린 내 모습이 흐려진다
@@ -27851,25 +27861,333 @@ function ensureEmo() {
   stage.appendChild(d);
 }
 /* ===SUPPLY_BOX_END=== */
+/* ===SNOW_START=== 겨울 로비(11~3월): 건물 바깥 마당 · 내리고 쌓이는 눈 · '밖으로/안으로' 포털 · 눈삽 거치대와 눈 치우기 · 입김
+   전부 내 화면 안에서만 진행(서버·DB 쓰기 없음). 끄기: 이모트 줄의 ❄ 버튼 / 주소 ?snow=0, 강제 켜기 ?snow=1. 11~3월이 아니면 아무것도 바뀌지 않는다.
+   좌표는 배치도 픽셀. 마당 = 건물 바깥 사각형(OUTER) 둘레의 띠(보이는 영역 dv 를 바깥으로 넓혀서 만든다). */
+const SNK = "roundb.snow.v1";
+const SNC = 5;                 // 눈 격자 한 칸(배치도 px) — 낮은 해상도 한 장(층마다)
+const SW = 28;                 // 삽이 치우는 폭
+const MARG = {l: 76, r: 76, t: 80, b: 60};   // 마당 폭(건물 바깥쪽으로 더하는 만큼)
+const XOFF = {"3f": 0, "4f": 947};
+const STRIPE = [.07, .22, .09, .26, .08, .2];   // 삽 끌린 줄무늬(옆 방향 6줄, 0=완전히 맨바닥 · 1=쌓인 눈)
+const SN = {season: false, on: false, ready: false, d: {}, fk: {}, puffs: [], q: 1, ft: .016, last: 0, qT: 0, accI: 0, accT: 0, jobT: 26, btnT: 0};
+const RACK = {};
+for (const k of FLOORS) { const f = FL[k], dx = XOFF[k]; f.yp = {x: 903 + dx, y: 1028, r: 24}; f.yq = {x: 993 + dx, y: 1028, r: 24}; RACK[k] = {x: 993 + dx, y: 905, n: 3, max: 3}; }
+const SNLINE = ["마당 제설, 제가 맡겠습니다.", "…눈 치우고 올게요. 조용히.", "눈 많이 왔어요~ 제가 치울게요!", "…눈 정도야. 금방 치워요.", "동선부터 확보할게요. 제설 시작.", "…눈이 별가루 같아요. 치우기 아깝네요.", "눈이다! 삽 들고 한 판 간다!", "길은 제가 뚫겠습니다.", "제설 효율 계산 끝. 내가 가는 게 최적이야.", "눈쯤이야! 내가 다 치운다, 하하!"];
+const snSeason = () => { const m = new Date().getMonth(); return m >= 10 || m <= 2; };
+const snForce = () => { try { const q = /[?&]snow=([01])/.exec(location.search); return q ? q[1] === "1" : null; } catch (e) { return null; } };
+
+/* ── 마당 기하 ── */
+const inBld = (fl, x, y, pad) => { const o = OUTER[fl]; return x > o[0] - pad && x < o[2] + pad && y > o[1] - pad && y < o[3] + pad; };
+const yardAt = (fl, x, y) => SN.on && !inBld(fl, x, y, 0);   // 마당(건물 바깥)의 점인가
+function yBox(fl) { const d = FL[fl].dv; return [d[0] + 12, d[1] + 36, d[2] - 12, d[3] - 12]; }   // 발이 닿을 수 있는 범위(머리는 위로 조금 나가도 된다)
+function yardClamp(fl, x, y) {
+  const b = yBox(fl), o = OUTER[fl]; x = clamp(x, b[0], b[2]); y = clamp(y, b[1], b[3]);
+  if (inBld(fl, x, y, 10)) {
+    const dl = x - (o[0] - 10), dr = (o[2] + 10) - x, dt = y - (o[1] - 10), db = (o[3] + 10) - y, m = Math.min(dl, dr, dt, db);
+    if (m === dl) x = o[0] - 10; else if (m === dr) x = o[2] + 10; else if (m === dt) y = o[1] - 10; else y = o[3] + 10;
+    x = clamp(x, b[0], b[2]); y = clamp(y, b[1], b[3]);
+  }
+  return {x, y};
+}
+function yardBlock(m, ox, oy) {   // 직접 조종: 건물 벽을 못 뚫고 한 축만 미끄러진다
+  const o = OUTER[m.fl], pd = 6, bad = (x, y) => x > o[0] - pd && x < o[2] + pd && y > o[1] - pd && y < o[3] + pd;
+  if (!bad(m.x, m.y)) return;
+  if (!bad(m.x, oy)) { m.y = oy; m.vy = 0; } else if (!bad(ox, m.y)) { m.x = ox; m.vx = 0; } else { m.x = ox; m.y = oy; m.vx = m.vy = 0; }
+}
+function segHit(ax, ay, bx, by, r) {   // 선분이 사각형 안쪽을 지나는가(Liang–Barsky)
+  let t0 = 0, t1 = 1; const dx = bx - ax, dy = by - ay, p = [-dx, dx, -dy, dy], q = [ax - r[0], r[2] - ax, ay - r[1], r[3] - ay];
+  for (let i = 0; i < 4; i++) {
+    if (p[i] === 0) { if (q[i] <= 0) return false; }
+    else { const t = q[i] / p[i]; if (p[i] < 0) { if (t > t1) return false; if (t > t0) t0 = t; } else { if (t < t0) return false; if (t < t1) t1 = t; } }
+  }
+  return t1 - t0 > 1e-6;
+}
+/* 마당 길: 곧장 가다가 건물을 지나면 모서리를 돌아서 간다(길찾기 격자 없이) */
+function yardRoute(fl, ax, ay, bx, by) {
+  const o = OUTER[fl], H = [o[0] - 8, o[1] - 8, o[2] + 8, o[3] + 8];
+  if (!segHit(ax, ay, bx, by, H)) return [{x: bx, y: by}];
+  const W = [o[0] - 10, o[1] - 10, o[2] + 10, o[3] + 10], C = [{x: W[0], y: W[1]}, {x: W[2], y: W[1]}, {x: W[2], y: W[3]}, {x: W[0], y: W[3]}];
+  let best = null, bl = 1e9;
+  const tryP = pts => { let l = 0, px = ax, py = ay; for (const p of pts) { l += hypot(p.x - px, p.y - py); px = p.x; py = p.y; } l += hypot(bx - px, by - py); if (l < bl) { bl = l; best = pts; } };
+  for (let i = 0; i < 4; i++) {
+    const c = C[i]; if (!segHit(ax, ay, c.x, c.y, H) && !segHit(c.x, c.y, bx, by, H)) tryP([c]);
+    for (const j of [(i + 1) % 4, (i + 3) % 4]) { const c2 = C[j]; if (!segHit(ax, ay, c.x, c.y, H) && !segHit(c2.x, c2.y, bx, by, H)) tryP([c, c2]); }
+  }
+  return (best || []).concat([{x: bx, y: by}]);
+}
+const yPR = p => Math.max(portalR(p), 13 / Math.max(.1, S.s));   // 포털 반경: 폰에서도 손가락으로 누를 만큼
+function snPortalOn(m, p) { return hypot(m.x - p.x, m.y - p.y) < yPR(p) * .85; }
+
+/* ── 보이는 영역 넓히기(켜면 마당이 보이고, 끄면 원래 화면) ── */
+function snDisplay(on) {
+  for (const k of FLOORS) {
+    const f = FL[k], o = OUTER[k];
+    f.dv = on ? [o[0] - MARG.l, o[1] - MARG.t, o[2] + MARG.r, o[3] + MARG.b] : f.view.slice(); f.dvw = f.dv[2] - f.dv[0]; f.dvh = f.dv[3] - f.dv[1];
+    BG[k] = null; P[k].bgs = null; P[k].bgSig = "";
+  }
+  if (planReady) for (const k of FLOORS) BG[k] = renderBg(k);
+  if (cv) sizeCanvas(); else layoutPanes();
+}
+
+/* ── 쌓인 눈: 층마다 낮은 해상도 한 장(깊이 0~1, 둔덕은 1 넘게) ── */
+function inBldR(o, x, y) {   // 건물(둥근 모서리 포함) 안쪽인가
+  if (x <= o[0] || x >= o[2] || y <= o[1] || y >= o[3]) return false;
+  const r = 16, cx = x < o[0] + r ? o[0] + r : x > o[2] - r ? o[2] - r : x, cy = y < o[1] + r ? o[1] + r : y > o[3] - r ? o[3] - r : y;
+  return (x - cx) * (x - cx) + (y - cy) * (y - cy) <= r * r;
+}
+function snMake(fl) {
+  const d = FL[fl].dv, o = OUTER[fl], cw = Math.ceil((d[2] - d[0]) / SNC), ch = Math.ceil((d[3] - d[1]) / SNC), n = cw * ch;
+  const depth = new Float32Array(n), mask = new Uint8Array(n), nz = new Uint8Array(n); let sd = fl === "3f" ? 11 : 29;
+  for (let j = 0; j < ch; j++) for (let i = 0; i < cw; i++) {
+    const c = j * cw + i; sd = (sd * 16807) % 2147483647; nz[c] = sd % 256;
+    mask[c] = inBldR(o, d[0] + (i + .5) * SNC, d[1] + (j + .5) * SNC) ? 0 : 1;
+    const v = Math.sin(i * .09 + Math.sin(j * .06) * 2.2) * .5 + Math.sin(j * .11 + i * .04) * .5;
+    depth[c] = mask[c] ? clamp(.76 + .14 * v + (nz[c] / 255 - .5) * .08, .35, 1) : 1;   // 접속하면 적당히 덮여 있다(치울 거리)
+  }
+  const cvs = document.createElement("canvas"); cvs.width = cw; cvs.height = ch; const q = cvs.getContext("2d");
+  const s = {fl, cw, ch, depth, mask, nz, cv: cvs, q, img: q.createImageData(cw, ch), dirty: null, at: [S.t, S.t, S.t, S.t]};
+  snPaint(s, 0, 0, cw - 1, ch - 1); q.putImageData(s.img, 0, 0); return s;
+}
+function snPaint(s, i0, j0, i1, j1) {   // 깊이 → 색(맨바닥 청회색 ~ 눈 흰색) + 비스듬한 빛으로 홈·둔덕이 입체로 보이게
+  const cw = s.cw, ch = s.ch, dp = s.depth, mk = s.mask, nz = s.nz, data = s.img.data;
+  i0 = Math.max(0, i0); j0 = Math.max(0, j0); i1 = Math.min(cw - 1, i1); j1 = Math.min(ch - 1, j1);
+  for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+    const c = j * cw + i, p = c * 4;
+    if (!mk[c]) { data[p + 3] = 0; continue; }
+    const d = dp[c], a = dp[(j + 1 < ch ? j + 1 : j) * cw + (i + 1 < cw ? i + 1 : i)], b = dp[(j > 0 ? j - 1 : j) * cw + (i > 0 ? i - 1 : i)];
+    let lit = a - b; lit = lit > .6 ? .6 : lit < -.6 ? -.6 : lit;
+    const t = d > 1 ? 1 : d, f = 1 + .3 * lit + (nz[c] - 128) / 128 * .035;
+    let r = 122 + 114 * t, g2 = 134 + 108 * t, bl = 154 + 96 * t;
+    if (d > 1) { const u = Math.min(1, (d - 1) / .22); r += (253 - r) * u; g2 += (254 - g2) * u; bl += (255 - bl) * u; }
+    data[p] = r * f; data[p + 1] = g2 * f; data[p + 2] = bl * f; data[p + 3] = 255;
+  }
+}
+function snDirty(s, i0, j0, i1, j1) { const d = s.dirty; if (!d) s.dirty = [i0, j0, i1, j1]; else { if (i0 < d[0]) d[0] = i0; if (j0 < d[1]) d[1] = j0; if (i1 > d[2]) d[2] = i1; if (j1 > d[3]) d[3] = j1; } }
+function snFlush() {
+  for (const k of FLOORS) {
+    const s = SN.d[k]; if (!s || !s.dirty) continue; const d = s.dirty; s.dirty = null;
+    const i0 = Math.max(0, d[0] - 1), j0 = Math.max(0, d[1] - 1), i1 = Math.min(s.cw - 1, d[2] + 1), j1 = Math.min(s.ch - 1, d[3] + 1);
+    snPaint(s, i0, j0, i1, j1); s.q.putImageData(s.img, 0, 0, i0, j0, i1 - i0 + 1, j1 - j0 + 1);
+  }
+}
+/* 삽이 (x0,y0)→(x1,y1) 로 끌린 자리: 폭 SW 안은 줄무늬만 남기고 치우고, 양옆엔 밀려난 눈 둔덕 */
+function snClear(fl, x0, y0, x1, y1) {
+  const s = SN.d[fl]; if (!s) return; const d = FL[fl].dv, hw = SW / 2, bw = 7, dx = x1 - x0, dy = y1 - y0, L = hypot(dx, dy); if (L < .01) return;
+  const ux = dx / L, uy = dy / L, nx = -uy, ny = ux, R = hw + bw + 2, cw = s.cw, ch = s.ch;
+  const i0 = Math.max(0, Math.floor((Math.min(x0, x1) - R - d[0]) / SNC)), i1 = Math.min(cw - 1, Math.floor((Math.max(x0, x1) + R - d[0]) / SNC));
+  const j0 = Math.max(0, Math.floor((Math.min(y0, y1) - R - d[1]) / SNC)), j1 = Math.min(ch - 1, Math.floor((Math.max(y0, y1) + R - d[1]) / SNC));
+  for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+    const c = j * cw + i; if (!s.mask[c]) continue;
+    const px = d[0] + (i + .5) * SNC - x0, py = d[1] + (j + .5) * SNC - y0, t = px * ux + py * uy; if (t < -SNC * .5 || t > L + SNC * .5) continue;
+    const lat = px * nx + py * ny, al = Math.abs(lat);
+    if (al <= hw) { const res = STRIPE[Math.min(5, Math.floor((lat + hw) / (SW / 6)))] + (s.nz[c] - 128) / 128 * .03; if (s.depth[c] > res) s.depth[c] = res; }
+    else if (al <= hw + bw && s.depth[c] > .45) { const bm = 1 + .22 * (1 - (al - hw) / bw); if (s.depth[c] < bm) s.depth[c] = bm; }
+  }
+  snDirty(s, i0, j0, i1, j1);
+}
+function snDepthAt(fl, x, y) { const s = SN.d[fl]; if (!s) return 1; const d = FL[fl].dv, i = Math.floor((x - d[0]) / SNC), j = Math.floor((y - d[1]) / SNC); return (i < 0 || j < 0 || i >= s.cw || j >= s.ch) ? 1 : s.depth[j * s.cw + i]; }
+function snAccum(dt) {   // 시간이 지나면 다시 쌓인다: 약 7분에 맨바닥→가득. 프레임이 끊기지 않게 8조각(층2×4)을 0.5초마다 하나씩
+  SN.accT += dt; if (SN.accT < .5) return; SN.accT = 0;
+  const k = SN.accI++ % 8, fl = FLOORS[k & 1], s = SN.d[fl]; if (!s) return; const part = k >> 1, el = Math.min(30, S.t - s.at[part]); s.at[part] = S.t;
+  const j0 = Math.floor(s.ch * part / 4), j1 = Math.floor(s.ch * (part + 1) / 4) - 1, inc = el / 420, dec = el / 700, cw = s.cw;
+  for (let j = j0; j <= j1; j++) for (let i = 0; i < cw; i++) { const c = j * cw + i; if (!s.mask[c]) continue; const d = s.depth[c]; if (d < 1) s.depth[c] = d + inc > 1 ? 1 : d + inc; else if (d > 1) s.depth[c] = d - dec < 1 ? 1 : d - dec; }
+  snDirty(s, 0, j0, cw - 1, j1);
+}
+
+/* ── 내리는 눈송이(마당 띠에만) · 입김 ── */
+function snBands(fl) { const d = FL[fl].dv, o = OUTER[fl]; return [[d[0], d[1], d[2], o[1]], [d[0], o[3], d[2], d[3]], [d[0], o[1], o[0], o[3]], [o[2], o[1], d[2], o[3]]]; }
+function snFlakes() {
+  for (const k of FLOORS) {
+    const bs = snBands(k), ar = bs.map(b => (b[2] - b[0]) * (b[3] - b[1])), tot = ar[0] + ar[1] + ar[2] + ar[3], N = 76;
+    const F = {n: N, x: new Float32Array(N), y: new Float32Array(N), v: new Float32Array(N), ph: new Float32Array(N), big: new Uint8Array(N), b: new Uint8Array(N), bs};
+    for (let i = 0; i < N; i++) { let r = Math.random() * tot, bi = 0; while (bi < 3 && r > ar[bi]) { r -= ar[bi]; bi++; } const b = bs[bi]; F.b[i] = bi; F.x[i] = rnd(b[0], b[2]); F.y[i] = rnd(b[1], b[3]); F.v[i] = rnd(.55, 1.1); F.ph[i] = rnd(0, 6.28); F.big[i] = Math.random() < .3 ? 1 : 0; }
+    SN.fk[k] = F;
+  }
+}
+function snFlakeStep(dt) {
+  if (reducedMotion()) return; const sp = 46 / S.s, sw = 12 / S.s;
+  for (const k of FLOORS) {
+    const F = SN.fk[k]; if (!F) continue; const n = Math.max(8, Math.floor(F.n * SN.q));
+    for (let i = 0; i < n; i++) {
+      const b = F.bs[F.b[i]]; F.y[i] += F.v[i] * sp * dt; F.x[i] += Math.sin(S.t * 1.2 + F.ph[i]) * sw * dt;
+      if (F.y[i] > b[3]) { F.y[i] = b[1]; F.x[i] = rnd(b[0], b[2]); } else if (F.x[i] < b[0]) F.x[i] = b[2]; else if (F.x[i] > b[2]) F.x[i] = b[0];
+    }
+  }
+}
+function snPuffStep(dt) {
+  const rm = reducedMotion();
+  for (const e of ents) {
+    if (!e.out || !e.active || e.alpha < .5) continue;
+    e.puffT = (e.puffT == null ? rnd(.2, 1) : e.puffT) - dt;
+    if (e.puffT <= 0) {
+      e.puffT = rnd(1, 1.5); const dir = e.fxT >= 0 ? 1 : -1, h = entH(e);
+      if (SN.puffs.length < 40) SN.puffs.push({fl: e.fl, x: e.x + dir * imgW(e) * .2, y: e.y - h * .74, vx: dir * rnd(10, 22) * (rm ? 0 : 1), vy: -rnd(14, 26) * (rm ? 0 : 1), t: 0, dur: rnd(1, 1.4), r: h * .07});
+    }
+  }
+  for (const p of SN.puffs) { p.t += dt; p.x += p.vx * dt; p.y += p.vy * dt; }
+  if (SN.puffs.length) SN.puffs = SN.puffs.filter(p => p.t < p.dur);
+}
+function snDrawGround(fl, p) { const s = SN.d[fl]; if (!s) return; g.imageSmoothingEnabled = true; g.drawImage(s.cv, p.x, p.y, p.w, p.h); }
+function snDrawAir(fl, t) {
+  if (!SN.on) return; const F = SN.fk[fl], s = S.s;
+  if (F) {
+    const n = reducedMotion() ? Math.min(22, F.n) : Math.max(8, Math.floor(F.n * SN.q)), r1 = 1.4 / s, r2 = 2.4 / s, ou = .8 / s;
+    g.save(); g.fillStyle = "rgba(60,85,135,.38)"; g.beginPath();
+    for (let i = 0; i < n; i++) { const r = (F.big[i] ? r2 : r1) + ou; g.moveTo(F.x[i] + r, F.y[i]); g.arc(F.x[i], F.y[i], r, 0, 6.2832); }
+    g.fill(); g.fillStyle = "#fff"; g.beginPath();
+    for (let i = 0; i < n; i++) { const r = F.big[i] ? r2 : r1; g.moveTo(F.x[i] + r, F.y[i]); g.arc(F.x[i], F.y[i], r, 0, 6.2832); }
+    g.fill(); g.restore();
+  }
+  if (SN.puffs.length) {
+    g.save();
+    for (const p of SN.puffs) {
+      if (p.fl !== fl) continue; const k = p.t / p.dur, r = p.r * (1 + 1.7 * k), a = Math.max(0, 1 - k) * .85;
+      g.fillStyle = `rgba(255,255,255,${a})`; g.strokeStyle = `rgba(90,115,160,${a * .6})`; g.lineWidth = 1.4 / s;
+      for (let i = 0; i < 3; i++) { g.beginPath(); g.arc(p.x + (i - 1) * r * .7, p.y - i * r * .5, r * (1 - i * .18), 0, 6.2832); g.fill(); g.stroke(); }
+    }
+    g.restore();
+  }
+}
+
+/* ── 포털 · 눈삽 거치대 · 삽 그림 ── */
+const snKK = () => Math.min(1.8, Math.max(1, .38 / Math.max(.1, S.s)));   // 폰에서 작게 보이지 않게 키우는 배율
+function drawYPortal(p, t, out) {
+  const pr = yPR(p), pulse = reducedMotion() ? 1 : .88 + .12 * Math.sin(t * 3 + 1), a = reducedMotion() ? 0 : -t * 1.4, c1 = "190,235,255";
+  let gr = g.createRadialGradient(p.x, p.y, 4, p.x, p.y, pr * 2.1 * pulse); gr.addColorStop(0, `rgba(${c1},.7)`); gr.addColorStop(1, `rgba(${c1},0)`);
+  g.fillStyle = gr; g.beginPath(); g.arc(p.x, p.y, pr * 2.1 * pulse, 0, 6.2832); g.fill();
+  g.lineWidth = 2.6 / S.s; g.strokeStyle = "#14141c"; g.fillStyle = "#12304a"; g.beginPath(); g.arc(p.x, p.y, pr, 0, 6.2832); g.fill(); g.stroke();
+  g.lineCap = "round"; g.lineWidth = 2.2 / S.s;
+  for (let i = 0; i < 3; i++) { g.strokeStyle = i % 2 ? `rgba(${c1},.95)` : "rgba(255,255,255,.9)"; g.beginPath(); g.arc(p.x, p.y, pr * (.45 + .2 * i), a + i * 2.1, a + i * 2.1 + 3.3); g.stroke(); }
+  g.fillStyle = "#fff"; g.strokeStyle = "#14141c"; g.lineWidth = 1.8 / S.s; g.beginPath(); const d = out ? 1 : -1, q = pr / 28;
+  g.moveTo(p.x - 8 * d * q, p.y - 9 * q); g.lineTo(p.x + 9 * d * q, p.y); g.lineTo(p.x - 8 * d * q, p.y + 9 * q); g.closePath(); g.stroke(); g.fill();
+}
+function drawShovel(CHh, bob) {   // 캐릭터 손에 든 눈삽: 나무 자루 + 바닥에 끌리는 금속 날
+  const k = CHh / CH; g.save(); g.translate(0, bob); g.lineCap = "round"; g.lineJoin = "round";
+  g.strokeStyle = "#14141c"; g.lineWidth = 7 * k; g.beginPath(); g.moveTo(8 * k, -40 * k); g.lineTo(46 * k, -9 * k); g.stroke();
+  g.strokeStyle = "#b9824a"; g.lineWidth = 4 * k; g.beginPath(); g.moveTo(8 * k, -40 * k); g.lineTo(46 * k, -9 * k); g.stroke();
+  g.strokeStyle = "#14141c"; g.lineWidth = 6 * k; g.beginPath(); g.moveTo(3 * k, -44 * k); g.lineTo(14 * k, -42 * k); g.stroke();
+  g.strokeStyle = "#8a5a2c"; g.lineWidth = 3 * k; g.beginPath(); g.moveTo(3 * k, -44 * k); g.lineTo(14 * k, -42 * k); g.stroke();
+  g.fillStyle = "#c9d3df"; g.strokeStyle = "#14141c"; g.lineWidth = 2.4 * k; g.beginPath(); g.moveTo(38 * k, -13 * k); g.lineTo(66 * k, -13 * k); g.lineTo(70 * k, 0); g.lineTo(34 * k, 0); g.closePath(); g.fill(); g.stroke();
+  g.strokeStyle = "rgba(255,255,255,.8)"; g.lineWidth = 1.6 * k; g.beginPath(); g.moveTo(42 * k, -9 * k); g.lineTo(62 * k, -9 * k); g.stroke();
+  g.restore();
+}
+function drawRack(fl, t) {
+  const R = RACK[fl], k = snKK(); g.save(); g.translate(R.x, R.y); g.scale(k, k); g.lineCap = "round"; g.lineJoin = "round";
+  g.fillStyle = "rgba(0,0,0,.25)"; g.beginPath(); g.ellipse(0, 3, 30, 7, 0, 0, 6.2832); g.fill();
+  for (const x of [-24, 24]) { g.strokeStyle = "#14141c"; g.lineWidth = 8; g.beginPath(); g.moveTo(x, 0); g.lineTo(x, -58); g.stroke(); g.strokeStyle = "#a9733f"; g.lineWidth = 4.4; g.beginPath(); g.moveTo(x, 0); g.lineTo(x, -58); g.stroke(); }
+  g.strokeStyle = "#14141c"; g.lineWidth = 8; g.beginPath(); g.moveTo(-26, -50); g.lineTo(26, -50); g.stroke(); g.strokeStyle = "#c08a50"; g.lineWidth = 4.4; g.beginPath(); g.moveTo(-26, -50); g.lineTo(26, -50); g.stroke();
+  for (let i = 0; i < R.max; i++) {
+    const x = -14 + i * 14;
+    if (i < R.n) {
+      g.strokeStyle = "#14141c"; g.lineWidth = 6; g.beginPath(); g.moveTo(x, -2); g.lineTo(x + 3, -62); g.stroke(); g.strokeStyle = "#b9824a"; g.lineWidth = 3.2; g.beginPath(); g.moveTo(x, -2); g.lineTo(x + 3, -62); g.stroke();
+      g.fillStyle = "#c9d3df"; g.strokeStyle = "#14141c"; g.lineWidth = 2.2; g.beginPath(); g.moveTo(x - 4, -62); g.lineTo(x + 10, -62); g.lineTo(x + 12, -80); g.lineTo(x - 6, -80); g.closePath(); g.fill(); g.stroke();
+    } else { g.setLineDash([3, 3]); g.strokeStyle = "rgba(20,20,28,.55)"; g.lineWidth = 2; g.beginPath(); g.moveTo(x, -2); g.lineTo(x + 3, -60); g.stroke(); g.setLineDash([]); }
+  }
+  g.restore();
+}
+function snDrawObjects(fl, t) {
+  if (!SN.on) return; const f = FL[fl]; drawYPortal(f.yp, t, true); drawYPortal(f.yq, t, false); drawRack(fl, t);
+}
+function snDrawLabels(fl) {   // 화면 좌표 글자: 포털 이름 · 거치대 안내
+  if (!SN.on) return; const f = FL[fl], fs = TAGFS() + 1;
+  const pill = (x, y, text, bg, br, fg) => { g.font = `800 ${fs}px ${FONT}`; const w = g.measureText(text).width + 14, h = fs + 7; rr(g, x - w / 2, y - h, w, h, h / 2); g.fillStyle = bg; g.fill(); g.lineWidth = 2; g.strokeStyle = br; g.stroke(); g.fillStyle = fg; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(text, x, y - h / 2 + .5); };
+  const cp = S.cpt;   // 폰(좁은 화면)에서는 글자를 한 글자로 줄여 겹치지 않게
+  let a = toScreen(fl, f.yp.x, f.yp.y - yPR(f.yp) - 4); pill(a.x, a.y, cp ? "밖" : "밖으로 ▶", "#14141c", "#bfeaff", "#e9f8ff");
+  a = toScreen(fl, f.yq.x, f.yq.y - yPR(f.yq) - 4); pill(a.x, a.y, cp ? "안" : "◀ 안으로", "#14141c", "#bfeaff", "#e9f8ff");
+  const R = RACK[fl]; a = toScreen(fl, R.x, R.y - 84 * snKK() - 6);
+  const near = ME && ME.out && ME.fl === fl && rackNear(ME), mine = ME && ME.out && ME.fl === fl && ME.shovel;
+  if (cp && !near) return;
+  pill(a.x, a.y, near ? ((touchUI() ? "눌러서 " : "E · ") + (mine ? "눈삽 반납" : R.n > 0 ? "눈삽 집기" : "눈삽 없음")) : `눈삽 ${R.n}/${R.max}`, near ? "#f6c453" : "#14141c", "#14141c", near ? "#2a1a00" : "#e9f8ff");
+}
+
+/* ── 거치대 · 내 캐릭터 ── */
+function rackNear(m) { const R = RACK[m.fl]; return !!(R && m.out && hypot(m.x - R.x, m.y - (R.y + 18)) < 90); }
+function rackUse(e) {   // 집기 / 반납
+  const R = RACK[e.fl]; if (!R) return false; const me = e === ME, say = t => { if (me) { try { toast(t); } catch (er) {} } };
+  if (e.shovel) { e.shovel = false; R.n = Math.min(R.max, R.n + 1); say("눈삽을 거치대에 돌려놨어요"); return true; }
+  if (R.n <= 0) { say("눈삽이 모두 나가 있어요. 조금만 기다려요"); return false; }
+  R.n--; e.shovel = true; say("눈삽을 들었어요. 걸어 다니면 눈이 치워져요"); return true;
+}
+function snKeyE() { if (!SN.on || !ME || !ME.out || !rackNear(ME)) return false; rackUse(ME); return true; }
+function snClick(px, py) {   // 거치대·포털을 누르면: 가까우면 바로, 멀면 걸어가서
+  if (!SN.on || !ME || ME.tp) return false; const w = toWorld(px, py); if (!w) return false; const rr2 = Math.max(46, 22 / P[w.fl].s), f = FL[w.fl], R = RACK[w.fl];
+  if (hypot(w.x - R.x, w.y - (R.y - 30 * snKK())) < rr2) {
+    if (ME.fl === w.fl && rackNear(ME)) { rackUse(ME); return true; }
+    walkMeTo(R.x, R.y + 26, null, w.fl); ME.pend = "rack"; return true;
+  }
+  for (const p of [f.yp, f.yq]) if (hypot(w.x - p.x, w.y - p.y) < yPR(p) + 4 / P[w.fl].s) { S.hint = 0; walkMeTo(p.x, p.y, null, w.fl); return true; }
+  return false;
+}
+function snDrop(e) {   // 마당 일/삽을 정리하고 건물 안으로
+  if (e.shovel) { const R = RACK[e.fl]; if (R) R.n = Math.min(R.max, R.n + 1); e.shovel = false; }
+  if (e.out) { const p = FL[e.fl].yp; e.x = p.x; e.y = p.y; e.out = false; e.alpha = 1; }
+  e.job = null; e.path = null; e.moving = false;
+  if (e === ME) { e.goal = null; e.after = null; e.pend = null; e.vx = e.vy = 0; S.tgt = null; } else if (e.state === "job") { e.state = "idle"; e.wait = rnd(1, 3); }
+}
+function legTo(m) {   // 목표(ME.goal)까지 지금 구간: 같은 곳이면 곧장, 마당↔건물이면 포털까지(포털을 밟으면 건너가서 이 함수가 다시 불린다)
+  const G = m.goal; if (!G) return; m.after = null; m.leg = null;
+  if (m.out) {
+    if (G.out && G.fl === m.fl) { m.path = yardRoute(m.fl, m.x, m.y, G.x, G.y); return; }
+    const q = FL[m.fl].yq; m.after = G; m.leg = "yq"; m.path = yardRoute(m.fl, m.x, m.y, q.x, q.y); return;
+  }
+  if (G.fl === m.fl) {
+    if (!G.out) { m.path = [{x: G.x, y: G.y}]; return; }
+    const d = FL[m.fl].yp; m.after = G; m.leg = "yp"; m.path = [{x: d.x, y: d.y}]; return;
+  }
+  const p = FL[m.fl].portal; m.after = G; m.leg = "fp"; m.path = [{x: p.x, y: p.y}];
+}
+function snWarp(m, goOut) { const p = goOut ? FL[m.fl].yq : FL[m.fl].yp; return startTp(m.fl, p.x, p.y, null, .38, {portal: true, out: goOut, pPt: p}); }
+
+/* ── 켜기/끄기 · 시작 · 매 프레임 ── */
+function snSetOn(on) {
+  on = !!on; if (on === SN.on) return;
+  if (on) { SN.on = true; snDisplay(true); for (const k of FLOORS) if (!SN.d[k]) SN.d[k] = snMake(k); snFlakes(); }
+  else { SN.on = false; for (const e of ents) if (e.job || e.out || e.shovel) snDrop(e); SN.puffs.length = 0; snDisplay(false); }
+  snBtn();
+}
+function snToggle() { snSetOn(!SN.on); try { localStorage.setItem(SNK, SN.on ? "1" : "0"); } catch (e) {} try { toast(SN.on ? "❄ 겨울 마당을 켰어요" : "겨울 마당을 껐어요"); } catch (e) {} }
+function snBtn() {
+  const bar = document.getElementById("lb-emo"); if (!bar) return; let b = document.getElementById("lb-snow");
+  if (!SN.season) { if (b) b.remove(); return; }
+  if (!b) { b = document.createElement("button"); b.type = "button"; b.id = "lb-snow"; b.innerHTML = '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#2d6ea8" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 2v20M3.3 7l17.4 10M3.3 17L20.7 7M9 3.5l3 2.5 3-2.5M9 20.5l3-2.5 3 2.5"/></svg>'; b.addEventListener("click", ev => { ev.stopPropagation(); snToggle(); }); b.addEventListener("pointerdown", ev => ev.stopPropagation()); bar.appendChild(b); }
+  const tt = SN.on ? "겨울 마당 끄기" : "겨울 마당 켜기"; if (b.title !== tt) { b.title = tt; b.setAttribute("aria-label", tt); } b.setAttribute("aria-pressed", SN.on ? "true" : "false"); b.style.opacity = SN.on ? "1" : ".55";
+}
+function snBoot() {
+  SN.ready = true; const fc = snForce(); SN.season = fc === true || (fc === null && snSeason()); let pref = null; try { pref = localStorage.getItem(SNK); } catch (e) {}
+  if (fc != null ? fc : (SN.season && pref !== "0")) snSetOn(true);
+}
+function snTick(dt) {
+  if (!ME) return; if (!SN.ready) snBoot();
+  SN.btnT -= dt; if (SN.btnT <= 0) { SN.btnT = 1.5; snBtn(); }
+  if (!SN.on) return;
+  const now = performance.now(), raw = SN.last ? Math.min(.2, (now - SN.last) / 1000) : .016; SN.last = now;
+  SN.ft += (raw - SN.ft) * .05; SN.qT += raw;
+  if (SN.qT > 2) { SN.qT = 0; if (SN.ft > .026) SN.q = Math.max(.25, SN.q * .8); else if (SN.ft < .019 && SN.q < 1) SN.q = Math.min(1, SN.q * 1.15); }   // 느려지면 눈송이를 줄인다
+  snAccum(dt); snFlush(); snFlakeStep(dt); snPuffStep(dt);
+}
+/* ===SNOW_END=== */
 function drawPane(fl) {
   const p = P[fl], f = FL[fl], s = p.s, t = S.t, dpr = S.dpr, mine = ME.fl === fl;
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
   g.save(); g.beginPath(); rrp(g, p.x, p.y, p.w, p.h, 10); g.clip();
   const bgs = paneBg(fl); if (bgs) g.drawImage(bgs, p.x, p.y, p.w, p.h); else { g.fillStyle = "#f4eefb"; g.fillRect(p.x, p.y, p.w, p.h); }
+  if (SN.on) snDrawGround(fl, p);
   g.restore();
-  g.setTransform(dpr * s, 0, 0, dpr * s, dpr * (p.x - f.view[0] * s), dpr * (p.y - f.view[1] * s));
+  g.setTransform(dpr * s, 0, 0, dpr * s, dpr * (p.x - f.dv[0] * s), dpr * (p.y - f.dv[1] * s));
   g.imageSmoothingEnabled = true;
   if (fl === "3f") drawTorches(t);
-  drawSpots(f, t); drawPortal(f, t); drawSupply(fl, t);
+  drawSpots(f, t); drawPortal(f, t); drawSupply(fl, t); snDrawObjects(fl, t);
   if (S.tgt && S.tgt.fl === fl) { const T = S.tgt, a = 1 - Math.min(1, T.t / (T.bad ? .6 : 1.6)), r = (T.bad ? 10 : 8 + 8 * (T.t % .8) / .8) * Math.max(1, S.chh / CH); g.save(); g.lineWidth = 3 / s; g.strokeStyle = T.bad ? `rgba(255,120,80,${a})` : `rgba(246,196,83,${Math.max(.4, a)})`; g.beginPath(); if (T.bad) { g.moveTo(T.x - 8, T.y - 8); g.lineTo(T.x + 8, T.y + 8); g.moveTo(T.x + 8, T.y - 8); g.lineTo(T.x - 8, T.y + 8); } else g.ellipse(T.x, T.y, r * 1.6, r * .8, 0, 0, 6.2832); g.stroke(); g.restore(); }
   const vis = ents.filter(e => e.fl === fl && e.active && e.alpha > .02).sort((a, b) => a.y - b.y);
   for (const e of vis) { e.fxs += (e.fxT - e.fxs) * Math.min(1, .35); drawEntShadow(e); }
   for (const e of vis) drawEnt(e, t);
   for (const gh of S.ghosts) if (gh.fl === fl) drawGhost(gh);
   for (const b of S.bursts) if (b.fl === fl) drawBurst(b, s);
+  snDrawAir(fl, t);
   // 화면 좌표 글자(이름표 · 포털 이름 · 층 이름 · 내 위치 표시)
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
-  drawTags(vis, fl);
+  drawTags(vis, fl); snDrawLabels(fl);
   const pp = toScreen(fl, f.portal.x, f.portal.y - portalR(f.portal) - 4), lab = f.portal.to === "4f" ? "4F ▶" : "◀ 3F", fs = TAGFS() + 1;
   g.font = `800 ${fs}px ${FONT}`; const lw = g.measureText(lab).width + 14; rr(g, pp.x - lw / 2, pp.y - fs - 9, lw, fs + 7, (fs + 7) / 2); g.fillStyle = "#14141c"; g.fill(); g.lineWidth = 2; g.strokeStyle = f.portal.to === "3f" ? "#ffc45a" : "#7ad7ff"; g.stroke(); g.fillStyle = "#fff"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(lab, pp.x, pp.y - fs / 2 - 5);
   if (S.hint > 0 && mine && !ME.tp) { const mp = toScreen(fl, ME.x, ME.y - entH(ME) - 12 - 6 * Math.sin(t * 5)), a = Math.min(1, S.hint); g.globalAlpha = a; g.fillStyle = "#f6c453"; g.strokeStyle = "#14141c"; g.lineWidth = 2.5; g.beginPath(); g.moveTo(mp.x - 9, mp.y - 12); g.lineTo(mp.x + 9, mp.y - 12); g.lineTo(mp.x, mp.y); g.closePath(); g.stroke(); g.fill(); g.globalAlpha = 1; }
@@ -28149,7 +28467,7 @@ function onKey(e, down) {
   else if (down && !e.repeat && /^Digit[1-4]$/.test(c)) { doEmote(+c.slice(5) - 1); }
   else if (down && !e.repeat && (c === "Enter" || c === "Space" || c === "KeyE")) {
     if (S.modal || (e.target && e.target.closest && e.target.closest("button,a,[role=button],[role=link]"))) used = false;   // 버튼에 초점이 있으면 그 버튼이 알아서 눌리게 둔다
-    else if (SUP.box && supKey()) used = true; else if (S.popSpot) popPrimary(); else if (ME.near) { S.dismissed = null; openPop(ME.near); } else used = false;
+    else if (snKeyE()) used = true; else if (SUP.box && supKey()) used = true; else if (S.popSpot) popPrimary(); else if (ME.near) { S.dismissed = null; openPop(ME.near); } else used = false;
   } else used = false;
   if (used && S.modal) { K.left = K.right = K.up = K.down = 0; }
   if (used) e.preventDefault();
@@ -28311,7 +28629,7 @@ function init() {
     if (e.button != null && e.button > 0) return;
     if (S.panel) { closePanel(); return; }   // 지도를 누르면 패널부터 닫는다
     if (S.modal || ME.tp) return;
-    const r = cv.getBoundingClientRect(); if (supClick(e.clientX - r.left, e.clientY - r.top)) return;
+    const r = cv.getBoundingClientRect(); if (supClick(e.clientX - r.left, e.clientY - r.top) || snClick(e.clientX - r.left, e.clientY - r.top)) return;
     const h = hitTest(e.clientX - r.left, e.clientY - r.top);
     pd = {id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now(), ent: h.ent || null};
     if (h.ent || !h.w) return;
@@ -28406,7 +28724,7 @@ function bootLobby() {
   };
   go();
 }
-window.lbDbg = {SUP, supBoxFor, supRefresh, supClaim, doEmote, bakeFloor, renderBg, BG, S, P, STATS, FL, ents, NPC, PRES, SPOTS, SPOT_BY, K, JOY, get ME() { return ME; }, update, render, isFree, clearPx, findPath, nearestFree, cellXY, warpFloor, walkMeTo, walkToSpot, teleportEnter, enterFromUI, startTp, openPanel, closePanel, togglePanel, renderLife, renderPanels, toWorld, toScreen, heroBox, layoutPanes, hitTest, openPop, closePop, openKnightSheet, openIntro, openPerson, pickKnight, sayNpc, ambientSay, doorIntro, applyPresence, pollPresence, onShow, onHide, init: () => { if (!inited) init(); }, layout, placeDom, KN, gameInfo, spotInfo, weekly, refreshAll, ME_SPEED, get inited() { return inited; },
+window.lbDbg = {SN, RACK, snSetOn, snClear, snToggle, snWarp, yardRoute, yardClamp, rackUse, SUP, supBoxFor, supRefresh, supClaim, doEmote, bakeFloor, renderBg, BG, S, P, STATS, FL, ents, NPC, PRES, SPOTS, SPOT_BY, K, JOY, get ME() { return ME; }, update, render, isFree, clearPx, findPath, nearestFree, cellXY, warpFloor, walkMeTo, walkToSpot, teleportEnter, enterFromUI, startTp, openPanel, closePanel, togglePanel, renderLife, renderPanels, toWorld, toScreen, heroBox, layoutPanes, hitTest, openPop, closePop, openKnightSheet, openIntro, openPerson, pickKnight, sayNpc, ambientSay, doorIntro, applyPresence, pollPresence, onShow, onHide, init: () => { if (!inited) init(); }, layout, placeDom, KN, gameInfo, spotInfo, weekly, refreshAll, ME_SPEED, get inited() { return inited; },
   sim(sec, hz) { const dt = 1 / (hz || 30), n = Math.round(sec / dt); for (let i = 0; i < n; i++) update(dt); } };
 bootLobby();
 })();
