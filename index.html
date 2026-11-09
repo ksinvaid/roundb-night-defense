@@ -3318,6 +3318,11 @@ html.dgn-party-on .dgn-notes{top:calc(74px + 150px + env(safe-area-inset-top,0px
 .dgn-spec{position:absolute;left:50%;top:calc(70px + env(safe-area-inset-top,0px));transform:translateX(-50%);padding:6px 12px;display:flex;gap:8px;align-items:center;font:800 13px var(--f-body);color:#ffe9e9;z-index:4;max-width:min(560px,92vw)}
 .dgn-spec[hidden],.dgn-bw[hidden]{display:none}
 .dgn-bw button{pointer-events:auto;margin:4px 2px 0}
+.dgn-sc{position:absolute;left:50%;top:calc(152px + env(safe-area-inset-top,0px));transform:translateX(-50%);padding:5px 8px;display:flex;flex-wrap:wrap;gap:4px;justify-content:center;font:800 12px var(--f-body);color:#ffe9a0;z-index:5;max-width:min(560px,94vw)}
+.dgn-sc[hidden]{display:none}
+.dgn-sc button{pointer-events:auto;min-height:36px;padding:4px 10px}
+.dgn-sc button.gold{background:var(--gold);color:#251a07}
+@media (max-width:640px){.dgn-sc{top:calc(226px + env(safe-area-inset-top,0px))}.dgn-sc button{min-height:44px}}
 .dgn-bw.follow{top:calc(202px + env(safe-area-inset-top,0px));width:max-content;max-width:calc(100vw - 24px);text-align:center;z-index:9}
 .dgn-bw.follow span{display:block}
 .dgn-bw.follow [data-act="dgn-rope"]{background:var(--gold);color:#251a07;font-size:16px;padding:8px 16px}
@@ -35050,10 +35055,12 @@ function enterFloor(G, n, how) {
   }
   G.flow = G.cur.flow;
   G.explored = new Uint8Array(M.W * M.H); G.cleared = partyCleared(G, n);
+  G.fullSight = n <= (c.floorBest | 0) || !!G.cleared; if (G.fullSight) G.explored.fill(1);   /* 2026-11-09: 이미 깬 층은 안개 없이 전체 시야(지도/미니맵/어둠 시야 모두) */
   G.fl = {n, kills: 0, t0: G.playT};   /* QA-C: floorBest 는 K2 뜻(보스를 잡은 최고 층) — 들어가기만 해서는 올리지 않는다(저장 불러올 때 다음 층이 공짜로 열리는 버그) */
   for (const hh of G.hs) { const P0 = G.P, f0 = G.flow; G.P = hh.P; G.flow = hh.flow; updateFlow(G, true); G.P = P0; G.flow = f0; } reveal(G); rebuildGrid(G);
   /* 몹 군집 · 상자 · 마을 · 보스 · 포털 */
   spawnInitial(G); spawnChests(G); setupPortals(G); placeArrival(G, how, prevFloor); spreadHeroes(G); reveal(G); if (M.town) setupTown(G);
+  if (how === "bossdoor") { const sp0 = bossDoorSpot(G); if (sp0) { tpHero(G, G.hs[0], sp0.x, sp0.y); spreadHeroes(G); reveal(G); } }
   if (G.evt && G.evt.floor === n && G.hs.length === 1) spawnEventMob(G);
   emit(G, "floor", {n, how: how || "", name: G.info.name || (n + "층"), mood: G.info.mood || "", tags: M.tags, decade: M.look, h: 0, party: G.hs.length});
   emit(G, "save", {why: "floor", h: 0});
@@ -35786,7 +35793,12 @@ function bossGuard(G) {
     G.ep.length = 0; G.shocks.length = 0; G.zones = G.zones.filter(z => z.own === "p");
     return;
   }
-  if ((st === "intro" || st === "fight") && !alive && !G.cleared) { console.error("[dgn] 보스 상태(" + st + ")인데 보스가 없다 → 재생성", G.floor, G.hs.length); G.bs = {state: "idle", t: 0}; G.cine = null; G.mobsHold = false; G.bossWait = null; G.boss = null; for (const i of M.boss.doors) M.dyn[i] = 0; }
+  if ((st === "intro" || st === "fight") && !alive) { console.error("[dgn] 보스 상태(" + st + ")인데 보스가 없다 → 재생성", G.floor, G.hs.length); G.bs = {state: "idle", t: 0}; G.cine = null; G.mobsHold = false; G.bossWait = null; G.boss = null; for (const i of M.boss.doors) M.dyn[i] = 0; }
+  /* 2026-11-09 방어: 보스방이 빈 방으로 굳지 않게 - (1) 대기인데 보스가 살아 있음(생성 도중 오류) (2) 싸움이 아닌데 문이 닫혀 있음 (3) 깬 상태인데 제단/포털이 없음 */
+  if (st === "idle" && alive) { console.error("[dgn] 대기 상태인데 보스가 있다 -> 치움", G.floor); const b = G.boss; G.mobs = G.mobs.filter(o => o !== b && o.by !== b.id); G.boss = null; G.cine = null; G.mobsHold = false; }
+  if (st === "idle" || st === "cleared") for (const i of M.boss.doors) if (M.dyn[i]) M.dyn[i] = 0;
+  if (st === "idle" && G.mobsHold && !G.boss) G.mobsHold = false;
+  if (st === "cleared") { if (!G.altar) addAltar(G); if (!G.portals.some(q => q.boss)) { const p = M.portal, n = G.floor; G.portals.push({x: (p.x + .5) * TILE, y: (p.y + .5) * TILE, to: n < 150 ? n + 1 : 1, kind: "up", label: n < 150 ? n + 1 + "층으로" : "마을로", cool: true, t: 0, id: ++G.uid, boss: true}); } }
   if (st !== "cleared" && G.portals.some(p => p.boss)) { console.error("[dgn] 보스 전인데 다음 층 포탈이 떠 있다 → 치움", G.floor); G.portals = G.portals.filter(p => !p.boss); }
 }
 function bossRoomHeroes(G) {
@@ -35844,6 +35856,7 @@ function bossTrigger(G) {
   const inside = bossRoomHeroes(G);
   if (!inside.length) { G.bossWait = null; return; }
   if (G.autoTravel) { startBoss(G); return; }
+  if (G.hs.length === 1 && !G.party) { startBoss(G); return; }   /* 2026-11-09: 솔로는 선택창이 없다 - 11/06 변경 뒤 솔로 보스방이 보스 없는 빈 방이 되던 버그(선택창 UI 는 파티에서만 그려졌다) */
   const w = G.bossWait ||= {waiting: false};
   w.eligible = inside.map(h => h.idx);
   w.n = inside.length;
@@ -35858,8 +35871,10 @@ function startBoss(G) {
   const r = M.boss.rect, inR = h => { const px = h.P.x / TILE, py = h.P.y / TILE; return px > r.x + 1 && px < r.x + r.w - 1 && py > r.y + 1 && py < r.y + r.h - 1; }, ref = G.hs.find(h => !isDead(G, h) && inR(h)) || G.hs[0], P = ref.P; let bx = (r.x + r.w / 2) * TILE, by = (r.y + r.h / 2) * TILE; const dx = bx - P.x, dy = by - P.y; if (hyp(dx, dy) < 200) { bx += dx > 0 ? 100 : -100; }
   G.bossWait = null;
   const sizeMul = (M.boss.kind === "major" || def.size > 6) ? 1 : .55 + .45 * ((G.floor - 1) % 10) / 9;   /* QA-C: K2 크기는 이미 px(변주 보스도 층마다 커짐) — 또 줄이지 않는다 */
-  const m = spawnMob(G, def, bx, by, {boss: true, partySize: participants.length, sizeMul: sizeMul * (def.size > 2 ? 1 : 1.6)}); if (!m) return;
-  m.agg = true; m.ai = "boss"; m.kbR = 0; m.alpha = 0; m.inv = 99; G.boss = m; m.participants = new Set(participants); dgnBoss.init(G, m);
+  let m = null;
+  try { m = spawnMob(G, def, bx, by, {boss: true, partySize: participants.length, sizeMul: sizeMul * (def.size > 2 ? 1 : 1.6)}); if (m) { m.agg = true; m.ai = "boss"; m.kbR = 0; m.alpha = 0; m.inv = 99; G.boss = m; m.participants = new Set(participants); dgnBoss.init(G, m); } }
+  catch (e) { console.error("[dgn] 보스 생성 실패", G.floor, e); if (m) { m.dead = true; m.hp = 0; G.mobs = G.mobs.filter(o => o !== m); } G.boss = null; m = null; }
+  if (!m) { for (const i of M.boss.doors) M.dyn[i] = 0; G.bs = {state: "idle", t: 0}; G.cine = null; G.mobsHold = false; emit(G, "toast", {text: "보스를 불러오지 못했어요. [보스 재도전]을 눌러 주세요.", kind: "warn", h: 0}); return; }
   G.bs = {state: "intro", t: 0}; G.cine = {t: 0, dur: 2.6, tx: bx, ty: by}; G.mobsHold = true;
   emit(G, "boss", {kind: "intro", name: m.name, floor: n, major: M.boss.kind === "major", decade: M.look}); sfx(G, "dgBossIntro");
 }
@@ -35867,7 +35882,7 @@ function bossDefeated(G, m) {
   if (G.cur !== G.hs[0]) bind(G, G.hs[0]);
   const M = G.M, n = G.floor;
   const participants = G.hs.filter(h => !m.participants || m.participants.has(h));
-  G.bossDownT = G.t; G.bs = {state: "cleared", t: 0}; G.cleared = true; G.boss = null;
+  G.bossDownT = G.t; G.bs = {state: "cleared", t: 0}; G.cleared = true; G.boss = null; G.fullSight = true; if (G.explored) G.explored.fill(1);
   for (const i of M.boss.doors) M.dyn[i] = 0;
   sfx(G, "dgDoor");
   for (const h of participants) withHero(G, h, () => {
@@ -35890,6 +35905,58 @@ function bossDefeated(G, m) {
     G.chests.push({x: (p.x + .5) * TILE + Math.cos(a) * 130, y: (p.y + .5) * TILE + Math.sin(a) * 130, open: false, t: 0, id: ++G.uid, tier: 1, rich: true, participants: new Set(participants)});
   }
   shakeIt(G, 8, .6); fxRing(G, m.x, m.y, 10, 320, .9, "#ffe27a", 8);
+}
+/* ===== 2026-11-09 던전 편의: 바로 가기 / 재도전 / 파티원 따라가기 (모두 순간이동, 몹 없는 보스방 앞/포털 앞으로) ===== */
+function tpHero(G, hero, x, y) {
+  const P = hero.P; P.x = P.px = x; P.y = P.py = y; P.vx = P.vy = 0; P.dash = null; P.inv = Math.max(P.inv, 1.6);
+  if (G.ropes) G.ropes = G.ropes.filter(r => r.hero !== hero); forceHero(G, hero); reveal(G);
+}
+function freeSpotNear(G, x, y, minR) {
+  const M = G.M;
+  for (let r = minR || 0; r <= 200; r += 16) for (let k = 0; k < 14; k++) {
+    const a = k * TAU / 14 + r * .31, px = x + Math.cos(a) * r, py = y + Math.sin(a) * r, i = Math.floor(py / TILE) * M.W + Math.floor(px / TILE);
+    if (px < TILE || py < TILE || i < 0 || i >= M.type.length || M.type[i] !== 0 || M.sf[i] !== 0 || M.dist[i] < 0) continue;
+    if (!boxSolid(M, px, py, PLAYER_R + 4, false, false)) return {x: px, y: py};
+  }
+  return null;
+}
+function bossDoorSpot(G) {   // 보스방 문 바깥 가까운 바닥(시작점에 가장 가까운 곳) - 보스방 안은 들어가면 곧바로 보스가 나오므로 안으로는 안 보낸다
+  const M = G.M, W = M.W, H = M.H, r = M.boss.rect, inRect = (x, y) => x >= r.x - 1 && x <= r.x + r.w && y >= r.y - 1 && y <= r.y + r.h;
+  const seen = new Map(), q = []; for (const di of M.boss.doors) { seen.set(di, 0); q.push(di); }
+  let best = null;
+  for (let h = 0; h < q.length; h++) {
+    const i = q[h], st = seen.get(i), x = i % W, y = (i / W) | 0;
+    if (st >= 1 && !inRect(x, y) && M.type[i] === 0 && M.sf[i] === 0 && M.dist[i] >= 0 && !boxSolid(M, (x + .5) * TILE, (y + .5) * TILE, PLAYER_R + 4, false, false)) { const sc = M.dist[i] + (st < 2 ? 6 : 0); if (!best || sc < best.sc) best = {x, y, sc}; }
+    if (st >= 8) continue;
+    for (const [ox, oy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = x + ox, ny = y + oy; if (nx < 1 || ny < 1 || nx >= W - 1 || ny >= H - 1 || inRect(nx, ny)) continue; const j = ny * W + nx; if (seen.has(j) || M.type[j] !== 0) continue; seen.set(j, st + 1); q.push(j); }
+  }
+  if (best) return {x: (best.x + .5) * TILE, y: (best.y + .5) * TILE};
+  let d0 = null; for (const di of M.boss.doors) if (!d0 || M.dist[di] < M.dist[d0]) d0 = di;
+  return d0 == null ? null : {x: ((d0 % W) + .5) * TILE, y: (((d0 / W) | 0) + .5) * TILE};
+}
+function canWarp(G, hero) { return !!(G.M && hero && G.hs.includes(hero) && !isDead(G, hero) && !G.travel); }
+const inFight = G => G.bs.state === "intro" || G.bs.state === "fight";
+function gotoBossDoor(G, hero) {
+  if (!canWarp(G, hero)) return "no"; if (inFight(G)) return "fight";
+  const sp = bossDoorSpot(G); if (!sp) return "no"; tpHero(G, hero, sp.x, sp.y); return "ok";
+}
+function gotoPortal(G, hero) {
+  if (!canWarp(G, hero)) return "no"; if (inFight(G)) return "fight";
+  const p = G.portals.find(q => q.boss) || G.portals.find(q => q.kind === "up"); if (!p) return "no";
+  const sp = freeSpotNear(G, p.x, p.y, 76); if (!sp) return "no"; tpHero(G, hero, sp.x, sp.y); return "ok";
+}
+function bossRetry(G, hero) {   // 보스가 없으면 다시 불러서 바로 시작(깬 층이면 제단과 같은 효과). 혼자서도 시작한다
+  if (!canWarp(G, hero)) return "no";
+  let st = G.bs.state; if (inFight(G) && G.boss && !G.boss.dead) return "fight";
+  if (inFight(G)) { G.bs = {state: "idle", t: 0}; G.cine = null; G.boss = null; G.mobsHold = false; for (const i of G.M.boss.doors) G.M.dyn[i] = 0; st = "idle"; }
+  if (st === "cleared") altarRematch(G);
+  if (!bossRoomHeroes(G).includes(hero)) { const r = G.M.boss.rect, sp = freeSpotNear(G, (r.x + 3.5) * TILE, (r.y + r.h / 2) * TILE, 0); if (!sp) return "no"; tpHero(G, hero, sp.x, sp.y); }
+  bossChoice(G, hero, false); return G.bs.state === "idle" ? "no" : "ok";
+}
+function followHero(G, hero, idx) {   // 파티원 옆으로 순간이동. 보스전 중(문이 잠김)에는 안 된다
+  const t = G.hs.find(h => h.idx === idx); if (!canWarp(G, hero) || !t || t === hero || isDead(G, t)) return "no";
+  if (inFight(G) && (bossRoomHeroes(G).includes(t) || bossRoomHeroes(G).includes(hero))) return "fight";
+  const sp = freeSpotNear(G, t.P.x, t.P.y, 34); if (!sp) return "no"; tpHero(G, hero, sp.x, sp.y); return "ok";
 }
 function altarRematch(G) { if (G.bs.state !== "cleared") return; G.bs = {state: "idle", t: 0}; G.rematch = true; G.altar = null; G.portals = G.portals.filter(p => !p.boss); emit(G, "toast", {text: "제단이 울려요! 보스가 다시 깨어났어요.", kind: "warn", g: 1}); }
 function nearest(G) {
@@ -36139,7 +36206,7 @@ function botInput(G) {
 const randHero = G => { const al = aliveHeroes(G); return al.length ? al[(rand() * al.length) | 0] : G.hs[0]; };
 const H = {randHero, aliveHeroes, isDead, bind, withHero, rayLen, beamLen, beamEnd, inView, D, shotE, hurtPlayer, spawnMob, fxP, fxRing, fxText, shakeIt, boxSolid, moveBody, los, blockedAt, tilePos, tileOf, nearestMob, emit, sfx, hitMob, killMob, adiff, ELEM, mobSize, MAX_MOBS, bossDefeated, unstick, weightedDef};
 return {heroMove, nearest, setupTown, openFloor, updateFx, bind, withHero, addHero, removeHero, reviveHero, allDead, aliveHeroes, isDead, dmin, partyLock, setPartyMul, ackDrop, reveal, collect, mkFlow, newP, MAX_HEROES, HF, REVIVE_AUTO, REVIVE_HOLD, REVIVE_R, spreadHeroes,
-  forceHero, HORDE, startHorde, updateHorde, setPartySize: (G, n) => { G.partySize = cl(n | 0 || 1, 1, 8); setPartyMul(G); return G.partySize; }, DASH, startDodge, travelAnswer, placeArrival, rayLen, beamLen, DCFG, initCount, skMeta, create, enterFloor, step, respawn, refreshStats, usePotion, potionCount, interact, travel, clearedNextPortal, nextFloorNow, followDirection, botInput, wrapSave, unwrapSave, packExtra, unpackExtra, openMax, isOpen, openFloor, evtNextDelay, evtPickFloor, updateEvent, EVT_MIN, EVT_MAX, EVT_EXPIRE, spikeState, healPlayer, basicOf, hitMob, rarOf, H, X, TILE, PLAYER_R, mobSize, altarRematch, openChest, gainXp, spawnPack, spawnMob, startBoss, bossChoice, ropeFollow, tileOf, nearestMob, SPIKE_PER};
+  forceHero, HORDE, startHorde, updateHorde, setPartySize: (G, n) => { G.partySize = cl(n | 0 || 1, 1, 8); setPartyMul(G); return G.partySize; }, DASH, startDodge, travelAnswer, placeArrival, rayLen, beamLen, DCFG, initCount, skMeta, create, enterFloor, step, respawn, refreshStats, usePotion, potionCount, interact, travel, clearedNextPortal, nextFloorNow, followDirection, botInput, wrapSave, unwrapSave, packExtra, unpackExtra, openMax, isOpen, openFloor, evtNextDelay, evtPickFloor, updateEvent, EVT_MIN, EVT_MAX, EVT_EXPIRE, spikeState, healPlayer, basicOf, hitMob, rarOf, H, X, TILE, PLAYER_R, mobSize, altarRematch, openChest, gainXp, spawnPack, spawnMob, startBoss, bossChoice, ropeFollow, gotoBossDoor, gotoPortal, bossRetry, followHero, tpHero, tileOf, nearestMob, SPIKE_PER};
 })();
 
 /* dungeon_boss.js — 던전 인 라운드비: 보스 패턴·디자인표(10층마다 고유 보스, 중간 층은 변주).
@@ -36857,7 +36924,7 @@ function build() {
         <div class="dgn-sys"><button class="dgn-ib spd" id="dgn-spd" data-act="dgn-spd" aria-label="배속 (X)" title="배속 1·1.15·1.3배 (X)"><b id="dgn-spd-t">×1</b></button><button class="dgn-ib exit" data-act="dgn-ask" aria-label="나가기" title="나가기 (진행은 자동 저장)">${svgI(ICO.exit)}<span>나가기</span></button></div>
       </div>
     </div>
-    <div class="dgn-pty" id="dgn-pty" aria-label="파티"></div><div class="dgn-spec dgn-pill" id="dgn-spec" hidden></div><div class="dgn-bw dgn-pill" id="dgn-bw" hidden><span id="dgn-bw-label"></span><button class="dgn-btn" data-act="dgn-boss-now">지금 바로 도전</button><button class="dgn-btn" data-act="dgn-boss-wait">파티원 기다리기</button><button class="dgn-btn" data-act="dgn-rope">밧줄로 따라가기 (R)</button></div>
+    <div class="dgn-pty" id="dgn-pty" aria-label="파티"></div><div class="dgn-spec dgn-pill" id="dgn-spec" hidden></div><div class="dgn-bw dgn-pill" id="dgn-bw" hidden><span id="dgn-bw-label"></span><button class="dgn-btn" data-act="dgn-boss-now">지금 바로 도전</button><button class="dgn-btn" data-act="dgn-boss-wait">파티원 기다리기</button><button class="dgn-btn" data-act="dgn-rope">밧줄로 따라가기 (R)</button></div><div class="dgn-sc dgn-pill" id="dgn-sc" hidden></div>
     <div class="dgn-callout" id="dgn-shout" role="status" hidden></div><div class="dgn-callout dgn-autostate" id="dgn-autostate" role="status" hidden></div><div class="dgn-notes" id="dgn-notes" aria-live="polite"></div><div class="dgn-saved" id="dgn-saved" aria-live="polite"></div>
     <div class="dgn-boss" id="dgn-boss" hidden><b id="dgn-bn">보스</b><div class="dgn-bbar"><i id="dgn-bhp"></i><u style="left:66%"></u><u style="left:33%"></u><span id="dgn-bsp"></span></div></div>
     <div class="dgn-evt dgn-pill" id="dgn-evt" hidden><span>⚡ <b id="dgn-evt-t">이벤트 몹 출현</b></span><button data-act="dgn-evt-go">바로 이동</button></div>
@@ -37163,7 +37230,7 @@ function drawDoors(g, G, M, t, inV) {
 function screenFx(g, G, M, L, ipx, ipy, t, dt) {
   const w = V.w, h = V.h, F = M.flags, z = V.zoom, sx = (ipx - V.cam.x) * z + w / 2, sy = (ipy - V.cam.y) * z + h / 2;
   if (F.flicker) { V.flickT -= dt; if (V.flickT <= 0) { V.flickT = .06 + Math.random() * .08; V.flick = (Math.sin(t * .9) > .72 || Math.sin(t * 2.3 + 1) > .9) ? (Math.random() < .55 ? .5 : 0) : 0; } if (V.flick) { g.fillStyle = `rgba(2,10,14,${V.flick})`; g.fillRect(0, 0, w, h); } }
-  if (F.dark) {
+  if (F.dark && !(V.G && V.G.fullSight)) {
     const R0 = F.dark * z * (1 + Math.sin(t * 3) * .015), spr = lightSprite(), a = "rgba(4,5,16,.97)"; g.fillStyle = a; const x0 = sx - R0, y0 = sy - R0, x1 = sx + R0, y1 = sy + R0;
     g.fillRect(0, 0, w, Math.max(0, y0)); g.fillRect(0, y1, w, Math.max(0, h - y1)); g.fillRect(0, y0, Math.max(0, x0), y1 - y0); g.fillRect(x1, y0, Math.max(0, w - x1), y1 - y0); g.drawImage(spr, x0, y0, R0 * 2, R0 * 2);
   }
@@ -37287,6 +37354,43 @@ function hud(dt) {
   const evt = $("#dgn-evt"); if (G.evt) { evt.hidden = V.ui === "death"; const here = G.evt.floor === G.floor; setT("dgn-evt-t", here ? "이벤트 몹이 이 층에 있어요!" : `이벤트 몹 · ${G.evt.floor}층`); evt.querySelector("button").hidden = here; } else evt.hidden = true;
   mmUpdate(); mmDraw(V.mm, {cx: G.P.x / TILE, cy: G.P.y / TILE, tiles: 40, clamp: false}); setT("dgn-bh", bossHintText(G));
   if (V.net) partyHud(G);
+  try { scHud(G); } catch (e) { if (!V._scErr) { V._scErr = 1; console.error(e); } }
+}
+/* ---- 2026-11-09 던전 편의: 바로 가기 막대(층에 들어온 직후 30초 / 깬 층 / 보스방 안) · 재도전 · 파티원 순간이동 ---- */
+function scHud(G) {
+  const el = $("#dgn-sc"); if (!el) return;
+  const st = G.bs.state, fight = st === "intro" || st === "fight", M = G.M, r = M && M.boss && M.boss.rect;
+  const px = G.P.x / TILE, py = G.P.y / TILE, inRoom = !!r && px > r.x + 1 && px < r.x + r.w - 1 && py > r.y + 1 && py < r.y + r.h - 1;
+  const fresh = G.fl && G.playT - G.fl.t0 < 30, cleared = st === "cleared", town = G.floor === 1 && !M.boss;
+  const show = !G.over && !V.tr && !V.ui && !fight && !town && (fresh || cleared || inRoom);
+  const sig = show ? [st, inRoom ? 1 : 0, G.floor > 1 ? 1 : 0, V.net ? V.net.role : ""].join("|") : "";
+  if (sig === V.scSig) return; V.scSig = sig;
+  if (!show) { el.hidden = true; return; }
+  const b = [];
+  if (cleared) b.push(`<button class="dgn-btn gold" data-act="dgn-sc-portal">포털 바로 가기</button>`);
+  else if (!inRoom) b.push(`<button class="dgn-btn gold" data-act="dgn-sc-boss">보스방 바로 가기</button>`);
+  b.push(`<button class="dgn-btn" data-act="dgn-sc-retry">${cleared ? "보스 재도전" : inRoom ? "보스 불러오기" : "보스 재도전"}</button>`);
+  if (G.floor > 1) b.push(`<button class="dgn-btn" data-act="dgn-sc-prev">이전 층 보스방</button>`);
+  el.innerHTML = b.join(""); el.hidden = false;
+}
+function scAct(kind, arg) {
+  const G = V.G; if (!G || V.tr || G.over) return; const guest = V.net?.role === "guest";
+  const say = rs => { if (rs === "fight") note("보스전 중에는 문이 잠겨 있어요. 끝난 뒤에 할 수 있어요.", "warn"); else if (rs === "no") note("지금은 이동할 수 없어요.", "warn"); else dgSfx("dgPortal"); V.scSig = ""; };
+  if (kind === "prev") {
+    if (G.floor <= 1) return;
+    if (V.net && V.net.role !== "host") { note("파티 중에는 파티장이 층을 정해요.", "warn"); return; }
+    if (V.net) { const lk = core.partyLock(G, G.floor - 1); if (lk) { note(lk + " 님은 아직 그 층이 열리지 않았어요.", "warn"); return; } }
+    startTravel(G.floor - 1, "bossdoor"); return;
+  }
+  if (guest) { dgnNet.act(kind, arg); note(kind === "follow" ? "파티원 옆으로 이동을 요청했어요." : "요청했어요.", "info"); V.scSig = ""; return; }
+  const h = G.hs[0];
+  if (kind === "boss") say(core.gotoBossDoor(G, h));
+  else if (kind === "portal") say(core.gotoPortal(G, h));
+  else if (kind === "follow") say(core.followHero(G, h, arg | 0));
+  else if (kind === "retry") {
+    if (G.bs.state === "cleared" && !V.net) { V.retryAfter = true; openAltarAsk(); return; }
+    say(core.bossRetry(G, h));
+  }
 }
 /* ---- 6차: 파티 패널(이름·번호·Lv·체력 막대) · 쓰러진 동안의 안내 · 보스방 전원 입장 대기 ---- */
 function partyRows(G) {
@@ -37305,7 +37409,7 @@ function partyHud(G) {
   const sig = rows.map(r => [r.idx, r.name, r.k, r.lv, Math.round(r.hp / Math.max(1, r.hpMax) * 20), r.dead ? 1 : 0, r.rdy].join(":")).join("|") + "|" + (host ? 1 : 0) + "|" + (V.pOpen ? 1 : 0) + "|" + (V.pReady ? 1 : 0) + "|" + (V.followName || "");
   if (sig !== V.pSig) {
     V.pSig = sig; const cap = NT.cap || 4;
-    box.innerHTML = `<div class="dgn-ph"><b>파티 ${rows.length}/${cap}${V.net?.code ? " · " + esc(V.net.code) : ""}</b><span class="dgn-pbs">${host ? "" : `<button class="dgn-pb${V.pReady ? " on" : ""}" data-act="dgp-ready" aria-pressed="${!!V.pReady}" title="파티장에게 준비됐다고 알려요">${V.pReady ? "✓ " : ""}준비</button>`}<button class="dgn-pb" data-act="dgp-invite" aria-label="친구 초대" title="친구·접속자 초대 (작은 창)">＋</button><button class="dgn-pb" data-act="dgp-chat" aria-label="파티 채팅" title="파티 채팅">채팅</button><button class="dgn-pb" data-act="dgp-fold" aria-label="접기">${V.pOpen === false ? "▾" : "▴"}</button></span></div>` + (V.pOpen === false ? "" : rows.map(r => `<div class="dgn-pr${r.me ? " me" : ""}${r.dead ? " dead" : ""}"><img src="${kSrc(r.k, true)}" alt="" width="30" height="30"><div class="dgn-pm"><div class="dgn-pn" title="${esc(kn(r.k).n)} · ${esc(roleOf(r.k))}"><b>${r.idx + 1}P</b> ${esc(r.name || "")}${r.idx === 0 ? ' <em>★파티장</em>' : ""} <small>Lv ${r.lv | 0}</small>${r.dead ? ' <em class="x">✚ 쓰러짐</em>' : ""}${!r.me && r.idx !== 0 && r.rdy ? ' <em class="ok">✓준비</em>' : ""}</div><div class="dgn-pb2"><i style="width:${Math.round(cl(r.hp / Math.max(1, r.hpMax), 0, 1) * 100)}%"></i></div></div>${!r.me && !r.dead ? `<button type="button" class="dgn-pb dgn-follow-btn${V.followName === r.name ? " on" : ""}" data-act="dgp-follow" data-name="${esc(r.name)}" aria-pressed="${V.followName === r.name}">${V.followName === r.name ? "따라가는 중" : "따라가기"}</button>` : ""}${host && !r.me ? `<button class="dgn-pk" data-act="dgp-kick" data-n="${r.net}" aria-label="${esc(r.name)} 내보내기" title="내보내기">✕</button>` : ""}</div>`).join(""));
+    box.innerHTML = `<div class="dgn-ph"><b>파티 ${rows.length}/${cap}${V.net?.code ? " · " + esc(V.net.code) : ""}</b><span class="dgn-pbs">${host ? "" : `<button class="dgn-pb${V.pReady ? " on" : ""}" data-act="dgp-ready" aria-pressed="${!!V.pReady}" title="파티장에게 준비됐다고 알려요">${V.pReady ? "✓ " : ""}준비</button>`}<button class="dgn-pb" data-act="dgp-invite" aria-label="친구 초대" title="친구·접속자 초대 (작은 창)">＋</button><button class="dgn-pb" data-act="dgp-chat" aria-label="파티 채팅" title="파티 채팅">채팅</button><button class="dgn-pb" data-act="dgp-fold" aria-label="접기">${V.pOpen === false ? "▾" : "▴"}</button></span></div>` + (V.pOpen === false ? "" : rows.map(r => `<div class="dgn-pr${r.me ? " me" : ""}${r.dead ? " dead" : ""}"><img src="${kSrc(r.k, true)}" alt="" width="30" height="30"><div class="dgn-pm"${!r.me && !r.dead ? ` data-act="dgp-tp" data-idx="${r.idx}" title="눌러서 이 파티원 옆으로 순간이동" style="cursor:pointer;pointer-events:auto"` : ""}><div class="dgn-pn" title="${esc(kn(r.k).n)} · ${esc(roleOf(r.k))}"><b>${r.idx + 1}P</b> ${esc(r.name || "")}${r.idx === 0 ? ' <em>★파티장</em>' : ""} <small>Lv ${r.lv | 0}</small>${r.dead ? ' <em class="x">✚ 쓰러짐</em>' : ""}${!r.me && r.idx !== 0 && r.rdy ? ' <em class="ok">✓준비</em>' : ""}</div><div class="dgn-pb2"><i style="width:${Math.round(cl(r.hp / Math.max(1, r.hpMax), 0, 1) * 100)}%"></i></div></div>${!r.me && !r.dead ? `<button type="button" class="dgn-pb dgn-follow-btn${V.followName === r.name ? " on" : ""}" data-act="dgp-follow" data-name="${esc(r.name)}" aria-pressed="${V.followName === r.name}">${V.followName === r.name ? "따라가는 중" : "따라가기"}</button>` : ""}${host && !r.me ? `<button class="dgn-pk" data-act="dgp-kick" data-n="${r.net}" aria-label="${esc(r.name)} 내보내기" title="내보내기">✕</button>` : ""}</div>`).join(""));
   }
   const sp = $("#dgn-spec"), dead = G.over === "dead";
   if (sp) { if (dead) { let left = 0; if (NT.role === "host") left = Math.max(0, core.REVIVE_AUTO - (G.t - (G.hs[0].deadAt || 0))); else left = Math.max(0, core.REVIVE_AUTO - (performance.now() - (NT.deadAt || performance.now())) / 1000); const wipe = G.wipe; sp.hidden = false; const msg = wipe ? "전멸했어요… 잠시 뒤 모두 마을에서 일어나요" : `✚ 쓰러졌어요 — 동료가 곁에 2.5초 서 있으면 일어나요 · 자동 부활 ${Math.ceil(left)}초`; if (sp._m !== msg) { sp._m = msg; sp.innerHTML = `<span>${esc(msg)}</span> <button class="dgn-btn dgn-tiny" data-act="dgn-ask">나가기</button>`; } else { const sx = sp.firstElementChild; if (sx && sx.textContent !== msg) sx.textContent = msg; } } else { sp.hidden = true; sp._m = ""; } }
@@ -37513,7 +37617,7 @@ function partyLobbyHTML(k, inf) {
       <button class="dgn-big gold" data-act="dgp-mk"${online && !busy ? "" : " disabled"}>${busy ? "방이 열려 있어요" : "파티 만들기"}</button></section>
     <section class="dgp-box"><h3>빠르게 합류</h3><div class="dgp-r"><button class="dgn-big" data-act="dgp-quick"${online && !busy ? "" : " disabled"}>아무 파티나 들어가기 · 파티 구함</button></div><p class="dgp-n">파티가 있으면 들어가고, 없으면 내가 방을 열어 기다려요(2명 이상 모이면 시작).</p>
       <div class="dgp-r"><input id="dgp-code" class="dgn-in dgp-code" maxlength="120" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="방 코드 4글자 또는 초대 링크" aria-label="방 코드"><button class="dgn-btn" data-act="dgp-joinc"${online && !busy ? "" : " disabled"}>코드로 입장</button></div></section>
-    <section class="dgp-box dgp-wide"><h3>모집 중인 파티 · 던전 접속자 <span class="dgp-bs"><button class="dgn-btn dgn-tiny" data-act="dgp-srvchat">서버 채팅</button><button class="dgn-btn dgn-tiny" data-act="dgp-refresh">새로고침</button></span></h3><div id="dgp-list" class="dgp-list" aria-live="polite">${entListHTML()}</div></section></div>`;
+    <section class="dgp-box dgp-wide"><h3>모집 중인 파티 · 던전 접속자 <span class="dgp-bs"><button class="dgn-btn dgn-tiny" data-act="dgp-ffollow">친구 따라가기</button><button class="dgn-btn dgn-tiny" data-act="dgp-srvchat">서버 채팅</button><button class="dgn-btn dgn-tiny" data-act="dgp-refresh">새로고침</button></span></h3><div id="dgp-list" class="dgp-list" aria-live="polite">${entListHTML()}</div></section></div>`;
 }
 function entListHTML() {
   const NN = typeof dgnNet !== "undefined" ? dgnNet : null; if (!NN) return `<p class="dgp-n">온라인 기능을 준비 중이에요.</p>`; const E = NN.ENT, me = NN.myNo(); const list = (E.list || []).filter(p => p.no !== me);
@@ -37584,12 +37688,12 @@ function renderFloors(dec, sel) {
   ov.innerHTML = `<div class="dgn-card" role="dialog" aria-modal="true" aria-label="층 선택"><h2>층 선택</h2><p class="sub">${V.net ? "<b>파티</b> — 파티원 모두에게 열린 층까지만 갈 수 있어요" + (V.net.role === "host" && V.net.roster ? " · 준비 " + (V.net.roster.filter(r => r[0] !== 0 && r[6]).length) + "/" + Math.max(0, V.net.roster.length - 1) + "명" : "") + " · " : ""}최고 클리어 <b class="num">${c.floorBest | 0}</b>층 · 열린 층 <b class="num">${open}</b>층 · 보스를 잡으면 다음 층이 열려요${G.evt ? ` · <b style="color:#ffd23c">⚡ ${G.evt.floor}층 이벤트 몹</b>` : ""}</p>
     ${progress}<div class="dgn-ftabs" role="tablist">${tabs.join("")}</div><div class="dgn-fg">${cells.join("")}</div>
     <div class="dgn-fd"><b>${esc(fi.name || sel + "층")}</b><div>${esc(fi.mood || dgnMap.DECADE_NAMES[ds.decade % dgnMap.DECADE_NAMES.length])}</div><div class="dgn-tags">${ds.tags.map(t => `<i>${esc(t)}</i>`).join("") || `<i>평범한 구조</i>`}${sel % 10 === 0 ? `<i>★ 큰 보스</i>` : `<i>보스</i>`}${evt ? `<i>⚡ 이벤트 몹</i>` : ""}</div></div>
-    <div class="dgn-row"><button class="dgn-big gold" data-act="dgn-fgo" ${isOp && V.net?.role !== "guest" ? "" : "disabled"}>${sel === G.floor ? "이 층 다시 시작" : sel + "층으로 이동"}</button><button class="dgn-big ghost" data-act="dgn-close">닫기</button><button class="dgn-btn dgn-exitb" data-act="dgn-ask">나가기</button></div></div>`;
+    <div class="dgn-row"><button class="dgn-big gold" data-act="dgn-fgo" ${isOp && V.net?.role !== "guest" ? "" : "disabled"}>${sel === G.floor ? "이 층 다시 시작" : sel + "층으로 이동"}</button><button class="dgn-big" data-act="dgn-fgob" ${isOp && V.net?.role !== "guest" ? "" : "disabled"}>${sel === G.floor ? "보스방 앞으로" : sel + "층 보스방 앞으로"}</button><button class="dgn-big ghost" data-act="dgn-close">닫기</button><button class="dgn-btn dgn-exitb" data-act="dgn-ask">나가기</button></div></div>`;
 }
 function openFloors() { const G = V.G; if (!G || G.over || V.tr) return; if (D() && D().ui && D().ui.isOpen && D().ui.isOpen()) D().ui.close(); renderFloors(); openOv("floors"); sfxUi(); }
 function openBigMap() {
   const G = V.G; if (!G || G.over) return; const ov = $("#dgn-mapov"), M = G.M; ov.innerHTML = `<div class="dgn-card" role="dialog" aria-modal="true" aria-label="지도"><h2>${esc((G.info && G.info.name) || G.floor + "층")} 지도</h2><canvas class="dgn-bigmap" id="dgn-bigmap" width="${M.W * 8}" height="${M.H * 8}"></canvas>
-    <div class="dgn-leg"><span>▲ 나(흰 화살표)</span><span>▲ 보스방(빨강)</span><span>◌ 점선 원 = 보스방 대략 위치(가까워지면 정확히)</span><span>◎ 포털(하늘)</span><span>▬ 상자(노랑)</span><span>■ 몹(주황·빨강)</span><span>★ 이벤트 몹</span></div><div class="dgn-row"><button class="dgn-big gold" data-act="dgn-floors">층 선택</button><button class="dgn-big ghost" data-act="dgn-close">닫기</button><button class="dgn-btn dgn-exitb" data-act="dgn-ask">나가기</button></div></div>`;
+    <div class="dgn-leg"><span>▲ 나(흰 화살표)</span><span>▲ 보스방(빨강)</span><span>◌ 점선 원 = 보스방 대략 위치(가까워지면 정확히)</span><span>◎ 포털(하늘)</span><span>▬ 상자(노랑)</span><span>■ 몹(주황·빨강)</span><span>★ 이벤트 몹</span></div><div class="dgn-row">${G.bs.state === "cleared" ? `<button class="dgn-big" data-act="dgn-sc-portal">포털 바로 가기</button>` : `<button class="dgn-big" data-act="dgn-sc-boss">보스방 바로 가기</button>`}<button class="dgn-big gold" data-act="dgn-floors">층 선택</button><button class="dgn-big ghost" data-act="dgn-close">닫기</button><button class="dgn-btn dgn-exitb" data-act="dgn-ask">나가기</button></div></div>`;
   openOv("map"); const cv = $("#dgn-bigmap"); mmDraw(cv, {cx: M.W / 2, cy: M.H / 2, tiles: M.W, clamp: false, big: true}); const g = cv.getContext("2d");
 }
 function closeDeath() { try { $("#dgn-dead").hidden = true; if (V.ui === "death") V.ui = null; const sp = $("#dgn-spec"); if (sp) sp.hidden = true; } catch (e) {} }
@@ -37609,7 +37713,7 @@ function onFloor(e) {
   banner(e.name || e.n + "층", e.mood, e.tags, "", 3600); note(`${e.n}층`, "info"); renderFloorsIfOpen();
   if (G.floor > (V.bestSeen | 0)) { V.bestSeen = G.floor; rankSubmit(false); }
   if (!V.sess.played) { V.sess.played = true; stat("play"); }
-  if (e.how === "portal" || e.how === "select") saveNow("floor");
+  if (e.how === "portal" || e.how === "select" || e.how === "bossdoor") saveNow("floor");
 }
 function renderFloorsIfOpen() { if (V.ui === "floors") renderFloors(V._fdec, V._fsel); }
 function lootNote(e) {
@@ -37693,6 +37797,13 @@ Object.assign(A, {
   "dgp-quick": () => { dgSfx("dgUi"); dgnNet.openRoom("quick", {k: V.selK, cap: 4}); },
   "dgp-joinc": () => { const i = $("#dgp-code"); if (!i) return; const m = /[?&]room=([^&#\s]+)/i.exec(i.value); const code = String(m ? m[1] : i.value).toUpperCase().replace(/[^A-Z0-9]/g, "").replace(/0/g, "D").replace(/O/g, "Q").replace(/[1I]/g, "L").slice(0, 4); if (code.length !== 4) { toast("방 코드는 4글자예요"); return; } dgSfx("dgUi"); dgnNet.joinByCode(code, {k: V.selK}); },
   "dgp-join": b => { dgSfx("dgUi"); dgnNet.joinByCode(b.dataset.code, {k: V.selK}); },
+  "dgp-ffollow": async () => {
+    const rr = window.roundbRooms; if (!rr || !rr.followFriend) { note("친구 따라가기를 지금은 쓸 수 없어요.", "warn"); return; }
+    note("접속 중인 친구를 찾고 있어요…", "info", "ffollow", 1500);
+    const res = await rr.followFriend({join: false, only: "dungeon"});
+    note(res.msg, res.ok ? "good" : "warn", null, 5200);
+    if (res.ok && res.room) { if (res.room.mode === "dungeon") { dgSfx("dgUi"); dgnNet.joinByCode(res.room.code, {k: V.selK}); } }
+  },
   "dgp-refresh": () => { dgnNet.entPoll(true).then(() => { const el = $("#dgp-list"); if (el) el.innerHTML = entListHTML(); }); },
   "dgp-card": b => { try { knx.id.openCard(b.dataset.no); } catch (e) { toast("사원증을 열 수 없어요"); } },
   "dgp-whisper": b => { try { knx.chat.whisper(b.dataset.nick); } catch (e) { toast("귓속말을 열 수 없어요"); } },
@@ -37748,8 +37859,8 @@ Object.assign(A, {
   },
   "dgn-tk-no": () => { closeOv(); if (V.G) core.travelAnswer(V.G, false); },
   "dgn-tk-yes": () => { closeOv(); if (V.G) core.travelAnswer(V.G, true); },
-  "dgn-alt-no": () => { rstClear(); V.rst = null; closeOv(); },
-  "dgn-alt-yes": () => { rstClear(); V.rst = null; closeOv(); const G = V.G; if (G) { core.altarRematch(G); note("제단이 울려요! 보스가 다시 깨어났어요.", "warn", null, 4000); } },
+  "dgn-alt-no": () => { rstClear(); V.rst = null; V.retryAfter = false; closeOv(); },
+  "dgn-alt-yes": () => { rstClear(); V.rst = null; closeOv(); const G = V.G; if (G) { core.altarRematch(G); note("제단이 울려요! 보스가 다시 깨어났어요.", "warn", null, 4000); if (V.retryAfter) { V.retryAfter = false; const rs = core.bossRetry(G, G.hs[0]); if (rs === "no") note("보스방으로 가지 못했어요. [보스방 바로 가기]를 눌러 보세요.", "warn"); } V.scSig = ""; } },
   "dgn-asv": () => { V.opt.autoSave = V.opt.autoSave === 60 ? 30 : V.opt.autoSave === 30 ? 0 : 60; V.autoT = 0; saveOpt(); openPause(); },
   "dgn-savenow": () => { const ok = saveNow("manual", true); if (!ok && V.G) flashSaved(true); openPause(); },
   "dgn-resume": () => closeOv(), "dgn-close": () => closeOv(),
@@ -37765,6 +37876,9 @@ Object.assign(A, {
     else core.nextFloorNow(G, G.hs[0]);
   },
   "dgn-rope": () => { if (V.G && V.net) V.net.role === "guest" ? dgnNet.followRope() : core.ropeFollow(V.G, V.G.hs[0]); },
+  "dgn-sc-boss": () => { closeOv(); scAct("boss"); }, "dgn-sc-portal": () => { closeOv(); scAct("portal"); }, "dgn-sc-retry": () => { closeOv(); scAct("retry"); }, "dgn-sc-prev": () => { closeOv(); scAct("prev"); },
+  "dgp-tp": b => scAct("follow", +b.dataset.idx),
+  "dgn-fgob": () => { if (V.net?.role === "guest") return; const f = V._fsel, G = V.G; closeOv(); if (!G || !f) return; if (f === G.floor) { scAct("boss"); return; } if (V.net) { const lk = core.partyLock(G, f); if (lk) { note(lk + " 님은 아직 " + f + "층이 열리지 않았어요.", "warn"); return; } } else if (!core.isOpen(G.char, f)) { note("아직 열리지 않은 층이에요.", "warn"); return; } startTravel(f, "bossdoor"); },
   "dgn-boss-now": () => { if (V.G) V.net?.role === "guest" ? dgnNet.bossChoice(false) : core.bossChoice(V.G, V.G.hs[0], false); },
   "dgn-boss-wait": () => { if (V.G) V.net?.role === "guest" ? dgnNet.bossChoice(true) : core.bossChoice(V.G, V.G.hs[0], true); },
   "dgn-fgo": () => { if (V.net?.role === "guest") return; const f = V._fsel; closeOv(); if (V.G && f) { if (V.net) { const lk = core.partyLock(V.G, f); if (lk) { note(lk + " 님은 아직 " + f + "층이 열리지 않았어요.", "warn"); return; } } startTravel(f, "select"); } },
@@ -38027,6 +38141,7 @@ function hostMsg(S, m, from) {
   if (!m || typeof m !== "object") return; const G = S.G; if (!G) return;
   if (m.t === "bg") { const r = bigRecv(S, from, m); if (r) hostBig(S, from, r); return; }
   const h = S.byNet[from]; if (m.t === "nextFloor" && h && m.floor === G.floor) { core.nextFloorNow(G, h); return; } if (m.t === "rope" && h && m.floor === G.floor) { core.ropeFollow(G, h); return; } if (m.t === "autoSkill" && h) { h.autoSkill = m.on === true; h.autoMask = Number.isInteger(m.am) ? m.am & 255 : 255; h.bossOnlyMove = m.bossOnlyMove !== false; return; } if (m.t === "bossChoice" && h && m.floor === G.floor) { core.bossChoice(G, h, !!m.wait); return; } if (m.t === "say" && h) { hostSay(S, h.idx, m.s); return; } if (m.t === "i") { if (h) hostInput(S, h, m); return; }
+  if (m.t === "act" && h && m.floor === G.floor) { try { if (m.a === "follow") core.followHero(G, h, m.to | 0); else if (m.a === "boss") core.gotoBossDoor(G, h); else if (m.a === "portal") core.gotoPortal(G, h); else if (m.a === "retry") core.bossRetry(G, h); } catch (er) { console.error(er); } return; }
   if (m.t === "ack" && h) { core.ackDrop(G, m.id | 0, !!m.ok); return; }
   if (m.t === "rdy") { S.ready[from] = m.v ? 1 : 0; sendRoster(S); return; }
   if (m.t === "pong") return;
@@ -38333,7 +38448,7 @@ function mirrorEnter(S, n, e) {   // 손님 화면에서 층 바꾸기: 맵은 �
   G.floor = n; G.ropeView = []; G.ropePull = false; G.M = dgnMap.gen(n); const M = G.M; try { G.info = d.floorInfo(n) || {}; } catch (er) { G.info = {}; } G.info.mobPool = G.info.mobPool || [];
   if (e && e.defs) S.defs = e.defs; else S.defs = (G.info.mobPool || []).concat([G.info.bossId || ""]);
   G.mobs = []; G.pj = []; G.ep = []; G.zones = []; G.allies = []; G.drops = []; G.chests = []; G.portals = []; G.npcs = []; G.beams = []; G.orbits = []; G.shocks = []; G.fx = []; G.texts = []; G.slashes = []; G.bolts = []; G.later = [];
-  S.mobs = new Map(); S.others = new Map(); G.others = []; G.boss = null; G.bs = {state: "idle", t: 0}; G.cine = null; G.near = null; G.ask = null; G.over = null; G.horde = null; G.combo = 0; G.explored = new Uint8Array(M.W * M.H); G.cleared = G.x.clr.includes(n); G.fl = {n, kills: 0, t0: G.playT}; G.runT = 0;
+  S.mobs = new Map(); S.others = new Map(); G.others = []; G.boss = null; G.bs = {state: "idle", t: 0}; G.cine = null; G.near = null; G.ask = null; G.over = null; G.horde = null; G.combo = 0; G.explored = new Uint8Array(M.W * M.H); G.cleared = G.x.clr.includes(n); G.fullSight = n <= (G.char.floorBest | 0) || !!G.cleared; if (G.fullSight) G.explored.fill(1); G.fl = {n, kills: 0, t0: G.playT}; G.runT = 0;
   if (M.town) core.setupTown(G);
   S.sawBoss = 0; S.firstSnap = -1; G.P.dash = null; ui().closeDeath(); G.hs[0].flow = core.mkFlow(M); G.flow = G.hs[0].flow;
 }
@@ -38434,6 +38549,7 @@ return {N, ADV, S: () => N.S, active: () => !!N.S, visitor, soloContinue, role: 
     const S = N.S;
     if (S?.role === "guest" && !S.hostLost) safe(() => S.sess.send({t: "rope", floor: S.G.floor}));
   },
+  act(a, to) { const S = N.S; if (S?.role === "guest" && !S.hostLost) safe(() => S.sess.send({t: "act", a, to: to | 0, floor: S.G.floor})); },
   syncAutoSkill() {
     const S = N.S;
     if (S?.role !== "guest" || S.hostLost) return;
