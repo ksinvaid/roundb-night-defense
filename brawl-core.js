@@ -105,7 +105,7 @@ function navNext(map, x0, y0, x1, y1) {
 const KITS = [
  {n:"서아", role:"근접 딜러", col:"#ffd36b", hp:300, spd:240, pref:[0,80], kr:1,
   basic:{t:"cone", rng:82, ang:110, dmg:17, rate:2, knock:8},
-  skills:[{n:"일섬", d:"앞을 크게 베어 밀쳐냅니다", t:"cone", cd:3.2, rng:100, ang:100, dmg:36, knock:60},
+  skills:[{n:"일섬", d:"앞을 크게 베어 밀쳐냅니다", t:"cone", cd:3.2, rng:100, ang:100, dmg:36, knock:60, delay:.22},
           {n:"돌진 베기", d:"돌진하며 부딪힌 적을 벱니다", t:"dash", cd:7, dist:230, spd:950, dmg:26, knock:70},
           {n:"전장 호령", d:"주변을 밀쳐내고 잠깐 빨라집니다", t:"circle", cd:11, r:150, dmg:28, knock:110, stun:.6, me:{haste:[1.3,3]}},
           {n:"기사단 필살", d:"앞 일직선을 꿰뚫는 큰 검기", t:"beam", cd:26, len:420, w:90, dmg:105, knock:150, delay:.4}]},
@@ -122,7 +122,7 @@ const KITS = [
           {n:"성역", d:"안의 아군은 치유, 적은 느려짐", t:"zone", cd:13, r:135, dur:5, dps:9, hps:17, slow:.75},
           {n:"부활의 종", d:"아군 큰 치유·보호막, 적은 기절", t:"circle", cd:30, r:240, dmg:25, stun:.8, knock:120, heal:85, shield:60}]},
  {n:"아린", role:"원거리", col:"#7dffb0", hp:240, spd:240, pref:[260,420], kr:1,
-  basic:{t:"proj", spd:900, rng:520, r:8, dmg:15, rate:2.2},
+  basic:{t:"proj", spd:900, rng:470, r:8, dmg:15, rate:2.2},
   skills:[{n:"속사", d:"화살 3발을 빠르게 쏩니다", t:"proj", cd:3, spd:950, rng:520, r:8, dmg:17, count:3, spread:14},
           {n:"후방 구르기", d:"뒤로 구르며 잠깐 무적", t:"dash", cd:5.5, dist:200, spd:800, back:true, inv:.3},
           {n:"덫 설치", d:"밟은 적을 기절시키는 덫", t:"trap", cd:10, r:70, dmg:32, stun:1.2, life:14},
@@ -141,25 +141,25 @@ const KITS = [
           {n:"유성 낙하", d:"지정한 곳에 유성을 떨어뜨림", t:"circle", at:"aim", cd:27, rng:400, r:170, dmg:110, knock:130, delay:.9}]},
  {n:"다온", role:"근접 딜러", col:"#ff9d4d", hp:340, spd:250, pref:[0,80], kr:.7,
   basic:{t:"cone", rng:80, ang:120, dmg:19, rate:1.7, knock:10},
-  skills:[{n:"한 방 펀치", d:"강하게 때려 멀리 날립니다", t:"cone", cd:4, rng:92, ang:70, dmg:46, knock:130},
+  skills:[{n:"한 방 펀치", d:"강하게 때려 멀리 날립니다", t:"cone", cd:4, rng:92, ang:70, dmg:46, knock:130, delay:.3},
           {n:"돌격", d:"앞으로 돌진해 받아치고 기절", t:"dash", cd:8, dist:320, spd:850, dmg:35, knock:140, stun:.5},
           {n:"대지 강타", d:"바닥을 내려쳐 주변 기절", t:"circle", cd:12, r:140, dmg:35, stun:1, knock:90},
           {n:"전군 돌격", d:"멈추지 않는 긴 돌격", t:"dash", cd:26, dist:560, spd:720, dmg:70, knock:220, stun:1, inv:.8, me:{dr:[.5,2]}}]},
  {n:"소율", role:"탱커", col:"#9fd0ff", hp:400, spd:220, pref:[0,75], kr:.5,
   basic:{t:"cone", rng:74, ang:120, dmg:15, rate:1.8, knock:6},
-  skills:[{n:"방패 가격", d:"방패로 쳐서 기절시킵니다", t:"cone", cd:5, rng:82, ang:80, dmg:26, stun:.8},
+  skills:[{n:"방패 가격", d:"방패로 쳐서 기절시킵니다", t:"cone", cd:5, rng:82, ang:80, dmg:26, stun:.8, delay:.22},
           {n:"수호 돌진", d:"짧게 돌진해 적을 밀어냅니다", t:"dash", cd:7, dist:190, spd:700, dmg:18, knock:80},
           {n:"철벽 태세", d:"3.5초간 받는 피해 크게 감소", t:"self", cd:13, me:{dr:[.55,3.5], shield:[40,3.5]}},
           {n:"도발의 외침", d:"주변 적을 끌어당기고 기절", t:"circle", cd:28, r:230, pull:140, dmg:40, stun:.6, me:{dr:[.4,4]}}]},
  {n:"이안", role:"원거리", col:"#b8c6ff", hp:255, spd:245, pref:[250,400], kr:1,
-  basic:{t:"proj", spd:880, rng:500, r:8, dmg:16, rate:2},
+  basic:{t:"proj", spd:880, rng:460, r:8, dmg:16, rate:2},
   skills:[{n:"정밀 사격", d:"빠르고 강한 한 발", t:"proj", cd:3.6, spd:1100, rng:650, r:9, dmg:42},
           {n:"도약 후퇴", d:"뒤로 순간이동하고 빨라짐", t:"blink", cd:5.5, dist:220, back:true, me:{haste:[1.3,2]}},
           {n:"섬광탄", d:"지정한 곳을 눈부시게 해 기절", t:"circle", at:"aim", cd:11, rng:380, r:110, stun:1.1, delay:.3},
           {n:"필중 저격", d:"체력 낮은 적에게 더 큰 피해", t:"proj", cd:24, spd:1600, rng:950, r:12, dmg:135, exec:.5}]},
  {n:"태오", role:"탱커", col:"#d0c07a", hp:390, spd:222, pref:[0,75], kr:.5,
   basic:{t:"cone", rng:74, ang:120, dmg:15, rate:1.8, knock:6},
-  skills:[{n:"방패 치기", d:"방패로 쳐서 멀리 밀어냅니다", t:"cone", cd:4, rng:80, ang:90, dmg:28, knock:150},
+  skills:[{n:"방패 치기", d:"방패로 쳐서 멀리 밀어냅니다", t:"cone", cd:4, rng:80, ang:90, dmg:28, knock:150, delay:.22},
           {n:"방패 돌진", d:"방패를 앞세워 돌진", t:"dash", cd:6, dist:170, spd:650, dmg:20, knock:130},
           {n:"걱정 마!", d:"아군 보호막, 나는 반격 태세", t:"circle", cd:12, r:200, shield:70, me:{dr:[.7,2], refl:[.3,2]}},
           {n:"내가 다 막는다", d:"4초간 피해 대부분 막고 되돌림", t:"self", cd:28, me:{dr:[.8,4], refl:[.5,4]}, also:{r:200, pull:100, dmg:20}}]}
@@ -179,7 +179,7 @@ function mkFighter(i, kn, team, human, diff, hpm) {
   const f = {i, id:kn, team, human, x:0, y:0, aimX:1, aimY:0, aimD:260, aimAng:0, vx:0, vy:0, hp:kit.hp * hpm, maxhp:kit.hp * hpm, spd:kit.spd, alive:true, respT:0,
     kills:0, deaths:0, dmg:0, assists:0, heal:0, place:0, cd:[0, 0, 0, 0], bcd:0, stun:0, slowM:1, slowT:0, hasteM:1, hasteT:0, shieldV:0, shieldT:0,
     drV:0, drT:0, ampV:0, ampT:0, invisT:0, invulT:0, reflV:0, reflT:0, kx:0, ky:0, dash:null, lastHit:null, hits:{}, combo:0, comboT:0, flash:0, leech:0,
-    inp:{mx:0, my:0, atk:0, casts:[]}, bot:null};
+    inp:{mx:0, my:0, atk:0, prio:0, casts:[]}, bot:null};
   if (!human) makeBot(f, diff);
   return f;
 }
@@ -235,16 +235,20 @@ function hurt(m, src, dst, amt, o) {
     if (src.combo > 1 && !o.env && !o.refl) a *= 1 + Math.min(.2, (src.combo - 1) * .025);
   }
   if (dst.drT > 0) a *= 1 - dst.drV;
-  if (o.exec && dst.hp < dst.maxhp * .4) a *= 1 + o.exec;
+  let kind = 0;
+  if (o.exec && dst.hp < dst.maxhp * .4) { a *= 1 + o.exec; kind |= 1; }
+  if (src && src !== dst && !o.refl && !o.env && !o.dot && Math.abs(angDiff(Math.atan2(src.y - dst.y, src.x - dst.x), dst.aimAng)) > 2.4) { a *= 1.25; kind |= 1; }   // 뒤에서 맞으면 치명타
+  if (dst.drT > 0 && dst.drV >= .4) kind |= 2;
   a = Math.max(1, a);
   let take = a;
   if (dst.shieldT > 0 && dst.shieldV > 0) { const ab = Math.min(dst.shieldV, take); dst.shieldV -= ab; take -= ab; if (dst.shieldV <= 0) dst.shieldT = 0; }
+  if (take <= .01) kind |= 4;
   dst.hp -= take; dst.flash = .16;
   if (src && src !== dst) {
     src.dmg += a; dst.lastHit = {by:src.i, t:m.t}; dst.hits[src.i] = m.t;
     if (!o.dot) { src.combo = (src.comboT > 0 ? src.combo : 0) + 1; src.comboT = 2.2; }
   }
-  if (!o.quiet) emit(m, "hit", dst.i, Math.round(dst.x), Math.round(dst.y), Math.round(a), src ? src.i : -1);
+  if (!o.quiet) emit(m, "hit", dst.i, Math.round(dst.x), Math.round(dst.y), Math.round(a), src ? src.i : -1, kind);
   if (dst.reflT > 0 && dst.reflV > 0 && src && src !== dst && !o.refl) hurt(m, dst, src, a * dst.reflV, {refl:1});
   if (dst.hp <= 0) kill(m, dst, src);
   return a;
@@ -301,7 +305,7 @@ function respawn(m, f) {
 
 /* ---------------- 스킬 ---------------- */
 function applyCircle(m, f, x, y, c) {
-  emit(m, "ring", Math.round(x), Math.round(y), c.r, f.id);
+  emit(m, "ring", Math.round(x), Math.round(y), c.r, f.id, (c.stun ? 1 : 0) | (c.pull ? 2 : 0) | (c.heal || c.shield ? 4 : 0) | (c.slow ? 8 : 0) | (c.knock ? 16 : 0) | (c.dmg ? 32 : 0));
   for (const o of m.fighters) {
     if (!o.alive) continue;
     const dx = o.x - x, dy = o.y - y, d = hyp(dx, dy);
@@ -320,18 +324,18 @@ function applyCircle(m, f, x, y, c) {
     }
   }
 }
-function fireProj(m, f, sk, ang) {
+function fireProj(m, f, sk, ang, slot) {
   const n = sk.count || 1, spread = (sk.spread || 0) * Math.PI / 180;
   for (let k = 0; k < n; k++) {
     const a = ang + (n > 1 ? (k / (n - 1) - .5) * spread : 0), c = Math.cos(a), s = Math.sin(a);
     m.proj.push({x:f.x + c * (R + 4), y:f.y + s * (R + 4), vx:c * sk.spd, vy:s * sk.spd, r:sk.r, life:sk.rng / sk.spd, dmg:sk.dmg, by:f.i, team:f.team, id:f.id,
       pierce:!!sk.pierce, hit:[], ha:sk.ha || 0, leech:sk.leech || 0, ex:sk.exec || 0, big:sk.dmg >= 40 || sk.r >= 16 ? 1 : 0});
   }
-  emit(m, "shot", f.i);
+  emit(m, "shot", f.i, +ang.toFixed(2), slot === undefined ? -1 : slot);
 }
-function coneHit(m, f, c, ang) {
+function coneHit(m, f, c, ang, slot) {
   const half = (c.ang || 90) * Math.PI / 360;
-  emit(m, "sw", f.i, +ang.toFixed(2), c.rng, c.ang || 90);
+  emit(m, "sw", f.i, +ang.toFixed(2), c.rng, c.ang || 90, slot === undefined ? -1 : slot);
   for (const o of m.fighters) {
     if (!o.alive || o.team === f.team) continue;
     const dx = o.x - f.x, dy = o.y - f.y, d = hyp(dx, dy);
@@ -371,8 +375,11 @@ function cast(m, f, slot) {
   const ang = Math.atan2(f.aimY, f.aimX);
   let ok = true;
   switch (sk.t) {
-    case "proj": fireProj(m, f, sk, ang); break;
-    case "cone": coneHit(m, f, sk, ang); break;
+    case "proj": fireProj(m, f, sk, ang, slot); break;
+    case "cone":
+      if (sk.delay) { m.tele.push({k:"w", by:f.i, ang, t:sk.delay, dur:sk.delay, c:sk, slot, rng:sk.rng, arc:sk.ang || 90}); emit(m, "warn2", f.i); }
+      else coneHit(m, f, sk, ang, slot);
+      break;
     case "dash": {
       const dir = sk.back ? ang + Math.PI : ang;
       f.dash = {vx:Math.cos(dir) * sk.spd, vy:Math.sin(dir) * sk.spd, t:sk.dist / sk.spd, dmg:sk.dmg || 0, kb:sk.knock || 0, stun:sk.stun || 0, hit:[]};
@@ -421,11 +428,11 @@ function cast(m, f, slot) {
     case "zone": {
       const p = sk.at === "aim" ? aimPoint(m, f, ang, sk.rng) : {x:f.x, y:f.y};
       m.zones.push({x:p.x, y:p.y, r:sk.r, t:sk.dur, dur:sk.dur, by:f.i, team:f.team, id:f.id, dps:sk.dps || 0, hps:sk.hps || 0, slow:sk.slow || 1, acc:0});
-      emit(m, "ring", Math.round(p.x), Math.round(p.y), sk.r, f.id);
+      emit(m, "ring", Math.round(p.x), Math.round(p.y), sk.r, f.id, (sk.hps ? 4 : 0) | (sk.slow ? 8 : 0));
       break;
     }
     case "beam":
-      if (sk.delay) { m.tele.push({k:"b", by:f.i, ang, t:sk.delay, dur:sk.delay, c:sk}); emit(m, "warn2", f.i); }
+      if (sk.delay) { m.tele.push({k:"b", by:f.i, ang, t:sk.delay, dur:sk.delay, c:sk, len:sk.len, w:sk.w}); emit(m, "warn2", f.i); }
       else fireBeam(m, f, sk, ang);
       break;
     case "trap":
@@ -441,11 +448,24 @@ function cast(m, f, slot) {
   emit(m, "cast", f.i, slot);
   return true;
 }
-function basicAttack(m, f) {
-  const b = KITS[f.id].basic, ang = Math.atan2(f.aimY, f.aimX);
+function basicAttack(m, f, ang) {
+  const b = KITS[f.id].basic;
   f.bcd = 1 / b.rate;
-  if (b.t === "cone") coneHit(m, f, b, ang);
-  else fireProj(m, f, b, ang);
+  if (b.t === "cone") coneHit(m, f, b, ang, -1);
+  else fireProj(m, f, b, ang, -1);
+}
+function autoTarget(m, f, range) {
+  let best = null, bs = 1e9;
+  const low = f.inp.prio === 1;
+  for (const o of m.fighters) {
+    if (!o.alive || o.team === f.team) continue;
+    const d = hyp(o.x - f.x, o.y - f.y);
+    if (d > range + R * .5 || (o.invisT > 0 && d > 130)) continue;
+    if (!los(m.map, f.x, f.y, o.x, o.y, 6)) continue;
+    const sc = low ? o.hp / o.maxhp * 1000 + d * .2 : d;
+    if (sc < bs) { bs = sc; best = o; }
+  }
+  return best;
 }
 
 /* ---------------- 한 걸음 진행 ---------------- */
@@ -496,7 +516,10 @@ function tickF(m, f, dt) {
   f.vx = (f.x - ox) / dt; f.vy = (f.y - oy) / dt;
   if (f.stun <= 0 && !f.dash) {
     while (inp.casts.length) cast(m, f, inp.casts.shift());
-    if (inp.atk && f.bcd <= 0) basicAttack(m, f);
+    if (f.bcd <= 0) {
+      if (f.bot) { if (inp.atk) basicAttack(m, f, Math.atan2(f.aimY, f.aimX)); }
+      else { const t = autoTarget(m, f, KITS[f.id].basic.rng); if (t) basicAttack(m, f, Math.atan2(t.y - f.y, t.x - f.x)); }
+    }
   } else inp.casts.length = 0;
 }
 function stepProj(m, dt) {
@@ -538,7 +561,7 @@ function stepWorld(m, dt) {
     const t = m.tele[i]; t.t -= dt;
     if (t.t > 0) continue;
     const f = m.fighters[t.by];
-    if (t.k === "c") applyCircle(m, f, t.x, t.y, t.c); else fireBeam(m, f, t.c, t.ang);
+    if (t.k === "c") applyCircle(m, f, t.x, t.y, t.c); else if (t.k === "b") fireBeam(m, f, t.c, t.ang); else if (f && f.alive && f.stun <= 0) coneHit(m, f, t.c, t.ang, t.slot);
     m.tele.splice(i, 1);
   }
   for (let i = m.zones.length - 1; i >= 0; i--) {
@@ -561,7 +584,7 @@ function stepWorld(m, dt) {
       if (!o.alive || o.team === t.team || hyp(o.x - t.x, o.y - t.y) > t.r) continue;
       hurt(m, m.fighters[t.by], o, t.dmg, {}); if (t.stun) o.stun = Math.max(o.stun, t.stun); fired = true;
     }
-    if (fired) emit(m, "ring", Math.round(t.x), Math.round(t.y), t.r, t.id);
+    if (fired) emit(m, "ring", Math.round(t.x), Math.round(t.y), t.r, t.id, 33);
     if (fired || t.t <= 0) m.traps.splice(i, 1);
   }
   for (const o of m.objs) {
@@ -799,7 +822,7 @@ function pack(m, evs) {
     p:m.proj.slice(0, 50).map(p => [R1(p.x), R1(p.y), R1(p.vx), R1(p.vy), p.r, p.id, p.big | (p.pierce ? 2 : 0)]),
     z:m.zones.map(z => [R1(z.x), R1(z.y), z.r, +z.t.toFixed(1), z.dur, z.hps > 0 ? 1 : 0, z.id]),
     tr:m.traps.map(t => [R1(t.x), R1(t.y), t.r, t.arm > 0 ? 0 : 1, t.team]),
-    te:m.tele.map(t => t.k === "c" ? [0, R1(t.x), R1(t.y), t.r, +t.t.toFixed(2), t.dur, t.by, 0, 0] : [1, 0, 0, t.c.len, +t.t.toFixed(2), t.dur, t.by, +t.ang.toFixed(2), t.c.w]),
+    te:m.tele.map(t => t.k === "c" ? [0, R1(t.x), R1(t.y), t.r, +t.t.toFixed(2), t.dur, t.by, 0, 0] : t.k === "w" ? [2, 0, 0, t.rng, +t.t.toFixed(2), t.dur, t.by, +t.ang.toFixed(2), t.arc] : [1, 0, 0, t.len, +t.t.toFixed(2), t.dur, t.by, +t.ang.toFixed(2), t.w]),
     it:m.items.map(i => [R1(i.x), R1(i.y), i.k]),
     o:m.objs.map(o => [+o.cd.toFixed(1), +o.arm.toFixed(2)]),
     zn:m.zone ? [R1(m.zone.x), R1(m.zone.y), R1(m.zone.r)] : 0, sc:m.score, e:evs || [], res:m.res};
@@ -823,7 +846,7 @@ function unpack(sn, view) {
   view.proj = sn.p.map(p => ({x:p[0], y:p[1], vx:p[2], vy:p[3], r:p[4], id:p[5], big:p[6] & 1, pierce:!!(p[6] & 2), t0:now}));
   view.zones = sn.z.map(z => ({x:z[0], y:z[1], r:z[2], t:z[3], dur:z[4], hps:z[5], id:z[6]}));
   view.traps = sn.tr.map(t => ({x:t[0], y:t[1], r:t[2], arm:t[3] ? 0 : 1, team:t[4]}));
-  view.tele = sn.te.map(t => ({k:t[0] ? "b" : "c", x:t[1], y:t[2], r:t[3], len:t[3], t:t[4], dur:t[5], by:t[6], ang:t[7], w:t[8]}));
+  view.tele = sn.te.map(t => ({k:t[0] === 2 ? "w" : t[0] ? "b" : "c", x:t[1], y:t[2], r:t[3], len:t[3], rng:t[3], t:t[4], dur:t[5], by:t[6], ang:t[7], w:t[8], arc:t[8]}));
   view.items = sn.it.map(i => ({x:i[0], y:i[1], k:i[2]}));
   view.objs = view.map ? sn.o.map((o, i) => ({k:i === 0 ? "w" : "p", x:i === 0 ? view.map.purifier.x : view.map.printers[i - 1].x, y:i === 0 ? view.map.purifier.y : view.map.printers[i - 1].y, cd:o[0], arm:o[1]})) : [];
   view.zone = sn.zn ? {x:sn.zn[0], y:sn.zn[1], r:sn.zn[2]} : null;
