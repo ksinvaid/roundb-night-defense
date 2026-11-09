@@ -54,7 +54,7 @@ section.bd .bd-alertedge.on { box-shadow: inset 0 0 38px 8px #ff4a3a99; }
 
 section.bd .bd-stick { position: absolute; left: 12px; bottom: 74px; width: 124px; height: 124px; border-radius: 50%; background: #ffffff14; border: 2px solid #ffffff55; touch-action: none; z-index: 2; }
 section.bd .bd-stick i { position: absolute; left: 50%; top: 50%; width: 54px; height: 54px; margin: -27px 0 0 -27px; border-radius: 50%; background: #9ae6ccdd; border: 2px solid #fff; pointer-events: none; }
-section.bd .bd-stick::after { content: "드론"; position: absolute; left: 0; right: 0; top: -20px; text-align: center; font-size: 12px; font-weight: 800; color: #cfe; text-shadow: 0 1px 3px #000; }
+section.bd .bd-stick::after { content: "내 기사"; position: absolute; left: 0; right: 0; top: -20px; text-align: center; font-size: 12px; font-weight: 800; color: #cfe; text-shadow: 0 1px 3px #000; }
 @media (hover: hover) and (pointer: fine) and (min-width: 701px) { section.bd .bd-stick { display: none; } }
 
 section.bd .bd-bar { position: absolute; left: 0; right: 0; bottom: 0; display: flex; gap: 4px; padding: 6px; z-index: 4; background: linear-gradient(0deg, #0b1316f2 70%, transparent); }
@@ -66,7 +66,7 @@ section.bd .bd-bar [data-cmd=retreat] { background: #274a63; border-color: #8cc8
 section.bd .bd-bar [data-cmd=rally] { background: #1f4d3f; border-color: #9ae6cc; }
 section.bd .bd-bar [data-cmd=follow] { background: #3d3357; border-color: #c9b2ff; }
 section.bd .bd-bar [data-cmd][aria-pressed=true] { outline: 3px solid #fff; outline-offset: -3px; }
-section.bd .bd-bar .bd-evo-btn { background: #5a4a14; border-color: #ffd77a; }
+section.bd .bd-bar .bd-evo-btn { background: #5a4a14; border-color: #ffd77a; position: relative; }
 section.bd .bd-bar .bd-evo-btn.ready { animation: bd-pulse 1s ease-in-out infinite; }
 @keyframes bd-pulse { 50% { box-shadow: 0 0 0 4px #ffd77a99; } }
 
@@ -113,7 +113,6 @@ section.bd .bd-sym { display: inline-block; width: 14px; height: 14px; vertical-
 @media (max-width: 700px) {
   section.bd canvas.bd-mini { width: 112px; height: 75px; }
   section.bd .bd-res { max-width: calc(100% - 130px); }
-  section.bd .bd-banner { top: 142px; }
   section.bd .bd-spg { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
   section.bd .bd-spc { min-height: 84px; font-size: 11px; padding: 4px 2px; }
   section.bd .bd-spc img { width: 30px; height: 30px; }
@@ -127,4 +126,32 @@ section.bd .bd-sym { display: inline-block; width: 14px; height: 14px; vertical-
   section.bd .bd-head strong { display: none; }
   section.bd .bd-stick { bottom: 66px; width: 100px; height: 100px; }
   section.bd .bd-hint { bottom: 62px; }
+}
+
+/* ---------- v3: 배치도 미리보기 · 진화 안내 · 화면 이동 ---------- */
+section.bd .bd-prev { width: 100%; aspect-ratio: 1895 / 1202; border-radius: 10px; border: 1px solid #3d6a66; background: #f4eee4 url("img/plan.jpg") no-repeat; background-size: 105.54% auto; background-position: 53.3% 70.8%; }
+section.bd .bd-bar .bd-evo-btn.ready { animation: bd-pulse 1s ease-in-out infinite; filter: brightness(1.25); }
+section.bd .bd-bar .bd-evo-btn.ready::before { content: "▼"; position: absolute; left: 50%; top: -30px; transform: translateX(-50%); font-size: 22px; line-height: 1; color: #ffd77a; text-shadow: 0 0 6px #000, 0 0 2px #000; animation: bd-bounce .8s ease-in-out infinite; pointer-events: none; }
+section.bd .bd-bar .bd-evo-btn.ready::after { content: "✦"; position: absolute; right: 5px; top: 1px; font-size: 14px; color: #fff3b0; animation: bd-twinkle .9s ease-in-out infinite; pointer-events: none; }
+@keyframes bd-bounce { 50% { transform: translate(-50%, 7px); } }
+@keyframes bd-twinkle { 50% { opacity: .15; transform: scale(1.5); } }
+section.bd .bd-evobanner { position: absolute; top: 46px; left: 50%; transform: translateX(-50%); z-index: 6; display: grid; gap: 1px; justify-items: center; width: max-content; max-width: min(94%, 560px); padding: 8px 16px; border-radius: 12px; background: #5a4308f2; border: 2px solid #ffd77a; box-shadow: 0 0 0 0 #ffd77acc; text-align: center; font-size: 15px; font-weight: 800; color: #fff3c4; pointer-events: none; animation: bd-glow 1.2s ease-in-out infinite; }
+section.bd .bd-evobanner[hidden] { display: none; }
+section.bd .bd-evobanner b { color: #ffd77a; font-size: 17px; }
+section.bd .bd-evobanner small { font-size: 12px; font-weight: 700; color: #ffe9a8; }
+@keyframes bd-glow { 50% { box-shadow: 0 0 18px 4px #ffd77acc; } }
+section.bd .bd-evotip { position: absolute; right: 8px; bottom: 86px; z-index: 6; max-width: 200px; padding: 8px 12px; border-radius: 12px; background: #fff3c4; color: #3a2a04; border: 2px solid #10151c; font-weight: 800; font-size: 13px; line-height: 1.35; text-align: center; pointer-events: none; animation: bd-tip 1.1s ease-in-out infinite; }
+section.bd .bd-evotip[hidden] { display: none; }
+section.bd .bd-evotip::after { content: ""; position: absolute; right: 26px; bottom: -9px; width: 14px; height: 14px; background: #fff3c4; border-right: 2px solid #10151c; border-bottom: 2px solid #10151c; transform: rotate(45deg); }
+@keyframes bd-tip { 50% { transform: translateY(-5px); } }
+section.bd .bd-recenter { position: absolute; top: 114px; right: 6px; z-index: 3; min-height: 36px; padding: 4px 10px; font-size: 12px; background: #1d3a3c; }
+section.bd .bd-recenter[hidden] { display: none; }
+section.bd .bd-spc.can { animation: bd-pulse 1.2s ease-in-out infinite; }
+@media (hover: none) and (pointer: coarse) { section.bd .bd-bar button small { display: none; } }
+@media (max-width: 700px) {
+  section.bd .bd-evobanner { top: 142px; font-size: 13px; padding: 6px 12px; }
+  section.bd .bd-evobanner b { font-size: 15px; }
+  section.bd .bd-banner { top: 236px; }
+  section.bd .bd-recenter { top: 89px; }
+  section.bd .bd-evotip { right: 4px; bottom: 82px; max-width: 160px; font-size: 12px; }
 }
