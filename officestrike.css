@@ -125,3 +125,11 @@ section.rb-office canvas.os-lopv { position:static; width:100%; height:auto; asp
 .rb-office.os-free canvas { cursor:default; } .rb-office canvas { cursor:crosshair; }
 @media (max-height:480px) { .rb-office .os-mv { bottom:auto; top:56px; left:8px; flex-direction:row; } .rb-office .os-insp { bottom:auto; top:110px; } }
 @media (max-width:640px) { .rb-office .os-bg button { grid-template-columns:18px 42px 1fr auto; gap:4px; padding:4px 5px; font-size:12px; } .rb-office .os-bi { width:42px; height:22px; } }
+
+.rb-office .os-teams { display:flex; flex-wrap:wrap; align-items:center; gap:6px; }
+.rb-office .os-teams label { display:flex; align-items:center; gap:5px; font-size:12px; }
+.rb-office .os-teams select { min-height:40px; border-radius:8px; border:1px solid #e7ba58; background:#322d51; color:#fff8e7; font-weight:800; padding:0 6px; }
+.rb-office .os-presets { display:flex; flex-wrap:wrap; gap:6px; }
+.rb-office .os-presets button { flex:1 1 22%; min-height:40px; font-size:12px; }
+.rb-office .os-bg button.own { border:2px solid #7bd88f; background:#1c3a2b; }
+.rb-office .os-bg button.own:disabled { opacity:1; } .rb-office .os-bg button.own small { color:#9ef0b0; font-weight:900; }
