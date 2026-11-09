@@ -149,3 +149,32 @@ section.brawl.bw .bw-view canvas[data-cv] { height: 100%; min-height: 0; }
   .bw-stick { width: 104px; height: 104px; }
 }
 @media (prefers-reduced-motion: reduce) { .bw .bw-sk.ready.ult { animation: none; } }
+
+/* ---- 연출 v2: 컷인·콤보·자동공격 대상 전환·폰 버튼 배치 (적 표시 = 점선·빗금·네모, 아군/나 = 실선·동그라미) ---- */
+.bw .bw-hud .bw-prio { position: absolute; left: 8px; top: 58px; pointer-events: auto; min-height: 34px; padding: 4px 10px; border-radius: 16px; border: 2px solid #8190c8; background: #0b1022cc; color: #fff3d6; font-size: 12px; font-weight: 800; cursor: pointer; touch-action: none; }
+.bw .bw-prio b { color: #ffd36b; }
+.bw .bw-prio kbd { font: 800 10px system-ui; background: #ffd36b; color: #17203a; border-radius: 4px; padding: 0 4px; margin-left: 4px; }
+.bw-combo { top: 98px; transform-origin: left center; }
+.bw.bw-touchy .bw-combo { top: 98px; }
+.bw-combo.pop { animation: bw-pop .25s ease-out; }
+@keyframes bw-pop { 0% { transform: scale(1.8); } 100% { transform: scale(1); } }
+.bw-cutin { position: absolute; left: 0; right: 0; top: 26%; display: flex; align-items: center; gap: 12px; padding: 8px 16px; opacity: 0; pointer-events: none; transform: translateX(-110%); background: linear-gradient(90deg, #10162c00, #10162ce6 14%, #10162ce6 86%, #10162c00); z-index: 4; }
+.bw-cutin img { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 3px solid #ffe066; background: #0c1128; flex: none; }
+.bw-cutin small { display: block; font-size: 13px; color: #ffe394; font-weight: 800; }
+.bw-cutin b { display: block; font-size: clamp(26px, 7vw, 46px); color: #fff; font-weight: 900; font-style: italic; text-shadow: 0 3px 0 #0b1022, 0 0 16px #ffb347; line-height: 1.05; }
+.bw-cutin.foe { top: 18%; border-top: 3px dashed #ffa23c; border-bottom: 3px dashed #ffa23c; }
+.bw-cutin.foe img { border-color: #ffa23c; border-radius: 10px; }
+.bw-cutin.foe b { font-size: clamp(20px, 5vw, 32px); }
+.bw-cutin.ally { top: 18%; }
+.bw-cutin.ally img { border-color: #4cc9ff; }
+.bw-cutin.ally b { font-size: clamp(20px, 5vw, 32px); }
+.bw-cutin.play { animation: bw-cut 1.1s ease-out forwards; }
+@keyframes bw-cut { 0% { opacity: 0; transform: translateX(-110%); } 14% { opacity: 1; transform: translateX(0); } 75% { opacity: 1; transform: translateX(2%); } 100% { opacity: 0; transform: translateX(30%); } }
+.bw.bw-touchy .bw-sk { width: 58px; height: 58px; }
+.bw.bw-touchy .bw-sk[data-sk="0"] { right: 12px; bottom: 12px; }
+.bw.bw-touchy .bw-sk[data-sk="1"] { right: 78px; bottom: 22px; }
+.bw.bw-touchy .bw-sk[data-sk="2"] { right: 22px; bottom: 84px; }
+.bw.bw-touchy .bw-sk[data-sk="3"] { right: 88px; bottom: 90px; width: 66px; height: 66px; }
+.bw.bw-touchy .bw-hint { top: 140px; }
+body.rb-arena-active #kh-root { z-index: 2147483001; }
+@media (prefers-reduced-motion: reduce) { .bw-cutin.play { animation-duration: .01s; } .bw-combo.pop { animation: none; } }
