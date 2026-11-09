@@ -68,7 +68,7 @@
   dialog.className = "lb-server-dialog";
   dialog.setAttribute("aria-labelledby", "lb-server-title");
   dialog.innerHTML = `<header><h2 id="lb-server-title">서버 매칭 현황</h2><button class="btn btn-sm" type="button" data-room-action="close">닫기</button></header>
-    <nav aria-label="서버 정보"><button class="btn btn-sm" type="button" data-room-tab="match">매칭 현황</button><button class="btn btn-sm" type="button" data-room-tab="rooms">전체 공개방</button><button class="btn btn-sm" type="button" data-room-action="refresh">새로고침</button></nav>
+    <nav aria-label="서버 정보"><button class="btn btn-sm" type="button" data-room-tab="match">매칭 현황</button><button class="btn btn-sm" type="button" data-room-tab="rooms">전체 공개방</button><button class="btn btn-sm" type="button" data-room-action="refresh">새로고침</button><button class="btn btn-sm" type="button" data-room-action="follow">친구 따라가기</button></nav>
     <p class="lb-server-status" role="status"></p><ul class="lb-server-list"></ul>`;
   document.body.append(dialog);
   const list = dialog.querySelector("ul"), status = dialog.querySelector("[role=status]");
@@ -127,9 +127,46 @@
     if (!button) return;
     if (button.dataset.roomAction === "close") dialog.close();
     if (button.dataset.roomAction === "refresh") refresh();
+    if (button.dataset.roomAction === "follow") followFriend({});
     if (button.dataset.roomTab) { tab = button.dataset.roomTab; render(); refresh(); }
   });
   dialog.addEventListener("close", () => { clearInterval(timer); opener?.focus(); });
+  /* 2026-11-09 친구 따라가기: 접속 중인 친구(knx.fr.list 의 online)의 presence 에서 공개방 표식(dgp-/svp-/arp-)을 찾아 바로 입장한다. 못 찾으면 이유를 알려 준다.
+     opt.join === false 면 입장은 부른 쪽이 한다(던전 [온라인 파티] 탭). 반환 {ok, room, friend, msg} */
+  async function followFriend(opt) {
+    opt = opt || {}; const say = msg => { if (dialog.open) status.textContent = msg; return msg; };
+    const fail = msg => ({ok: false, msg: say(msg)});
+    try {
+      say("접속 중인 친구를 찾고 있어요…");
+      const fr = (window.knx?.fr?.list?.() || []).filter(f => f.st === "ok");
+      if (!fr.length) return fail("친구가 아직 없어요. 친구 목록에서 먼저 친구를 추가해 주세요.");
+      const on = fr.filter(f => f.online);
+      if (!on.length) return fail("지금 접속 중인 친구가 없어요.");
+      await knx.net.ready; const now = knx.net.now();
+      const raw = await knx.net.get("presence", {orderBy: '"t"', startAt: now - 90000, limitToLast: 100});
+      const all = Object.values(raw || {}).filter(p => p && Number.isFinite(p.t) && p.t >= now - 90000);
+      let full = null, noRoom = null, other = null;
+      for (const f of on) {
+        const mine = all.filter(p => p.no === f.uid);
+        for (const p of mine) {
+          const room = parsePresence({x: p}, now)[0];
+          if (!room) continue;
+          if (opt.only && room.mode !== opt.only) { other = other || {f, room}; continue; }
+          if (room.count >= room.cap) { full = full || {f, room}; continue; }
+          const msg = `${f.nick} 님이 있는 ${names[room.mode] || room.mode} 방${room.floor ? "(" + room.floor + "층)" : ""}에 들어가요.`;
+          say(msg);
+          if (opt.join !== false) { if (dialog.open) dialog.close(); entries.get(room.mode)(room.code); }
+          return {ok: true, room, friend: f, msg};
+        }
+        if (mine.length) noRoom = noRoom || f;
+      }
+      if (full) return fail(`${full.f.nick} 님의 방이 가득 찼어요 (${full.room.count}/${full.room.cap}). 자리가 나면 다시 눌러 주세요.`);
+      if (other) return fail(`${other.f.nick} 님은 지금 ${names[other.room.mode] || other.room.mode} 방에 있어요 (던전 파티가 아니에요). 서버 매칭 현황의 [친구 따라가기]를 눌러 보세요.`);
+      if (noRoom) return fail(`${noRoom.nick} 님은 접속 중이지만 따라갈 수 있는 공개방에 있지 않아요 (혼자 하는 중이거나 초대 전용 방). 친구에게 초대를 부탁해 보세요.`);
+      return fail("접속 중인 친구가 서버에 보이지 않아요. 잠시 뒤 다시 눌러 주세요.");
+    } catch (e) { return fail("친구 위치를 확인하지 못했어요. 잠시 뒤 다시 눌러 주세요."); }
+  }
+  window.roundbRooms = window.roundbRooms || {}; window.roundbRooms.followFriend = followFriend;
   document.querySelector("#lb-match-status").addEventListener("click", event => open("match", event.currentTarget));
   document.querySelector("#lb-room-list").addEventListener("click", event => open("rooms", event.currentTarget));
 })();
