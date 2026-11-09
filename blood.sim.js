@@ -2,18 +2,18 @@
    방장(또는 혼자 하기)만 step 을 돌리고, 손님은 snapshot 을 받아 그리기만 한다. */
 (function (root) {
   "use strict";
-  const W = 3600, H = 2400, MAXU = 300, CELL = 128, BHP = 3000, DHP = 260, START_BIO = 110, BASE_R = 46;
+  const W = 3790, H = 2404, MAXU = 300, CELL = 128, BHP = 3000, DHP = 260, START_BIO = 110, BASE_R = 46;
   const COLS = Math.ceil(W / CELL), ROWS = Math.ceil(H / CELL);
-  /* 8종: 이름, 체력, 공격, 사거리, 속도, 쿨, 혈액값, 해금 진화P, 그림 모양, 색, 설명, 특수 */
+  /* 8종: 소용돌이 디펜스에 나오는 몬스터(mk = 그림 이름). 약한 것부터 강한 것 순서 */
   const SP = [
-    {n: "보병", hp: 60, dmg: 8, reach: 34, spd: 95, cd: .8, cost: 20, ep: 0, shape: "humanoid", col: "#e6d08a", size: 40, info: "균형 잡힌 기본 병사"},
-    {n: "크롤러", hp: 34, dmg: 6, reach: 26, spd: 150, cd: .45, cost: 12, ep: 1, shape: "bug", col: "#9be37a", size: 34, info: "싸고 빠름 · 몸이 약함"},
-    {n: "저격수", hp: 42, dmg: 14, reach: 175, spd: 85, cd: 1, cost: 30, ep: 1, shape: "bird", col: "#7ac7ff", size: 40, info: "멀리서 쏨 · 앞줄 필요"},
-    {n: "블롭", hp: 150, dmg: 9, reach: 34, spd: 80, cd: .9, cost: 40, ep: 2, shape: "blob", col: "#c39bff", size: 50, info: "튼튼함 · 주변까지 피해", splash: 56},
-    {n: "중장갑병", hp: 230, dmg: 14, reach: 36, spd: 68, cd: 1, cost: 55, ep: 2, shape: "golem", col: "#9aa7b8", size: 52, info: "받는 피해 30% 감소", armor: .7},
-    {n: "브루트", hp: 190, dmg: 38, reach: 40, spd: 86, cd: 1.1, cost: 75, ep: 3, shape: "jaws", col: "#ff9a6b", size: 56, info: "한 방이 아주 강함"},
-    {n: "공성 전차", hp: 280, dmg: 24, reach: 130, spd: 54, cd: 1.5, cost: 95, ep: 3, shape: "stamp", col: "#d8c25a", size: 60, info: "기지에 3배 피해 · 느림", bm: 3, um: .7, pb: 1},
-    {n: "돌연변이", hp: 420, dmg: 40, reach: 48, spd: 105, cd: .8, cost: 140, ep: 4, shape: "spike", col: "#ff7bb0", size: 64, info: "최강 · 스스로 회복", regen: 6}
+    {n: "마감 좀비", mk: "zombie", hp: 60, dmg: 8, reach: 34, spd: 95, cd: .8, cost: 20, ep: 0, size: 46, info: "균형 잡힌 기본 근접"},
+    {n: "야간 거미", mk: "crawler", hp: 34, dmg: 6, reach: 26, spd: 150, cd: .45, cost: 12, ep: 1, size: 42, info: "싸고 빠름 · 몸이 약함"},
+    {n: "비명귀", mk: "screamer", hp: 42, dmg: 14, reach: 175, spd: 85, cd: 1, cost: 30, ep: 1, size: 50, info: "비명으로 멀리서 공격"},
+    {n: "분열체", mk: "splitter", hp: 150, dmg: 9, reach: 34, spd: 80, cd: .9, cost: 40, ep: 2, size: 56, info: "튼튼 · 주변까지 피해", splash: 56},
+    {n: "야근 유령", mk: "ghost", hp: 230, dmg: 14, reach: 36, spd: 68, cd: 1, cost: 55, ep: 2, size: 58, info: "받는 피해 30% 감소", armor: .7},
+    {n: "퇴사 거부자", mk: "brute", hp: 190, dmg: 38, reach: 40, spd: 86, cd: 1.1, cost: 75, ep: 3, size: 64, info: "한 방이 아주 강함"},
+    {n: "월요병", mk: "blob", hp: 280, dmg: 24, reach: 130, spd: 54, cd: 1.5, cost: 95, ep: 3, size: 68, info: "기지에 3배 피해 · 느림", bm: 3, um: .7, pb: 1},
+    {n: "야근 대마왕", mk: "mini", hp: 420, dmg: 40, reach: 48, spd: 105, cd: .8, cost: 140, ep: 4, size: 78, info: "최강 · 스스로 회복", regen: 6}
   ];
   const UPC = [2, 3, 5];   // 업그레이드 1·2·3단계 진화P
   const ATK = [1, 1.15, 1.3, 1.5], HPM = [1, 1.2, 1.4, 1.7], SPAWN = [1, .85, .7, .55], CAPB = [0, 8, 16, 26];
@@ -36,22 +36,21 @@
   const maskOf = arr => arr.reduce((m, v, i) => m | (v ? 1 << i : 0), 0);
   const unmask = m => Array.from({length: 8}, (_, i) => (m >> i) & 1);
 
+  /* 라운드비 3F·4F 배치도(img/plan.jpg) 위에서 싸운다. 배치도 좌표 → 전장 좌표: (x-56)*2, (y-268)*2 */
+  const PX0 = 56, PY0 = 268, PK = 2;
+  const ROOMS = [   // 사람 순서: 0번이 첫 사람. 숫자가 늘어도 네 귀퉁이부터 고르게 차도록
+    ["3F 창고", [108, 288, 508, 490]], ["4F 여자화장실", [1736, 1144, 1900, 1437]], ["4F 회의실", [1630, 288, 1898, 684]], ["3F 남자화장실", [526, 1302, 792, 1437]],
+    ["3F 호리존 스튜디오", [684, 292, 948, 678]], ["4F 남자화장실", [1472, 1302, 1739, 1437]], ["4F 휴게공간", [1056, 290, 1402, 497]], ["3F 여자화장실", [788, 1144, 952, 1437]],
+    ["3F 실외기실", [108, 688, 235, 824]], ["4F 실외기실", [1055, 738, 1167, 868]]
+  ];
+  const NODES = [["3F 정수기", 646, 1044], ["4F B구역", 1286, 812], ["3F 입구", 735, 850], ["4F 입구", 1683, 850], ["3F 좌석홀", 350, 980],
+    ["4F C구역", 1234, 1016], ["4F A구역", 1234, 608], ["3F 전자칠판", 400, 640], ["4F D구역", 1234, 1220], ["4F 팬트리", 1590, 1017]];
+  const wx = x => Math.round((x - PX0) * PK), wy = y => Math.round((y - PY0) * PK);
   function layout(n) {
-    const cx = W / 2, cy = H / 2, rx = W * .4, ry = H * .38, out = [];
-    for (let i = 0; i < n; i++) {
-      const a = Math.PI / 2 + i * 2 * Math.PI / n;
-      out.push({x: Math.round(cx + Math.cos(a) * rx), y: Math.round(cy + Math.sin(a) * ry)});
-    }
-    return out;
+    return ROOMS.slice(0, n).map(r => { const b = r[1]; return {x: wx((b[0] + b[2]) / 2), y: wy((b[1] + b[3]) / 2), room: r[0], rect: [wx(b[0]), wy(b[1]), wx(b[2]), wy(b[3])]}; });
   }
-  function layoutNodes(n, bases) {
-    const cx = W / 2, cy = H / 2, pts = [{x: cx, y: cy}];
-    if (n === 2) pts.push({x: cx - W * .3, y: cy}, {x: cx + W * .3, y: cy});
-    else for (let i = 0; i < n; i++) {
-      const a = bases[i], b = bases[(i + 1) % n];
-      pts.push({x: Math.round(cx + ((a.x + b.x) / 2 - cx) * .64), y: Math.round(cy + ((a.y + b.y) / 2 - cy) * .64)});
-    }
-    return pts.map(p => ({x: p.x, y: p.y, o: -1, co: -1, pr: 0, fc: {}}));
+  function layoutNodes(n) {
+    return NODES.slice(0, clamp(n + 1, 3, 10)).map(d => ({name: d[0], x: wx(d[1]), y: wy(d[2]), o: -1, co: -1, pr: 0, fc: {}}));
   }
   const capOf = (up, nodes, n) => Math.min(26 + nodes * 4 + CAPB[up[2]], Math.floor(MAXU / n) + 6);
   const incomeOf = (nodes, mul) => (4.5 + 2 * nodes) * (mul || 1);
@@ -62,14 +61,14 @@
     const n = clamp(cfg.n | 0 || 4, 2, 10), diff = clamp(cfg.diff | 0, 0, 2), time = cfg.rule === "time";
     const humans = new Set(cfg.humans || [0]), bases = layout(n);
     const S = {n, diff, rule: time ? "time" : "elim", limit: time ? 300 : 600, time: 0, done: false, winner: -1, rank: [], score: [], units: [], ev: [],
-      nextId: 1, mid: cfg.mid || 1, bases, nodes: layoutNodes(n, bases), players: [], cells: Array.from({length: COLS * ROWS}, () => [])};
+      nextId: 1, mid: cfg.mid || 1, bases, nodes: layoutNodes(n), players: [], cells: Array.from({length: COLS * ROWS}, () => [])};
     const order = [0, 1, 2].sort(() => Math.random() - .5);
     let k = 0;
     for (let i = 0; i < n; i++) {
       const ai = !humans.has(i), per = ai ? order[k++ % 3] : -1, hm = ai ? [.7, 1, 1.15][diff] : 1;
       const b = bases[i], tc = {x: W / 2 - b.x, y: H / 2 - b.y}, L = Math.hypot(tc.x, tc.y) || 1;
       const home = {x: b.x + tc.x / L * 240, y: b.y + tc.y / L * 240};
-      S.players.push({id: i, ai, persona: per, name: (cfg.names && cfg.names[i]) || (ai ? "AI " + PERS[per].n : "플레이어 " + (i + 1)),
+      S.players.push({id: i, ai, persona: per, kn: cfg.knights && cfg.knights[i] != null ? cfg.knights[i] : i % 10, room: b.room, rect: b.rect, name: (cfg.names && cfg.names[i]) || (ai ? "AI " + PERS[per].n : "플레이어 " + (i + 1)),
         bx: b.x, by: b.y, alive: true, bmax: Math.round(BHP * hm), bhp: Math.round(BHP * hm), hitT: -99, hitBy: -1, evT: -9, outT: 0,
         dx: b.x, dy: b.y - 60, dhp: DHP, dmax: DHP, da: true, dres: 0, dcd: 0, dfl: 0, sx: 0, sy: 0, tcd: .5,
         bio: START_BIO, ep: 1, epT: 0, kills: 0, kc: 0, destroyed: 0, deaths: 0,
@@ -470,10 +469,10 @@
     const nd = [];
     for (const n of S.nodes) nd.push(n.o, n.co, Math.round(n.pr * 100));
     return {v: 4, t: Math.round(S.time * 10) / 10, d: S.done ? 1 : 0, w: S.winner, ru: S.rule === "time" ? 1 : 0, df: S.diff, n: S.n, mid: S.mid,
-      nm: S.players.map(p => p.name), ai: S.players.map(p => p.ai ? p.persona + 1 : 0), pl: ps, nd, un, rk: S.done ? S.rank : 0, sc: S.done ? S.score : 0};
+      nm: S.players.map(p => p.name), kn: S.players.map(p => p.kn), ai: S.players.map(p => p.ai ? p.persona + 1 : 0), pl: ps, nd, un, rk: S.done ? S.rank : 0, sc: S.done ? S.score : 0};
   }
 
-  const api = {W, H, MAXU, BASE_R, SP, UP, UPC, ATK, HPM, TEAM, PERS, KIND, DHP, layout, layoutNodes, capOf, incomeOf, scoreOf, maskOf, unmask,
+  const api = {W, H, MAXU, BASE_R, SP, UP, UPC, ATK, HPM, TEAM, PERS, KIND, DHP, ROOMS, layout, layoutNodes, capOf, incomeOf, scoreOf, maskOf, unmask,
     create, step, issue, snapshot, evo, upg, setOrder, rankNow};
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.BloodSim = api;
 })(typeof window !== "undefined" ? window : globalThis);
