@@ -786,71 +786,33 @@ function animOf(q, now) {
 function headOf(k) { const im = imgs && imgs[k], hs = (typeof KNIGHTS !== "undefined" && KNIGHTS[k] && KNIGHTS[k].hs) || 112; return im && im.complete && im.naturalWidth ? {im, sx: Math.max(0, im.naturalWidth * .17), sw: im.naturalWidth * .66, sh: Math.min(im.naturalHeight, im.naturalHeight * (hs + 8) / 300)} : null; }
 function limb(g, x0, y0, x1, y1, w, c, outline) { g.lineCap = "round"; g.strokeStyle = outline || c; g.lineWidth = outline ? w + 5 / outline_u : w; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke(); }
 let outline_u = 100;
-function drawChar(g, q, o) {   // 좌표 단위 = 서 있는 키(1.0), 원점 = 발 밑
-  const {sx, fy, u, col, ally, fx, fz, an, S, now, atk} = o;
-  const v = clamp(an.v / 3.3, 0, 1.5), st = q.st | 0, rolling = q.rollT > 0, air = (q.z || 0) > .02, sw = Math.sin(an.ph), t = now / 1000, cs = st === 1 ? .72 : 1;
-  let suit = ally ? "#244a78" : "#6a2619", vest = ally ? "#4a92d6" : "#d9552f"; const pants = "#1d242f", boot = "#0b0e14", glove = "#2a303b"; if (o.flash) { suit = "#fff0e4"; vest = "#ffffff"; }
-  outline_u = u;
-  g.save(); g.translate(sx, fy - (q.z || 0) * u / .66); g.scale(u, u);
-  if (rolling) { g.translate(0, -.3); g.rotate((t * 11 + q.i) % TAU); g.scale(.72, .72); g.translate(0, .3); }
-  const sgn = fx < 0 ? -1 : 1, Lh = Math.abs(fx) * .86 + .16, toward = fz < -.35, away = fz > .35;
-  const key = heldKey(q, atk), A = GK.art(key, skinFor(q, key)), len = (ART_LEN[key] || .3), gs = A ? len / A.w : 1;
-  const flashing = S.t - q.shotAt < .07 && q.w !== 2 && q.w !== 3;
-  const drawGunAt = (hx, hy, rot) => {
-    if (!A) return;
-    g.save(); g.translate(hx, hy); if (rot) g.rotate(rot); g.scale(sgn * (toward ? .28 : Lh) * gs, gs); g.drawImage(A.cv, -A.gx, -A.gy);
-    if (flashing && A.mx) { g.fillStyle = "#ffe9a6"; g.beginPath(); g.arc(A.mx - A.gx + 10, A.my - A.gy, 22, 0, TAU); g.fill(); g.fillStyle = "#fff"; g.beginPath(); g.arc(A.mx - A.gx + 10, A.my - A.gy, 9, 0, TAU); g.fill(); }
+function drawChar(g, q, o) {   // 원본 기사 전신 그림을 그대로 쓰고 모션(바운스·기울임·스쿼시·그림자·반전)만 얹는다. 팀 구분은 발밑 링·마커·이름표·은은한 외곽 빛으로
+  const {sx, fy, u, col, ally, fx, fz, an, S, now, atk} = o, im = imgs && imgs[q.k];
+  const v = clamp(an.v / 3.3, 0, 1.5), st = q.st | 0, rolling = q.rollT > 0, air = (q.z || 0) > .02, sw = Math.sin(an.ph), t = now / 1000;
+  const sgn = fx < 0 ? -1 : 1, ok = im && im.complete && im.naturalWidth, ar = ok ? im.naturalWidth / im.naturalHeight : .69;
+  const H0 = u * 1.04, W0 = H0 * ar, key = heldKey(q, atk), A = GK.art(key, skinFor(q, key)), toward = fz < -.35;
+  const shotK = S.t - q.shotAt < .1 ? 1 - (S.t - q.shotAt) / .1 : 0;
+  // 그림자(바닥에 붙은 타원)
+  g.save(); g.translate(sx, fy); g.fillStyle = "rgba(0,0,0,.35)"; g.beginPath(); g.ellipse(0, 0, W0 * (st === 2 ? .5 : .3) * (air ? .8 : 1), u * .045, 0, 0, TAU); g.fill(); g.restore();
+  g.save(); g.translate(sx, fy - (q.z || 0) * u / .66);
+  let tilt = sw * .07 * Math.min(1, v * 1.25) - shotK * .05 * sgn, sy = 1, sxs = 1, hop = air ? 0 : Math.abs(sw) * .04 * v * H0 + Math.sin(t * 2.2 + q.i) * .006 * H0;
+  if (st === 1) { sy = .74; sxs = 1.1; } if (air) { sy = 1.05; sxs = .96; }
+  if (st === 2) { tilt = sgn * 1.45; sy = .8; sxs = .9; hop = 0; }   // 엎드림: 옆으로 눕힌다
+  if (rolling) { g.translate(0, -H0 * .4); g.rotate((t * 11 + q.i) % TAU); g.scale(.72, .72); g.translate(0, H0 * .4); tilt = 0; }
+  g.rotate(tilt); g.scale(sgn * sxs * (1 + (v > .1 ? Math.sin(an.ph * 2) * .015 : 0)), sy * (1 + (v > .1 ? Math.cos(an.ph * 2) * .015 : 0)));
+  if (ok) {
+    g.shadowColor = col; g.shadowBlur = Math.max(5, u * .06); g.drawImage(im, -W0 / 2, -H0 - hop, W0, H0); g.shadowColor = "transparent";
+    if (o.flash) { g.globalCompositeOperation = "lighter"; g.globalAlpha = .6; g.drawImage(im, -W0 / 2, -H0 - hop, W0, H0); g.globalAlpha = 1; g.globalCompositeOperation = "source-over"; }
+  } else { g.fillStyle = col; g.fillRect(-W0 / 2, -H0, W0, H0); }
+  // 손에 든 장비: 손 위치(몸통 옆 가슴 높이)에 얹는다
+  if (A && !(st === 2)) {
+    const len = (ART_LEN[key] || .3) * u, gs = len / A.w, Lh = toward ? .3 : Math.abs(fx) * .8 + .22, hx = W0 * .22, hy = -H0 * .46 - hop;
+    g.save(); g.translate(hx, hy); g.scale(Lh * gs, gs);
+    if (q.w === 2 && S.t - q.shotAt < .3) g.rotate(-Math.sin(Math.PI * (S.t - q.shotAt) / .3) * 1.2);
+    g.drawImage(A.cv, -A.gx, -A.gy);
+    if (S.t - q.shotAt < .07 && q.w !== 2 && q.w !== 3 && A.mx) { g.fillStyle = "#ffe9a6"; g.beginPath(); g.arc(A.mx - A.gx + 10, A.my - A.gy, 24, 0, TAU); g.fill(); g.fillStyle = "#fff"; g.beginPath(); g.arc(A.mx - A.gx + 10, A.my - A.gy, 10, 0, TAU); g.fill(); }
     g.restore();
-    if (toward && (q.w === 0 || q.w === 1)) { g.fillStyle = "#07090c"; g.beginPath(); g.arc(hx, hy + .005, .026, 0, TAU); g.fill(); }
-  };
-  const throwing = q.w === 3 && S.t - q.throwAt < .4, tk = throwing ? Math.sin(Math.PI * (S.t - q.throwAt) / .4) : 0, stab = q.w === 2 && S.t - q.shotAt < .3 ? Math.sin(Math.PI * (S.t - q.shotAt) / .3) : 0;
-  const hd = headOf(q.k);
-  const drawHead = (cx, cy, size) => {
-    const hw = size * 1.18;
-    if (hd) { g.drawImage(hd.im, hd.sx, 0, hd.sw, hd.sh, cx - hw / 2, cy - size / 2, hw, size); if (away) { g.fillStyle = "rgba(8,12,20,.5)"; g.fillRect(cx - hw / 2, cy - size / 2, hw, size); } }
-    else { g.fillStyle = "#e8b998"; g.beginPath(); g.arc(cx, cy, size * .42, 0, TAU); g.fill(); }
-  };
-  if (st === 2 && !rolling) {   // 엎드린 자세
-    const hx = sgn * (toward ? 0 : .26), hy = -.11;
-    for (const pass of [0, 1]) {
-      const c = pass ? null : col, e = pass ? 0 : 3 / u;
-      g.fillStyle = c || pants; for (const k2 of [-1, 1]) { g.beginPath(); g.ellipse(-sgn * .3, -.05 + k2 * .035, .2 + e, .035 + e, 0, 0, TAU); g.fill(); }
-      g.fillStyle = c || suit; g.beginPath(); g.ellipse(0, -.075, .27 + e, .075 + e, 0, 0, TAU); g.fill();
-      if (pass) { g.fillStyle = vest; g.beginPath(); g.ellipse(.02, -.095, .16, .04, 0, 0, TAU); g.fill(); }
-    }
-    drawHead(hx, hy, .27); drawGunAt(sgn * (toward ? .02 : .28), -.06, 0);
-    g.restore(); return;
   }
-  const bob = air ? 0 : Math.abs(sw) * .032 * v + Math.sin(t * 2.2 + q.i) * .006, hipY = -.31 * cs - bob, torsoC = -.52 * cs - bob, headC = (st === 1 ? -.67 : -.795) - bob;
-  const swing = air || rolling ? .55 : sw * .5 * Math.min(1, v * 1.25);
-  const sh = torsoC - .09 * cs, handX = sgn * (toward ? .06 : .13), handY = torsoC + .02 - (throwing ? tk * .26 : 0), lean = Math.sin(an.ph + 1) * .02 * v;
-  const gunBehind = away;
-  if (gunBehind) { drawGunAt(handX, handY, 0); }
-  for (const pass of [0, 1]) {
-    const e = pass ? 0 : 1, oc = pass ? null : col;
-    // 다리
-    for (const sd of [-1, 1]) {
-      const ang = swing * sd, fx0 = sd * .075, foot = Math.max(0, -Math.sin(ang)) * .04;
-      const kx = fx0 + Math.sin(ang) * (st === 1 ? .2 : .13), ky = -foot - (st === 1 ? 0 : 0);
-      limb(g, fx0, hipY, kx, ky - (st === 1 ? .0 : 0) + (air ? -.07 : 0), .11, pass ? pants : col, oc);
-      if (pass) { g.fillStyle = boot; g.beginPath(); g.ellipse(kx + sgn * .02, ky + (air ? -.07 : 0) - .008, .07, .035, 0, 0, TAU); g.fill(); }
-    }
-    // 몸통
-    g.fillStyle = oc || suit; rrect(g, -.16 - e * .03, torsoC - .15 * cs - e * .03, .32 + e * .06, .31 * cs + e * .06, .06); g.fill();
-    if (pass) { g.fillStyle = vest; rrect(g, -.13, torsoC - .13 * cs, .26, .22 * cs, .05); g.fill(); g.fillStyle = "rgba(0,0,0,.35)"; g.fillRect(-.16, torsoC + .1 * cs, .32, .028); g.fillStyle = "rgba(255,255,255,.22)"; g.fillRect(-.1, torsoC - .11 * cs, .2, .018); }
-    // 가만히 있는 팔 / 받침 팔
-    const sup = A && A.fx != null && (q.w === 0) && !throwing, ex = sgn * (toward ? .12 : .12 + Lh * gs * (A ? (A.fx || 0) - A.gx : 0)), ey = torsoC + .03;
-    if (sup) limb(g, -sgn * .15, sh, ex, ey, .07, pass ? suit : col, oc); else limb(g, -sgn * .15, sh, -sgn * (.17 + swing * .04), torsoC + .13 * cs, .07, pass ? suit : col, oc);
-    if (pass) { g.fillStyle = glove; g.beginPath(); if (sup) g.arc(ex, ey, .04, 0, TAU); else g.arc(-sgn * (.17 + swing * .04), torsoC + .13 * cs, .04, 0, TAU); g.fill(); }
-    // 총 든 팔
-    limb(g, sgn * .15, sh, handX, handY, .07, pass ? suit : col, oc);
-    if (pass) { g.fillStyle = glove; g.beginPath(); g.arc(handX, handY, .042, 0, TAU); g.fill(); }
-  }
-  // 머리(기사 그림) — 팀 색 외곽 고리
-  const hsz = .36;
-  g.strokeStyle = col; g.lineWidth = 3.5 / u; g.beginPath(); g.ellipse(0, headC, hsz * .62, hsz * .52, 0, 0, TAU); g.stroke();
-  drawHead(lean, headC, hsz);
-  if (!gunBehind) { g.save(); if (stab) g.translate(sgn * stab * .12, -stab * .05); drawGunAt(handX, handY + (throwing ? 0 : 0), stab ? -sgn * stab * .9 : 0); g.restore(); }
   g.restore();
 }
 
@@ -891,7 +853,7 @@ function fxDraw(ctx, dt, W, H, now) {
 }
 function drawView(ctx, W, H, p, S, now, wd, atk) {
   const key = heldKey(p, atk), skin = GK.getSkin(key), A = GK.art(key, skin); if (!A) return;
-  const size = Math.min(W * .92, H * .78) * (key === "knife" ? .62 : key === "frag" || key === "smoke" || key === "flash" ? .26 : key === "bomb" || key === "kit" ? .4 : key === "pistol" ? .5 : key === "lmg" || key === "sniper" ? .98 : .86);
+  const size = Math.min(W * .8, H * .68) * (key === "knife" ? .62 : key === "frag" || key === "smoke" || key === "flash" ? .26 : key === "bomb" || key === "kit" ? .4 : key === "pistol" ? .5 : key === "lmg" || key === "sniper" ? .98 : .86);
   const sc = size / A.w, ads = adsK, swp = clamp(1 - (now - swapAt) / 280, 0, 1), swpE = swp * swp;
   const shot = clamp(1 - (S.t - p.shotAt) / .13, 0, 1), rl = wd.rl || 0, lp = p.load > 0 && rl ? clamp(1 - p.load / rl, 0, 1) : -1, ld = lp >= 0 ? Math.sin(Math.PI * lp) : 0;
   const mv = clamp(p.mf, 0, 1), bx = Math.cos(bob) * size * .018 * mv, by = Math.abs(Math.sin(bob)) * size * .02 * mv;
@@ -916,11 +878,11 @@ function drawView(ctx, W, H, p, S, now, wd, atk) {
   if (insp >= GK.inspectLen(key)) inspectAt = 0;
   ctx.save();
   const slideK = lp >= .86 ? Math.sin(Math.PI * (lp - .86) / .14) : 0;
-  const px = W * (.78 - ads * .22) + bx + Math.sin(shotCount * 2.3) * pat.side * shot * size * .03, py = H * (.99 - ads * .03) + by + ld * size * .42 + swpE * size * .75 + shot * size * .06 + (p.z || 0) * size * .35 + (p.st === 1 ? size * .05 : p.st === 2 ? size * .1 : 0) + thr * -size * .42;
+  const px = W * (.8 - ads * .24) + bx + Math.cos(now / 1300) * size * .004 + Math.sin(shotCount * 2.3) * pat.side * shot * size * .03, py = H * (.97 - ads * .02) + by + Math.sin(now / 900) * size * .006 + ld * size * .42 + swpE * size * .75 + shot * size * .06 + (p.z || 0) * size * .35 + (p.st === 1 ? size * .05 : p.st === 2 ? size * .1 : 0) + thr * -size * .42;
   ctx.translate(px, py);
-  const rot = small ? .1 - thr * 1.1 : .5 - shot * .05 + ld * .4 - stab * 1.5 - ads * .18 + Math.sin(shotCount * 1.9) * pat.side * shot * .03;
+  const rot = small ? .1 - thr * 1.1 : .74 - shot * .05 + ld * .4 - stab * 1.5 - ads * .3 + Math.sin(shotCount * 1.9) * pat.side * shot * .03;
   ctx.rotate(rot); ctx.translate(shot * size * .04 + slideK * size * .015, 0);
-  ctx.scale(-1, 1);
+  ctx.scale(small ? -1 : -(.8 + ads * .18), 1);   // 앞으로 겨눈 총을 비스듬히 본 듯한 원근(길이 줄임)
   const m0 = ctx.getTransform();
   ctx.shadowColor = "rgba(0,0,0,.5)"; ctx.shadowBlur = size * .05; ctx.shadowOffsetY = size * .02;
   if (lp >= 0 && A.noMag && A.magCv && A.mag) {   // 장전: 탄창이 빠졌다가 다시 들어간다
@@ -1220,7 +1182,7 @@ function handleEvents(S, me) {
     }
     else if (ty === "kl") {
       if (b === me.i && a !== me.i) { GK.sfx.play("kill", "", {prio: true}); myStreak++; killPop = {t0: now, n: myStreak, name: kname(S.players[a].k)}; }
-      else if (a === me.i) { myStreak = 0; banner2("쓰러졌어요", S.done ? "" : "다음 라운드까지 팀원을 관전해요", "#ff9a8a", 2000); }
+      else if (a === me.i) { myStreak = 0; inspectAt = 0; banner2("쓰러졌어요", S.done ? "" : "다음 라운드까지 팀원을 관전해요", "#ff9a8a", 2000); }
     }
     else if (ty === "rl") { const wid = GK.TYPE2ID[b] || "rifle"; reloadSeq(wid, (WP[wid] || {}).rl || 2, mine ? 0 : d, mine ? 0 : pan, mine); }
     else if (ty === "th") GK.sfx.play("pin", "frag", {pan, dist: d, vol: .8});
@@ -1236,7 +1198,7 @@ function handleEvents(S, me) {
     else if (ty === "bd") toast("폭탄이 떨어졌어요 — 공격팀이 줍기", 2200);
     else if (ty === "bp") sfx("bp");
     else if (ty === "by") { if (a === me.i) sfx("by"); }
-    else if (ty === "rn") { buyOpen = true; buyReady = false; buyKey = ""; myStreak = 0; banner2("라운드 " + a + " / " + CFG.maxRounds, (b === me.team ? "공격" : "수비") + " · 구매 시간", "#ffe08a", 2200);
+    else if (ty === "rn") { inspectAt = 0; buyOpen = true; buyReady = false; buyKey = ""; myStreak = 0; banner2("라운드 " + a + " / " + CFG.maxRounds, (b === me.team ? "공격" : "수비") + " · 구매 시간", "#ffe08a", 2200);
       if (hintOn && !hintsDone.buy) { hintsDone.buy = 1; toast("구매 시간! 번호 버튼으로 무기를 사고 '바로 시작'을 누르세요 (소총 2000)", 5200); } }
     else if (ty === "lv") { sfx("go"); buyOpen = false;
       if (!isLocked() && !touchOnly() && !noLock() && !(hintOn && !hintsDone.live)) toast("화면을 클릭하면 마우스 시점이 고정돼요", 2600);
@@ -1350,7 +1312,7 @@ function draw(dt, now) {
   if (self && cp.alive && !(cp.zoom && wd.scope)) drawView(ctx, W, H, cp, S, now, wd, S.atk);
   drawScope(ctx, W, H, cp, wd);
   fxDraw(ctx, dt, W, H, now);
-  if (now - lightFlashAt < 60) { ctx.fillStyle = `rgba(255,224,160,${.14 * (1 - (now - lightFlashAt) / 60)})`; ctx.fillRect(0, 0, W, H); }
+  if (now - lightFlashAt < 60) { ctx.fillStyle = `rgba(255,224,160,${.06 * (1 - (now - lightFlashAt) / 60)})`; ctx.fillRect(0, 0, W, H); }
   if (me.hp < 35 && me.alive) { const v = ctx.createRadialGradient(W / 2, H / 2, H * .3, W / 2, H / 2, Math.hypot(W, H) * .55); v.addColorStop(0, "rgba(220,30,50,0)"); v.addColorStop(1, `rgba(220,30,50,${.35 + .15 * Math.sin(now / 160)})`); ctx.fillStyle = v; ctx.fillRect(0, 0, W, H); }
   if (S.t - me.hitAt < .9 && me.alive) {
     const rel = adiff(me.hitDir, camA), a = 1 - (S.t - me.hitAt) / .9, R = Math.min(W, H) * .26; ctx.strokeStyle = `rgba(255,60,70,${a})`; ctx.lineWidth = 8; ctx.beginPath(); ctx.arc(W / 2, H / 2, R, rel - Math.PI / 2 - .35, rel - Math.PI / 2 + .35); ctx.stroke();
@@ -1562,7 +1524,7 @@ function begin() {
   loadImgs(); cancelAnimationFrame(frame);
   const me = Number(window.lbDbg && window.lbDbg.ME && window.lbDbg.ME.kn) || 0;
   M = createMatch({map: cfg.map, diff: cfg.diff, humans: [0, ...hostSlots], per: cfg.per, me}); GS = null; pubMem = {}; rosAt = 0; st = M.S; slot = 0; evSeen = 0; evFor = ""; shown = ""; buyOpen = true; buyReady = false; buyKey = ""; hd = st.players[0].a; kick = 0; banner = null; errN = 0; acc = 0; paid = ""; scoreOpen = false; specI = 0;
-  hintOn = !LS.get("roundb-office-seen"); hintsDone = {}; started = performance.now();
+  hintOn = !LS.get("roundb-office-seen"); hintsDone = {}; started = performance.now(); inspectAt = 0; heldSig = ""; adsK = 0;
   for (const p of st.players) { p.rx = p.x; p.ry = p.y; p.ra = p.a; }
   $("[data-result]").hidden = true; showStage(true); sizeCanvas(); last = performance.now(); frame = requestAnimationFrame(loop);
   if (touchOnly() || root.classList.contains("os-touch")) toast("왼쪽 화면: 엄지로 이동 · 오른쪽 화면 드래그: 시점 · 오른쪽 버튼: 발사/조준", 5200);
