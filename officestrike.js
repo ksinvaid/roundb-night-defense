@@ -701,6 +701,7 @@ const kname = i => (typeof KNIGHTS !== "undefined" && KNIGHTS[i] && KNIGHTS[i].n
 const WALLH = 1.15;
 let imgs = null;
 function loadImgs() {
+  try { if (window.KnightRig && KnightRig.preload) KnightRig.preload([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]); } catch (e) {}
   if (imgs) return;
   imgs = Array.from({length: 10}, (_, i) => { const im = new Image(); try { im.src = typeof kSrc === "function" ? kSrc(i, false) : "img/knights_fixed/" + KNIGHTS[i].k + ".webp"; } catch (e) {} return im; });
 }
@@ -796,6 +797,22 @@ function drawChar(g, q, o) {   // 원본 기사 전신 그림을 그대로 쓰�
   // 그림자(바닥에 붙은 타원)
   g.save(); g.translate(sx, fy); g.fillStyle = "rgba(0,0,0,.35)"; g.beginPath(); g.ellipse(0, 0, W0 * (st === 2 ? .5 : .3) * (air ? .8 : 1), u * .045, 0, 0, TAU); g.fill(); g.restore();
   g.save(); g.translate(sx, fy - (q.z || 0) * u / .66);
+  const KR = window.KnightRig;
+  if (KR && KR.ready && KR.ready(q.k)) {   // 공용 KnightRig(원본 그림을 부위별로 잘라 관절만 돌린다)가 있으면 걷기·달리기·공격·앉기·엎드리기·구르기에 사용
+    const melee = q.w === 2 && S.t - q.shotAt < .55, thrw = q.w === 3 && S.t - q.throwAt < .55;
+    const pose = rolling ? "roll" : st === 2 ? "prone" : st === 1 ? "crouch" : melee || thrw ? "attack" : v > 1.0 ? "run" : v > .12 ? "walk" : "idle";
+    const tt = pose === "attack" ? (thrw ? S.t - q.throwAt : S.t - q.shotAt) : pose === "roll" ? (t * 1.7) % .6 : t;
+    g.shadowColor = col; g.shadowBlur = Math.max(5, u * .05);
+    const hand = KR.draw(g, q.k, {x: 0, y: 0, height: H0, facing: sgn, pose, t: tt, speed: clamp(v * 1.1, .6, 1.5), style: thrw ? "throw" : "slash", flash: o.flash ? 1 : 0, shadow: false, arc: false});
+    g.shadowColor = "transparent";
+    if (A && st !== 2 && !melee && hand && Number.isFinite(hand.handX)) {
+      const len = (ART_LEN[key] || .3) * u, gs = len / A.w, Lh = toward ? .3 : Math.abs(fx) * .8 + .22;
+      g.save(); g.translate(hand.handX, hand.handY); g.scale(sgn * Lh * gs, gs); g.drawImage(A.cv, -A.gx, -A.gy);
+      if (S.t - q.shotAt < .07 && q.w !== 2 && q.w !== 3 && A.mx) { g.fillStyle = "#ffe9a6"; g.beginPath(); g.arc(A.mx - A.gx + 10, A.my - A.gy, 24, 0, TAU); g.fill(); g.fillStyle = "#fff"; g.beginPath(); g.arc(A.mx - A.gx + 10, A.my - A.gy, 10, 0, TAU); g.fill(); }
+      g.restore();
+    }
+    g.restore(); return;
+  }
   let tilt = sw * .07 * Math.min(1, v * 1.25) - shotK * .05 * sgn, sy = 1, sxs = 1, hop = air ? 0 : Math.abs(sw) * .04 * v * H0 + Math.sin(t * 2.2 + q.i) * .006 * H0;
   if (st === 1) { sy = .74; sxs = 1.1; } if (air) { sy = 1.05; sxs = .96; }
   if (st === 2) { tilt = sgn * 1.45; sy = .8; sxs = .9; hop = 0; }   // 엎드림: 옆으로 눕힌다
