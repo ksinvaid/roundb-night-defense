@@ -10,7 +10,7 @@
     const {MAPS, KITS, DIFF, R} = Core;
     const ALLY = "#4cc9ff", FOE = "#ffa23c", ME = "#ffe066";
     const SK_TAG = ["기본기", "이동기", "광역·제어", "궁극기"];
-    const MODE_LABEL = {aram:"협곡 대전", ffa:"개인 난투", team2:"팀전 2:2", team3:"팀전 3:3", surv:"서바이벌"};
+    const MODE_LABEL = {aram:"4길 전선", ffa:"개인 난투", team2:"팀전 2:2", team3:"팀전 3:3", surv:"서바이벌"};
     const store = {
       get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : v; } catch { return d; } },
       set(k, v) { try { localStorage.setItem(k, v); } catch { /* 저장 불가 */ } }
@@ -31,7 +31,7 @@
     if (!MODE_LABEL[cfg.mode]) cfg.mode = "ffa";
     if (!["3f", "4f", "rand"].includes(cfg.map)) cfg.map = "rand";
     cfg.team = clamp(cfg.team | 0 || 5, 1, 5);
-    if (store.get("bw.aramDefault", "") !== "1") { cfg.mode = "aram"; store.set("bw.aramDefault", "1"); }   // 협곡 대전이 기본 첫 선택
+    if (store.get("bw.aramDefault", "") !== "1") { cfg.mode = "aram"; store.set("bw.aramDefault", "1"); }   // 4길 전선이 기본 첫 선택
     let soundOn = store.get("bw.snd", "1") !== "0";
 
     /* ---------- 화면 뼈대 ---------- */
@@ -53,7 +53,7 @@
     <button type="button" class="bw-skip" data-act="skipsum">건너뛰기</button>
   </details>
   <div class="bw-opts" data-opts>
-    <div class="bw-row"><label>모드</label>${chips("mode", [["aram", "협곡 대전 (추천)"], ["ffa", "빠른 · 개인 난투"], ["team2", "빠른 · 팀전 2:2"], ["team3", "빠른 · 팀전 3:3"], ["surv", "빠른 · 서바이벌"]])}</div>
+    <div class="bw-row"><label>모드</label>${chips("mode", [["aram", "4길 전선 (추천)"], ["ffa", "빠른 · 개인 난투"], ["team2", "빠른 · 팀전 2:2"], ["team3", "빠른 · 팀전 3:3"], ["surv", "빠른 · 서바이벌"]])}</div>
     <p class="bw-note" data-modenote></p>
     <div class="bw-row" data-teamrow><label>팀 인원</label>${chips("team", [[1, "1:1"], [2, "2:2"], [3, "3:3"], [4, "4:4"], [5, "5:5"]])}</div>
     <div class="bw-row" data-maprow><label>전장</label>${chips("map", [["3f", "3층 라운지"], ["4f", "4층 공유오피스"], ["rand", "랜덤"]])}</div>
@@ -88,16 +88,17 @@
     <div class="bw-hud">
       <div class="bw-me"><img data-meface alt=""><div><i class="bw-hp"><u data-hpfill></u><s data-hpshield></s></i><small data-hptxt></small><i class="bw-xp"><u data-xpfill></u></i><small class="bw-aramline" data-aramline></small><span class="bw-myitems" data-myitems></span></div></div>
       <canvas class="bw-mini" data-mini width="96" height="139"></canvas>
+      <div class="bw-cam" data-cam><button type="button" data-act="zin">＋</button><button type="button" data-act="zout">－</button><button type="button" data-act="camhome" title="내 기사로 복귀 (Space)">◎</button><button type="button" data-act="edge" aria-pressed="false" title="화면 가장자리 이동">↔</button></div>
       <ul class="bw-feed" data-feed></ul>
       <div class="bw-banner" data-banner></div>
       <div class="bw-hint" data-hint></div>
       <div class="bw-combo" data-combo></div>
       <button type="button" class="bw-prio" data-act="prio"></button>
-      <div class="bw-util" data-util><button type="button" data-act="shop">상점 <kbd>P</kbd></button><button type="button" data-act="recall">귀환 <kbd>B</kbd></button><button type="button" data-act="board">점수 <kbd>Tab</kbd></button></div>
+      <div class="bw-util" data-util><button type="button" data-act="shop">상점 <kbd>P</kbd></button><button type="button" data-act="recall">복귀 <kbd>R</kbd></button><button type="button" data-act="board">점수 <kbd>Tab</kbd></button></div>
       <div class="bw-wave" data-wave></div>
       <div class="bw-anns" data-anns></div>
       <div class="bw-lvup" data-lvup hidden><b>스킬 강화 <i data-sp>1</i></b>${[0, 1, 2, 3].map(i => `<button type="button" data-learn="${i}"></button>`).join("")}</div>
-      <div class="bw-recall" data-recall hidden><u></u><span>귀환 중… (움직이면 취소)</span></div>
+      <div class="bw-recall" data-recall hidden><u></u><span>복귀 중… (움직이면 취소)</span></div>
       <div class="bw-tut" data-tut hidden><b data-tuttext></b><button type="button" data-act="tutskip">건너뛰기</button></div>
       <div class="bw-cutin" data-cutin></div>
       <button type="button" class="bw-skipend" data-act="skipend" hidden>빨리 결과 보기</button>
@@ -105,7 +106,7 @@
     <div class="bw-stick" data-stick><i></i></div>
     <div class="bw-skills" data-skills>
       ${[0, 1, 2, 3].map(i => `<button type="button" class="bw-sk${i === 3 ? " ult" : ""}" data-sk="${i}"><kbd>${i + 1}</kbd><span></span><s class="pips"></s><i class="cd"></i><b class="cdn"></b></button>`).join("")}
-      <button type="button" class="bw-spell" data-sm="0"><kbd>G</kbd><span>회복</span><i class="cd"></i><b class="cdn"></b></button><button type="button" class="bw-spell" data-sm="1"><kbd>F</kbd><span>점멸</span><i class="cd"></i><b class="cdn"></b></button>
+      <button type="button" class="bw-spell" data-sm="0"><kbd>Q</kbd><span>회복</span><i class="cd"></i><b class="cdn"></b></button><button type="button" class="bw-spell" data-sm="1"><kbd>E</kbd><span>순간이동</span><i class="cd"></i><b class="cdn"></b></button>
     </div>
     <div class="bw-result" data-result hidden><div class="bw-card" data-card></div></div>
     <div class="bw-shop" data-shop hidden><div class="bw-shopbox"><header><b>상점</b><span data-shopgold></span><button type="button" data-act="auto" aria-pressed="true">자동강화</button><button type="button" data-act="shopx">닫기 <kbd>P</kbd></button></header><p data-shopnote></p><div class="bw-items" data-items></div><div class="bw-owned" data-owned></div></div></div>
@@ -143,7 +144,7 @@
       $("[data-botsrow]").hidden = cfg.mode !== "ffa" && cfg.mode !== "surv";
       $("[data-teamrow]").hidden = cfg.mode !== "aram"; $("[data-maprow]").hidden = cfg.mode === "aram";
       $("[data-modenote]").textContent = {
-        aram:"1:1~5:5 협곡 대전! 미니언 웨이브와 타워를 밀고, 레벨업·아이템으로 강해져서 상대 넥서스를 부수면 승리 (8~12분). 빈 자리는 봇이 채워요.",
+        aram:"1:1~5:5 4길 전선! 4개 길로 병정이 행진해요. 방어탑 2개를 부수면 라운드 코어를 칠 수 있고, 중립 괴물과 중앙 서류 거인으로 강해지세요. 10분 안에 끝나요. 빈 자리는 봇이 채워요.",
         ffa:"모두가 적이에요. 쓰러져도 3초 뒤 부활 — 3분 안에 가장 많이 처치하면 승리!",
         team2:"2:2 팀전. 같은 팀은 공격이 안 맞아요. 먼저 10처치 하거나 3분 뒤 더 많이 처치한 팀 승리.",
         team3:"3:3 팀전. 같은 팀은 공격이 안 맞아요. 먼저 15처치 하거나 3분 30초 뒤 더 많이 처치한 팀 승리.",
@@ -327,12 +328,15 @@
     const isAlly = (a, b) => a.team === b.team;
     function tag(f) { const me = V.fighters[meIdx]; return f.i === meIdx ? "▼" : me && isAlly(f, me) ? "▲" : "■"; }
 
-    /* ---------- 협곡 대전(ARAM-lite) 화면: 상점·스킬 강화·방송·점수판·튜토리얼·조준선·구조물 그리기 ---------- */
+    /* ---------- 4길 전선 화면: 상점·스킬 강화·방송·점수판·튜토리얼·조준선·4개 길 지도·카메라 ---------- */
     const aramOn = () => !!(V && V.map && V.map.aram);
-    const ITEMS = Core.ITEMS;
-    const PRIO_NAME = ["가까운 적", "약한 영웅", "미니언 막타"];
+    const ITEMS = Core.ITEMS, LANE_X = Core.LANE_X;
+    const PRIO_NAME = ["가까운 적", "약한 영웅", "병정 마무리"];
+    const ZOOMS = [.5, .66, .88];
     const anns = [];
-    let aimPrev = null, shopOpen = false, boardHeld = false, boardPin = false, tutI = 0, tutAt = 0, tutDone = false, tutOn = false, lastIn = {ax:1, ay:0, ad:260, mx:0, my:0}, nexusAt = 0, shopOpened = false, lastItemsSig = "";
+    let aimPrev = null, shopOpen = false, boardHeld = false, boardPin = false, tutI = 0, tutAt = 0, tutDone = false, tutOn = false, lastIn = {ax:1, ay:0, ad:260, mx:0, my:0}, shopOpened = false, lastItemsSig = "";
+    let camFree = null, zoomIdx = 1, camMoved = false, campKilled = false, edgeOn = store.get("bw.edge", "0") === "1", camC = {x:750, y:1100};
+    const panKeys = new Set();
     function drawIcon(g, name, s) {   // 아이템 아이콘: 캔버스 벡터
       g.clearRect(0, 0, s, s); g.save(); g.translate(s / 2, s / 2); g.scale(s / 44, s / 44);
       g.lineWidth = 3; g.lineJoin = "round"; g.lineCap = "round"; g.strokeStyle = "#141a33";
@@ -362,7 +366,7 @@
       const me = V.fighters[meIdx]; if (!me || !me.items) return;
       const ok = canShop(me);
       shopGold.textContent = "◎ " + Math.floor(me.gold);
-      shopNote.textContent = ok ? "아이템을 누르면 구매 · 아래 칸을 누르면 70%에 판매" : "분수대(우리 기지)에서만 살 수 있어요 — B 로 귀환하세요";
+      shopNote.textContent = ok ? "아이템을 누르면 구매 · 아래 칸을 누르면 70%에 판매" : "우리 휴게실(기지)에서만 살 수 있어요 — R 로 복귀하세요";
       $$(".bw-item", itemsEl).forEach((b, i) => { b.disabled = !ok || me.gold < ITEMS[i].cost || me.items.length >= 6; b.classList.toggle("afford", me.gold >= ITEMS[i].cost); });
       const sig = me.items.join(",") + "|" + ok;
       if (ownedEl.dataset.sig !== sig) {
@@ -382,105 +386,191 @@
       if (type === "l") Core.learn(match, me, arg); else if (type === "b") { if (Core.buy(match, me, arg)) snd("coin", 0); } else if (type === "s") Core.sell(match, me, arg); else if (type === "a") Core.setAuto(match, me, arg);
     }
     function castAim(slot) { pend.push({s:slot, ax:lastIn.ax, ay:lastIn.ay, ad:lastIn.ad}); }
-    const PRIORS = [];
     function pushAnn(txt, col) { anns.push({txt, col, at:performance.now()}); if (anns.length > 3) anns.shift(); }
-    const ANN = {fb:"퍼스트 블러드!", mk2:"더블 킬!", mk3:"트리플 킬!", mk4:"쿼드라 킬!", mk5:"펜타 킬!", spree:"학살 중!", legend:"전설적인 활약!", ace:"에이스!"};
+    const ANN = {fb:"첫 격파!", mk2:"2연속 격파!", mk3:"3연속 격파!", mk4:"4연속 격파!", mk5:"5연속 격파!", spree:"연속 격파 중!", legend:"멈출 수 없다!", ace:"전멸!"};
+    /* 카메라: 방향키(또는 화면 가장자리·화면 드래그·미니맵)로 둘러보고, Space/◎ 로 내 기사에게 복귀 */
+    function panBy(dx, dy) {
+      if (!V) return;
+      if (!camFree) camFree = {x:camC.x, y:camC.y};
+      camFree.x = clamp(camFree.x + dx, 0, V.map.w); camFree.y = clamp(camFree.y + dy, 0, V.map.h); camMoved = true;
+    }
+    function camHome() { camFree = null; }
+    function zoomStep(d) { zoomIdx = clamp(zoomIdx + d, 0, ZOOMS.length - 1); camMoved = true; }
+    function camUpdate(dt) {
+      if (!aramOn()) return;
+      let dx = (panKeys.has("arrowright") ? 1 : 0) - (panKeys.has("arrowleft") ? 1 : 0), dy = (panKeys.has("arrowdown") ? 1 : 0) - (panKeys.has("arrowup") ? 1 : 0);
+      if (edgeOn && !touchy && mouse.has) { const m2 = 16; if (mouse.cx < m2) dx -= 1; else if (mouse.cx > W - m2) dx += 1; if (mouse.cy < m2) dy -= 1; else if (mouse.cy > H - m2) dy += 1; }
+      if (dx || dy) panBy(dx * 760 * dt / Math.max(.6, zoom * 1.4), dy * 760 * dt / Math.max(.6, zoom * 1.4));
+    }
+    function miniToWorld(e) {
+      const b = mini.getBoundingClientRect();
+      return {x:clamp((e.clientX - b.left) / b.width, 0, 1) * V.map.w, y:clamp((e.clientY - b.top) / b.height, 0, 1) * V.map.h};
+    }
+    let miniDown = false;
+    mini.addEventListener("pointerdown", e => { if (!aramOn()) return; miniDown = true; try { mini.setPointerCapture(e.pointerId); } catch { /* 무시 */ } const p = miniToWorld(e); camFree = {x:p.x, y:p.y}; camMoved = true; e.preventDefault(); });
+    mini.addEventListener("pointermove", e => { if (!miniDown || !aramOn()) return; const p = miniToWorld(e); camFree = {x:p.x, y:p.y}; });
+    const miniUp = () => { miniDown = false; };
+    mini.addEventListener("pointerup", miniUp); mini.addEventListener("pointercancel", miniUp);
+    let dragCam = null;
+    cv.addEventListener("pointerdown", e => { if (e.pointerType !== "touch" || !aramOn() || dragCam) return; dragCam = {id:e.pointerId, x:e.clientX, y:e.clientY}; try { cv.setPointerCapture(e.pointerId); } catch { /* 무시 */ } });
+    cv.addEventListener("pointermove", e => { if (!dragCam || e.pointerId !== dragCam.id) return; panBy(-(e.clientX - dragCam.x) / zoom, -(e.clientY - dragCam.y) / zoom); dragCam.x = e.clientX; dragCam.y = e.clientY; });
+    const dragEnd = e => { if (dragCam && e.pointerId === dragCam.id) dragCam = null; };
+    cv.addEventListener("pointerup", dragEnd); cv.addEventListener("pointercancel", dragEnd);
+    cv.addEventListener("wheel", e => { if (!aramOn()) return; e.preventDefault(); zoomStep(e.deltaY < 0 ? 1 : -1); }, {passive:false});
+
     function handleAram(e, now) {
       const F = V.fighters, me = F[meIdx];
       switch (e[0]) {
         case "ann": {
           const [, kind, i, team] = e, f = F[i], mine = me && team === me.team;
           let txt = ANN[kind];
-          if (kind === "tower") txt = (mine ? "아군" : "적") + " 타워 파괴!";
-          else if (kind === "ace") txt = (mine ? "우리 팀" : "적 팀") + " 에이스!";
+          if (kind === "tower") txt = (mine ? "아군" : "적") + " 방어탑 파괴!";
+          else if (kind === "ace") txt = (mine ? "우리 팀" : "적 팀") + " 전멸!";
+          else if (kind === "boss") txt = "서류 거인 등장!";
+          else if (kind === "bossdie") txt = (mine ? "우리 팀" : "적 팀") + " 서류 거인 처치!";
+          else if (kind === "ot") txt = "야근 시간 돌입!";
           else if (txt && f) txt = `${tag(f)} ${KITS[f.id].n} · ${txt}`;
-          if (txt) { pushAnn(txt, mine ? ALLY : FOE); snd(kind === "mk5" || kind === "ace" ? "win" : kind === "tower" ? "roar" : "warn", 0); }
+          if (txt) { pushAnn(txt, kind === "boss" || kind === "ot" ? "#ffd36b" : mine ? ALLY : FOE); snd(kind === "mk5" || kind === "ace" || kind === "bossdie" ? "win" : kind === "tower" || kind === "boss" || kind === "ot" ? "roar" : "warn", 0); }
           return true;
         }
         case "lvl": { const p = posOf(e[1]); addFx({k:"pillar", x:p.x, y:p.y, col:"#ffe066", life:.7}); addFx({k:"ring", x:p.x, y:p.y, r:70, col:"#ffe066", life:.5, lw:5}); addFx({k:"num", x:p.x, y:p.y - 60, txt:"LEVEL UP! " + e[2], st:1, col:"#ffe066", life:1}); if (e[1] === meIdx) snd("up", 0); return true; }
         case "cs": { if (e[1] === meIdx) { addFx({k:"num", x:e[3], y:e[4] - 24, txt:"+" + e[2], st:5, col:"#ffd23c", life:.9}); snd("coin", 60); } return true; }
         case "ehit": { if (e[4]) addFx({k:"num", x:e[1], y:e[2], txt:String(e[3]), st:e[3] >= 40 ? 1 : 0, col:"#fff", life:.6}); if (e[3] > 0 && e[4] === 0) addFx({k:"spark", x:e[1], y:e[2], col:"#fff", col2:"#ffd36b", ang:-1.57, life:.16}); return true; }
-        case "mhit": { if (lowfx && Math.random() < .5) return true; addFx({k:"mbolt", x:e[1], y:e[2], x2:e[3], y2:e[4], col:e[5] === 2 ? "#ffcf70" : "#fff", life:e[5] === 0 ? .12 : .18}); return true; }
+        case "ahit": { if (lowfx && Math.random() < .5) return true; addFx({k:"mbolt", x:e[1], y:e[2], x2:e[3], y2:e[4], col:e[5] >= 2 ? "#ffcf70" : "#fff", life:e[5] === 0 ? .12 : .18}); return true; }
         case "tbolt": { const hs = me && e[5] !== me.team; addFx({k:"mbolt", x:e[1], y:e[2], x2:e[3], y2:e[4], col:hs ? FOE : ALLY, life:.22, big:1}); addFx({k:"ring", x:e[3], y:e[4], r:34, col:hs ? FOE : ALLY, life:.25, lw:4}); snd("beam", 120, e[3], e[4]); return true; }
         case "tower": { addFx({k:"shock", x:e[3], y:e[4], r:200, col:"#ffd36b", col2:"#fff", life:.8}); addFx({k:"crack", x:e[3], y:e[4], r:160, life:2, seed:Math.random() * 99}); burst(e[3], e[4] - 40, 6, 24, 380); kick(2); stopFor(70); snd("splash", 0); return true; }
-        case "nexus": {
-          nexusAt = now;
+        case "core": {
           for (let k = 0; k < 4; k++) addFx({k:"shock", x:e[2], y:e[3], r:200 + k * 110, col:k % 2 ? "#ffd36b" : "#fff", col2:"#ffa23c", life:.9 + k * .25});
           addFx({k:"crack", x:e[2], y:e[3], r:300, life:2.5, seed:Math.random() * 99}); burst(e[2], e[3] - 50, 6, 40, 520); kick(3); dimUntil = now + 700; punch = .12; snd("roar", 0);
           return true;
         }
+        case "cdie": { const kn = e[3] >= 0 && F[e[3]] ? F[e[3]].id : 6; addFx({k:"shock", x:e[1], y:e[2], r:e[4] === 3 ? 160 : 90, col:"#c9a8ff", col2:"#fff", life:.6}); burst(e[1], e[2] - 20, kn, e[4] === 3 ? 26 : 14, 300); if (e[3] === meIdx) { campKilled = true; snd("coin", 0); } snd("splash", 100, e[1], e[2]); return true; }
+        case "buf": { if (e[1] === meIdx) { say(Core.CAMP_BUF[e[2]] + "!", 1200); snd("up", 0); } const p = posOf(e[1]); addFx({k:"ring", x:p.x, y:p.y, r:60, col:"#c9a8ff", life:.5, lw:5}); return true; }
         case "buy": { if (e[1] === meIdx) { snd("coin", 0); addFx({k:"ring", x:posOf(e[1]).x, y:posOf(e[1]).y, r:50, col:"#ffd23c", life:.35}); } return true; }
         case "recall": { const p = posOf(e[1]); addFx({k:"charge", x:p.x, y:p.y + 10, r:60, col:"#cfe9ff", col2:"#fff", life:2.2}); return true; }
-        case "recallx": { if (e[1] === meIdx) say("귀환 취소", 700); return true; }
-        case "tele": { const T = th(F[e[1]] ? F[e[1]].id : 0); addFx({k:"pillar", x:e[2], y:e[3], col:"#cfe9ff", life:.6}); addFx({k:"pillar", x:e[4], y:e[5], col:"#cfe9ff", life:.7}); burst(e[4], e[5] - 20, F[e[1]] ? F[e[1]].id : 0, 10, 160); void T; return true; }
+        case "recallx": { if (e[1] === meIdx) say("복귀 취소", 700); return true; }
+        case "tele": { addFx({k:"pillar", x:e[2], y:e[3], col:"#cfe9ff", life:.6}); addFx({k:"pillar", x:e[4], y:e[5], col:"#cfe9ff", life:.7}); burst(e[4], e[5] - 20, F[e[1]] ? F[e[1]].id : 0, 10, 160); return true; }
         case "sum": { const p = posOf(e[1]); addFx({k:"ring", x:p.x, y:p.y, r:60, col:e[2] ? "#fff" : ALLY, life:.4, lw:5}); if (e[2] === 0) for (let k = 0, n = 8 * fxq; k < n; k++) part({x:p.x + (Math.random() - .5) * 40, y:p.y + 6, vy:-80, life:.8, sz:4, sh:"cross", col:"#9fe3ff"}); return true; }
-        case "mdie": { part({x:e[1], y:e[2] - 6, vy:-30, life:.4, sz:5, sh:"dot", col:e[4] === (me ? me.team : 0) ? ALLY : FOE}); return true; }
-        case "wave": return true;
-        case "learn": case "wavex": return true;
+        case "sdie": { part({x:e[1], y:e[2] - 6, vy:-30, life:.4, sz:5, sh:"dot", col:e[4] === (me ? me.team : 0) ? ALLY : FOE}); return true; }
+        case "wave": case "learn": return true;
         default: return false;
       }
     }
-    /* 구조물·미니언 */
+    /* 구조물·병정·중립 몬스터: 사무실 소품으로 그린 자체 도안 */
+    const ink = "#141a33";
+    function drawSoldier(e, enemy, now) {
+      const col = enemy ? FOE : ALLY, r = e.rad, bob = Math.sin(now / 140 + e.x) * 1.5;
+      ctx.save(); ctx.translate(e.x, e.y + bob);
+      ctx.fillStyle = "rgba(0,0,0,.3)"; ctx.beginPath(); ctx.ellipse(0, r * .8, r, r * .4, 0, 0, 6.283); ctx.fill();
+      ctx.lineWidth = 3; ctx.strokeStyle = col; ctx.setLineDash(enemy ? [6, 4] : []);
+      if (e.mt === 0) {   // 서류 병정: 종이 한 장이 일어선 모양
+        ctx.fillStyle = enemy ? "#f1e2c6" : "#e8f6ff"; ctx.beginPath(); ctx.moveTo(-r, -r * 1.7); ctx.lineTo(r * .5, -r * 1.7); ctx.lineTo(r, -r * 1.2); ctx.lineTo(r, r * .6); ctx.lineTo(-r, r * .6); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.setLineDash([]); ctx.strokeStyle = ink; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-r * .6, -r); ctx.lineTo(r * .6, -r); ctx.moveTo(-r * .6, -r * .5); ctx.lineTo(r * .6, -r * .5); ctx.moveTo(-r * .6, 0); ctx.lineTo(r * .2, 0); ctx.stroke();
+        ctx.fillStyle = col; ctx.font = `bold ${r}px system-ui`; ctx.textAlign = "center"; ctx.fillText(enemy ? "✕" : "✓", r * .1, r * .45);
+      } else if (e.mt === 1) {   // 볼펜 병정: 볼펜
+        ctx.save(); ctx.rotate(-.35); ctx.fillStyle = enemy ? "#6b3d18" : "#17435c"; ctx.beginPath(); ctx.rect(-r * .5, -r * 2, r, r * 2.4); ctx.fill(); ctx.stroke();
+        ctx.setLineDash([]); ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(-r * .5, r * .4); ctx.lineTo(r * .5, r * .4); ctx.lineTo(0, r * 1.1); ctx.closePath(); ctx.fill(); ctx.fillRect(-r * .5, -r * 2, r, r * .5); ctx.restore();
+      } else {   // 복사기 대포: 복사기 + 포신
+        ctx.fillStyle = enemy ? "#4f3a28" : "#1f4259"; rr(ctx, -r, -r * 1.1, r * 2, r * 1.7, 4); ctx.fill(); ctx.stroke(); ctx.setLineDash([]);
+        ctx.fillStyle = "#e6ecff"; ctx.fillRect(-r * .8, -r * 1.0, r * 1.6, r * .45); ctx.fillStyle = col; ctx.fillRect(-r * .2, -r * 1.9, r * .4, r * .9);
+        ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(0, -r * .1, r * .3, 0, 6.283); ctx.fill();
+      }
+      ctx.setLineDash([]);
+      if (e.hp < 99) { ctx.fillStyle = "#0c1128"; ctx.fillRect(-r - 1, -r * 2.2 - 8, r * 2 + 2, 5); ctx.fillStyle = col; ctx.fillRect(-r, -r * 2.2 - 7, r * 2 * e.hp / 100, 3); }
+      ctx.restore();
+    }
+    function drawCamp(e, now) {
+      const r = e.rad, boss = e.kind === "boss", col = "#c9a8ff", pct = clamp(e.hp / e.maxhp, 0, 1), bob = Math.sin(now / 200 + e.x) * 2;
+      ctx.save(); ctx.translate(e.x, e.y + bob);
+      ctx.fillStyle = "rgba(0,0,0,.35)"; ctx.beginPath(); ctx.ellipse(0, r * .75, r * 1.1, r * .45, 0, 0, 6.283); ctx.fill();
+      ctx.lineWidth = 4; ctx.strokeStyle = col; ctx.setLineDash([8, 5]);
+      if (boss) {   // 서류 거인: 서류 더미
+        for (let k = 0; k < 6; k++) { ctx.fillStyle = k % 2 ? "#f4ead3" : "#dfeaf2"; ctx.beginPath(); ctx.rect(-r * (.95 - k * .02) + (k % 2 ? 4 : -4), r * .6 - (k + 1) * r * .33, r * 1.9, r * .3); ctx.fill(); ctx.stroke(); }
+        ctx.setLineDash([]); ctx.fillStyle = "#ff3d4d"; ctx.beginPath(); ctx.arc(-r * .35, -r * .6, r * .16, 0, 6.283); ctx.arc(r * .35, -r * .6, r * .16, 0, 6.283); ctx.fill();
+        ctx.strokeStyle = ink; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(-r * .45, -r * .2); ctx.lineTo(-r * .2, -r * .05); ctx.lineTo(0, -r * .2); ctx.lineTo(r * .2, -r * .05); ctx.lineTo(r * .45, -r * .2); ctx.stroke();
+      } else if (e.ct === 0) {   // 커피잔 괴물
+        ctx.fillStyle = "#f4ead3"; ctx.beginPath(); ctx.moveTo(-r * .9, -r * .8); ctx.lineTo(r * .9, -r * .8); ctx.lineTo(r * .65, r * .6); ctx.lineTo(-r * .65, r * .6); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.setLineDash([]); ctx.beginPath(); ctx.arc(r * 1.0, -r * .1, r * .4, -1.2, 1.2); ctx.stroke(); ctx.fillStyle = "#6b3d18"; ctx.fillRect(-r * .8, -r * .8, r * 1.6, r * .25);
+        ctx.strokeStyle = "#fff"; ctx.lineWidth = 3; ctx.beginPath(); for (let k = -1; k <= 1; k++) { ctx.moveTo(k * r * .4, -r * 1.0); ctx.quadraticCurveTo(k * r * .4 + 6, -r * 1.3, k * r * .4, -r * 1.6); } ctx.stroke();
+        ctx.fillStyle = ink; ctx.fillRect(-r * .45, -r * .35, r * .2, r * .2); ctx.fillRect(r * .25, -r * .35, r * .2, r * .2);
+      } else if (e.ct === 1) {   // 회전의자 괴물
+        ctx.fillStyle = "#3d4a73"; ctx.beginPath(); ctx.rect(-r * .6, -r * 1.3, r * 1.2, r * 1.1); ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.ellipse(0, -r * .05, r * .95, r * .3, 0, 0, 6.283); ctx.fill(); ctx.stroke();
+        ctx.setLineDash([]); ctx.strokeStyle = ink; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(0, r * .2); ctx.lineTo(0, r * .55); for (let k = 0; k < 5; k++) { const a = Math.PI / 2 + (k - 2) * .6; ctx.moveTo(0, r * .55); ctx.lineTo(Math.cos(a) * r * .9, r * .55 + Math.sin(a) * r * .3); } ctx.stroke();
+        ctx.fillStyle = "#ffe066"; ctx.fillRect(-r * .4, -r * .9, r * .2, r * .2); ctx.fillRect(r * .2, -r * .9, r * .2, r * .2);
+      } else {   // 스테이플러 괴물
+        ctx.fillStyle = "#c04a55"; ctx.beginPath(); ctx.moveTo(-r * 1.1, 0); ctx.lineTo(r * 1.1, -r * .2); ctx.lineTo(r * 1.1, -r * .75); ctx.lineTo(-r * 1.1, -r * .6); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = "#9aa3c7"; ctx.beginPath(); ctx.rect(-r * 1.1, 0, r * 2.2, r * .45); ctx.fill(); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle = "#fff";
+        for (let k = 0; k < 5; k++) { ctx.beginPath(); ctx.moveTo(-r + k * r * .5, 0); ctx.lineTo(-r + k * r * .5 + r * .22, 0); ctx.lineTo(-r + k * r * .5 + r * .11, r * .3); ctx.closePath(); ctx.fill(); }
+        ctx.fillStyle = ink; ctx.fillRect(-r * .5, -r * .55, r * .2, r * .2); ctx.fillRect(r * .3, -r * .55, r * .2, r * .2);
+      }
+      ctx.setLineDash([]);
+      const w = boss ? 110 : 56;
+      if (pct < .999 || boss) { ctx.fillStyle = "#0c1128"; ctx.fillRect(-w / 2 - 2, -r * 1.9 - 4, w + 4, 9); ctx.fillStyle = col; ctx.fillRect(-w / 2, -r * 1.9 - 2, w * pct, 5); }
+      ctx.fillStyle = "#fff"; ctx.font = `bold ${11 / zoom}px system-ui`; ctx.textAlign = "center"; ctx.lineWidth = 3; ctx.strokeStyle = "#0c1128";
+      const nm = "◆ " + Core.CAMP[e.ct].n; ctx.strokeText(nm, 0, -r * 1.9 - 8); ctx.fillText(nm, 0, -r * 1.9 - 8);
+      ctx.restore();
+    }
     function drawEnts(now, me) {
       const hs = t => me && t !== me.team;
       for (const b of V.bld) {
         const enemy = hs(b.team), col = enemy ? FOE : ALLY;
         ctx.save(); ctx.translate(b.x, b.y);
         if (!b.alive) { ctx.fillStyle = "rgba(20,16,30,.8)"; ctx.beginPath(); ctx.arc(0, 0, b.rad * .9, 0, 6.283); ctx.fill(); ctx.strokeStyle = "#6a6f8f"; ctx.lineWidth = 3; ctx.setLineDash([5, 5]); ctx.stroke(); ctx.restore(); continue; }
-        if (b.kind === "tower" && enemy) { ctx.strokeStyle = FOE; ctx.globalAlpha = .3; ctx.lineWidth = 3; ctx.setLineDash([14, 10]); ctx.beginPath(); ctx.arc(0, 0, Core.TWR.rng, 0, 6.283); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1; }
+        if (b.kind === "tower" && enemy) { ctx.strokeStyle = FOE; ctx.globalAlpha = .26; ctx.lineWidth = 3; ctx.setLineDash([14, 10]); ctx.beginPath(); ctx.arc(0, 0, Core.TWR.rng, 0, 6.283); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1; }
         ctx.globalAlpha = b.locked ? .62 : 1;
         ctx.fillStyle = "rgba(0,0,0,.35)"; ctx.beginPath(); ctx.ellipse(0, b.rad * .6, b.rad * 1.2, b.rad * .5, 0, 0, 6.283); ctx.fill();
         if (b.kind === "tower") {
           ctx.fillStyle = "#262c52"; ctx.strokeStyle = col; ctx.lineWidth = 5; ctx.setLineDash(enemy ? [10, 6] : []); rr(ctx, -23, -72, 46, 78, 9); ctx.fill(); ctx.stroke(); ctx.setLineDash([]);
-          ctx.fillStyle = col; ctx.globalAlpha *= .5 + .5 * Math.sin(now / 260); ctx.beginPath(); ctx.arc(0, -80, 13, 0, 6.283); ctx.fill(); ctx.globalAlpha = b.locked ? .62 : 1;
+          ctx.fillStyle = col; ctx.globalAlpha *= .5 + .5 * Math.sin(now / 260); ctx.beginPath(); ctx.arc(0, -80, 13, 0, 6.283); ctx.fill(); ctx.globalAlpha = 1;
           ctx.fillStyle = "#fff"; ctx.font = "bold 20px system-ui"; ctx.textAlign = "center"; ctx.fillText(enemy ? "■" : "▲", 0, -34);
-        } else {
+        } else {   // 라운드 코어: 사무실 한가운데 떠 있는 금고 결정
           const pulse = 1 + Math.sin(now / 300) * .05;
           ctx.scale(pulse, pulse); ctx.fillStyle = enemy ? "rgba(255,162,60,.22)" : "rgba(76,201,255,.22)"; ctx.strokeStyle = col; ctx.lineWidth = 6; ctx.setLineDash(enemy ? [14, 8] : []);
           ctx.beginPath(); ctx.moveTo(0, -92); ctx.lineTo(58, -22); ctx.lineTo(0, 46); ctx.lineTo(-58, -22); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.setLineDash([]);
           ctx.fillStyle = "#fff"; ctx.font = "bold 26px system-ui"; ctx.textAlign = "center"; ctx.fillText(enemy ? "■" : "▲", 0, -14); ctx.scale(1 / pulse, 1 / pulse);
         }
-        if (b.locked) { ctx.globalAlpha = .85; ctx.strokeStyle = "#cfe9ff"; ctx.lineWidth = 3; ctx.setLineDash([4, 5]); ctx.beginPath(); ctx.arc(0, -20, b.rad + 22, 0, 6.283); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle = "#cfe9ff"; ctx.font = `bold ${12 / zoom}px system-ui`; ctx.textAlign = "center"; ctx.fillText("무적", 0, b.rad + 34); ctx.globalAlpha = 1; }
-        const w = b.kind === "nexus" ? 126 : 86, yy = b.kind === "nexus" ? -112 : -102, pct = clamp(b.hp / b.maxhp, 0, 1);
+        if (b.locked) { ctx.globalAlpha = .85; ctx.strokeStyle = "#cfe9ff"; ctx.lineWidth = 3; ctx.setLineDash([4, 5]); ctx.beginPath(); ctx.arc(0, -20, b.rad + 22, 0, 6.283); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle = "#cfe9ff"; ctx.font = `bold ${12 / zoom}px system-ui`; ctx.textAlign = "center"; ctx.fillText("방어탑 2기 파괴 필요", 0, b.rad + 38); ctx.globalAlpha = 1; }
+        const w = b.kind === "core" ? 126 : 86, yy = b.kind === "core" ? -112 : -102, pct = clamp(b.hp / b.maxhp, 0, 1);
         ctx.globalAlpha = 1; ctx.fillStyle = "#0c1128"; ctx.fillRect(-w / 2 - 2, yy - 2, w + 4, 12); ctx.fillStyle = col; ctx.fillRect(-w / 2, yy, w * pct, 8);
-        ctx.fillStyle = "#fff"; ctx.font = `bold ${11 / zoom}px system-ui`; ctx.textAlign = "center"; ctx.lineWidth = 3; ctx.strokeStyle = "#0c1128"; const nm = (b.kind === "nexus" ? "넥서스 " : "타워 ") + Math.round(pct * 100) + "%"; ctx.strokeText(nm, 0, yy - 5); ctx.fillText(nm, 0, yy - 5);
+        ctx.fillStyle = "#fff"; ctx.font = `bold ${11 / zoom}px system-ui`; ctx.textAlign = "center"; ctx.lineWidth = 3; ctx.strokeStyle = "#0c1128"; const nm = (b.kind === "core" ? "라운드 코어 " : "방어탑 ") + Math.round(pct * 100) + "%"; ctx.strokeText(nm, 0, yy - 5); ctx.fillText(nm, 0, yy - 5);
         ctx.restore();
       }
-      for (const e of V.mins) {
-        const enemy = hs(e.team), col = enemy ? FOE : ALLY, r = e.rad, bob = Math.sin(now / 140 + e.x) * 1.5;
-        ctx.save(); ctx.translate(e.x, e.y + bob);
-        ctx.fillStyle = "rgba(0,0,0,.3)"; ctx.beginPath(); ctx.ellipse(0, r * .8, r, r * .4, 0, 0, 6.283); ctx.fill();
-        ctx.fillStyle = enemy ? "#5a3a1a" : "#173a52"; ctx.strokeStyle = col; ctx.lineWidth = 3;
-        if (enemy) rr(ctx, -r, -r * 1.5, r * 2, r * 2, 4); else { ctx.beginPath(); ctx.arc(0, -r * .5, r, 0, 6.283); }
-        ctx.fill(); ctx.stroke(); ctx.fillStyle = col;
-        if (e.mt === 0) ctx.fillRect(-2, -r * 1.2, 4, r * .9); else if (e.mt === 1) { ctx.beginPath(); ctx.arc(0, -r * .5, r * .35, 0, 6.283); ctx.fill(); } else { ctx.fillRect(-r * .5, -r * .9, r, r * .5); ctx.fillRect(-3, -r * 1.7, 6, r * .8); }
-        if (e.hp < 99) { ctx.fillStyle = "#0c1128"; ctx.fillRect(-r - 1, -r * 1.5 - 8, r * 2 + 2, 5); ctx.fillStyle = col; ctx.fillRect(-r, -r * 1.5 - 7, r * 2 * e.hp / 100, 3); }
-        ctx.restore();
-      }
+      for (const c of V.camps) if (c.alive) drawCamp(c, now);
+      for (const e of V.sol) drawSoldier(e, hs(e.team), now);
     }
     function drawAramFloor(map, now) {
-      const MW = map.w, MH = map.h, b = map.bounds;
+      const MW = map.w, MH = map.h, b = map.bounds, me = V.fighters[meIdx], mt = me ? me.team : 0;
       ctx.fillStyle = "#0b1020"; ctx.fillRect(0, 0, MW, MH);
-      ctx.fillStyle = "#363c63"; ctx.fillRect(b[0], b[1], b[2] - b[0], b[3] - b[1]);
-      ctx.strokeStyle = "rgba(255,255,255,.05)"; ctx.lineWidth = 2; ctx.beginPath();
-      for (let x = b[0]; x <= b[2]; x += 55) { ctx.moveTo(x, b[1]); ctx.lineTo(x, b[3]); }
-      for (let y = b[1]; y <= b[3]; y += 55) { ctx.moveTo(b[0], y); ctx.lineTo(b[2], y); }
+      ctx.fillStyle = "#343a60"; ctx.fillRect(b[0], b[1], b[2] - b[0], b[3] - b[1]);
+      ctx.strokeStyle = "rgba(255,255,255,.045)"; ctx.lineWidth = 2; ctx.beginPath();
+      for (let x = b[0]; x <= b[2]; x += 70) { ctx.moveTo(x, b[1]); ctx.lineTo(x, b[3]); }
+      for (let y = b[1]; y <= b[3]; y += 70) { ctx.moveTo(b[0], y); ctx.lineTo(b[2], y); }
       ctx.stroke();
-      ctx.fillStyle = "rgba(255,255,255,.05)"; ctx.fillRect(Core.LX - 110, b[1], 220, b[3] - b[1]);
-      ctx.strokeStyle = "rgba(255,255,255,.22)"; ctx.lineWidth = 4; ctx.setLineDash([26, 22]); ctx.beginPath(); ctx.moveTo(Core.LX, b[1]); ctx.lineTo(Core.LX, b[3]); ctx.stroke(); ctx.setLineDash([]);
-      const me = V.fighters[meIdx], mt = me ? me.team : 0;
-      for (let t = 0; t < 2; t++) {   // 기지 바닥: 우리 = 하늘색 실선, 적 = 주황 빗금
-        const own = t === mt, y0 = t ? b[1] : b[3] - 300;
-        ctx.save(); ctx.globalAlpha = own ? .16 : .3; ctx.fillStyle = own ? ALLY : hatchPattern(); ctx.fillRect(b[0], y0, b[2] - b[0], 300); ctx.restore();
+      // 중립 지대(방): 길 사이 — 따뜻한 카펫 색
+      for (const [x0, x1] of [[245, 455], [605, 895], [1045, 1255]]) { ctx.fillStyle = "rgba(190,150,100,.13)"; ctx.fillRect(x0, 380, x1 - x0, 1440); }
+      // 4개 길: 번호와 점선 모양으로 구분(색에 기대지 않음)
+      for (let L = 0; L < 4; L++) {
+        const x = LANE_X[L]; ctx.fillStyle = "rgba(255,255,255,.07)"; ctx.fillRect(x - 75, 380, 150, 1440);
+        ctx.strokeStyle = "rgba(255,255,255,.2)"; ctx.lineWidth = 4; ctx.setLineDash([10 + L * 6, 18]); ctx.beginPath(); ctx.moveTo(x, 380); ctx.lineTo(x, 1820); ctx.stroke(); ctx.setLineDash([]);
+        ctx.fillStyle = "rgba(255,255,255,.2)"; ctx.font = "bold 64px system-ui"; ctx.textAlign = "center";
+        for (const y of [520, 1100, 1700]) ctx.fillText(String(L + 1), x, y); ctx.font = "bold 20px system-ui"; ctx.fillText((L + 1) + "번 길", x, 460);
+      }
+      // 길을 가로지르는 연결로(벽의 틈) 표시
+      ctx.strokeStyle = "rgba(255,255,255,.12)"; ctx.lineWidth = 3; ctx.setLineDash([4, 12]);
+      for (const y of [620, 1100, 1580]) { ctx.beginPath(); ctx.moveTo(b[0], y); ctx.lineTo(b[2], y); ctx.stroke(); }
+      ctx.setLineDash([]);
+      // 기지 바닥: 우리 = 하늘색 실선, 적 = 주황 빗금
+      for (let t = 0; t < 2; t++) {
+        const own = t === mt, y0 = t ? b[1] : 1820, h = t ? 320 : b[3] - 1820;
+        ctx.save(); ctx.globalAlpha = own ? .16 : .3; ctx.fillStyle = own ? ALLY : hatchPattern(); ctx.fillRect(b[0], y0, b[2] - b[0], h); ctx.restore();
         const fo = map.fountain[t]; ctx.strokeStyle = own ? ALLY : FOE; ctx.lineWidth = 4; ctx.setLineDash(own ? [] : [12, 8]); ctx.beginPath(); ctx.arc(fo.x, fo.y, own ? 200 : 210, 0, 6.283); ctx.stroke(); ctx.setLineDash([]);
-        ctx.fillStyle = "#fff"; ctx.font = `bold ${13 / zoom}px system-ui`; ctx.textAlign = "center"; ctx.fillText(own ? "▲ 우리 분수대 (회복·상점)" : "■ 적 분수대 (접근 금지)", fo.x, fo.y + (t ? -24 : 30));
+        ctx.fillStyle = "#fff"; ctx.font = `bold ${13 / zoom}px system-ui`; ctx.textAlign = "center"; ctx.fillText(own ? "▲ 우리 휴게실 (회복·상점)" : "■ 적 휴게실 (접근 금지)", fo.x, fo.y + (t ? -24 : 30));
       }
+      // 중립 둥지: 캠프 자리와 중앙 보스 자리
+      for (const c of map.camps) { ctx.strokeStyle = "rgba(201,168,255,.5)"; ctx.lineWidth = 3; ctx.setLineDash([6, 8]); ctx.beginPath(); ctx.arc(c.x, c.y, c.ct === 3 ? 150 : 56, 0, 6.283); ctx.stroke(); ctx.setLineDash([]); }
+      ctx.fillStyle = "rgba(255,255,255,.3)"; ctx.font = `bold ${13 / zoom}px system-ui`; ctx.textAlign = "center"; ctx.fillText("◆ 서류 거인 둥지", 750, 1258);
+      for (const s of map.solids) { ctx.fillStyle = "rgba(30,38,78,.9)"; ctx.fillRect(s.x, s.y, s.w, s.h); ctx.strokeStyle = "#7d8cc8"; ctx.lineWidth = 2; ctx.strokeRect(s.x, s.y, s.w, s.h); }
       ctx.strokeStyle = "#7d8cc8"; ctx.lineWidth = 6; ctx.strokeRect(b[0], b[1], b[2] - b[0], b[3] - b[1]);
-      ctx.fillStyle = "rgba(255,255,255,.3)"; ctx.font = `bold ${14 / zoom}px system-ui`; ctx.textAlign = "center"; ctx.fillText("— 중앙 —", Core.LX, 1100);
-      for (const s of map.solids) {
-        ctx.fillStyle = "rgba(0,0,0,.28)"; ctx.fillRect(s.x + 3, s.y + 9, s.w, s.h); ctx.fillStyle = "#6b4f38"; ctx.fillRect(s.x, s.y + 6, s.w, s.h);
-        ctx.fillStyle = "#b08a62"; rr(ctx, s.x, s.y, s.w, s.h, 4); ctx.fill(); ctx.strokeStyle = "#e0c9a0"; ctx.lineWidth = 1.5; ctx.stroke();
-      }
     }
     function drawAim(now, me) {   // 스킬샷 조준선
       if (!aimPrev || !me || !me.alive) return;
@@ -506,24 +596,24 @@
       const x = f.rx !== undefined ? f.rx : f.x, y = f.ry !== undefined ? f.ry : f.y;
       ctx.save(); ctx.strokeStyle = "#cfe9ff"; ctx.lineWidth = 4; ctx.setLineDash([6, 6]); ctx.beginPath(); ctx.arc(x, y + 12, 36 + Math.sin(now / 120) * 3, 0, 6.283); ctx.stroke(); ctx.restore();
     }
-    const hatchFor = () => null;
     /* HUD */
     const aramLine = $("[data-aramline]"), xpFill = $("[data-xpfill]"), lvupEl = $("[data-lvup]"), recallEl = $("[data-recall]"), boardEl = $("[data-board]"), annsEl = $("[data-anns]"), tutEl = $("[data-tut]"), itemsRow = $("[data-myitems]"), waveEl = $("[data-wave]");
-    const sumBtns = $$(".bw-spell"), autoBtn = $('[data-act="auto"]');
-    const TUT = [["move", "조이스틱 / WASD 로 협곡 가운데로 움직여 보세요"], ["lasthit", "미니언이 오면 가까이서 '막타'(마지막 일격)를 치면 골드가 들어와요 (자동공격)"], ["skill", "스킬 버튼(1~4)을 써 보세요. 드래그/마우스로 방향을 정해요"], ["shop", "골드가 모이면 분수대에서 상점(P)으로 아이템을 사요. B 는 귀환"], ["tower", "미니언과 함께 적 타워를 부수고 넥서스를 파괴하면 승리!"]];
+    const sumBtns = $$(".bw-spell"), autoBtn = $('[data-act="auto"]'), camBtns = $("[data-cam]");
+    const TUT = [["move", "WASD 로 움직여 보세요 (자동공격은 알아서 나가요)"], ["cam", "지도를 둘러보세요: 방향키 · 마우스 가장자리 · 폰은 화면/미니맵 드래그. Space 나 ◎ 로 내 기사에게 복귀"], ["lasthit", "길을 따라 병정이 와요. 가까이서 마지막 일격을 치면 골드가 들어와요"], ["skill", "스킬 버튼(1~4)을 써 보세요. 누른 채 방향을 정하면 조준해요"], ["camp", "길 사이 방의 중립 괴물(◆)을 잡으면 골드·경험치와 강화 효과! 병정이 없을 때 사냥하세요"], ["shop", "골드가 모이면 우리 휴게실에서 상점(P). R 은 복귀(7초)"], ["tower", "길마다 방어탑 1개. 2개를 부수면 라운드 코어를 칠 수 있어요. 6분 뒤엔 야근 시간!"]];
+    const fmtT = s => { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
     function hudAram(now, me) {
       dialog.classList.add("bw-aram");
-      const A = me.items !== undefined, sk = KITS[me.id].skills;
-      aramLine.textContent = `Lv ${me.lvl} · ◎ ${Math.floor(me.gold)} · CS ${me.cs}`;
+      const sk = KITS[me.id].skills;
+      aramLine.textContent = `Lv ${me.lvl} · ◎ ${Math.floor(me.gold)} · 병정 ${me.cs}`;
       xpFill.style.width = (me.lvl >= 12 ? 100 : me.xpPct || 0) + "%";
       skBtns.forEach((b, i) => {
         const rk = me.rk[i], mxr = i === 3 ? 2 : 4;
         $("kbd", b).textContent = touchy ? "" : String(i + 1); $(".pips", b).textContent = "●".repeat(rk) + "○".repeat(Math.max(0, mxr - rk));
         b.classList.toggle("locked", !rk); if (!rk) b.disabled = true;
-        const tot = sk[i].cd * (1 - .05 * (Math.max(1, rk) - 1)) * 0.9, cd = me.cd[i], pct = cd > 0 ? clamp(cd / tot * 100, 0, 100) : 0;
-        const cdEl = $(".cd", b); cdEl.style.background = `conic-gradient(rgba(5,8,26,.84) ${pct}%, transparent 0)`;
+        const tot = sk[i].cd * (1 - .05 * (Math.max(1, rk) - 1)) * 0.9, cd = me.cd[i];
+        $(".cd", b).style.height = (cd > 0 ? clamp(cd / tot * 100, 0, 100) : 0) + "%";
       });
-      sumBtns.forEach((b, i) => { const cd = me.scd ? me.scd[i] : 0, tot = i ? 80 : 70; $(".cd", b).style.background = `conic-gradient(rgba(5,8,26,.84) ${cd > 0 ? clamp(cd / tot * 100, 0, 100) : 0}%, transparent 0)`; $(".cdn", b).textContent = cd > 0 ? Math.ceil(cd) : ""; b.disabled = !me.alive || cd > 0; });
+      sumBtns.forEach((b, i) => { const cd = me.scd ? me.scd[i] : 0, tot = 60; $(".cd", b).style.height = (cd > 0 ? clamp(cd / tot * 100, 0, 100) : 0) + "%"; $(".cdn", b).textContent = cd > 0 ? Math.ceil(cd) : ""; b.disabled = !me.alive || cd > 0; });
       const mxRank = i => i === 3 ? (me.lvl >= 12 ? 2 : me.lvl >= 6 ? 1 : 0) : Math.min(4, Math.ceil(me.lvl / 2));
       const showLv = me.sp > 0 && !me.autoLearn && me.alive;
       lvupEl.hidden = !showLv;
@@ -534,33 +624,37 @@
       recallEl.hidden = !(me.recall && me.alive);
       if (!recallEl.hidden) { const left = me.recallT !== undefined ? me.recallT : (me.recall || 0); recallEl.firstElementChild.style.width = clamp((1 - (left || 3.5) / 7) * 100, 4, 100) + "%"; }
       if (shopOpen) paintShop();
-      if (V.wt !== undefined) waveEl.textContent = `다음 웨이브 ${Math.max(0, Math.ceil(V.wt))}초 · 타워 ${V.bld.filter(b => b.alive && b.kind === "tower" && b.team !== me.team).length}기 남음`;
-      // 점수판
+      camBtns.querySelector('[data-act="camhome"]').classList.toggle("free", !!camFree);
+      camBtns.querySelector('[data-act="edge"]').setAttribute("aria-pressed", String(edgeOn));
+      if (V.wt !== undefined) {
+        const oneMore = V.bld.filter(b => b.alive && b.kind === "tower" && b.team !== me.team).length, tb = V.tb ? V.tb[me.team] : 0;
+        waveEl.textContent = `다음 병정 ${Math.max(0, Math.ceil(V.wt))}초 · ${V.ot ? "야근 시간!" : "야근까지 " + fmtT(Core.OT - V.t)} · 적 방어탑 ${oneMore}기` + (tb > 0 ? ` · 팀 강화 ${Math.ceil(tb)}초` : "");
+        dialog.classList.toggle("bw-ot", !!V.ot);
+      }
       const showBoard = boardHeld || boardPin;
       boardEl.hidden = !showBoard;
       if (showBoard) {
         const rowOf = f => `<tr class="${f.i === meIdx ? "mine" : ""}"><td>${f.lvl || 1}</td><td class="who"><img src="${kSrcSafe(f.id, true)}" alt=""><span>${tag(f)} ${KITS[f.id].n}</span></td><td>${f.kills}/${f.deaths}/${f.assists}</td><td>${f.cs || 0}</td><td>${Math.floor(f.gold || 0)}</td></tr>`;
         const grp = t => V.fighters.filter(f => f.team === t).sort((a, b) => b.kills - a.kills).map(rowOf).join("");
-        const html = `<table class="bw-tbl"><thead><tr><th>Lv</th><th>기사</th><th>K/D/A</th><th>CS</th><th>골드</th></tr></thead><tbody><tr class="grp"><td colspan="5">▲ 우리 팀 · 킬 ${V.score[me.team]} · 타워 ${(V.tw || [0, 0])[me.team]}</td></tr>${grp(me.team)}<tr class="grp"><td colspan="5">■ 상대 팀 · 킬 ${V.score[1 - me.team]} · 타워 ${(V.tw || [0, 0])[1 - me.team]}</td></tr>${grp(1 - me.team)}</tbody></table>`;
+        const html = `<table class="bw-tbl"><thead><tr><th>Lv</th><th>기사</th><th>처치/사망/지원</th><th>병정</th><th>골드</th></tr></thead><tbody><tr class="grp"><td colspan="5">▲ 우리 팀 · 처치 ${V.score[me.team]} · 방어탑 ${(V.tw || [0, 0])[me.team]}</td></tr>${grp(me.team)}<tr class="grp"><td colspan="5">■ 상대 팀 · 처치 ${V.score[1 - me.team]} · 방어탑 ${(V.tw || [0, 0])[1 - me.team]}</td></tr>${grp(1 - me.team)}</tbody></table>`;
         if (boardEl.dataset.v !== html) { boardEl.dataset.v = html; boardEl.innerHTML = html; }
       }
-      // 방송
       while (anns.length && now - anns[0].at > 3600) anns.shift();
       const ah = anns.map(a => `<div style="--c:${a.col}">${a.txt}</div>`).join("");
       if (annsEl.dataset.v !== ah) { annsEl.dataset.v = ah; annsEl.innerHTML = ah; }
-      // 튜토리얼(첫 판, 건너뛰기 가능)
       if (tutOn && !tutDone && V.phase === "play" && me.alive) {
-        const done = [anyMove, me.cs > 0 || V.t > 70 && tutI > 0, anySkill, shopOpened || me.items.length > 0 || V.t > 110, (V.tw || [0, 0])[me.team] > 0 || V.t > 200];
+        const done = [anyMove, camMoved || V.t > 45, me.cs > 0 || (V.t > 80 && tutI > 1), anySkill, campKilled || V.t > 150, shopOpened || me.items.length > 0 || V.t > 190, (V.tw || [0, 0])[me.team] > 0 || V.t > 260];
         while (tutI < TUT.length && done[tutI] && (tutI > 0 || V.t > 2)) { tutI++; tutAt = 0; }
-        if (tutI >= TUT.length) { tutDone = true; store.set("bw.tutAram", "1"); } else { if (!tutAt) tutAt = V.t; $("[data-tuttext]").textContent = `(${tutI + 1}/5) ` + TUT[tutI][1]; }
+        if (tutI >= TUT.length) { tutDone = true; store.set("bw.tutAram", "1"); } else { if (!tutAt) tutAt = V.t; $("[data-tuttext]").textContent = `(${tutI + 1}/${TUT.length}) ` + TUT[tutI][1]; }
         tutEl.hidden = tutDone;
       } else if (tutDone || !tutOn) tutEl.hidden = true;
     }
     function aramReset() {
-      const A = aramOn(); dialog.classList.toggle("bw-aram", A);
+      const A = aramOn(); dialog.classList.toggle("bw-aram", A); dialog.classList.remove("bw-ot");
       anns.length = 0; shopOpen = false; shopEl.hidden = true; shopOpened = false; boardHeld = boardPin = false; aimPrev = null; tutI = 0; tutAt = 0; lastItemsSig = ""; ownedEl.dataset.sig = "";
+      camFree = null; panKeys.clear(); camMoved = false; campKilled = false; zoomIdx = 1;
       tutOn = A && store.get("bw.tutAram", "") !== "1"; tutDone = !tutOn; if (A) tipsOn = false;
-      mini.width = A ? 50 : 96; mini.height = A ? 122 : 139; mini.style.width = A ? "50px" : ""; mini.style.height = A ? "122px" : "";
+      mini.width = A ? 78 : 96; mini.height = A ? 114 : 139; mini.style.width = ""; mini.style.height = "";
       if (A && V.fighters[meIdx]) { cam.x = V.fighters[meIdx].x; cam.y = V.fighters[meIdx].y; }
     }
 
@@ -636,14 +730,15 @@
       return best;
     };
     function localInput(f) {
-      let mx = (keys.has("d") || keys.has("arrowright") ? 1 : 0) - (keys.has("a") || keys.has("arrowleft") ? 1 : 0);
-      let my = (keys.has("s") || keys.has("arrowdown") ? 1 : 0) - (keys.has("w") || keys.has("arrowup") ? 1 : 0);
+      const arw = !aramOn();
+      let mx = (keys.has("d") || (arw && keys.has("arrowright")) ? 1 : 0) - (keys.has("a") || (arw && keys.has("arrowleft")) ? 1 : 0);
+      let my = (keys.has("s") || (arw && keys.has("arrowdown")) ? 1 : 0) - (keys.has("w") || (arw && keys.has("arrowup")) ? 1 : 0);
       if (!mx && !my) { mx = stick.x; my = stick.y; }
       const L = Math.hypot(mx, my); if (L > 1) { mx /= L; my /= L; }
       if (L > .1) anyMove = true;
       let ax = f.aimX, ay = f.aimY, ad = 260;
       if (!touchy && mouse.has) {
-        const wx = (mouse.cx - W / 2) / zoom + cam.x, wy = (mouse.cy - H / 2) / zoom + cam.y, dx = wx - f.x, dy = wy - f.y, d = Math.hypot(dx, dy) || 1;
+        const wx = (mouse.cx - W / 2) / zoom + camC.x, wy = (mouse.cy - H / 2) / zoom + camC.y, dx = wx - f.x, dy = wy - f.y, d = Math.hypot(dx, dy) || 1;
         ax = dx / d; ay = dy / d; ad = d;
       } else {
         const t = autoTarget(f);
@@ -667,11 +762,13 @@
       if (!dialog.open || stage.hidden || (event.target.matches && event.target.matches("input, textarea"))) return;
       const A = aramOn(), key = event.key.toLowerCase(), code = event.code || "";
       const dig = /^Digit[1-4]$/.test(code) ? Number(code.slice(5)) - 1 : /^Numpad[1-4]$/.test(code) ? Number(code.slice(6)) - 1 : /^[1-4]$/.test(key) ? Number(key) - 1 : -1;
-      const moveKeys = ["w", "a", "s", "d", "arrowup", "arrowdown", "arrowleft", "arrowright"];
-      const used = moveKeys.includes(key) || dig >= 0 || [" ", "j", "shift", "q", "escape"].includes(key) || (A && ["f", "g", "b", "p", "t", "tab"].includes(key));
+      const panK = ["arrowup", "arrowdown", "arrowleft", "arrowright"], moveKeys = A ? ["w", "a", "s", "d"] : ["w", "a", "s", "d", ...panK];
+      const used = moveKeys.includes(key) || (A && panK.includes(key)) || dig >= 0 || [" ", "j", "shift", "q", "escape"].includes(key) || (A && ["e", "r", "t", "p", "tab"].includes(key));
       if (!used) return;
       event.preventDefault(); event.stopImmediatePropagation();
       if (moveKeys.includes(key)) { if (down) keys.add(key); else keys.delete(key); return; }
+      if (A && panK.includes(key)) { if (down) panKeys.add(key); else panKeys.delete(key); return; }
+      if (A && key === " ") { if (down) camHome(); return; }
       if (key === "tab") { boardHeld = down; return; }
       if (dig >= 0) {
         if (down) {
@@ -686,11 +783,10 @@
       if (event.repeat) return;
       keys.add(key);
       if (key === "shift") { if (!A) pressSkill(1); }
-      else if (key === "q") { if (!A) togglePrio(); }
+      else if (key === "q") { if (A) castAim(4); else togglePrio(); }
+      else if (key === "e") castAim(5);
+      else if (key === "r") castAim(6);
       else if (key === "t") togglePrio();
-      else if (key === "f") castAim(5);
-      else if (key === "g") castAim(4);
-      else if (key === "b") castAim(6);
       else if (key === "p") setShop(!shopOpen);
       else if (key === "escape") { if (shopOpen) setShop(false); else exitClick(); }
     }
@@ -722,7 +818,7 @@
     stickEl.addEventListener("pointermove", e => { if (e.pointerId === stickId) stickMove(e); });
     const stickEnd = e => { if (e.pointerId !== stickId) return; stickId = null; stick.x = stick.y = 0; knob.style.transform = ""; };
     stickEl.addEventListener("pointerup", stickEnd); stickEl.addEventListener("pointercancel", stickEnd);
-    $$(".bw-sk").forEach(b => {   // 협곡: 버튼을 누른 채 끌면 방향·거리 조준, 그냥 누르면 자동 조준
+    $$(".bw-sk").forEach(b => {   // 4길 전선: 버튼을 누른 채 끌면 방향·거리 조준, 그냥 누르면 자동 조준
       let st = null;
       b.addEventListener("pointerdown", e => {
         e.preventDefault(); const slot = Number(b.dataset.sk);
@@ -764,8 +860,9 @@
         if (me) {
           const spec = me.alive ? me : V.fighters.filter(o => o.alive).sort((a, b) => b.hp - a.hp)[0] || me;
           const tx = spec.rx !== undefined ? spec.rx : spec.x, ty = spec.ry !== undefined ? spec.ry : spec.y;
-          cam.x += (tx - cam.x) * Math.min(1, dt * 9); cam.y += (ty - cam.y) * Math.min(1, dt * 9);
+          if (camFree) { cam.x = camFree.x; cam.y = camFree.y; } else { cam.x += (tx - cam.x) * Math.min(1, dt * 9); cam.y += (ty - cam.y) * Math.min(1, dt * 9); }
         }
+        camUpdate(dt);
         updateFx(dt);
         draw(now);
         if (now - lastHud > 90) { lastHud = now; hud(now); }
@@ -781,7 +878,7 @@
       if (me) applyInput(me, localInput(me));
       if (now >= hitstopUntil) Core.step(match, dt);
       const evs = match.ev.splice(0);
-      if (evs.length) { handleEvents(evs); if (room && role === "host") netEv.push(...evs.filter(e => e[0] !== "mhit" && e[0] !== "mdie" && e[0] !== "ehit")); if (netEv.length > 60) netEv.splice(0, netEv.length - 60); }
+      if (evs.length) { handleEvents(evs); if (room && role === "host") netEv.push(...evs.filter(e => e[0] !== "ahit" && e[0] !== "sdie" && e[0] !== "ehit")); if (netEv.length > 60) netEv.splice(0, netEv.length - 60); }
       V = match;
       if (room && role === "host" && now - pubAt >= (match.over ? 500 : 66)) { pubAt = now; room.publish(Core.pack(match, netEv.splice(0, 40))); }
       const f = match.fighters[meIdx];
@@ -807,7 +904,7 @@
       W = Math.max(50, b.width); H = Math.max(50, b.height); dpr = Math.min(window.devicePixelRatio || 1, dprCap);
       const pw = Math.round(W * dpr), ph = Math.round(H * dpr);
       if (cv.width !== pw || cv.height !== ph) { cv.width = pw; cv.height = ph; }
-      zoom = clamp(Math.min(W, H) / 560, .5, 1.5);
+      zoom = aramOn() ? Math.min(W, H) / 560 * ZOOMS[zoomIdx] : clamp(Math.min(W, H) / 560, .5, 1.5);
     }
     function rr(c, x, y, w, h, r) {
       r = Math.min(r, w / 2, h / 2);
@@ -831,6 +928,7 @@
       let cx = cam.x, cy = cam.y;
       const hw = W / 2 / zoom, hh = H / 2 / zoom;
       cx = hw * 2 >= MW ? MW / 2 : clamp(cx, hw, MW - hw); cy = hh * 2 >= MH ? MH / 2 : clamp(cy, hh, MH - hh);
+      camC.x = cx; camC.y = cy;
       if (shake > .2) { cx += (Math.random() - .5) * shake; cy += (Math.random() - .5) * shake; shake *= .86; }
       ctx.setTransform(dpr * zoom, 0, 0, dpr * zoom, dpr * (W / 2 - cx * zoom), dpr * (H / 2 - cy * zoom));
       if (map.aram) drawAramFloor(map, now); else {
@@ -1136,7 +1234,7 @@
       mctx.fillStyle = "rgba(14,20,48,.45)"; mctx.fillRect(0, 0, w, h);
       mctx.fillStyle = "rgba(20,28,64,.8)"; for (const s of map.solids) mctx.fillRect(s.x * sx, s.y * sy, s.w * sx, s.h * sy);
       if (V.zone) { mctx.strokeStyle = "#ffd36b"; mctx.lineWidth = 2; mctx.beginPath(); mctx.arc(V.zone.x * sx, V.zone.y * sy, V.zone.r * sx, 0, 6.283); mctx.stroke(); }
-      if (map.aram) { for (const b of V.bld) { if (!b.alive) continue; mctx.fillStyle = me && b.team === me.team ? ALLY : FOE; const q = b.kind === "nexus" ? 6 : 4; mctx.fillRect(b.x * sx - q, b.y * sy - q, q * 2, q * 2); } for (const e of V.mins) { mctx.fillStyle = me && e.team === me.team ? ALLY : FOE; mctx.fillRect(e.x * sx - 1, e.y * sy - 1, 2, 2); } }
+      if (map.aram) { for (const b of V.bld) { if (!b.alive) continue; mctx.fillStyle = me && b.team === me.team ? ALLY : FOE; const q = b.kind === "core" ? 6 : 4; mctx.fillRect(b.x * sx - q, b.y * sy - q, q * 2, q * 2); } for (const e of V.sol) { mctx.fillStyle = me && e.team === me.team ? ALLY : FOE; mctx.fillRect(e.x * sx - 1, e.y * sy - 1, 2, 2); } for (const c of V.camps) if (c.alive) { mctx.fillStyle = "#c9a8ff"; const q = c.kind === "boss" ? 4 : 2; mctx.fillRect(c.x * sx - q, c.y * sy - q, q * 2, q * 2); } mctx.strokeStyle = "#fff"; mctx.lineWidth = 1; const vw = W / zoom * sx, vh = H / zoom * sy; mctx.strokeRect(camC.x * sx - vw / 2, camC.y * sy - vh / 2, vw, vh); }
       for (const f of V.fighters) {
         if (!f.alive) continue;
         const x = f.x * sx, y = f.y * sy, mine = f.i === meIdx, ally = me && isAlly(f, me);
@@ -1158,7 +1256,7 @@
       const me = V.fighters[meIdx]; if (!me) return;
       const mode = V.cfg.mode, F = V.fighters;
       clockEl.textContent = V.phase === "ready" ? "준비" : fmt(V.limit - V.t);
-      infoEl.textContent = mode === "team" ? (V.cfg.teamSize === 3 ? MODE_LABEL.team3 : MODE_LABEL.team2) : mode === "aram" ? "협곡 " + V.cfg.teamSize + ":" + V.cfg.teamSize : MODE_LABEL[mode];
+      infoEl.textContent = mode === "team" ? (V.cfg.teamSize === 3 ? MODE_LABEL.team3 : MODE_LABEL.team2) : mode === "aram" ? "4길 " + V.cfg.teamSize + ":" + V.cfg.teamSize : MODE_LABEL[mode];
       let sc;
       if (mode === "team" || mode === "aram") sc = `<b class="a">▲ ${V.score[me.team]}</b><span>:</span><b class="f">■ ${V.score[1 - me.team]}</b>`;
       else if (mode === "surv") sc = `<b>생존 ${F.filter(f => f.alive).length}/${F.length}</b>`;
@@ -1169,7 +1267,7 @@
       hpTxt.textContent = `${Math.ceil(me.hp)} / ${me.maxhp}${me.shieldV > 0 ? " (+" + Math.round(me.shieldV) + ")" : ""}`;
       skBtns.forEach((b, i) => {
         const sk = KITS[me.id].skills[i], cd = me.cd[i], pct = cd > 0 ? clamp(cd / (sk.cd * (me.bot ? me.bot.cdMul : 1)) * 100, 0, 100) : 0;
-        $(".cd", b).style.background = `conic-gradient(rgba(5,8,26,.84) ${pct}%, transparent 0)`; $(".cdn", b).textContent = cd > 0 ? Math.ceil(cd) : "";
+        $(".cd", b).style.height = pct + "%"; $(".cdn", b).textContent = cd > 0 ? Math.ceil(cd) : "";
         b.classList.toggle("ready", cd <= 0 && me.alive && me.stun <= 0); b.disabled = !me.alive;
       });
       const cb = me.combo >= 3 && me.alive ? me.combo : 0;
@@ -1202,7 +1300,7 @@
       const isT = res.mode === "team" || res.mode === "aram", A2 = res.mode === "aram";
       const win = isT ? res.winTeam === f.team : my && my[9] === 1, draw = isT && res.winTeam < 0;
       const title = draw ? "무승부" : win ? "승리!" : res.mode === "surv" ? "탈락 · " + my[9] + "위" : isT ? "패배" : my[9] + "위 / " + n;
-      const sub = A2 ? `${win ? "상대 넥서스 파괴!" : "우리 넥서스가 무너졌어요"} · 내 ${my[3]}킬 ${my[4]}데스 ${my[6]}어시 · CS ${my[11]}` : res.mode === "team" ? `▲ ${res.score[f.team]} : ■ ${res.score[1 - f.team]}` : res.mode === "surv" ? (win ? "마지막 생존자!" : "안전지대에서 밀려났거나 쓰러졌어요") : `${my[3]}처치 · ${my[4]}사망`;
+      const sub = A2 ? `${res.t >= V.limit - 2 ? (win ? "시간 종료 · 남은 체력 비교 승리" : "시간 종료 · 남은 체력 비교 패배") : win ? "상대 라운드 코어 파괴!" : "우리 라운드 코어가 무너졌어요"} · 내 ${my[3]}처치 ${my[4]}사망 ${my[6]}지원 · 병정 ${my[11]}` : res.mode === "team" ? `▲ ${res.score[f.team]} : ■ ${res.score[1 - f.team]}` : res.mode === "surv" ? (win ? "마지막 생존자!" : "안전지대에서 밀려났거나 쓰러졌어요") : `${my[3]}처치 · ${my[4]}사망`;
       const row = r => {
         const k = KITS[r[1]], mine = r[0] === meIdx, ally = isAlly(V.fighters[r[0]], f);
         return `<tr class="${mine ? "mine" : ""}"><td>${r[9]}</td><td class="who"><img src="${kSrcSafe(r[1], true)}" alt=""><span>${mine ? "▼ 나 · " : ally ? "▲ " : "■ "}${k.n}${A2 ? " Lv" + r[10] : ""}</span>${r[0] === res.mvp ? "<em>MVP</em>" : ""}</td>${A2 ? `<td>${r[3]}</td><td>${r[4]}</td><td>${r[6]}</td><td>${r[11]}</td>` : `<td>${r[3]}</td><td>${r[4]}</td><td>${r[5]}</td><td title="치유 ${r[7]}">${r[6]}</td>`}<td><b>${r[8]}</b></td></tr>`;
@@ -1294,6 +1392,10 @@
         case "close": case "exitnow": leave(); break;
         case "exit": exitClick(); break;
         case "prio": togglePrio(); break;
+        case "zin": zoomStep(1); break;
+        case "zout": zoomStep(-1); break;
+        case "camhome": camHome(); break;
+        case "edge": edgeOn = !edgeOn; store.set("bw.edge", edgeOn ? "1" : "0"); break;
         case "shop": setShop(!shopOpen); break;
         case "shopx": setShop(false); break;
         case "recall": castAim(6); break;
@@ -1328,8 +1430,8 @@
     if (shortcut) shortcut.addEventListener("click", () => games.open("brawl"));
     if (typeof window.knxKeyHints === "function") {
       window.knxKeyHints({id:"brawl", screen:() => dialog.open && !stage.hidden, corner:"bl", bottom:10, title:"대난투 단축키",
-        rows:() => aramOn() ? [["WASD", "이동"], ["자동", "기본공격(대상 T 전환)"], ["1~4", "스킬: 누르는 동안 조준선"], ["Shift+1~4", "스킬 강화"], ["F / G", "점멸 / 회복"], ["B", "귀환 (7초)"], ["P", "상점"], ["Tab", "점수판"], ["Esc", "나가기"]] : [["WASD", "이동"], ["마우스", "조준 방향"], ["자동", "가까운 적 기본공격"], ["1~4", "스킬 (4 = 궁극기)"], ["Shift", "2번 이동기"], ["우클릭", "2번 이동기"], ["Q", "자동공격 대상 전환"], ["Esc", "나가기"]]});
+        rows:() => aramOn() ? [["WASD", "이동"], ["방향키", "카메라 이동"], ["Space", "카메라 복귀"], ["휠", "줌"], ["자동", "기본공격(대상 T 전환)"], ["1~4", "스킬: 누르는 동안 조준선"], ["Shift+1~4", "스킬 강화"], ["Q / E", "회복 / 순간이동"], ["R", "복귀 (7초)"], ["P", "상점"], ["Tab", "점수판"], ["Esc", "나가기"]] : [["WASD", "이동"], ["마우스", "조준 방향"], ["자동", "가까운 적 기본공격"], ["1~4", "스킬 (4 = 궁극기)"], ["Shift", "2번 이동기"], ["우클릭", "2번 이동기"], ["Q", "자동공격 대상 전환"], ["Esc", "나가기"]]});
     }
-    window.bwDebug = {get V() { return V; }, get match() { return match; }, cfg, begin, Core};
+    window.bwDebug = {get cam() { return {camFree, zoomIdx, camC, edgeOn, camMoved, campKilled}; }, get V() { return V; }, get match() { return match; }, cfg, begin, Core};
   }
 })();

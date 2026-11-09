@@ -179,8 +179,8 @@ section.brawl.bw .bw-view canvas[data-cv] { height: 100%; min-height: 0; }
 body.rb-arena-active #kh-root { z-index: 2147483001; }
 @media (prefers-reduced-motion: reduce) { .bw-cutin.play { animation-duration: .01s; } .bw-combo.pop { animation: none; } }
 
-/* ---- 협곡 대전(ARAM-lite) 화면 ---- */
-.bw .bw-sk .cd, .bw .bw-spell .cd { position: absolute; inset: 0; height: auto; background: transparent; }
+/* ---- 4길 전선 화면 ---- */
+.bw .bw-sk .cd, .bw .bw-spell .cd { position: absolute; left: 0; right: 0; bottom: 0; top: auto; height: 0; background: #05081ad0; }
 .bw-util, .bw-wave, .bw-lvup, .bw-spell, .bw-xp, .bw-aramline, .bw-myitems, .bw-sk .pips, .bw-anns, .bw-recall, .bw-tut { display: none; }
 .bw-aram .bw-util { display: flex; } .bw-aram .bw-wave, .bw-aram .bw-anns { display: block; } .bw-aram .bw-lvup:not([hidden]) { display: flex; } .bw-aram .bw-spell { display: grid; }
 .bw-aram .bw-xp { display: block; } .bw-aram .bw-aramline { display: block; } .bw-aram .bw-myitems { display: flex; } .bw-aram .bw-sk .pips { display: block; } .bw-aram .bw-recall:not([hidden]) { display: block; } .bw-aram .bw-tut:not([hidden]) { display: flex; }
@@ -250,3 +250,21 @@ body.rb-arena-active #kh-root { z-index: 2147483001; }
 .bw.bw-touchy .bw-lvup b { display: none; }
 .bw-shopbox header button { min-height: 34px; padding: 3px 9px; font-size: 12px; border-radius: 10px; }
 .bw-shopbox header button[aria-pressed="true"] { border-color: #ffd36b; color: #ffe394; }
+
+/* ---- 4길 전선: 자체 디자인(명찰 모양 스킬 버튼, 먹물식 쿨타임 채움, 오른쪽 아래 배치) + 카메라 버튼 ---- */
+.bw-aram .bw-sk { border-radius: 4px; clip-path: polygon(12% 0, 88% 0, 100% 18%, 100% 100%, 0 100%, 0 18%); border: 0; background: linear-gradient(#323a6e, #232a52); box-shadow: inset 0 -5px 0 #ffd36b; }
+.bw-aram .bw-sk.ult { box-shadow: inset 0 -5px 0 #ff9a3c; }
+.bw-aram .bw-spell { border-radius: 22px; }
+.bw-aram:not(.bw-touchy) .bw-skills { left: auto; right: 16px; transform: none; }
+.bw-cam { display: none; }
+.bw-aram .bw-cam { display: flex; }
+.bw .bw-hud .bw-cam { position: absolute; right: 8px; top: 130px; gap: 3px; pointer-events: auto; }
+.bw .bw-cam button { min-height: 30px; width: 32px; padding: 0; font-size: 15px; border-radius: 8px; background: #0b1022d9; border: 2px solid #8190c8; color: #fff3d6; font-weight: 800; touch-action: none; }
+.bw .bw-cam button.free { border-color: #ffd36b; color: #ffe394; background: #3b3556; }
+.bw .bw-cam button[aria-pressed="true"] { border-color: #ffd36b; }
+.bw-aram .bw-hud .bw-mini { width: 78px; height: 114px; pointer-events: auto; touch-action: none; cursor: crosshair; }
+@media (min-width: 700px) { .bw-aram .bw-hud .bw-mini { width: 104px; height: 152px; } .bw .bw-hud .bw-cam { top: 168px; } .bw-aram .bw-feed { top: 206px; } }
+.bw-aram .bw-feed { top: 170px; }
+.bw .bw-hud .bw-wave { right: 96px; }
+.bw-ot .bw-top { background: #3a1220; }
+.bw-ot .bw-clock b { color: #ff9d8a; }
