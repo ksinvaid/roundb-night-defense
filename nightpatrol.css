@@ -66,3 +66,21 @@ section.np[hidden], .np [hidden] { display: none !important; }
 }
 @media (max-width: 420px) { .np-stick { width: 112px; height: 112px; } .np-btns button { font-size: 11px; } }
 @keyframes np-blink { 50% { opacity: .45; } }
+
+/* ---- 총기·입력 피드백 ---- */
+.np-gun { font-size: 12px; background: #0a0f1acc; border: 1px solid #394763; border-radius: 6px; padding: 4px 7px; position: relative; overflow: hidden; min-width: 132px; }
+.np-gun b { margin-right: 4px; }
+.np-gun span { font-variant-numeric: tabular-nums; font-weight: 800; color: #F0E442; }
+.np-gun i { font-style: normal; font-size: 10px; border: 1px solid #8fe0ff; border-radius: 4px; padding: 0 3px; margin-left: 3px; }
+.np-gun small { display: block; opacity: .75; font-size: 10px; }
+.np-gun em { position: absolute; left: 0; bottom: 0; height: 3px; background: #8fe0ff; }
+.np-gun.fire { border-color: #F0E442; background: #3a3210e6; }
+.np-toast { position: absolute; left: 50%; top: 36%; transform: translateX(-50%); max-width: 86%; text-align: center; background: #2a1d05f2; border: 2px solid #E69F00; border-radius: 8px; padding: 6px 12px; font-size: 14px; font-weight: 800; }
+.np-hud.shake { animation: np-shake .25s linear; }
+.np-btns button.press { transform: scale(.92); box-shadow: 0 0 0 3px #ffffffaa; }
+.np-btns button.dim { opacity: .5; border-style: dashed; }
+@keyframes np-shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-5px); } 40% { transform: translateX(5px); } 60% { transform: translateX(-3px); } 80% { transform: translateX(3px); } }
+@media (pointer: fine) and (min-width: 821px) { .np-btns { grid-template-columns: repeat(11, 1fr); } }
+
+/* 공용 단축키 안내(index.html knxKeyHints)가 전체화면 모드 위에 보이도록 */
+#kh-root { z-index: 2147483001 !important; }
