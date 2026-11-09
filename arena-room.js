@@ -3,7 +3,7 @@
     const peers = new Map();
     let peer, guest, timeout, code, role = "", ended = false, listed = false;
     const advertise = () => {
-      if (listed && code) window.roundbRooms?.advertise(mode, code, peers.size + 1);
+      if (listed && code) window.roundbRooms?.advertise(mode, code, Math.min(10, peers.size + 1));
     };
     const unlist = () => {
       if (listed && code) window.roundbRooms?.unlist(mode, code);
@@ -47,7 +47,7 @@
         host.on("connection", connection => {
           let slot = -1;
           connection.on("open", () => {
-            slot = Array.from({length:9}, (_, i) => i+1).find(i => !peers.has(i) && callbacks.accept(i)) ?? -1;
+            slot = Array.from({length:Math.min(19, (options.max || 10) - 1)}, (_, i) => i+1).find(i => !peers.has(i) && callbacks.accept(i)) ?? -1;
             if (slot < 0) { send(connection,{type:"full"}); setTimeout(() => connection.close(),500); return; }
             peers.set(slot,connection);
             send(connection,{type:"welcome",slot});
@@ -72,7 +72,7 @@
         client.on("open", () => {
           guest = client.connect(roomId(code),{reliable:true});
           guest.on("data", message => {
-            if (message?.type === "welcome" && Number.isInteger(message.slot) && message.slot > 0 && message.slot < 10) {
+            if (message?.type === "welcome" && Number.isInteger(message.slot) && message.slot > 0 && message.slot < 20) {
               clearTimeout(timeout); callbacks.ready(message.slot,code);
             } else if (message?.type === "state") callbacks.state(message.value);
             else if (message?.type === "full") fail("이미 시작했거나 빈 자리가 없는 방이에요.");
@@ -82,6 +82,7 @@
         });
       },
       input(value) { if (role === "guest") send(guest,{type:"input",value}); },
+      publishEach(build) { if (role === "host") { unlist(); for (const [peerSlot, connection] of peers) { const value = build(peerSlot); if (value != null) send(connection,{type:"state",value}); } } },
       publish(value) { if (role === "host") { unlist(); for (const connection of peers.values()) send(connection,{type:"state",value}); } },
       close
     };

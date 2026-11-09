@@ -54,7 +54,7 @@
       const arena = /^arp-(brawl|blood|night-beam|office-strike)-([a-z2-9]{6})-(10|[1-9])$/.exec(p.s);
       if (dungeon) room = {mode:"dungeon", code:dungeon[1], floor:+dungeon[2], count:+dungeon[3], cap:+dungeon[4]};
       if (survivor) room = {mode:"survivor", code:survivor[1], count:+survivor[2], cap:+survivor[3]};
-      if (arena) room = {mode:arena[1], code:arena[2], count:+arena[3], cap:10};
+      if (arena) room = {mode:arena[1], code:arena[2], count:+arena[3], cap:arena[1] === "office-strike" ? 20 : 10};
       if (!room || room.count < 1 || room.cap < 2 || room.count > room.cap || !entries.has(room.mode)) continue;
       room.code = room.code.toUpperCase();
       room.updated = p.t;
