@@ -741,16 +741,27 @@
     opt.size = [2, 3, 4, 5].includes(+opt.size) ? +opt.size : 3; opt.mode = "tdm"; if (opt.diff !== "easy" && opt.diff !== "normal" && opt.diff !== "hard") opt.diff = "easy";
     let heroSel = Math.max(0, Math.min(HR.length - 1, +store.get("np.hero") || 0));
     // 총 그림: 길이 1, 위쪽이 -y. 금속 그라디언트 + 하이라이트
-    function gunArt(c, g, sil) {
+    let lastGunArt = -9;
+    const SKINS = [
+      {id: "classic", n: "클래식", m: [[0, "#f4f7fc"], [.35, "#aab6c8"], [.7, "#5e6b81"], [1, "#2a3243"]], d: [[0, "#707b8f"], [.5, "#333c4e"], [1, "#161b27"]], w: [[0, "#c08f58"], [.5, "#7f5832"], [1, "#4a3119"]], a: "#8fe0ff"},
+      {id: "gold", n: "골드", m: [[0, "#fff6c8"], [.35, "#f0c94a"], [.7, "#a8791a"], [1, "#5a3d08"]], d: [[0, "#b89a4a"], [.5, "#6b5420"], [1, "#2b210a"]], w: [[0, "#fff0b0"], [.5, "#d9a92c"], [1, "#7a5410"]], a: "#fff1a8"},
+      {id: "neon", n: "네온", m: [[0, "#e6fbff"], [.35, "#5fd6ff"], [.7, "#1f7fb8"], [1, "#0b3355"]], d: [[0, "#4a90b8"], [.5, "#1d4663"], [1, "#0a1c2e"]], w: [[0, "#bdf0ff"], [.5, "#37a9de"], [1, "#12506f"]], a: "#7fffff"},
+      {id: "carbon", n: "카본", m: [[0, "#8a929e"], [.35, "#4b5360"], [.7, "#262b34"], [1, "#0e1116"]], d: [[0, "#454b56"], [.5, "#20242c"], [1, "#0a0c10"]], w: [[0, "#5a606b"], [.5, "#2c3039"], [1, "#101319"]], a: "#ffd86b"},
+      {id: "sunset", n: "선셋", m: [[0, "#fff0e6"], [.35, "#ff9a6b"], [.7, "#b8456b"], [1, "#4a1b4a"]], d: [[0, "#b0607a"], [.5, "#5c2a52"], [1, "#22112a"]], w: [[0, "#ffc9a0"], [.5, "#d9607a"], [1, "#6b2a5a"]], a: "#ffd0a8"},
+      {id: "ice", n: "아이스", m: [[0, "#ffffff"], [.35, "#cfe6ff"], [.7, "#7fa6d6"], [1, "#34507a"]], d: [[0, "#9ab6dc"], [.5, "#4f6f9c"], [1, "#1c2c48"]], w: [[0, "#eaf4ff"], [.5, "#a8c8ec"], [1, "#5a7fb0"]], a: "#ffffff"}
+    ];
+    const SKIN_KEY = "roundb.gunskin.v1";
+    let curSkin = SKINS.find(k => k.id === store.get(SKIN_KEY)) || SKINS[0];
+    function gunArt(c, g, sil, sk) {
       const lg = (y0, y1, st) => { const gr = c.createLinearGradient(0, y0, 0, y1); st.forEach(([o, col]) => gr.addColorStop(o, col)); return gr; };
-      const steel = (a, b) => lg(a, b, [[0, "#f4f7fc"], [.35, "#aab6c8"], [.7, "#5e6b81"], [1, "#2a3243"]]), dark = (a, b) => lg(a, b, [[0, "#707b8f"], [.5, "#333c4e"], [1, "#161b27"]]), wood = (a, b) => lg(a, b, [[0, "#c08f58"], [.5, "#7f5832"], [1, "#4a3119"]]);
+      const K = sk || curSkin, steel = (a, b) => lg(a, b, K.m), dark = (a, b) => lg(a, b, K.d), wood = (a, b) => lg(a, b, K.w);
       const poly = (pts, fill) => { c.beginPath(); pts.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); c.closePath(); c.fillStyle = fill; c.fill(); c.strokeStyle = "#0e121b"; c.lineWidth = .012; c.lineJoin = "round"; c.stroke(); };
       const hl = (x0, y0, x1, y1) => { c.strokeStyle = "rgba(255,255,255,.6)"; c.lineWidth = .009; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke(); };
       if (g === 0) { poly([[.14, .03], [.46, .03], [.4, .36], [.17, .36]], dark(.03, .36)); poly([[.1, -.1], [.98, -.1], [.98, .04], [.1, .04]], steel(-.1, .04)); hl(.14, -.075, .94, -.075); c.strokeStyle = "#10141e"; c.lineWidth = .018; c.beginPath(); c.arc(.56, .08, .08, 0, Math.PI); c.stroke(); poly([[.12, -.14], [.2, -.14], [.2, -.1], [.12, -.1]], dark(-.14, -.1)); }
       else if (g === 1) { poly([[.18, .06], [.3, .06], [.27, .3], [.15, .3]], dark(.06, .3)); poly([[.42, .06], [.57, .06], [.53, .38], [.4, .38]], dark(.06, .38)); poly([[.04, -.09], [.8, -.09], [.8, .06], [.04, .06]], steel(-.09, .06)); poly([[.8, -.05], [1, -.05], [1, .02], [.8, .02]], dark(-.05, .02)); hl(.08, -.065, .78, -.065); c.strokeStyle = "#8a95a8"; c.lineWidth = .014; c.beginPath(); c.moveTo(.04, -.04); c.lineTo(-.04, .0); c.lineTo(-.04, .1); c.lineTo(.08, .12); c.stroke(); }
       else if (g === 2) { poly([[0, -.04], [.25, -.08], [.25, .1], [.06, .22], [0, .14]], wood(-.08, .22)); poly([[.3, -.05], [1, -.05], [1, .0], [.3, .0]], steel(-.05, 0)); poly([[.3, .0], [1, .0], [1, .04], [.3, .04]], dark(0, .04)); poly([[.52, .03], [.78, .03], [.78, .12], [.52, .12]], wood(.03, .12)); poly([[.22, -.09], [.5, -.09], [.5, .09], [.22, .09]], steel(-.09, .09)); hl(.3, -.075, .98, -.04); poly([[.28, .09], [.36, .09], [.33, .24], [.26, .24]], dark(.09, .24)); }
       else if (g === 3) { poly([[0, -.05], [.24, -.08], [.24, .08], [.05, .17], [0, .11]], wood(-.08, .17)); poly([[.36, .07], [.5, .07], [.46, .3], [.33, .3]], dark(.07, .3)); poly([[.2, -.08], [.7, -.08], [.7, .07], [.2, .07]], steel(-.08, .07)); poly([[.5, -.07], [.8, -.07], [.8, .07], [.5, .07]], dark(-.07, .07)); poly([[.8, -.04], [1, -.04], [1, .0], [.8, .0]], dark(-.04, 0)); poly([[.25, -.12], [.4, -.12], [.4, -.08], [.25, -.08]], dark(-.12, -.08)); hl(.24, -.055, .68, -.055); }
-      else { poly([[0, -.05], [.24, -.08], [.24, .08], [.05, .17], [0, .11]], wood(-.08, .17)); poly([[.44, -.03], [1, -.03], [1, .015], [.44, .015]], dark(-.03, .015)); poly([[.2, -.08], [.55, -.08], [.55, .07], [.2, .07]], steel(-.08, .07)); poly([[.26, -.19], [.6, -.19], [.6, -.1], [.26, -.1]], dark(-.19, -.1)); c.fillStyle = "#8fe0ff"; c.beginPath(); c.arc(.6, -.145, .035, 0, Math.PI * 2); c.fill(); hl(.28, -.17, .58, -.17); poly([[.62, .015], [.64, .015], [.7, .24], [.66, .24]], dark(0, .24)); }
+      else { poly([[0, -.05], [.24, -.08], [.24, .08], [.05, .17], [0, .11]], wood(-.08, .17)); poly([[.44, -.03], [1, -.03], [1, .015], [.44, .015]], dark(-.03, .015)); poly([[.2, -.08], [.55, -.08], [.55, .07], [.2, .07]], steel(-.08, .07)); poly([[.26, -.19], [.6, -.19], [.6, -.1], [.26, -.1]], dark(-.19, -.1)); c.fillStyle = K.a; c.beginPath(); c.arc(.6, -.145, .035, 0, Math.PI * 2); c.fill(); hl(.28, -.17, .58, -.17); poly([[.62, .015], [.64, .015], [.7, .24], [.66, .24]], dark(0, .24)); }
       if (sil) poly([[.99, -.06], [1.22, -.06], [1.22, .04], [.99, .04]], dark(-.06, .04));
     }
     function drawGunCanvas(cv, g) { const c = cv.getContext("2d"); c.clearRect(0, 0, cv.width, cv.height); c.save(); const L = (cv.width - 14) * [.62, .84, .98, 1, 1][g]; c.translate(7, cv.height * .46); c.scale(L, L); gunArt(c, g, false); c.restore(); }
@@ -764,7 +775,7 @@
     const opts = document.createElement("div");
     opts.className = "np-opts";
     const grp = (key, label, items) => `<div role="group" aria-label="${label}"><b>${label}</b>${items.map(([v, t]) => `<button type="button" data-o="${key}" data-v="${v}" aria-pressed="false">${t}</button>`).join("")}</div>`;
-    opts.innerHTML = `<div class="np-heroes-title"><b>① 영웅 고르기</b> <small>영웅마다 총과 스킬이 달라요</small></div><div class="np-heroes" data-heroes></div>` +
+    opts.innerHTML = `<div class="np-heroes-title"><b>① 영웅 고르기</b> <small>영웅마다 총과 스킬이 달라요</small></div><div class="np-heroes" data-heroes></div><div class="np-prev"><canvas width="360" height="150" data-prev aria-label="총 미리보기 — 드래그해서 돌려 보기"></canvas><div class="np-prev-side"><div data-prevtxt></div><div class="np-skins" data-skins role="group" aria-label="총 스킨"></div><small>총을 드래그해서 돌려 보세요 · 스킨은 무료</small></div></div>` +
       grp("diff", "② 난이도", [["easy", "쉬움"], ["normal", "보통"], ["hard", "어려움"]]) + grp("size", "인원", [[2, "2:2"], [3, "3:3"], [4, "4:4"], [5, "5:5"]]) + grp("map", "맵", [["f4", "4층"], ["f3", "3층"]]) +
       `<div class="np-online"><button type="button" data-a="practice">연습(봇 약함)</button><button type="button" data-a="tutorial">튜토리얼</button><button type="button" data-a="host">온라인 방 만들기</button>
         <label class="np-pub"><input type="checkbox" data-public> 공개방</label><input data-code maxlength="6" aria-label="초대 코드" placeholder="초대 코드"><button type="button" data-a="join">참가</button>
@@ -776,10 +787,26 @@
       b.innerHTML = `<img alt="" src="${kSrc(H.k, true)}"><span class="hn"><b>${H.n}</b> · ${H.role}</span><canvas width="112" height="46"></canvas><span class="hg">${GNN[H.gun].n}</span><span class="hs"><em>${H.skn}</em> ${H.skd}</span>`;
       heroBox.append(b); drawGunCanvas(b.querySelector("canvas"), H.gun);
     });
+    const prevCv = opts.querySelector("[data-prev]"), skinBox = opts.querySelector("[data-skins]"); let prevRot = .5, prevDrag = null;
+    SKINS.forEach(k => { const b = document.createElement("button"); b.type = "button"; b.className = "np-skin"; b.dataset.skin = k.id; b.setAttribute("aria-pressed", "false"); b.textContent = k.n; b.style.borderColor = k.m[1][1]; skinBox.append(b); });
+    function drawPreview() {
+      const c = prevCv.getContext("2d"), W = prevCv.width, H = prevCv.height, G = GNN[HR[heroSel].gun]; c.clearRect(0, 0, W, H);
+      if (!prevDrag) prevRot += .02;
+      const sx = Math.cos(prevRot), L = 270, dir = sx < 0 ? -1 : 1;
+      c.save(); c.translate(W / 2, H * .5); c.scale(L * Math.max(.14, Math.abs(sx)) * dir, L); c.translate(-.5, -.1); gunArt(c, HR[heroSel].gun, false); c.restore();
+      c.save(); c.globalCompositeOperation = "source-atop"; const gx = (((prevRot * 80) % (W + 160)) + (W + 160)) % (W + 160) - 80, gr = c.createLinearGradient(gx - 40, 0, gx + 40, H); gr.addColorStop(0, "rgba(255,255,255,0)"); gr.addColorStop(.5, "rgba(255,255,255,.45)"); gr.addColorStop(1, "rgba(255,255,255,0)"); c.fillStyle = gr; c.fillRect(0, 0, W, H); c.restore();
+      const t = opts.querySelector("[data-prevtxt]"), txt = `<b>${G.n}</b> · 피해 ${G.dmg}${G.pel > 1 ? "×" + G.pel : ""} · 연사 ${(1 / G.cd).toFixed(1)}/초 · 탄창 ${G.mag} · 소음 ${G.noise}`; if (t.dataset.k !== txt) { t.dataset.k = txt; t.innerHTML = txt; }
+    }
+    prevCv.addEventListener("pointerdown", e => { prevDrag = {x: e.clientX, r: prevRot}; prevCv.setPointerCapture(e.pointerId); });
+    prevCv.addEventListener("pointermove", e => { if (prevDrag) prevRot = prevDrag.r + (e.clientX - prevDrag.x) * .025; });
+    const prevEnd = () => { prevDrag = null; }; prevCv.addEventListener("pointerup", prevEnd); prevCv.addEventListener("pointercancel", prevEnd);
+    setInterval(() => { if (dialog.open && !S) drawPreview(); }, 60);
     const msg = t => { $("[data-msg]").textContent = t; };
     const syncOpts = () => {
       for (const b of $$("[data-o]")) b.setAttribute("aria-pressed", String(String(opt[b.dataset.o]) === b.dataset.v));
       for (const b of $$("[data-hero]")) b.setAttribute("aria-pressed", String(+b.dataset.hero === heroSel));
+      for (const b of $$("[data-skin]")) b.setAttribute("aria-pressed", String(b.dataset.skin === curSkin.id));
+      heroBox.querySelectorAll("canvas").forEach((cv, i) => drawGunCanvas(cv, HR[i].gun)); lastGunArt = -9;
       store.set("np.opt", JSON.stringify(opt));
       const im = briefing.briefing.querySelector(".arena-map-preview img"), sp = briefing.briefing.querySelector(".arena-map-preview span");
       if (im && sp) { im.src = opt.map === "f3" ? "roadview/plan3f.jpg" : "roadview/plan4f.jpg"; sp.textContent = (opt.map === "f3" ? "3층 스튜디오" : "4층 공유오피스") + " · 실제 배치도를 어둡게 재해석"; }
@@ -788,40 +815,50 @@
         /* ---- 소리 ---- */
     let actx = null, soundOn = store.get("np.snd") !== "0";
     const aud = () => { if (!actx) { try { actx = new (root.AudioContext || root.webkitAudioContext)(); } catch (e) {} } return actx; };
-    function snd(name, v = 1) {
-      if (!soundOn || (typeof SAVE !== "undefined" && SAVE.mute)) return;
+    let master = null, voices = 0, vol = Math.max(0, Math.min(1, parseFloat(store.get("np.vol") || "1")));
+    const GSND = [[3200, 190, 60, .12, .35, 1800, .9], [3800, 240, 90, .08, .2, 2600, .8], [1800, 120, 35, .28, .6, 900, 1.1], [2800, 150, 45, .18, .45, 1700, 1], [2200, 90, 28, .4, .9, 700, 1.2]];
+    function snd(name, v = 1, pan = 0) {
+      if (!soundOn || vol <= 0 || (typeof SAVE !== "undefined" && SAVE.mute) || v <= .02) return;
       const c = aud(); if (!c) return; if (c.state === "suspended") c.resume();
+      if (voices > 14 && !/^(win|lose|round|kill)/.test(name)) return;
+      if (!master) { master = c.createGain(); const cp = c.createDynamicsCompressor ? c.createDynamicsCompressor() : null; if (cp) { master.connect(cp); cp.connect(c.destination); } else master.connect(c.destination); }
+      master.gain.value = vol;
+      const out = c.createGain(); out.gain.value = v;
+      if (c.createStereoPanner) { const pn = c.createStereoPanner(); pn.pan.value = Math.max(-1, Math.min(1, pan)); out.connect(pn); pn.connect(master); } else out.connect(master);
+      voices++; setTimeout(() => { voices = Math.max(0, voices - 1); }, 800);
       const t = c.currentTime;
-      const tone = (f0, f1, d, type, vol, at = 0) => { const o = c.createOscillator(), g = c.createGain(); o.type = type; o.frequency.setValueAtTime(f0, t + at); if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(Math.max(30, f1), t + at + d); g.gain.setValueAtTime(.0001, t + at); g.gain.exponentialRampToValueAtTime(vol * v, t + at + .01); g.gain.exponentialRampToValueAtTime(.0001, t + at + d); o.connect(g); g.connect(c.destination); o.start(t + at); o.stop(t + at + d + .05); };
-      const nz = (d, vol, f) => { const n = Math.floor(c.sampleRate * d), b = c.createBuffer(1, n, c.sampleRate), a = b.getChannelData(0); for (let i = 0; i < n; i++) a[i] = Math.random() * 2 - 1; const s = c.createBufferSource(), g = c.createGain(), fl = c.createBiquadFilter(); fl.type = "lowpass"; fl.frequency.value = f; s.buffer = b; g.gain.setValueAtTime(vol * v, t); g.gain.exponentialRampToValueAtTime(.0001, t + d); s.connect(fl); fl.connect(g); g.connect(c.destination); s.start(t); };
+      const tone = (f0, f1, d, type, vl, at = 0) => { const o = c.createOscillator(), g = c.createGain(); o.type = type; o.frequency.setValueAtTime(f0, t + at); if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(Math.max(30, f1), t + at + d); g.gain.setValueAtTime(.0001, t + at); g.gain.exponentialRampToValueAtTime(vl, t + at + .008); g.gain.exponentialRampToValueAtTime(.0001, t + at + d); o.connect(g); g.connect(out); o.start(t + at); o.stop(t + at + d + .05); };
+      const nz = (d, vl, f, type = "lowpass", at = 0) => { const n = Math.floor(c.sampleRate * d), b = c.createBuffer(1, n, c.sampleRate), a = b.getChannelData(0); for (let i = 0; i < n; i++) a[i] = Math.random() * 2 - 1; const s0 = c.createBufferSource(), g = c.createGain(), fl = c.createBiquadFilter(); fl.type = type; fl.frequency.value = f; s0.buffer = b; g.gain.setValueAtTime(vl, t + at); g.gain.exponentialRampToValueAtTime(.0001, t + at + d); s0.connect(fl); fl.connect(g); g.connect(out); s0.start(t + at); };
+      const m = /^shot(\d)$/.exec(name);
+      if (m) { const [ck, bf, bt, bd, td, tf, gv] = GSND[+m[1]]; nz(.035, .55 * gv, ck, "highpass"); tone(bf, bt, bd, "sine", .5 * gv); tone(bf * 2.2, bt * 2, bd * .5, "square", .12 * gv); nz(td, .22 * gv, tf, "lowpass", .02); nz(td * .7, .12 * gv, tf * .5, "lowpass", .09); return; }
       switch (name) {
+        case "shots": nz(.05, .08, 5200, "highpass"); tone(1100, 300, .07, "triangle", .05); break;
+        case "empty": tone(2300, 2300, .02, "square", .06); tone(1500, 1500, .025, "square", .05, .05); break;
+        case "reloadOut": tone(1500, 900, .03, "square", .05); tone(210, 110, .08, "sine", .12, .02); nz(.04, .08, 3000, "highpass", .03); break;
+        case "reloadIn": tone(250, 120, .09, "sine", .16); tone(1200, 800, .03, "square", .05, .05); break;
+        case "slide": nz(.05, .1, 2600, "highpass"); tone(700, 330, .06, "square", .05); nz(.05, .12, 3200, "highpass", .09); tone(520, 260, .05, "square", .05, .09); break;
+        case "reload": tone(900, 700, .04, "square", .04); break;
+        case "reloaded": tone(800, 1000, .05, "square", .04); break;
+        case "inspect": tone(700, 1100, .09, "triangle", .04); nz(.08, .05, 4000, "highpass", .03); break;
+        case "tick": tone(1900, 1900, .035, "sine", .09); break;
+        case "kill": tone(1300, 1300, .06, "sine", .1); tone(2000, 2000, .14, "sine", .12, .07); break;
         case "click": tone(1300, 900, .04, "square", .03); break;
-        case "swing": nz(.08, .06, 2200); tone(520, 200, .08, "triangle", .03); break;
-        case "hit": tone(170, 55, .16, "sawtooth", .09); nz(.1, .07, 900); break;
+        case "swing": nz(.08, .1, 2200); tone(520, 200, .08, "triangle", .04); break;
+        case "hit": tone(170, 55, .16, "sawtooth", .09); nz(.1, .1, 900); break;
         case "pick": tone(660, 990, .1, "sine", .06); tone(990, 1320, .1, "sine", .04, .08); break;
-        case "door": tone(120, 70, .18, "sine", .09); nz(.12, .05, 500); break;
-        case "insert": tone(300, 900, .25, "sawtooth", .05); tone(1500, 1500, .12, "sine", .04, .22); break;
-        case "alarm": tone(880, 660, .3, "square", .035); break;
-        case "ding": tone(1320, 1320, .6, "sine", .08); tone(1760, 1760, .5, "sine", .05, .12); break;
+        case "gunpick": tone(500, 700, .07, "square", .05); tone(800, 800, .05, "square", .05, .07); break;
+        case "door": tone(120, 70, .18, "sine", .09); nz(.12, .06, 500); break;
+        case "deny": tone(180, 120, .14, "sawtooth", .06); break;
+        case "stab": tone(160, 50, .2, "sawtooth", .1); nz(.12, .15, 1200); break;
         case "down": tone(320, 60, .5, "sawtooth", .08); break;
         case "siren": tone(500, 950, .9, "sawtooth", .05); break;
+        case "alarm": tone(880, 660, .3, "square", .035); break;
+        case "ding": tone(1320, 1320, .6, "sine", .08); tone(1760, 1760, .5, "sine", .05, .12); break;
+        case "insert": tone(300, 900, .25, "sawtooth", .05); break;
         case "hide": tone(200, 140, .12, "sine", .06); break;
-        case "shot0": nz(.09, .16, 3200); tone(300, 70, .12, "square", .07); break;
-        case "shot1": nz(.06, .12, 3800); tone(420, 120, .06, "square", .05); break;
-        case "shot2": nz(.22, .28, 1800); tone(140, 40, .25, "sawtooth", .12); break;
-        case "shot3": nz(.12, .2, 2800); tone(240, 60, .14, "square", .08); break;
-        case "shot4": nz(.34, .32, 1400); tone(110, 30, .38, "sawtooth", .14); break;
-        case "shots": nz(.05, .06, 5000); tone(900, 300, .05, "triangle", .03); break;
-        case "empty": tone(900, 900, .03, "square", .05); tone(600, 600, .03, "square", .05, .07); break;
-        case "deny": tone(180, 120, .14, "sawtooth", .06); break;
-        case "reload": nz(.05, .08, 2500); tone(500, 350, .07, "square", .04); tone(350, 500, .07, "square", .04, .12); break;
-        case "reloaded": tone(700, 900, .06, "square", .05); nz(.05, .1, 3000); break;
-        case "gunpick": tone(500, 700, .07, "square", .05); tone(800, 800, .05, "square", .05, .07); break;
-        case "tick": tone(1800, 1800, .025, "square", .04); break;
-        case "stab": tone(160, 50, .2, "sawtooth", .1); nz(.12, .12, 1200); break;
-        case "skill": nz(.12, .1, 2200); tone(500, 900, .12, "triangle", .05); break;
-        case "flashpop": nz(.2, .3, 6000); tone(1800, 600, .25, "sine", .08); break;
-        case "dash": nz(.2, .14, 1500); tone(200, 500, .2, "sawtooth", .05); break;
+        case "skill": nz(.12, .12, 2200); tone(500, 900, .12, "triangle", .05); break;
+        case "flashpop": nz(.2, .35, 6000, "highpass"); tone(1800, 600, .25, "sine", .08); break;
+        case "dash": nz(.2, .16, 1500); tone(200, 500, .2, "sawtooth", .05); break;
         case "shieldup": tone(400, 800, .25, "triangle", .06); tone(800, 1200, .2, "sine", .04, .1); break;
         case "shieldhit": tone(1200, 700, .1, "square", .05); break;
         case "heal": tone(600, 900, .15, "sine", .06); tone(900, 1300, .2, "sine", .05, .12); break;
@@ -830,6 +867,7 @@
         case "lose": [392, 330, 262].forEach((f, i) => tone(f, f * .96, .3, "triangle", .06, i * .18)); break;
       }
     }
+    function reloadSeq(g, v, pan) { const rl = GN[g].rl * 1000; snd("reloadOut", v, pan); setTimeout(() => snd("reloadIn", v, pan), rl * .45); setTimeout(() => snd("slide", v, pan), rl * .82); }
     /* ---- 상태 ---- */
     let lastFeed = 0, fN = 0, fireT = 0, hitT2 = 0, lastDeny = {t: "", at: 0}, fxs = [], decals = [];
     const kick = {x: 0, y: 0}, GN = core.GUN;
@@ -841,8 +879,8 @@
     const fx2 = {hit: 0};
     const tmName = t => TM[t][0] + "팀";
     /* ---- 입력 ---- */
-    const KEYMAP = {KeyW: "w", KeyA: "a", KeyS: "s", KeyD: "d", ArrowUp: "w", ArrowLeft: "a", ArrowDown: "s", ArrowRight: "d", ShiftLeft: "shift", ShiftRight: "shift", ControlLeft: "c", ControlRight: "c", KeyC: "c", KeyE: "e", KeyJ: "j", Space: "j", KeyF: "f", KeyQ: "q", KeyR: "r", KeyG: "g", Escape: "esc"};
-    const KEYBTN = {q: "skill", e: "use", r: "reload", f: "light"};
+    const KEYMAP = {KeyW: "w", KeyA: "a", KeyS: "s", KeyD: "d", ArrowUp: "w", ArrowLeft: "a", ArrowDown: "s", ArrowRight: "d", ShiftLeft: "shift", ShiftRight: "shift", ControlLeft: "c", ControlRight: "c", KeyC: "c", KeyE: "e", KeyJ: "j", Space: "j", KeyF: "f", KeyL: "l", KeyQ: "q", KeyR: "r", KeyG: "g", Escape: "esc"};
+    const KEYBTN = {q: "skill", e: "use", r: "reload", l: "light"};
     const tu = {on: false, step: 0, stepT: 0, okT: 0, moved: 0, turned: 0, lx: 0, ly: 0, la: 0, picked: false, skilled: false, done: [], sig: ""};
     const humanHero = new Map();
     function flashBtn(k) { const b = KEYBTN[k] && $(`[data-b="${KEYBTN[k]}"]`); if (!b) return; b.classList.add("press"); setTimeout(() => b.classList.remove("press"), 160); }
@@ -869,10 +907,11 @@
       if (name === "drop") return me.gun < 0 ? "버릴 총이 없어요" : "";
       return "";
     }
-    function act(name) { const why = actBlock(name); if (why) { deny(why); return; } actN++; actName = name; }
+    function act(name) { inspUntil = 0; const why = actBlock(name); if (why) { deny(why); return; } actN++; actName = name; }
     function readInput() {
       let dx = (keys.has("d") ? 1 : 0) - (keys.has("a") ? 1 : 0) + stick.x, dy = (keys.has("s") ? 1 : 0) - (keys.has("w") ? 1 : 0) + stick.y;
       const l = Math.hypot(dx, dy); if (l > 1) { dx /= l; dy /= l; }
+      if (inspUntil > 0 && (l > .25 || keys.has("j") || held.has("atk"))) inspUntil = 0;
       return {dx, dy, a: aim, run: keys.has("shift") || held.has("run"), sneak: keys.has("c") || sneakOn, light: lightOn, atk: keys.has("j") || held.has("atk"), use: keys.has("e") || held.has("use"), n: actN, act: actName, f: fN};
     }
     function updateAim(dt, inp) {
@@ -888,11 +927,17 @@
       if (k === "esc") { if (!e.repeat) pressExit(); return; }
       if (e.repeat) return;
       flashBtn(k); if (k === "j") flashAtk();
-      if (k === "f") toggleLight(); else if (k === "q") act("skill"); else if (k === "r") act("reload"); else if (k === "g") act("drop"); else if (k === "j") { keys.add(k); pressAttack(); } else keys.add(k);
+      if (k === "f") inspectStart(); else if (k === "l") toggleLight(); else if (k === "q") act("skill"); else if (k === "r") act("reload"); else if (k === "g") act("drop"); else if (k === "j") { keys.add(k); pressAttack(); } else keys.add(k);
     }, true);
     window.addEventListener("keyup", e => { if (!dialog.open) return; const k = KEYMAP[e.code]; if (k) keys.delete(k); }, true);
     window.addEventListener("blur", () => { keys.clear(); held.clear(); stick.x = stick.y = 0; });
     function flashAtk() { atkFlash = .15; }
+    let inspUntil = 0;
+    function inspectStart(hold) {
+      const me = S && S.players[meIdx]; if (!me || S.ph !== "play") return;
+      if (me.st !== ST.ok || me.gun < 0) { deny("들고 있는 총이 없어요 · 바닥의 총을 주워요"); return; }
+      inspUntil = performance.now() + (hold ? 99999 : 2400); snd("inspect");
+    }
     let atkFlash = 0;
     function toggleLight() { lightOn = !lightOn; const b = $('[data-b="light"]'); b.setAttribute("aria-pressed", String(lightOn)); b.firstChild.textContent = lightOn ? "손전등" : "손전등 끔"; snd("click"); }
     dialog.addEventListener("contextmenu", e => { if (!e.target.closest("input")) e.preventDefault(); });
@@ -1059,7 +1104,7 @@
     function onShot(id, b, ex, ey) {
       const p = S.players[id], v = viewP(); if (!p || !v) return;
       const g = b % 10, sil = b >= 10, G = GN[g], mine = id === meIdx, sx = p.x, sy = p.y, ang = p.a, vis = seenFrom(sx, sy, p, sil ? 9 : 26), dv = Math.hypot(sx - v.x, sy - v.y);
-      if (mine || dv < (sil ? 12 : 24)) snd(sil ? "shots" : "shot" + g, mine ? 1 : Math.max(.25, 1 - dv / 26));
+      if (mine || dv < (sil ? 12 : 24)) snd(sil ? "shots" : "shot" + g, mine ? 1 : Math.max(.25, 1 - dv / 26), mine ? 0 : Math.max(-1, Math.min(1, (sx - v.x) / 9)));
       if (vis) {
         const mx = sx + Math.cos(ang) * .55, my = sy + Math.sin(ang) * .55, base = Math.atan2(ey - sy, ex - sx), dist = Math.hypot(ex - sx, ey - sy);
         fxPush({k: "flash", x: mx, y: my, a: ang, dur: sil ? .05 : .09, sz: sil ? .35 : G.pel > 1 ? 1.5 : g === 4 ? 1.6 : 1.1});
@@ -1070,7 +1115,12 @@
         if (mine || dv < 5) fxPush({k: "case", x: sx, y: sy, a: ang + 1.6, vx: Math.cos(ang + 1.6) * (1.6 + Math.random()), vy: Math.sin(ang + 1.6) * (1.6 + Math.random()), dur: .7});
       }
       if (!mine && dv > 1.8) { const r = G.noise * (sil ? .35 : 1); if (dv * (core.los(S, v.x, v.y, sx, sy) ? 1 : 1.6) < r) rings.push({x: sx + (Math.random() - .5) * .8, y: sy + (Math.random() - .5) * .8, t: 0, big: 1, rad: Math.max(1.6, Math.min(6.5, r * .38))}); }
-      if (mine) { kick.x -= Math.cos(ang) * G.kick; kick.y -= Math.sin(ang) * G.kick; fireT = .16; }
+      if (mine) { kick.x -= Math.cos(ang) * G.kick; kick.y -= Math.sin(ang) * G.kick; const jt = (Math.random() - .5) * G.kick * (g === 1 ? 1.8 : .8); kick.x += -Math.sin(ang) * jt; kick.y += Math.cos(ang) * jt; fireT = .16; }
+    }
+    let killT = 0, streak = 0;
+    function onKill(a, x, y) {
+      const n = nowS(); streak = n - killT < 6 ? streak + 1 : 1; killT = n; hitT2 = .5; snd("kill");
+      fxPush({k: "pop", x, y: y - .9, text: streak > 1 ? `${streak}연속 처치!` : "처치!", dur: 1.1, big: true, mine: true}); fxPush({k: "burst", x, y, dur: .35, r: 1.6});
     }
     function onHit(a, b, x, y, src) {
       const dmg = b >> 1, back = b & 1, q = S.players[a];
@@ -1094,7 +1144,7 @@
       if (p.gun >= 0) {
         const G = GN[p.gun], len = [.5, .62, .78, .85, 1.05][p.gun], rc = Math.min(1, (p.cd || 0) / G.cd) * .12, rl = p.rl > 0;
         c.translate(.1 - rc, rl ? .12 : -.03); if (rl) c.rotate(.5);
-        c.scale(len, len * .62); gunArt(c, p.gun, p.sil);
+        c.scale(len, len * .62); gunArt(c, p.gun, p.sil, p.i === meIdx ? curSkin : SKINS[0]);
       } else {
         const f = (p.cd || 0) / C.cd, ang = f > .75 ? -.9 + (1 - f) / .25 * 1.8 : .55;
         c.rotate(ang); c.fillStyle = "#11151f"; c.fillRect(.14, -.06, .5, .12); c.fillStyle = f > .75 ? "#ffffff" : "#ffd86b"; c.fillRect(.16, -.04, .46, .08);
@@ -1114,8 +1164,8 @@
       for (const f of fxs) {
         const u = (ns - f.t0) / f.dur, al = 1 - u;
         if (f.k === "flash") {
-          const g = c.createRadialGradient(f.x, f.y, 0, f.x, f.y, f.sz * 1.7); g.addColorStop(0, `rgba(255,235,170,${.85 * al})`); g.addColorStop(1, "rgba(255,200,90,0)");
-          c.fillStyle = g; c.beginPath(); c.arc(f.x, f.y, f.sz * 1.7, 0, TAU); c.fill();
+          const g = c.createRadialGradient(f.x, f.y, 0, f.x, f.y, f.sz * 2.5); g.addColorStop(0, `rgba(255,235,170,${.85 * al})`); g.addColorStop(1, "rgba(255,200,90,0)");
+          c.fillStyle = g; c.beginPath(); c.arc(f.x, f.y, f.sz * 2.5, 0, TAU); c.fill();
           c.save(); c.translate(f.x, f.y); c.rotate(f.a); c.fillStyle = `rgba(255,248,210,${al})`; c.beginPath(); c.moveTo(0, 0); c.lineTo(f.sz * .35, -f.sz * .22); c.lineTo(f.sz * .95, 0); c.lineTo(f.sz * .35, f.sz * .22); c.closePath(); c.fill(); c.restore();
         } else if (f.k === "trace") { c.strokeStyle = `rgba(255,244,200,${.9 * al})`; c.lineWidth = f.w; c.beginPath(); c.moveTo(f.x1, f.y1); c.lineTo(f.x2, f.y2); c.stroke(); }
         else if (f.k === "spark") { c.strokeStyle = `rgba(255,${Math.round(210 - 70 * u)},120,${al})`; c.lineWidth = .04; c.beginPath(); for (let i = 0; i < f.n; i++) { const an = (i * 2.399 + f.t0 * 7) % TAU, r0 = .05 + .1 * u, r1 = .12 + .38 * u; c.moveTo(f.x + Math.cos(an) * r0, f.y + Math.sin(an) * r0); c.lineTo(f.x + Math.cos(an) * r1, f.y + Math.sin(an) * r1); } c.stroke(); }
@@ -1136,7 +1186,7 @@
       c.fillStyle = c.strokeStyle; c.beginPath(); c.arc(x, y, .025, 0, TAU); c.fill();
       if (me.rl > 0 && G) { c.strokeStyle = "#8fe0ff"; c.lineWidth = .07; c.beginPath(); c.arc(x, y, gap + .26, -Math.PI / 2, -Math.PI / 2 + TAU * (1 - me.rl / G.rl)); c.stroke(); }
       else if (G && me.cd > .12) { c.strokeStyle = "#E69F00"; c.lineWidth = .06; c.beginPath(); c.arc(x, y, gap + .26, -Math.PI / 2, -Math.PI / 2 + TAU * (1 - me.cd / G.cd)); c.stroke(); }
-      if (hitT2 > 0) { c.strokeStyle = "#ffffff"; c.lineWidth = .08; c.beginPath(); c.moveTo(x - .22, y - .22); c.lineTo(x + .22, y + .22); c.moveTo(x + .22, y - .22); c.lineTo(x - .22, y + .22); c.stroke(); }
+      if (hitT2 > 0) { const kk = hitT2 > .3 ? .36 : .22; c.strokeStyle = hitT2 > .3 ? "#F0E442" : "#ffffff"; c.lineWidth = hitT2 > .3 ? .11 : .08; c.beginPath(); c.moveTo(x - kk, y - kk); c.lineTo(x + kk, y + kk); c.moveTo(x + kk, y - kk); c.lineTo(x - kk, y + kk); c.stroke(); }
       c.restore();
       if (!G && me.cd > .1) { c.strokeStyle = "#E69F00"; c.lineWidth = .07; c.beginPath(); c.arc(mx, my, .6, -Math.PI / 2, -Math.PI / 2 + TAU * (1 - me.cd / C.cd)); c.stroke(); }
     }
@@ -1217,8 +1267,8 @@
           case "shot": onShot(a, b, x, y); break;
           case "hole": decals.push({x, y, t0: nowS()}); if (decals.length > 80) decals.shift(); if (nearMe(x, y, 12)) fxPush({k: "spark", x, y, dur: .2, n: 4}); break;
           case "stab": fxPush({k: "stab", x, y, dur: .35}); snd("stab"); if (a === meIdx) { kick.x += (Math.random() - .5) * .3; kick.y += (Math.random() - .5) * .3; } break;
-          case "empty": if (a === meIdx) snd("empty"); break;
-          case "reload": if (a === meIdx) snd("reload"); else if (nearMe(x, y, 8)) snd("reload", .3); break;
+          case "empty": if (a === meIdx) snd("empty"); else if (nearMe(x, y, 7)) snd("empty", .3); break;
+          case "reload": if (a === meIdx) reloadSeq(b, 1, 0); else if (nearMe(x, y, 9)) reloadSeq(b, .35, Math.max(-1, Math.min(1, (x - viewP().x) / 9))); break;
           case "reloaded": if (a === meIdx) snd("reloaded"); break;
           case "gunpick": if (a === meIdx) { tu.picked = true; snd("gunpick"); say(GN[b].n + " 장착", "ok"); } break;
           case "skill": onSkill(a, b, x, y); break;
@@ -1235,7 +1285,7 @@
           case "start": say(`${tmName(a)}이 엘리베이터 가동 시작!`, "warn"); snd("siren"); break;
           case "alarm": if (nearMe(x, y, 18)) snd("alarm"); break;
           case "open": snd("ding"); break;
-          case "down": snd("down", nearMe(x, y, 12) ? 1 : .3); if (a === meIdx) say("쓰러졌어요 — 이번 라운드는 관전해요", "warn"); break;
+          case "down": snd("down", nearMe(x, y, 12) ? 1 : .3); if (b === meIdx && a !== meIdx) onKill(a, x, y); if (a === meIdx) say("쓰러졌어요 — 이번 라운드는 관전해요", "warn"); break;
           case "revive": if (a === meIdx || b === meIdx) say("구조 성공", "ok"); break;
           case "siren": snd("siren"); break;
           case "hide": if (a === meIdx) snd("hide"); break;
@@ -1355,6 +1405,7 @@
           fx.fillStyle = g2; fx.beginPath(); cp.forEach(([x, y], i) => i ? fx.lineTo(x, y) : fx.moveTo(x, y)); fx.closePath(); fx.fill(); polys.push(cp); markExp(cp);
         }
       }
+      for (const f of fxs) if (f.k === "flash") { const u = (now / 1000 - f.t0) / f.dur; if (u < 1) { const g4 = fx.createRadialGradient(f.x, f.y, 0, f.x, f.y, 3.6 * f.sz); g4.addColorStop(0, `rgba(0,0,0,${.85 * (1 - u)})`); g4.addColorStop(1, "rgba(0,0,0,0)"); fx.fillStyle = g4; fx.beginPath(); fx.arc(f.x, f.y, 3.6 * f.sz, 0, TAU); fx.fill(); } }
       for (const f of S.flares) { const g3 = fx.createRadialGradient(f.x, f.y, 0, f.x, f.y, 4.6); g3.addColorStop(0, "rgba(0,0,0,.9)"); g3.addColorStop(1, "rgba(0,0,0,0)"); fx.fillStyle = g3; fx.beginPath(); fx.arc(f.x, f.y, 4.6, 0, TAU); fx.fill(); }
       fx.globalCompositeOperation = "source-over"; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.imageSmoothingEnabled = true; ctx.drawImage(fog, 0, 0, w, h);
       ctx.save(); ctx.translate(ox, oy); ctx.scale(sc, sc);
@@ -1375,6 +1426,7 @@
       for (let i = rings.length - 1; i >= 0; i--) { const r = rings[i]; r.t += dt; if (r.t > 1) { rings.splice(i, 1); continue; } ctx.strokeStyle = `rgba(255,255,255,${.75 * (1 - r.t)})`; ctx.lineWidth = .07; ctx.setLineDash([.18, .14]); ctx.beginPath(); ctx.arc(r.x, r.y, (r.rad || (r.big ? 1.9 : 1.2)) * r.t + .2, 0, TAU); ctx.stroke(); ctx.setLineDash([]); }
       ctx.restore();
       drawMarkers(ctx, now, ox, oy, sc, v, myTeam, w, h);
+      drawInspect(ctx, now, w, h);
       drawScreenFx(ctx, now, w, h, sc, ox, oy, v);
       // 화면 밖 화살표
       const arrow = (x, y, col, label) => { const dx = (x - cam.x) * sc, dy = (y - cam.y) * sc; if (Math.abs(dx) < w / 2 - 20 && Math.abs(dy) < h / 2 - 20) return; const k = Math.min((w / 2 - 22) / Math.abs(dx || 1e-6), (h / 2 - 22) / Math.abs(dy || 1e-6)), ax = w / 2 + dx * k, ay = h / 2 + dy * k, a = Math.atan2(dy, dx); ctx.save(); ctx.translate(ax, ay); ctx.rotate(a); ctx.fillStyle = col; ctx.strokeStyle = "#05070d"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(-8, -9); ctx.lineTo(-8, 9); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore(); ctx.fillStyle = col; ctx.font = "bold 11px sans-serif"; ctx.textAlign = "center"; ctx.fillText(label, ax - Math.cos(a) * 20, ay - Math.sin(a) * 20 + 4); };
@@ -1401,13 +1453,22 @@
         mctx.fill(); mctx.stroke();
       }
     }
+    gunEl.addEventListener("pointerdown", e => { e.preventDefault(); try { gunEl.setPointerCapture(e.pointerId); } catch (x) {} inspectStart(true); });
+    const gunUp = () => { if (inspUntil > performance.now() + 5000) inspUntil = performance.now() + 500; }; gunEl.addEventListener("pointerup", gunUp); gunEl.addEventListener("pointercancel", gunUp);
+    function drawInspect(c, now, w, h) {
+      const me = S.players[meIdx]; if (!me || me.gun < 0 || me.st !== ST.ok || inspUntil <= performance.now()) return;
+      const ns = now / 1000, sx = Math.cos(ns * 2.4), L = Math.min(w * .5, 320), G = GN[me.gun];
+      c.save(); c.fillStyle = "rgba(5,7,13,.62)"; c.fillRect(0, h * .34, w, L * .62); c.translate(w / 2, h * .34 + L * .27);
+      c.save(); c.rotate(-.12); c.scale(L * Math.max(.34, Math.abs(sx)) * (sx < 0 ? -1 : 1), L); c.translate(-.5, -.1); gunArt(c, me.gun, me.sil); c.restore();
+      c.globalCompositeOperation = "source-atop"; c.restore();
+      c.save(); c.textAlign = "center"; c.font = "bold 14px sans-serif"; c.lineWidth = 4; c.strokeStyle = "#05070d"; const tx = `${G.n} · ${curSkin.n}`; c.strokeText(tx, w / 2, h * .34 + L * .6); c.fillStyle = "#fff"; c.fillText(tx, w / 2, h * .34 + L * .6); c.restore();
+    }
     /* ---- HUD ---- */
     function promptOf(me) {
       if (!me || me.st !== ST.ok) return "";
       const gn = nearGun(me); if (gn) return isTouch() ? `'줍기' 버튼 · ${GN[gn.g].n}${me.gun >= 0 ? " (교체)" : ""}` : `E · ${GN[gn.g].n} 줍기${me.gun >= 0 ? " (교체)" : ""} · 탄창 ${gn.mag}`;
       return "";
     }
-    let lastGunArt = -9;
     function hudUpdate(now) {
       const me = S.players[meIdx]; if (!me) return;
       if (now - hudAt < 110) return; hudAt = now;
@@ -1488,11 +1549,12 @@
     dialog.addEventListener("click", e => {
       const o = e.target.closest("[data-o]"); if (o) { opt[o.dataset.o] = o.dataset.o === "size" ? +o.dataset.v : o.dataset.v; syncOpts(); return; }
       const hb = e.target.closest("[data-hero]"); if (hb) { heroSel = +hb.dataset.hero; store.set("np.hero", String(heroSel)); syncOpts(); if (role === "guest" && room) room.input({hero: heroSel}); return; }
+      const sk2 = e.target.closest("[data-skin]"); if (sk2) { curSkin = SKINS.find(k => k.id === sk2.dataset.skin) || SKINS[0]; store.set(SKIN_KEY, curSkin.id); syncOpts(); return; }
       const a = e.target.closest("[data-a]"); if (!a) return;
       switch (a.dataset.a) {
         case "exit": pressExit(); break;
         case "exit-now": dialog.close(); break;
-        case "sound": soundOn = !soundOn; store.set("np.snd", soundOn ? "1" : "0"); a.setAttribute("aria-pressed", String(soundOn)); a.textContent = soundOn ? "소리 켬" : "소리 끔"; break;
+        case "sound": if (!soundOn) { soundOn = true; vol = 1; } else if (vol > .6) vol = .5; else soundOn = false; store.set("np.snd", soundOn ? "1" : "0"); store.set("np.vol", String(vol)); syncSound(); break;
         case "practice": if (role === "host") { msg("온라인 방을 닫고 연습을 시작해요"); disconnect(); } begin("practice"); break;
         case "tutorial": beginTutorial(); break;
         case "tut-skip": endTutorial(); break;
@@ -1504,9 +1566,10 @@
         case "spec": { const al = S.players.filter(p => p.st === ST.ok || p.st === ST.hide || p.st === ST.down); if (al.length) { const i = al.indexOf(viewP()); specIdx = al[(i + 1) % al.length].i; } break; }
       }
     });
-    $('[data-a="sound"]').setAttribute("aria-pressed", String(soundOn)); $('[data-a="sound"]').textContent = soundOn ? "소리 켬" : "소리 끔";
-    if (typeof root.knxKeyHints === "function") root.knxKeyHints({id: "night-beam", screen: () => dialog.open, title: "암전 순찰 단축키", corner: "br", bottom: matchMedia("(min-width:821px)").matches ? 78 : 160,
-      rows: [["WASD", "이동"], ["마우스", "조준(손전등 방향)"], ["클릭 · J · Space", "발사"], ["Q", "영웅 스킬"], ["E", "총 줍기·교체"], ["R", "장전"], ["G", "총 버리기"], ["F", "손전등 켜기/끄기"], ["Shift / C", "달리기 / 살금"], ["Esc", "나가기"]]});
+    function syncSound() { const b = $('[data-a="sound"]'); b.setAttribute("aria-pressed", String(soundOn)); b.textContent = !soundOn ? "소리 끔" : vol > .6 ? "소리 100%" : "소리 50%"; }
+    syncSound();
+    if (typeof root.knxKeyHints === "function") root.knxKeyHints({id: "night-beam", screen: () => dialog.open && !!S, title: "암전 순찰 단축키", corner: "br", bottom: matchMedia("(min-width:821px)").matches ? 78 : 160,
+      rows: [["WASD", "이동"], ["마우스", "조준(손전등 방향)"], ["클릭 · J · Space", "발사"], ["Q", "영웅 스킬"], ["E", "총 줍기·교체"], ["R", "장전"], ["G", "총 버리기"], ["F", "총 구경(돌려 보기)"], ["L", "손전등 켜기/끄기"], ["Shift / C", "달리기 / 살금"], ["Esc", "나가기"]]});
     root.roundbRooms && root.roundbRooms.register("night-beam", code => { dialog.showScreen(); $("[data-code]").value = code; connect("guest"); });
     games.register({id: "night-beam", name: "암전 순찰", tag: "3:3 팀 총싸움 · 손전등 시야와 소리 파동", kind: "main", open: () => { dialog.showScreen(); }});
     root.roundbNightPatrol = {open: () => dialog.showScreen(), dialog, state: () => S, begin, beginTutorial, tick: n => tick(n, true)};

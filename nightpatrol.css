@@ -134,3 +134,17 @@ section.np[hidden], .np [hidden] { display: none !important; }
 .np-mid .np-skillbtn { border-color: #7fd0ff; }
 .np-mid button[aria-pressed=true]::before { content: none; }
 @media (pointer: fine) and (min-width: 821px) { .np-stick { display: none; } .np-mid { grid-template-columns: repeat(4, 1fr); } .np-mid button { min-height: 46px; } }
+
+/* ---- 총 미리보기·스킨·구경 ---- */
+.np-prev { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 8px; align-items: center; background: #0d1426; border: 1px solid #394763; border-radius: 10px; padding: 6px; }
+.np-prev canvas { width: 100%; height: auto; touch-action: none; cursor: grab; background: radial-gradient(ellipse at 50% 60%, #26334f, #0b1020 70%); border-radius: 8px; }
+.np-prev-side { display: grid; gap: 6px; font-size: 12px; }
+.np-prev-side small { opacity: .7; font-size: 10px; }
+.np-skins { display: flex; flex-wrap: wrap; gap: 4px; }
+.np .np-skin { min-height: 36px; min-width: 0; padding: 2px 8px; font-size: 11px; border-width: 2px; }
+.np-gun { pointer-events: auto; cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none; }
+.np-gun::after { content: "길게 눌러 구경"; position: absolute; right: 4px; top: 1px; font-size: 8px; opacity: .55; }
+@media (max-width: 640px) { .np-prev { grid-template-columns: 1fr; } }
+
+/* 브리핑 화면 안의 총 그림 캔버스는 보이게(공용 규칙이 캔버스를 모두 숨김) */
+.np.arena-has-briefing:not(.arena-playing) .np-opts canvas { display: block; }
