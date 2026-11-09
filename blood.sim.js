@@ -24,7 +24,7 @@
   ];
   const TEAM = [
     {c: "#56b4e9", s: "circle"}, {c: "#e69f00", s: "tri"}, {c: "#f0e442", s: "square"}, {c: "#cc79a7", s: "diamond"}, {c: "#ffffff", s: "star"},
-    {c: "#2fbf8f", s: "pent"}, {c: "#e8603a", s: "cross"}, {c: "#9aa5b1", s: "tridown"}, {c: "#4d7cff", s: "hex"}, {c: "#b388ff", s: "half"}
+    {c: "#2fbf8f", s: "pent"}, {c: "#e8603a", s: "cross"}, {c: "#c9a46b", s: "tridown"}, {c: "#4d7cff", s: "hex"}, {c: "#b388ff", s: "half"}
   ];
   const KIND = ["rally", "charge", "retreat", "follow"];
   const PERS = [
