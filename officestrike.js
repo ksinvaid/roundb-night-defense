@@ -798,7 +798,7 @@ function drawChar(g, q, o) {   // 원본 기사 전신 그림을 그대로 쓰�
   g.save(); g.translate(sx, fy); g.fillStyle = "rgba(0,0,0,.35)"; g.beginPath(); g.ellipse(0, 0, W0 * (st === 2 ? .5 : .3) * (air ? .8 : 1), u * .045, 0, 0, TAU); g.fill(); g.restore();
   g.save(); g.translate(sx, fy - (q.z || 0) * u / .66);
   const KR = window.KnightRig;
-  if (KR && KR.ready && KR.ready(q.k)) {   // 공용 KnightRig(원본 그림을 부위별로 잘라 관절만 돌린다)가 있으면 걷기·달리기·공격·앉기·엎드리기·구르기에 사용
+  if (KR && KR.ready && KR.ready(q.k) && H0 < 200) {   // (200px 넘는 큰 컷은 이음새가 보일 수 있어 원본 한 장 + 모션으로 그린다) 공용 KnightRig(원본 그림을 부위별로 잘라 관절만 돌린다)가 있으면 걷기·달리기·공격·앉기·엎드리기·구르기에 사용
     const melee = q.w === 2 && S.t - q.shotAt < .55, thrw = q.w === 3 && S.t - q.throwAt < .55;
     const pose = rolling ? "roll" : st === 2 ? "prone" : st === 1 ? "crouch" : melee || thrw ? "attack" : v > 1.0 ? "run" : v > .12 ? "walk" : "idle";
     const tt = pose === "attack" ? (thrw ? S.t - q.throwAt : S.t - q.shotAt) : pose === "roll" ? (t * 1.7) % .6 : t;
