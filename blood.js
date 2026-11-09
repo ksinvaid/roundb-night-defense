@@ -1,7 +1,7 @@
 (() => {
   const games = window.knx?.games;
   if (!games) return;
-  const W = 3500, H = 2400, limit = 3600, baseHP = 1400, cap = 32;
+  const W = 3500, H = 2400, hourLimit = 600, eliminationLimit = 3600, baseHP = 1400, cap = 32;
   const species = [
     ["보병",0,42,7,90,115,"◆"], ["크롤러",8,50,8,75,135,"✦"],
     ["저격수",20,55,12,165,120,"▲"], ["블롭",38,78,13,100,112,"●"],
@@ -18,8 +18,8 @@
   dialog.innerHTML = `
     <header><strong>진화 블러드</strong><span data-hud></span><button type="button" data-exit>로비로</button></header>
     <div class="brawl-controls">
-      <select data-rule aria-label="경기 방식"><option value="hour">무한 생산 · 1시간</option><option value="elim">본진 섬멸전</option></select>
-      <button type="button" data-play>혼자 경기 시작</button><button type="button" data-host>방 만들기</button>
+      <select data-rule aria-label="경기 방식"><option value="elim">본진 섬멸전</option><option value="hour">무한 생산 · 10분</option></select>
+      <button type="button" data-play>경기 시작 · AI전</button><button type="button" data-host>방 만들기</button>
       <label class="arena-public"><input type="checkbox" data-public> 공개방</label>
       <input data-code maxlength="6" placeholder="초대 코드" aria-label="초대 코드">
       <button type="button" data-join>참가</button><button type="button" data-start hidden>온라인 경기 시작</button>
@@ -64,10 +64,10 @@
     accent:"#9edfd3",category:"전략전 · 10개 본진",title:"진화 블러드",
     summary:"드론이 병력을 생산하고 처치 수에 따라 새 병종을 해금합니다. 지휘관은 전장 밖에서 일반 병력에 진격 명령을 내립니다.",
     map:"10개 본진 배치",preview,
-    rules:[["지휘","지휘소에서 적 본진을 선택해 일반 병력을 보냅니다"],["정밀 조작","드래그로 유닛을 선택하고 우클릭으로 공격 이동"],["승리","본진 섬멸전 또는 1시간 무한 생산"]],
+    rules:[["지휘","지휘소에서 적 본진을 선택해 일반 병력을 보냅니다"],["정밀 조작","드래그로 유닛을 선택하고 우클릭으로 공격 이동"],["승리","본진 섬멸전 또는 10분 무한 생산"]],
     start:()=>{disconnect();begin();}
   });
-  briefing.briefing.querySelector(".arena-launch").textContent="혼자 경기 시작";
+  briefing.briefing.querySelector(".arena-launch").textContent="경기 시작 · AI전";
   function level(kills) {
     let rank=0;
     while(rank+1<species.length&&kills>=species[rank+1][1])rank++;
@@ -222,9 +222,10 @@
     }
     state.units=state.units.filter(unit=>unit.hp>0);
   }
+  const timeLimit = () => state.rule==="elim"?eliminationLimit:hourLimit;
   function result() {
     const standing=state.players.filter(alive);
-    if (state.time<limit && (state.rule!=="elim" || standing.length>1)) return;
+    if (state.time<timeLimit() && (state.rule!=="elim" || standing.length>1)) return;
     const standings=(state.rule==="elim" && standing.length===1 ? standing : state.players.slice()).sort((a,b)=>b.kills-a.kills);
     state.done=true; state.winner=standings[0].id;
   }
@@ -316,7 +317,7 @@
       if(!visible(unit.x,unit.y))continue;
       const type=unit.hero?8:species.findIndex(entry=>entry[6]===unit.shape);
       const sprite=art[type],size=unit.hero?73:44+Math.max(0,type)*2;
-      ctx.fillStyle="#102025aa";ctx.beginPath();ctx.ellipse(unit.x,unit.y+5,size*.43,9,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle="#102025aa";ctx.beginPath();ctx.ellipse(unit.x,unit.y+5,size*.43,9,0,0,Math.PI*2);ctx.fill();
       ctx.strokeStyle=selected.has(unit.id)?"#fff":colors[unit.owner];ctx.lineWidth=3;ctx.stroke();
       const bob=Math.sin(state.time*12+unit.id)*2;
       if(sprite?.complete&&sprite.naturalWidth)ctx.drawImage(sprite,unit.x-size/2,unit.y-size+8+bob,size,size);
@@ -327,7 +328,7 @@
       ctx.strokeStyle="#fff";ctx.lineWidth=3;
       ctx.strokeRect(drag.start.x,drag.start.y,drag.end.x-drag.start.x,drag.end.y-drag.start.y);
     }
-    const me=state.players[slot], time=Math.max(0,Math.ceil(limit-state.time));
+    const me=state.players[slot], time=Math.max(0,Math.ceil(timeLimit()-state.time));
     const text=state.done ? `${state.winner+1}번 본진 승리` :
       `${Math.floor(time/60)}:${String(time%60).padStart(2,"0")} · ${me.kills}킬 · ${species[level(me.kills)][0]}${!alive(me)&&me.respawn?" · 부활 "+Math.max(0,Math.ceil(me.respawn-state.time))+"초":""}`;
     ctx.setTransform(dpr,0,0,dpr,0,0);
@@ -472,5 +473,5 @@
   });
   dialog.addEventListener("close",disconnect);
   games.register({id:"blood",name:"진화 블러드",tag:"드론 지휘 · 처치로 진화하는 자동 생산 전투",kind:"main",open:()=>dialog.showScreen()});
-  document.querySelector("[data-open-blood]").addEventListener("click",()=>games.open("blood"));
+  document.querySelector("[data-open-blood]")?.addEventListener("click",()=>games.open("blood"));
 })();

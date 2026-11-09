@@ -3854,7 +3854,6 @@ html[data-lowfx="1"]{scroll-behavior:auto}
           <button type="button" class="lb-game-shortcut" data-game-spot="3f-studio"><strong>LORD 영주전</strong><small>영지를 넓히고 용 사냥</small></button>
           <button type="button" class="lb-game-shortcut" data-game-spot="3f-desks"><strong>서바이버</strong><small>몰려오는 공실 귀신 버티기</small></button>
           <button type="button" class="lb-game-shortcut" data-game-spot="3f-ac"><strong>소용돌이·미로</strong><small>터렛을 지어 길목 방어</small></button>
-          <button type="button" class="lb-game-shortcut" data-act="flr-open"><strong>라운드비 층 길</strong><small>3·4층 배치도 방어전</small></button>
           <button type="button" class="lb-game-shortcut" data-open-brawl><strong>⚔ 대난투</strong><small>기사 10인전 · 스킬 4개</small></button>
           <button type="button" class="lb-game-shortcut" data-shooter="night-beam"><strong>암전 순찰</strong><small>손전등 전술전 · 2인 5팀</small></button>
         </div>
@@ -40293,7 +40292,6 @@ function flrLeaveModal() {
   return `<div class="modal" role="dialog" aria-modal="true" aria-label="나가기"><div><h2 class="disp" style="font-size:28px">나갈까요?</h2><p class="dim small">${net ? "같이 하는 중이라 멈출 수 없어요. 나가면 내 자리는 AI가 이어받아요." : "이 판은 저장되지 않아요. 시간은 멈춰 있어요."}</p><div class="row" style="justify-content:center"><button class="btn btn-red" data-act="td-resume">계속하기</button><button class="btn" data-act="leave-td">나가기 (로비로)</button></div></div></div>`;
 }
 Object.assign(A, {
-  "flr-open": () => { SAVE.mzmap = "floor"; setMode("maze"); A["to-select"](); },
   "exit-td": () => {
     if (UI.screen !== "td") return;
     if (TDU.ended || !TDU.V) { tdEnd(); A["to-title"](); return; }
@@ -42235,6 +42233,6 @@ try { const kp = window.knx && knx.start && knx.start(); if (kp && kp.catch) kp.
 <script src="server-rooms.js?v=tactics2"></script>
 <script src="arena-room.js?v=briefing1"></script>
 <script src="brawl.js?v=arena2"></script>
-<script src="blood.js?v=blood-start"></script>
+<script src="blood.js?v=blood-600"></script>
 <link rel="stylesheet" href="shooters.css?v=tactics2">
 <script src="shooters.js?v=tactical4"></script>
