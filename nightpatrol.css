@@ -148,3 +148,13 @@ section.np[hidden], .np [hidden] { display: none !important; }
 
 /* 브리핑 화면 안의 총 그림 캔버스는 보이게(공용 규칙이 캔버스를 모두 숨김) */
 .np.arena-has-briefing:not(.arena-playing) .np-opts canvas { display: block; }
+
+/* ---- 아이템·소지품 HUD ---- */
+.np-slots { display: grid; gap: 2px; font-size: 11px; }
+.np-slots span { background: #0a0f1acc; border: 1px solid #394763; border-radius: 5px; padding: 2px 6px; opacity: .6; position: relative; overflow: hidden; }
+.np-slots span.on { opacity: 1; border-color: #8fe0ff; }
+.np-slots b { margin-right: 4px; }
+.np-slots i { display: inline-block; height: 5px; background: #8fc3f0; vertical-align: middle; max-width: 36px; }
+.np-mid { grid-template-columns: repeat(2, minmax(44px, 1fr)); }
+@media (max-width: 820px) { .np-mid button { min-height: 44px; font-size: 11px; } .np-mid { gap: 4px; } }
+@media (pointer: fine) and (min-width: 821px) { .np-mid { grid-template-columns: repeat(6, 1fr); } }
