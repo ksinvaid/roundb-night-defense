@@ -1,0 +1,68 @@
+/* 암전 순찰 — 화면 전용 스타일 (접두사 np-). 공용 .arena-* 규칙은 brawl.css 에 있다. */
+section.np { position: fixed; inset: 0; z-index: 2147483000; box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden; color: #fff8e7; background: #0b0f19; }
+section.np[hidden], .np [hidden] { display: none !important; }
+.np button { min-height: 44px; min-width: 44px; border: 1px solid #e7ba58; border-radius: 8px; background: #322d51; color: #fff8e7; font-weight: 700; padding: 4px 10px; cursor: pointer; font-family: inherit; }
+.np button:focus-visible { outline: 2px solid #fff087; }
+.np button:disabled { opacity: .45; cursor: default; }
+.np button[aria-pressed=true], .np button.on { background: #f4cd6a; color: #151b2c; }
+.np button[aria-pressed=true]::before { content: "✓ "; }
+.np-btns button[aria-pressed=true]::before { content: none; }
+.np input { min-height: 40px; max-width: 110px; box-sizing: border-box; border: 1px solid #5f6d8c; border-radius: 8px; background: #0b1020; color: #fff; padding: 0 8px; text-transform: uppercase; }
+.np-head { flex: none; display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: #121827; border-bottom: 1px solid #2c364d; }
+.np-head strong { font-size: 17px; white-space: nowrap; }
+.np-head [data-hud] { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: #dfe6f7; }
+.np-head button.warn { background: #E69F00; color: #1b1300; border-color: #fff; }
+.np-stage { position: relative; flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; overflow: auto; }
+.np-stage > canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; background: #05070d; outline: none; }
+.np.arena-playing .np-stage { overflow: hidden; }
+.np-stage .arena-briefing { position: relative; z-index: 1; }
+.np-opts { display: grid; gap: 6px; }
+.np-opts [role=group], .np-online { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+.np-opts b { min-width: 52px; font-size: 12px; color: #ffd86b; }
+.np-opts [role=group] button, .np-online button { min-height: 40px; padding: 4px 10px; }
+.np-pub { display: flex; align-items: center; gap: 4px; font-size: 12px; }
+.np-pub input { min-height: 0; width: 18px; height: 18px; }
+.np-opts [data-msg] { margin: 0; font-size: 12px; color: #ffe09b; min-height: 1.3em; }
+.np-hud { position: absolute; inset: 0; pointer-events: none; }
+.np-left { position: absolute; left: 8px; top: 8px; max-width: calc(100% - 156px); display: grid; gap: 6px; justify-items: start; }
+.np-bat { position: relative; width: 130px; height: 18px; border: 2px solid #cfd8e8; border-radius: 5px; background: #0009; overflow: hidden; }
+.np-bat i { display: block; height: 100%; width: 100%; background: #8fe0ff; }
+.np-bat b { position: absolute; inset: 0; font-size: 11px; line-height: 14px; text-align: center; color: #fff; text-shadow: 0 0 3px #000, 0 0 3px #000; }
+.np-bat.low i { background: #F0E442; animation: np-blink .5s steps(2) infinite; }
+.np-goal { font-size: 12px; font-weight: 700; line-height: 1.35; background: #0a0f1acc; border: 1px solid #394763; border-radius: 6px; padding: 4px 7px; }
+.np-mini { position: absolute; right: 8px; top: 8px; width: 132px; height: 96px; border: 1px solid #4a5878; border-radius: 6px; }
+.np-warn { position: absolute; right: 8px; top: 110px; max-width: 150px; background: #3b2a00f2; border: 2px solid #F0E442; border-radius: 6px; padding: 4px 7px; font-size: 12px; font-weight: 800; animation: np-blink 1s steps(2) infinite; }
+.np-feed { list-style: none; margin: 0; padding: 0; position: absolute; left: 8px; bottom: 104px; max-width: 72%; font-size: 12px; }
+.np-feed li { background: #0a0f1ad9; border-left: 3px solid #8fe0ff; padding: 3px 7px; margin-top: 3px; border-radius: 0 5px 5px 0; }
+.np-feed li.warn { border-color: #E69F00; font-weight: 700; }
+.np-feed li.ok { border-color: #F0E442; }
+.np-hint { position: absolute; left: 8px; right: 8px; bottom: 46px; pointer-events: auto; cursor: pointer; background: #1b2a46f2; border: 1px solid #8fe0ff; border-radius: 8px; padding: 6px 10px; font-size: 13px; text-align: center; }
+.np-hint::after { content: " · 눌러서 끄기"; opacity: .6; font-size: 11px; }
+.np-prompt { position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); background: #0a0f1af2; border: 2px solid #F0E442; border-radius: 8px; padding: 5px 12px; font-weight: 800; font-size: 14px; white-space: nowrap; }
+.np-spec { position: absolute; left: 50%; bottom: 52px; transform: translateX(-50%); pointer-events: auto; }
+.np-result:not([hidden]) { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; background: #05080fd0; padding: 14px; text-align: center; overflow: auto; }
+.np-result > div { width: min(430px, 100%); box-sizing: border-box; padding: clamp(14px, 4vw, 28px); background: #172036; border: 1px solid #7f93b8; border-radius: 14px; }
+.np-result small, .np-result b { display: block; margin: 6px 0; }
+.np-result h2 { margin: .1em 0; font-size: clamp(40px, 11vw, 78px); line-height: 1; color: #ffd791; }
+.np-result[data-outcome=win] h2 { color: #8fe0ff; }
+.np-result[data-outcome=loss] h2 { color: #ffb86b; }
+.np-result p { margin: 4px 0; font-size: 13px; }
+.np-result [data-r-rank] span { display: block; padding: 2px 6px; border-radius: 5px; }
+.np-result [data-r-rank] .me { background: #ffffff1c; font-weight: 800; }
+.np-result [data-r-rp] { font-size: clamp(28px, 7vw, 46px); color: #F0E442; }
+.np-r-btns { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 8px; }
+.np-r-btns button { flex: 1 1 28%; }
+.np-pad { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); background: #0e1422; border-top: 1px solid #2c364d; }
+.np-stick { position: relative; flex: none; width: 118px; height: 118px; border-radius: 50%; background: #ffffff14; border: 2px solid #5f6d8c; touch-action: none; }
+.np-stick i { position: absolute; left: 50%; top: 50%; width: 46px; height: 46px; margin: -23px; border-radius: 50%; background: #cfd8e8; border: 3px solid #fff; opacity: .85; pointer-events: none; }
+.np-btns { flex: 1; display: grid; grid-template-columns: repeat(4, minmax(44px, 1fr)); gap: 5px; }
+.np-btns button { min-height: 52px; padding: 2px; font-size: 12px; display: grid; place-content: center; line-height: 1.15; touch-action: none; user-select: none; -webkit-user-select: none; }
+.np-btns small { font-size: 9px; opacity: .75; font-weight: 400; }
+.np-btns .np-use { border-color: #F0E442; }
+@media (pointer: fine) and (min-width: 821px) {
+  .np-stick { display: none; }
+  .np-btns { grid-template-columns: repeat(8, 1fr); }
+  .np-btns button { min-height: 46px; }
+}
+@media (max-width: 420px) { .np-stick { width: 112px; height: 112px; } .np-btns button { font-size: 11px; } }
+@keyframes np-blink { 50% { opacity: .45; } }
