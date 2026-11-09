@@ -164,7 +164,7 @@ const KITS = [
           {n:"걱정 마!", d:"아군 보호막, 나는 반격 태세", t:"circle", cd:12, r:200, shield:70, me:{dr:[.7,2], refl:[.3,2]}},
           {n:"내가 다 막는다", d:"4초간 피해 대부분 막고 되돌림", t:"self", cd:28, me:{dr:[.8,4], refl:[.5,4]}, also:{r:200, pull:100, dmg:20}}]}
 ];
-const MODES = {ffa:{label:"개인 난투", limit:180}, team:{label:"팀전", limit:180}, surv:{label:"서바이벌", limit:240}, aram:{label:"협곡 대전", limit:1200}};
+const MODES = {ffa:{label:"개인 난투", limit:180}, team:{label:"팀전", limit:180}, surv:{label:"서바이벌", limit:240}, aram:{label:"4길 전선", limit:600}};
 const DIFF = [
   {label:"쉬움", react:.5, err:.30, skillP:.2, dmgMul:.65, spdMul:.86, cdMul:1.4, atkP:.7, dodge:0, flee:0},
   {label:"보통", react:.28, err:.12, skillP:.55, dmgMul:.9, spdMul:.95, cdMul:1.1, atkP:.9, dodge:.3, flee:1},
@@ -206,7 +206,7 @@ function createMatch(cfg) {
     fighters.push(mkFighter(i, kn, (mode === "team" || mode === "aram") ? i % 2 : i, human, diff, HPM[mode]));
   }
   const m = {id:Math.random().toString(36).slice(2, 9), cfg:{mode, map:map.id, diff, teamSize:mode === "aram" ? Math.max(1, Math.round(n / 2)) : (cfg.teamSize === 3 ? 3 : 2), size:n}, map, t:0, phase:"ready", readyT:2.6,
-    limit:MODES[mode].limit + (mode === "team" && n >= 6 ? 30 : 0), fighters, proj:[], zones:[], traps:[], tele:[], items:[], objs:[], ev:[], score:[0, 0], zone:null, over:false, res:null, nextItem:4, zs:0, ctr:0, all:fighters, mins:[], bld:[], ents:[], tw:[0, 0], wave:0, wt:8, uid:100, fb:false, aram:false, winTeam:-1};
+    limit:MODES[mode].limit + (mode === "team" && n >= 6 ? 30 : 0), fighters, proj:[], zones:[], traps:[], tele:[], items:[], objs:[], ev:[], score:[0, 0], zone:null, over:false, res:null, nextItem:4, zs:0, ctr:0, all:fighters, sol:[], camps:[], bld:[], ents:[], tw:[0, 0], wave:0, wt:6, uid:100, fb:false, aram:false, winTeam:-1, tb:[0, 0], ot:false, bossDone:false};
   if (!map.aram) { m.objs.push({k:"w", x:map.purifier.x, y:map.purifier.y, cd:0, arm:0, by:-1});
   for (const p of map.printers) m.objs.push({k:"p", x:p.x, y:p.y, cd:0, arm:0, by:-1}); }
   const order = map.spawns.map((p, i) => i);
@@ -236,6 +236,7 @@ function hurt(m, src, dst, amt, o) {
   if (dst.armor) a *= 1 - dst.armor;
   if (src && !src.ent) {
     if (src.bot) a *= src.bot.dmgMul;
+    if (m.tb && m.tb[src.team] > 0) a *= 1.25;
     if (src.ampT > 0) a *= 1 + src.ampV;
     if (src.combo > 1 && !o.env && !o.refl) a *= 1 + Math.min(.2, (src.combo - 1) * .025);
   }
@@ -294,7 +295,7 @@ function kill(m, v, src) {
   if (m.aram) aramKill(m, v, killer);
   v.hits = {};
   if (m.cfg.mode === "surv") { v.place = m.fighters.filter(f => f.alive).length + 1; v.respT = 0; m.items.push({x:v.x, y:v.y, k:0, t:0}); }
-  else v.respT = m.aram ? 6 + v.lvl * 1.3 : 3;
+  else v.respT = m.aram ? 4 + v.lvl * .8 : 3;
   emit(m, "kill", killer && killer !== v ? killer.i : -1, v.i, Math.round(v.x), Math.round(v.y));
 }
 function respawn(m, f) {
@@ -383,7 +384,7 @@ function aimPoint(m, f, ang, rng) {
   return {x, y};
 }
 function cast(m, f, slot) {
-  if (slot >= 4) return slot === 6 ? startRecall(m, f) : summoner(m, f, slot - 4);
+  if (slot >= 4) return slot === 6 ? startRecall(m, f) : spellCast(m, f, slot - 4);
   const base = KITS[f.id].skills[slot];
   if (f.aram && base && (!f.rk[slot] || f.sil > 0)) return false;
   const sk = f.aram && base ? scaleSkill(base, f, slot) : base;
@@ -473,7 +474,7 @@ function basicAttack(m, f, ang) {
 }
 function autoTarget(m, f, range) {
   let best = null, bs = 1e9;
-  const pr = f.bot ? 3 : (f.inp.prio | 0);   // 0 가까운 적 · 1 약한 영웅 우선 · 2 미니언 막타 · 3 봇(영웅 > 막타 > 구조물)
+  const pr = f.bot ? 3 : (f.inp.prio | 0);   // 0 가까운 적 · 1 약한 영웅 우선 · 2 병정 마무리 · 3 봇(영웅 > 막타 > 구조물)
   for (const o of m.all) {
     if (!o.alive || o.team === f.team || o.locked) continue;
     const d = hyp(o.x - f.x, o.y - f.y);
@@ -481,7 +482,7 @@ function autoTarget(m, f, range) {
     if (!o.ent && !los(m.map, f.x, f.y, o.x, o.y, 6)) continue;
     let sc;
     if (!o.ent) sc = pr === 1 ? o.hp / o.maxhp * 1000 + d * .2 : pr === 2 ? 4000 + d : pr === 3 ? o.hp / o.maxhp * 300 + d * .3 : d;
-    else if (o.kind === "minion") sc = pr === 2 ? o.hp : pr === 3 ? 1500 + o.hp : pr === 1 ? 2500 + d : d + 30;
+    else if (o.kind !== "tower" && o.kind !== "core") sc = pr === 2 ? o.hp : pr === 3 ? 1500 + o.hp : pr === 1 ? 2500 + d : d + 30;
     else sc = (pr === 3 ? 3500 : pr === 0 ? d + 70 : 5000) + d * .1;
     if (sc < bs) { bs = sc; best = o; }
   }
@@ -627,7 +628,7 @@ function stepWorld(m, dt) {
     }
   }
   m.nextItem -= dt;
-  if (m.nextItem <= 0) { m.nextItem = m.cfg.mode === "surv" ? 8 : 11; if (m.items.length < (m.cfg.mode === "surv" ? 5 : 4)) spawnItem(m); }
+  if (m.nextItem <= 0) { m.nextItem = m.aram ? 14 : m.cfg.mode === "surv" ? 8 : 11; if (m.items.length < (m.aram ? 5 : m.cfg.mode === "surv" ? 5 : 4)) spawnItem(m); }
   for (let i = m.items.length - 1; i >= 0; i--) {
     const it = m.items[i];
     for (const f of m.fighters) {
@@ -806,7 +807,7 @@ function step(m, dt) {
 function pts(f) { if (f.aram) return f.kills * 100 + f.assists * 40 + f.cs * 3 + Math.round(f.dmg / 10) + Math.round(f.heal / 8); return f.kills * 100 + f.assists * 40 + Math.round(f.dmg / 6) + Math.round(f.heal / 8); }
 function checkEnd(m) {
   if (m.over) return;
-  if (m.aram) { if (m.t >= m.limit) aramEnd(m, nexusLead(m)); return; }
+  if (m.aram) { if (m.t >= m.limit) aramEnd(m, hpLead(m)); return; }
   const F = m.fighters, mode = m.cfg.mode;
   let end = m.t >= m.limit;
   if (mode === "surv") { if (F.filter(f => f.alive).length <= 1) end = true; }
@@ -853,7 +854,8 @@ function pack(m, evs) {
     it:m.items.map(i => [R1(i.x), R1(i.y), i.k]),
     o:m.objs.map(o => [+o.cd.toFixed(1), +o.arm.toFixed(2)]),
     zn:m.zone ? [R1(m.zone.x), R1(m.zone.y), R1(m.zone.r)] : 0, sc:m.score, e:evs || [], res:m.res,
-    mn:m.aram ? m.mins.map(e => [R1(e.x), R1(e.y), e.mt, e.team, Math.round(e.hp / e.maxhp * 100)]) : 0, bd:m.aram ? m.bld.map(b => [Math.round(b.hp), b.alive ? 1 : 0, b.locked ? 1 : 0]) : 0, wt:Math.round(m.wt), wv:m.wave, tw:m.tw};
+    sl:m.aram ? m.sol.map(e => [R1(e.x), R1(e.y), e.mt, e.team, Math.round(e.hp / e.maxhp * 100), e.lane]) : 0, bd:m.aram ? m.bld.map(b => [Math.round(b.hp), b.alive ? 1 : 0, b.locked ? 1 : 0]) : 0,
+    cp:m.aram ? m.camps.map(c => [R1(c.x), R1(c.y), c.ct, Math.round(c.hp / c.maxhp * 100), c.alive ? 1 : 0]) : 0, tb:m.aram ? [Math.round(m.tb[0]), Math.round(m.tb[1])] : 0, ot:m.ot ? 1 : 0, wt:Math.round(m.wt), wv:m.wave, tw:m.tw};
 }
 function unpack(sn, view) {
   view = view || {};
@@ -882,25 +884,36 @@ function unpack(sn, view) {
   view.objs = view.map ? sn.o.map((o, i) => ({k:i === 0 ? "w" : "p", x:i === 0 ? view.map.purifier.x : view.map.printers[i - 1].x, y:i === 0 ? view.map.purifier.y : view.map.printers[i - 1].y, cd:o[0], arm:o[1]})) : [];
   if (sn.bd) {
     const mp = view.map;
-    view.bld = sn.bd.map((b, i) => { const t = i < 3 ? 0 : 1, tier = i % 3, p = tier === 2 ? mp.nexus[t] : mp.towers[t][tier], mx = tier === 2 ? NEX_HP : TWR.hp[tier]; return {ent:true, kind:tier === 2 ? "nexus" : "tower", team:t, tier, x:p.x, y:p.y, rad:tier === 2 ? NEX_RAD : TWR.rad, hp:b[0], maxhp:mx, alive:!!b[1], locked:!!b[2]}; });
-    view.mins = sn.mn.map(e => ({ent:true, kind:"minion", mt:e[2], team:e[3], x:e[0], y:e[1], rad:MT[e[2]].rad, hp:e[4], maxhp:100, alive:true}));
-    view.wt = sn.wt; view.wave = sn.wv; view.tw = sn.tw || [0, 0]; view.aram = true;
-  } else { view.bld = []; view.mins = []; view.aram = false; }
+    view.bld = sn.bd.map((b, i) => { const t = i < 5 ? 0 : 1, ln = i % 5, core = ln === 4, p = core ? mp.core[t] : mp.towers[t][ln]; return {ent:true, kind:core ? "core" : "tower", team:t, lane:ln, x:p.x, y:p.y, rad:core ? CORE_RAD : TWR.rad, hp:b[0], maxhp:core ? CORE_HP : TWR.hp, alive:!!b[1], locked:!!b[2]}; });
+    view.sol = sn.sl.map(e => ({ent:true, kind:"soldier", mt:e[2], team:e[3], lane:e[5], x:e[0], y:e[1], rad:MT[e[2]].rad, hp:e[4], maxhp:100, alive:true}));
+    view.camps = sn.cp.map(c => ({ent:true, kind:c[2] === 3 ? "boss" : "camp", ct:c[2], team:-1, x:c[0], y:c[1], rad:CAMP[c[2]].rad, hp:c[3], maxhp:100, alive:!!c[4]}));
+    view.wt = sn.wt; view.wave = sn.wv; view.tw = sn.tw || [0, 0]; view.tb = sn.tb || [0, 0]; view.ot = !!sn.ot; view.aram = true;
+  } else { view.bld = []; view.sol = []; view.camps = []; view.aram = false; }
   view.zone = sn.zn ? {x:sn.zn[0], y:sn.zn[1], r:sn.zn[2]} : null;
   return view;
 }
 
-/* ================= 협곡 대전(ARAM-lite): 1레인 · 미니언 웨이브 · 타워/넥서스 · 레벨/스킬강화 · 골드/상점 · 귀환 · 소환사 주문 ================= */
-const AW = 900, AH = 2200, LX = 450;
-MAPS.aram = {id:"aram", name:"라운드비 협곡", plan:"", w:AW, h:AH, bounds:[230, 60, 670, 2140], aram:true, nav:null,
-  solids:[{kind:"desk", x:236, y:1010, w:70, h:44, label:""}, {kind:"desk", x:594, y:1150, w:70, h:44, label:""}, {kind:"desk", x:236, y:1430, w:70, h:44, label:""}, {kind:"desk", x:594, y:770, w:70, h:44, label:""}],
-  spawns:[], items:[], purifier:{x:-999, y:-999}, printers:[], zc:{x:LX, y:1100},
-  nexus:[{x:LX, y:1925}, {x:LX, y:275}], towers:[[{x:LX, y:1390}, {x:LX, y:1740}], [{x:LX, y:810}, {x:LX, y:460}]], fountain:[{x:LX, y:2070}, {x:LX, y:130}]};
-const MT = [   // 미니언: 근접 · 원거리 · 대포
-  {n:"근접", hp:310, dmg:20, rng:40, rate:1.1, spd:150, rad:15, gold:20, xp:34},
-  {n:"원거리", hp:210, dmg:24, rng:210, rate:1.2, spd:150, rad:12, gold:16, xp:28},
-  {n:"대포", hp:520, dmg:46, rng:270, rate:1.8, spd:130, rad:20, gold:42, xp:66}];
-const TWR = {hp:[1900, 2300], dmg:95, rng:430, rate:1.15, rad:36}, NEX_HP = 3200, NEX_RAD = 58;
+/* ================= 4길 전선: 4개 길 · 병정 행렬 · 방어탑/라운드 코어 · 중립 캠프 · 중앙 보스 · 레벨/골드/상점 · 복귀 · 보조 기술 ================= */
+const AW = 1500, AH = 2200, LANE_X = [170, 530, 970, 1330], LHW = 75, OT = 360, BOSS_AT = 150;
+(function () {
+  const walls = [], segs = [[380, 560], [680, 1040], [1160, 1520], [1640, 1820]];
+  for (const x of [245, 455, 605, 895, 1045, 1255]) for (const [a, b] of segs) walls.push({kind:"wall", x:x - 7, y:a, w:14, h:b - a, label:""});
+  MAPS.aram = {id:"aram", name:"4길 전선", plan:"", w:AW, h:AH, bounds:[95, 60, 1405, 2140], aram:true, nav:null, solids:walls,
+    spawns:[], items:[{x:350, y:1580}, {x:1150, y:1580}, {x:350, y:620}, {x:1150, y:620}, {x:750, y:1610}, {x:750, y:590}], purifier:{x:-999, y:-999}, printers:[], zc:{x:750, y:1100},
+    core:[{x:750, y:1950}, {x:750, y:250}], towers:[LANE_X.map(x => ({x, y:1480})), LANE_X.map(x => ({x, y:720}))], fountain:[{x:750, y:2070}, {x:750, y:130}],
+    camps:[{x:350, y:1340, ct:0}, {x:350, y:860, ct:0}, {x:1150, y:1340, ct:1}, {x:1150, y:860, ct:1}, {x:750, y:1420, ct:2}, {x:750, y:780, ct:2}, {x:750, y:1100, ct:3}]};
+})();
+const MT = [   // 병정: 서류 병정(근접) · 볼펜 병정(원거리) · 복사기 대포
+  {n:"서류 병정", hp:700, dmg:22, rng:42, rate:1.1, spd:150, rad:16, gold:20, xp:40},
+  {n:"볼펜 병정", hp:430, dmg:26, rng:220, rate:1.2, spd:150, rad:13, gold:16, xp:32},
+  {n:"복사기 대포", hp:1100, dmg:50, rng:280, rate:1.8, spd:130, rad:21, gold:44, xp:80}];
+const CAMP = [   // 중립 캠프: 처치하면 골드·경험치·개인 강화 / 서류 거인은 팀 전체 강화
+  {n:"커피잔 괴물", hp:950, dmg:30, rng:62, rate:1.2, spd:130, rad:24, gold:70, xp:110, aggro:230},
+  {n:"회전의자 괴물", hp:950, dmg:30, rng:62, rate:1.2, spd:130, rad:24, gold:70, xp:110, aggro:230},
+  {n:"스테이플러 괴물", hp:1150, dmg:34, rng:62, rate:1.2, spd:130, rad:26, gold:90, xp:130, aggro:230},
+  {n:"서류 거인", hp:4200, dmg:70, rng:110, rate:1.7, spd:90, rad:46, gold:260, xp:300, aggro:300}];
+const CAMP_BUF = ["커피 활력(체력 회복)", "의자 질주(이동 속도)", "스테이플러 분노(공격력)"];
+const TWR = {hp:950, dmg:90, rng:420, rate:1.15, rad:36}, CORE_HP = 1500, CORE_RAD = 58;
 const ITEMS = [
   {n:"단검", d:"기본공격 피해 +20%", cost:400, ad:.2, ic:"sword"},
   {n:"마법 지팡이", d:"스킬 피해 +20%", cost:450, ap:.2, ic:"staff"},
@@ -915,10 +928,11 @@ const GROW = [   // gd = 공격 성장 계수, gh = 체력 성장 계수, buy = 
   {gd:1.15, gh:1, buy:[0, 5, 8, 2, 3, 4]}, {gd:1.25, gh:.9, buy:[0, 5, 8, 7, 2, 3]}, {gd:1.05, gh:1.05, buy:[7, 5, 3, 6, 1, 4]}, {gd:1.2, gh:.9, buy:[0, 5, 8, 2, 7, 3]},
   {gd:1.15, gh:.95, buy:[1, 7, 5, 3, 6, 2]}, {gd:1.2, gh:.95, buy:[2, 5, 8, 1, 3, 7]}, {gd:1.05, gh:1.15, buy:[3, 4, 5, 8, 0, 6]}, {gd:.8, gh:1.3, buy:[4, 3, 5, 6, 7, 8]},
   {gd:1.2, gh:.9, buy:[0, 5, 2, 8, 7, 3]}, {gd:.8, gh:1.3, buy:[4, 3, 6, 5, 7, 8]}];
-const xpNeed = l => 90 + 40 * l;
+const xpNeed = l => 90 + 40 * l, XPM = .85;
 const rad = o => o.rad || R;
 const stunF = (m, f, t) => { if (f.ent) return; if (f.ccImm > 0) t *= .35; if (t > .05) f.stun = Math.max(f.stun, t); };   // 연속 기절 방지: 기절 직후 1.1초는 효과 35%
 const ann = (m, kind, i, team) => emit(m, "ann", kind, i, team !== undefined ? team : (m.fighters[i] ? m.fighters[i].team : -1));
+const otm = m => m.ot ? 1 + (m.t - OT) / 90 : 1;
 function recalc(f) {
   const G = GROW[f.id], it = f.items.map(i => ITEMS[i]), sum = k => it.reduce((a, x) => a + (x[k] || 0), 0), L = f.lvl - 1;
   const mx = Math.round(KITS[f.id].hp * (1 + .075 * L * G.gh) + sum("hp"));
@@ -930,7 +944,7 @@ function recalc(f) {
 }
 function gainXp(m, f, amt) {
   if (!f.aram || f.lvl >= 12 || amt <= 0) return;
-  f.xp += amt * .4;
+  f.xp += amt * XPM;
   while (f.lvl < 12 && f.xp >= xpNeed(f.lvl)) { f.xp -= xpNeed(f.lvl); f.lvl++; f.sp++; recalc(f); emit(m, "lvl", f.i, f.lvl); }
   if (f.lvl >= 12) f.xp = 0;
 }
@@ -960,21 +974,21 @@ function sell(m, f, k) {
   const idx = f.items.splice(k, 1)[0]; f.gold += Math.round(ITEMS[idx].cost * .7); recalc(f);
   return true;
 }
-function startRecall(m, f) {
+function startRecall(m, f) {   // 복귀: 7초 동안 가만히 있으면 휴게실로
   if (!f.aram || !f.alive || f.inBase || f.recall > 0 || f.stun > 0 || m.phase !== "play") return false;
   f.recall = 7; emit(m, "recall", f.i, Math.round(f.x), Math.round(f.y));
   return true;
 }
-function summoner(m, f, idx) {
+function spellCast(m, f, idx) {   // 보조 기술: 0 회복 · 1 순간이동
   if (!f.aram || f.scd[idx] > 0 || f.stun > 0 || !f.alive || m.phase !== "play") return false;
-  if (idx === 0) { healF(m, f, f, f.maxhp * .25); hasteF(f, 1.25, 2); emit(m, "sum", f.i, 0); f.scd[0] = 70; }
+  if (idx === 0) { healF(m, f, f, f.maxhp * .25); hasteF(f, 1.25, 2); emit(m, "sum", f.i, 0); f.scd[0] = 60; }
   else {
     const ang = Math.atan2(f.aimY, f.aimX), cx = Math.cos(ang), cy = Math.sin(ang), ox = f.x, oy = f.y;
     let d = 0;
-    while (d < 280) { const nd = Math.min(280, d + 10); if (blocked(m.map, ox + cx * nd, oy + cy * nd, R)) break; d = nd; }
+    while (d < 300) { const nd = Math.min(300, d + 10); if (blocked(m.map, ox + cx * nd, oy + cy * nd, R)) break; d = nd; }
     if (d < 40) return false;
     f.x = ox + cx * d; f.y = oy + cy * d; f.dash = null;
-    emit(m, "blink", Math.round(ox), Math.round(oy), Math.round(f.x), Math.round(f.y), f.id); emit(m, "sum", f.i, 1); f.scd[1] = 80;
+    emit(m, "blink", Math.round(ox), Math.round(oy), Math.round(f.x), Math.round(f.y), f.id); emit(m, "sum", f.i, 1); f.scd[1] = 60;
   }
   if (f.recall > 0) f.recall = 0;
   return true;
@@ -988,29 +1002,37 @@ function scaleSkill(sk, f, slot) {
   return s;
 }
 function aramInitHero(m, f) {
-  Object.assign(f, {aram:true, lvl:1, xp:0, sp:1, rk:[0, 0, 0, 0], gold:500, cs:0, items:[], scd:[0, 0], recall:0, streak:0, mk:0, mkT:-99, inBase:true, hitAt:-9, autoLearn:true});
+  Object.assign(f, {aram:true, lvl:1, xp:0, sp:1, rk:[0, 0, 0, 0], gold:500, cs:0, items:[], scd:[0, 0], recall:0, streak:0, mk:0, mkT:-99, inBase:true, hitAt:-9, autoLearn:true, bufHeal:0});
   recalc(f); f.hp = f.maxhp; learn(m, f, 0);
 }
+function mkCamp(m, d) {
+  const T = CAMP[d.ct];
+  return {ent:true, kind:d.ct === 3 ? "boss" : "camp", ct:d.ct, i:m.uid++, team:-1, home:{x:d.x, y:d.y}, x:d.x, y:d.y, rad:T.rad, hp:T.hp, maxhp:T.hp, alive:d.ct !== 3, respT:0, cd:1, tg:null, flash:0, locked:false,
+    invulT:0, drT:0, shieldT:0, shieldV:0, stun:0, kx:0, ky:0, slowT:0, hasteT:0};
+}
 function aramInit(m) {
-  m.aram = true; m.nextItem = 1e9;
+  m.aram = true; m.nextItem = 8; m.tb = [0, 0]; m.ot = false;
   const mp = m.map;
   for (let t = 0; t < 2; t++) {
-    const mk = (kind, p, tier, hp, rd) => { const b = {ent:true, kind, i:m.uid++, team:t, x:p.x, y:p.y, rad:rd, hp, maxhp:hp, alive:true, locked:false, tier, atkCd:1, flash:0, invulT:0, drT:0, shieldT:0, shieldV:0, stun:0, kx:0, ky:0, slowT:0, hasteT:0}; m.bld.push(b); };
-    mk("tower", mp.towers[t][0], 0, TWR.hp[0], TWR.rad); mk("tower", mp.towers[t][1], 1, TWR.hp[1], TWR.rad); mk("nexus", mp.nexus[t], 2, NEX_HP, NEX_RAD);
+    const mk = (kind, p, lane, hp, rd) => { m.bld.push({ent:true, kind, i:m.uid++, team:t, x:p.x, y:p.y, rad:rd, hp, maxhp:hp, alive:true, locked:false, lane, atkCd:1, flash:0, invulT:0, drT:0, shieldT:0, shieldV:0, stun:0, kx:0, ky:0, slowT:0, hasteT:0}); };
+    for (let L = 0; L < 4; L++) mk("tower", mp.towers[t][L], L, TWR.hp, TWR.rad);
+    mk("core", mp.core[t], 4, CORE_HP, CORE_RAD);
   }
+  for (const d of mp.camps) m.camps.push(mkCamp(m, d));
   const cnt = [0, 0];
   for (const f of m.fighters) {
     aramInitHero(m, f);
     const k = cnt[f.team]++, fo = mp.fountain[f.team];
     f.x = fo.x + ((k % 5) - 2) * 52; f.y = fo.y + (f.team ? 52 : -52); f.aimAng = f.team ? Math.PI / 2 : -Math.PI / 2; f.aimX = Math.cos(f.aimAng); f.aimY = Math.sin(f.aimAng); f.invulT = 3;
+    if (f.bot) { f.bot.lane = [1, 2, 0, 3][k % 4]; f.bot.jg = k >= 4; }
   }
-  m.ents = m.bld.slice(); m.all = m.fighters.concat(m.ents);
+  m.ents = m.bld.concat(m.camps); m.all = m.fighters.concat(m.ents);
 }
 function aramTickHero(m, f, dt, inp) {
-  f.hitAt = f.hitAt;
   for (let i = 0; i < 2; i++) f.scd[i] = Math.max(0, f.scd[i] - dt);
   f.hp = Math.min(f.maxhp, f.hp + (f.regen + f.maxhp * .004) * dt);
-  f.gold += 2.2 * dt; gainXp(m, f, 1.15 * dt);
+  if (f.bufHeal > 0) { f.bufHeal -= dt; f.hp = Math.min(f.maxhp, f.hp + f.maxhp * .035 * dt); }
+  f.gold += 3 * dt; gainXp(m, f, 1.6 * dt);
   if (f.autoLearn && f.sp > 0) autoLearn(m, f);
   if (f.recall > 0) {
     if (Math.hypot(inp.mx, inp.my) > .25 || m.t - f.hitAt < .2 || f.stun > 0) { f.recall = 0; emit(m, "recallx", f.i); }
@@ -1026,40 +1048,63 @@ function aramKill(m, v, killer) {
     const first = !m.fb; m.fb = true;
     killer.gold += 300 + (killer.streak >= 3 ? 60 : 0); killer.streak++;
     killer.mk = (m.t - killer.mkT < 10 ? killer.mk : 0) + 1; killer.mkT = m.t;
-    gainXp(m, killer, 70 + v.lvl * 14);
-    for (const a of m.fighters) if (a.alive && a.team === killer.team && a !== killer && hyp(a.x - v.x, a.y - v.y) < 700) gainXp(m, a, 40);
+    gainXp(m, killer, 90 + v.lvl * 16);
+    for (const a of m.fighters) if (a.alive && a.team === killer.team && a !== killer && hyp(a.x - v.x, a.y - v.y) < 700) gainXp(m, a, 45);
     if (first) ann(m, "fb", killer.i);
     if (killer.mk >= 2) ann(m, "mk" + Math.min(5, killer.mk), killer.i);
     if (killer.streak === 3) ann(m, "spree", killer.i); else if (killer.streak === 6) ann(m, "legend", killer.i);
   }
-  for (const k in v.hits) { const a = m.fighters[k]; if (a && a !== killer && a.team !== v.team && m.t - v.hits[k] < 6) { a.gold += 120; gainXp(m, a, 40); } }
+  for (const k in v.hits) { const a = m.fighters[k]; if (a && a !== killer && a.team !== v.team && m.t - v.hits[k] < 6) { a.gold += 120; gainXp(m, a, 45); } }
   if (m.fighters.every(f => f.team !== v.team || !f.alive)) ann(m, "ace", killer ? killer.i : -1, 1 - v.team);
 }
 function hurtEnt(m, src, dst, amt, o) {
   if (!dst.alive || dst.locked || m.over) return 0;
   if (src && src.team === dst.team) return 0;
+  const struct = dst.kind === "tower" || dst.kind === "core";
   let a = amt;
-  if (src && !src.ent) { if (src.bot) a *= src.bot.dmgMul; a *= o.basic ? (src.adM || 1) : (src.apM || 1); if (dst.kind !== "minion") a *= .7 * (1 + Math.max(0, (m.t - 540) / 300)); }
+  if (src && !src.ent) {
+    if (src.bot) a *= src.bot.dmgMul;
+    a *= o.basic ? (src.adM || 1) : (src.apM || 1);
+    if (m.tb[src.team] > 0) a *= 1.25;
+    if (struct) a *= .7 * otm(m);
+  } else if (struct && src && src.kind === "soldier") a *= otm(m);
   a = Math.max(1, a);
   dst.hp -= a; dst.flash = .12;
-  if (src && !src.ent) { src.dmg += a; if (src.ls && !o.dot) healF(m, src, src, a * src.ls * .5, true); if (!o.quiet) emit(m, "ehit", Math.round(dst.x), Math.round(dst.y - 20), Math.round(a), src.i, dst.kind === "minion" ? 0 : 1); }
+  if (src && !src.ent) {
+    src.dmg += a; if (src.ls && !o.dot) healF(m, src, src, a * src.ls * .5, true);
+    if (dst.kind === "camp" || dst.kind === "boss") dst.tg = src;
+    if (!o.quiet) emit(m, "ehit", Math.round(dst.x), Math.round(dst.y - 20), Math.round(a), src.i, struct ? 1 : 0);
+  }
   if (dst.hp <= 0) entDie(m, dst, src);
   return a;
 }
 function entDie(m, e, src) {
   e.alive = false; e.hp = 0;
   const hero = src && !src.ent ? src : null;
-  if (e.kind === "minion") {
-    const T = MT[e.mt], near = m.fighters.filter(f => f.alive && f.team !== e.team && hyp(f.x - e.x, f.y - e.y) < 700), share = T.xp * e.scale * 1.1 / Math.max(1, near.length);
+  if (e.kind === "soldier") {
+    const T = MT[e.mt], near = m.fighters.filter(f => f.alive && f.team !== e.team && hyp(f.x - e.x, f.y - e.y) < 700), share = T.xp * e.scale * 1.2 / Math.max(1, near.length);
     for (const f of near) gainXp(m, f, share + (f === hero ? T.xp * .15 : 0));
     if (hero) { const g = Math.round(T.gold * (1 + .02 * m.wave)); hero.gold += g; hero.cs++; emit(m, "cs", hero.i, g, Math.round(e.x), Math.round(e.y)); }
-    emit(m, "mdie", Math.round(e.x), Math.round(e.y), e.mt, e.team);
+    emit(m, "sdie", Math.round(e.x), Math.round(e.y), e.mt, e.team);
+  } else if (e.kind === "camp" || e.kind === "boss") {
+    const T = CAMP[e.ct], boss = e.kind === "boss";
+    e.respT = 40;
+    if (hero) {
+      const mates = m.fighters.filter(f => f.alive && f.team === hero.team && (boss || hyp(f.x - e.x, f.y - e.y) < 700));
+      for (const f of mates) { f.gold += f === hero ? T.gold : Math.round(T.gold * (boss ? 1 : .3)); gainXp(m, f, f === hero ? T.xp : T.xp * .5); }
+      if (boss) { m.tb[hero.team] = 90; ann(m, "bossdie", hero.i, hero.team); }
+      else if (e.ct === 0) hero.bufHeal = 25;
+      else if (e.ct === 1) hasteF(hero, 1.18, 25);
+      else { hero.ampV = .2; hero.ampT = 25; }
+      if (!boss) emit(m, "buf", hero.i, e.ct);
+    }
+    emit(m, "cdie", Math.round(e.x), Math.round(e.y), e.ct, hero ? hero.i : -1);
   } else if (e.kind === "tower") {
     const win = 1 - e.team; m.tw[win]++;
-    for (const f of m.fighters) if (f.team === win) { f.gold += 160; gainXp(m, f, 120); }
-    emit(m, "tower", e.team, e.tier, Math.round(e.x), Math.round(e.y)); ann(m, "tower", hero ? hero.i : -1, e.team);
+    for (const f of m.fighters) if (f.team === win) { f.gold += 140; gainXp(m, f, 110); }
+    emit(m, "tower", e.team, e.lane, Math.round(e.x), Math.round(e.y)); ann(m, "tower", hero ? hero.i : -1, e.team);
   } else {
-    emit(m, "nexus", e.team, Math.round(e.x), Math.round(e.y));
+    emit(m, "core", e.team, Math.round(e.x), Math.round(e.y));
     aramEnd(m, 1 - e.team);
   }
 }
@@ -1067,28 +1112,35 @@ function aramEnd(m, winTeam) {
   if (m.over) return;
   m.winTeam = winTeam; m.over = true; m.res = buildResult(m); emit(m, "end");
 }
+function hpLead(m) {   // 시간 종료: 남은 방어탑·코어 체력 합이 큰 팀 승리
+  const s = [0, 0];
+  for (const b of m.bld) if (b.alive) s[b.team] += b.hp;
+  return s[0] === s[1] ? (m.score[0] >= m.score[1] ? 0 : 1) : s[0] > s[1] ? 0 : 1;
+}
 function spawnWave(m, team) {
-  const nx = m.map.nexus[team], dirF = team ? 1 : -1, y0 = nx.y + dirF * 110, types = [0, 0, 0, 1, 1, 1];
-  if (m.wave % 3 === 0) types.splice(3, 0, 2);
-  types.forEach((mt, j) => {
-    const T = MT[mt], sc = 1 + .05 * m.wave;
-    m.mins.push({ent:true, kind:"minion", i:m.uid++, mt, team, x:LX + (rnd() - .5) * 90, y:y0 - dirF * j * 28, lx:LX + (rnd() - .5) * 100, rad:T.rad, hp:T.hp * sc, maxhp:T.hp * sc, alive:true, cd:rnd() * T.rate, flash:0, locked:false,
+  const dirF = team ? 1 : -1, y0 = team ? 330 : 1870, types = [0, 0, 1];
+  if (m.wave % 3 === 0) types.push(2);
+  const sc = (1 + .045 * m.wave) * (m.ot ? 1.4 : 1) * (m.tb[team] > 0 ? 1.25 : 1);
+  for (let L = 0; L < 4; L++) types.forEach((mt, j) => {
+    const T = MT[mt];
+    m.sol.push({ent:true, kind:"soldier", i:m.uid++, mt, team, lane:L, x:LANE_X[L] + (rnd() - .5) * 40, y:y0 - dirF * j * 34, lx:LANE_X[L] + (rnd() - .5) * 60, rad:T.rad, hp:T.hp * sc, maxhp:T.hp * sc, alive:true, cd:rnd() * T.rate, flash:0, locked:false,
       invulT:0, drT:0, shieldT:0, shieldV:0, stun:0, kx:0, ky:0, slowT:0, hasteT:0, scale:sc});
   });
 }
-function minionStep(m, e, dt) {
-  const T = MT[e.mt], dirF = e.team ? 1 : -1;
+function soldierStep(m, e, dt) {
+  const T = MT[e.mt], dirF = e.team ? 1 : -1, lx = LANE_X[e.lane];
   e.cd -= dt; e.flash -= dt;
   let tg = null, bd = 1e9;
   for (const o of m.ents) {
-    if (!o.alive || o.team === e.team || o.locked) continue;
+    if (!o.alive || o.team === e.team || o.team < 0 || o.locked) continue;
+    if (Math.abs(o.x - e.x) > 130 && o.kind !== "core") continue;
     const d = hyp(o.x - e.x, o.y - e.y) - o.rad;
     if (d > T.rng + 90) continue;
-    const sc = d + (o.kind === "minion" ? 0 : 140);
+    const sc = d + (o.kind === "soldier" ? 0 : 140);
     if (sc < bd) { bd = sc; tg = o; }
   }
   if (!tg) for (const h of m.fighters) {
-    if (!h.alive || h.team === e.team || h.invulT > 0) continue;
+    if (!h.alive || h.team === e.team || h.invulT > 0 || Math.abs(h.x - e.x) > 130) continue;
     const d = hyp(h.x - e.x, h.y - e.y) - R;
     if (d < T.rng + 30 && d < bd) { bd = d; tg = h; }
   }
@@ -1096,38 +1148,67 @@ function minionStep(m, e, dt) {
     const dist = hyp(tg.x - e.x, tg.y - e.y) - rad(tg);
     if (dist > T.rng) { const a = Math.atan2(tg.y - e.y, tg.x - e.x); e.x += Math.cos(a) * T.spd * dt; e.y += Math.sin(a) * T.spd * dt; }
     else if (e.cd <= 0) {
-      e.cd = T.rate; const dm = T.dmg * (1 + .035 * m.wave);
-      emit(m, "mhit", Math.round(e.x), Math.round(e.y), Math.round(tg.x), Math.round(tg.y), e.mt);
-      if (tg.ent) hurtEnt(m, e, tg, dm * (tg.kind === "minion" ? 1 : 1.5), {quiet:1}); else hurt(m, e, tg, dm, {});
+      e.cd = T.rate; const dm = T.dmg * (1 + .035 * m.wave) * (m.tb[e.team] > 0 ? 1.25 : 1) * (m.ot ? 1.4 : 1);
+      emit(m, "ahit", Math.round(e.x), Math.round(e.y), Math.round(tg.x), Math.round(tg.y), e.mt);
+      if (tg.ent) hurtEnt(m, e, tg, dm * (tg.kind === "soldier" ? 1 : 1.5), {quiet:1}); else hurt(m, e, tg, dm, {});
     }
   } else {
-    e.y += dirF * T.spd * dt; e.x += clamp(e.lx - e.x, -1, 1) * 30 * dt;
+    const inHall = e.team ? e.y > 1780 : e.y < 420, cx = m.map.core[1 - e.team].x, tx = inHall ? cx : e.lx;
+    e.y += dirF * T.spd * dt; e.x += clamp(tx - e.x, -1, 1) * 40 * dt;
   }
-  e.x = clamp(e.x, 255, 645);
+  if (e.y > 380 && e.y < 1820) e.x = clamp(e.x, lx - LHW + 14, lx + LHW - 14);
+}
+function campStep(m, e, dt) {
+  const T = CAMP[e.ct];
+  if (!e.alive) {
+    if (e.ct === 3) { if (!m.bossDone && m.t >= BOSS_AT) { m.bossDone = true; e.alive = true; e.hp = e.maxhp; e.x = e.home.x; e.y = e.home.y; ann(m, "boss", -1, -1); } }
+    else { e.respT -= dt; if (e.respT <= 0) { e.alive = true; e.hp = e.maxhp; e.x = e.home.x; e.y = e.home.y; e.tg = null; } }
+    return;
+  }
+  e.cd -= dt; e.flash -= dt;
+  let tg = e.tg && e.tg.alive && hyp(e.tg.x - e.home.x, e.tg.y - e.home.y) < 420 ? e.tg : null;
+  if (!tg) { let bd = 1e9; for (const h of m.fighters) { if (!h.alive || h.invulT > 0) continue; const d = hyp(h.x - e.x, h.y - e.y); if (d < T.aggro && d < bd) { bd = d; tg = h; } } }
+  e.tg = tg;
+  if (tg) {
+    const dx = tg.x - e.x, dy = tg.y - e.y, dist = hyp(dx, dy) - R;
+    if (dist > T.rng) tryMove(m.map, e, dx / (dist + R) * T.spd * dt, dy / (dist + R) * T.spd * dt);
+    else if (e.cd <= 0) {
+      e.cd = T.rate; emit(m, "ahit", Math.round(e.x), Math.round(e.y), Math.round(tg.x), Math.round(tg.y), 3);
+      if (e.kind === "boss") { emit(m, "ring", Math.round(e.x), Math.round(e.y), 130, 6, 32); for (const h of m.fighters) if (h.alive && hyp(h.x - e.x, h.y - e.y) < 130 + R) hurt(m, e, h, T.dmg, {}); }
+      else hurt(m, e, tg, T.dmg, {});
+    }
+  } else {
+    const dx = e.home.x - e.x, dy = e.home.y - e.y, d = hyp(dx, dy);
+    if (d > 6) tryMove(m.map, e, dx / d * T.spd * dt, dy / d * T.spd * dt);
+    e.hp = Math.min(e.maxhp, e.hp + e.maxhp * .06 * dt);
+  }
 }
 function towerStep(m, b, dt) {
   b.atkCd -= dt; b.flash -= dt;
   if (b.atkCd > 0) return;
   let tg = null, bd = 1e9;
-  for (const e of m.mins) if (e.alive && e.team !== b.team) { const d = hyp(e.x - b.x, e.y - b.y); if (d < TWR.rng + e.rad && d < bd) { bd = d; tg = e; } }
-  if (!tg) for (const h of m.fighters) if (h.alive && h.team !== b.team && h.invulT <= 0) { const d = hyp(h.x - b.x, h.y - b.y); if (d < TWR.rng && d < bd) { bd = d; tg = h; } }
-  if (!tg) { b.atkCd = .2; return; }
+  for (const e of m.sol) if (e.alive && e.team !== b.team && Math.abs(e.x - b.x) < 150) { const d = hyp(e.x - b.x, e.y - b.y); if (d < TWR.rng + e.rad && d < bd) { bd = d; tg = e; } }
+  if (!tg) for (const h of m.fighters) if (h.alive && h.team !== b.team && h.invulT <= 0) { const d = hyp(h.x - b.x, h.y - b.y); if (d < TWR.rng && d < bd && los(m.map, b.x, b.y, h.x, h.y, 4)) { bd = d; tg = h; } }
+  if (!tg) { b.atkCd = .25; return; }
   b.atkCd = TWR.rate;
-  const dm = TWR.dmg * (1 + m.t / 900) * (tg.ent ? 1.25 : 1);
+  const dm = TWR.dmg * (m.ot ? 1.4 : 1) * (tg.ent ? 1.25 : 1);
   emit(m, "tbolt", Math.round(b.x), Math.round(b.y - 40), Math.round(tg.x), Math.round(tg.y), b.team);
   if (tg.ent) hurtEnt(m, b, tg, dm, {quiet:1}); else hurt(m, b, tg, dm, {});
 }
 function aramPre(m, dt) {
   m.wt -= dt;
-  if (m.wt <= 0) { m.wt = 30; m.wave++; spawnWave(m, 0); spawnWave(m, 1); emit(m, "wave", m.wave); }
-  for (let t = 0; t < 2; t++) { const B = m.bld.slice(t * 3, t * 3 + 3); B[1].locked = B[0].alive; B[2].locked = B[1].alive; }
-  for (const e of m.mins) if (e.alive) minionStep(m, e, dt);
-  for (let a = 0; a < m.mins.length; a++) for (let b = a + 1; b < m.mins.length; b++) {
-    const p = m.mins[a], q = m.mins[b];
-    if (p.team !== q.team || !p.alive || !q.alive) continue;
+  if (m.wt <= 0) { m.wt = 24; m.wave++; spawnWave(m, 0); spawnWave(m, 1); emit(m, "wave", m.wave); }
+  if (!m.ot && m.t >= OT) { m.ot = true; ann(m, "ot", -1, -1); }
+  m.tb[0] = Math.max(0, m.tb[0] - dt); m.tb[1] = Math.max(0, m.tb[1] - dt);
+  for (let t = 0; t < 2; t++) { const B = m.bld.slice(t * 5, t * 5 + 5); B[4].locked = !m.ot && B.filter(x => x.kind === "tower" && !x.alive).length < 2; }
+  for (const e of m.sol) if (e.alive) soldierStep(m, e, dt);
+  for (let a = 0; a < m.sol.length; a++) for (let b = a + 1; b < m.sol.length; b++) {
+    const p = m.sol[a], q = m.sol[b];
+    if (p.team !== q.team || !p.alive || !q.alive || Math.abs(p.y - q.y) > 40) continue;
     const dx = q.x - p.x, dy = q.y - p.y, d = hyp(dx, dy), md = p.rad + q.rad;
     if (d < md && d > .01) { const k = (md - d) * .25; p.x -= dx / d * k; q.x += dx / d * k; }
   }
+  for (const c of m.camps) campStep(m, c, dt);
   for (const b of m.bld) if (b.alive && b.kind === "tower") towerStep(m, b, dt);
   for (const f of m.fighters) if (f.alive) {
     const own = m.map.fountain[f.team], en = m.map.fountain[1 - f.team];
@@ -1135,12 +1216,11 @@ function aramPre(m, dt) {
     if (f.inBase && f.hp < f.maxhp) f.hp = Math.min(f.maxhp, f.hp + f.maxhp * .32 * dt);
     if (hyp(f.x - en.x, f.y - en.y) < 210) hurt(m, null, f, 900 * dt, {env:1, dot:1, quiet:1});
   }
-  m.mins = m.mins.filter(e => e.alive);
-  m.ents = m.bld.concat(m.mins); m.all = m.fighters.concat(m.ents);
+  m.sol = m.sol.filter(e => e.alive);
+  m.ents = m.bld.concat(m.sol, m.camps); m.all = m.fighters.concat(m.ents);
 }
-function nexusLead(m) { const a = m.bld[2].hp / m.bld[2].maxhp, b = m.bld[5].hp / m.bld[5].maxhp; return a > b ? 0 : 1; }
 
-/* ---- 협곡 봇: 전선을 따라 미니언 막타 → 영웅 견제 → 타워/넥서스 공략, 체력이 낮으면 귀환 ---- */
+/* ---- 봇: 맡은 길의 병정 전선을 따라 싸우고, 길이 비면 중립 캠프·중앙 보스·보급 상자로, 체력이 낮으면 복귀 ---- */
 function botBuy(m, f, G) {
   for (const idx of G.buy) {
     if (f.items.length >= 6) return;
@@ -1171,8 +1251,8 @@ function aramDecide(m, f, b, D) {
   if (!f.alive) { b.mx = b.my = 0; b.mode = "front"; b.te = null; return; }
   const foeH = m.fighters.filter(o => o.alive && o.team !== team && o.invulT <= 0 && !(o.invisT > 0));
   const nearE = foeH.filter(o => hyp(o.x - f.x, o.y - f.y) < 560);
-  if (!b.mode) b.mode = "front";
   const dF0 = hyp(fo.x - f.x, fo.y - f.y);
+  if (!b.mode) b.mode = "front";
   if (b.mode === "front" && hpf < .27 && !f.inBase) b.mode = nearE.length || dF0 < 800 ? "flee" : "recall";
   if (b.mode === "flee" && !nearE.length && dF0 > 800) b.mode = "recall";
   if (b.mode === "recall" && nearE.length) b.mode = "flee";
@@ -1185,34 +1265,47 @@ function aramDecide(m, f, b, D) {
     if (f.scd[1] <= 0 && nearE.length && dF > 320) { f.aimX = (fo.x - f.x) / dF; f.aimY = (fo.y - f.y) / dF; f.inp.casts.push(5); }
     return;
   }
-  const prog = y => team ? y : -y, ownOuter = map.towers[team][0];
+  const prog = y => team ? y : -y, lane = b.lane === undefined ? 1 : b.lane, lx = LANE_X[lane], ownT = map.towers[team][lane];
   let fm = null;
-  for (const e of m.mins) if (e.alive && e.team === team && (!fm || prog(e.y) > prog(fm.y))) fm = e;
-  const eTowers = m.bld.filter(e => e.alive && e.team !== team && e.kind === "tower");
-  const cover = t => { let c = 0; for (const e of m.mins) if (e.alive && e.team === team && hyp(e.x - t.x, e.y - t.y) < 320) c++; return c; };
-  const inRange = (o, pad) => eTowers.some(t => hyp(o.x - t.x, o.y - t.y) < TWR.rng + (pad || 0) && cover(t) < 2);
+  for (const e of m.sol) if (e.alive && e.team === team && e.lane === lane && (!fm || prog(e.y) > prog(fm.y))) fm = e;
+  const eT = m.bld.filter(e => e.alive && e.team !== team);
+  const cover = t => { let c = 0; for (const e of m.sol) if (e.alive && e.team === team && Math.abs(e.x - t.x) < 140 && hyp(e.x - t.x, e.y - t.y) < 330) c++; return c; };
+  const inRange = (o, pad) => eT.some(t => t.kind === "tower" && hyp(o.x - t.x, o.y - t.y) < TWR.rng + (pad || 0) && cover(t) < 2);
+  // 목표 정하기: 중앙 보스 > 중립 캠프(길이 비었거나 사냥꾼) > 길 전선
+  const bossE = m.camps.find(c => c.ct === 3 && c.alive);
+  const allyNearBoss = bossE ? m.fighters.filter(o => o.alive && o.team === team && hyp(o.x - bossE.x, o.y - bossE.y) < 900).length : 0;
+  let obj = "lane", oe = null;
+  if (bossE && hpf > .5 && (b.jg || allyNearBoss >= 2 || m.t > BOSS_AT + 20)) { obj = "boss"; oe = bossE; }
+  else if (b.jg || !fm) {
+    let bd = 1e9;
+    for (const c of m.camps) { if (!c.alive || c.ct === 3) continue; const own = team ? c.home.y < 1100 : c.home.y > 1100; if (!own && hpf < .75) continue; const d = hyp(c.x - f.x, c.y - f.y) + (own ? 0 : 500); if (d < bd) { bd = d; oe = c; } }
+    if (oe && hpf > .4) obj = "camp";
+  }
   let te = null, ts = 1e9;
-  for (const o of foeH) { const d = hyp(o.x - f.x, o.y - f.y); if (d > 600 || (inRange(o, 10) && o.hp > 120)) continue; const sc = d * (o.hp < o.maxhp * .4 ? .6 : 1); if (sc < ts) { ts = sc; te = o; } }
+  for (const o of foeH) { const d = hyp(o.x - f.x, o.y - f.y); if (d > 600 || (inRange(o, 10) && o.hp > 120) || !los(map, f.x, f.y, o.x, o.y, 6)) continue; const sc = d * (o.hp < o.maxhp * .4 ? .6 : 1); if (sc < ts) { ts = sc; te = o; } }
   const myDmg = kit.basic.dmg * f.adM * 1.05;
-  for (const e of m.mins) {
+  for (const e of m.sol) {
     if (!e.alive || e.team === team) continue;
     const d = hyp(e.x - f.x, e.y - f.y);
-    if (d > 460 || inRange(e, 0)) continue;
+    if (d > 460 || inRange(e, 0) || !los(map, f.x, f.y, e.x, e.y, 6)) continue;
     const sc = d + 90 - (e.hp <= myDmg ? 90 : 0);
     if (sc < ts) { ts = sc; te = e; }
   }
+  if (oe) { const d = hyp(oe.x - f.x, oe.y - f.y); if (d < 700 && d - 120 < ts) { ts = d - 120; te = oe; } }
   for (const e of m.bld) {
     if (!e.alive || e.team === team || e.locked) continue;
     const d = hyp(e.x - f.x, e.y - f.y);
     if (d > 560) continue;
-    if (e.kind === "tower" && cover(e) < 1 && !(foeH.length === 0 && m.mins.every(x => !x.alive || x.team === team || hyp(x.x - e.x, x.y - e.y) > 460))) continue;
+    if (e.kind === "tower" && cover(e) < 1 && !(foeH.length === 0 && m.sol.every(x => !x.alive || x.team === team || hyp(x.x - e.x, x.y - e.y) > 460))) continue;
     if (d + 260 < ts) { ts = d + 260; te = e; }
   }
   b.te = te;
-  const jit = (b.jit || (b.jit = (rnd() - .5) * 120));
+  const jit = (b.jit || (b.jit = (rnd() - .5) * 60));
   if (!te) {
-    let gy = fm ? fm.y - dirF * 45 : ownOuter.y + dirF * 150, gx = LX + jit;
-    for (const t of eTowers) if (cover(t) < 2 && hyp(gx - t.x, gy - t.y) < TWR.rng + 40) gy = t.y - dirF * (TWR.rng + 40);
+    let gx = lx + jit, gy = fm ? fm.y - dirF * 45 : ownT.y + dirF * 100;
+    if (obj === "camp" || obj === "boss") { gx = oe.x; gy = oe.y; }
+    else if (hpf < .65) { let bd = 520; for (const it of m.items) { const d = hyp(it.x - f.x, it.y - f.y); if (d < bd) { bd = d; gx = it.x; gy = it.y; } } }
+    for (const t of eT) if (t.kind === "tower" && cover(t) < 2 && hyp(gx - t.x, gy - t.y) < TWR.rng + 40 && obj === "lane") gy = t.y - dirF * (TWR.rng + 40);
     steerTo(m, f, b, gx, gy);
   } else {
     const dist = hyp(te.x - f.x, te.y - f.y) - rad(te), sight = te.ent || los(map, f.x, f.y, te.x, te.y, 6);
@@ -1224,28 +1317,28 @@ function aramDecide(m, f, b, D) {
     else if (!te.ent && D.dodge) { const p = probe(m, f, -uy * b.sg + ux * .25, ux * b.sg + uy * .25); b.mx = p[0] * .7; b.my = p[1] * .7; }
     else { b.mx = b.my = 0; }
   }
-  for (const t of eTowers) if (cover(t) < 2 && hyp(f.x - t.x, f.y - t.y) < TWR.rng + 15) { const dx = f.x - t.x, dy = f.y - t.y, d = hyp(dx, dy) || 1; b.mx = dx / d; b.my = dy / d; }
+  for (const t of eT) if (t.kind === "tower" && cover(t) < 2 && hyp(f.x - t.x, f.y - t.y) < TWR.rng + 15 && obj === "lane") { const dx = f.x - t.x, dy = f.y - t.y, d = hyp(dx, dy) || 1; b.mx = dx / d; b.my = dy / d; }
   if ((b.mx || b.my) && hyp(f.x - b.lx, f.y - b.ly) < 7) b.stuck++; else b.stuck = 0;
   b.lx = f.x; b.ly = f.y;
   if (b.stuck >= 3) { const a = rnd() * 6.283; b.mx = Math.cos(a); b.my = Math.sin(a); b.stuck = 0; b.hold = .3; }
-  // 스킬·소환사 주문
   let htgt = null, hd = 1e9, nearH = 0, nearAll = 0;
-  for (const o of foeH) { const d = hyp(o.x - f.x, o.y - f.y); if (d < 200) nearH++; if (d < hd && !inRange(o, 10)) { hd = d; htgt = o; } }
+  for (const o of foeH) { const d = hyp(o.x - f.x, o.y - f.y); if (d < 200) nearH++; if (d < hd && !inRange(o, 10) && los(map, f.x, f.y, o.x, o.y, 6)) { hd = d; htgt = o; } }
+  if (!htgt && te && (te.kind === "camp" || te.kind === "boss")) { htgt = te; hd = hyp(te.x - f.x, te.y - f.y); }
   for (const o of m.ents) if (o.alive && o.team !== team && !o.locked && hyp(o.x - f.x, o.y - f.y) < 190) nearAll++;
   if (htgt && hd < 760 && f.sil <= 0) {
-    const sight = los(map, f.x, f.y, htgt.x, htgt.y, 6);
+    const sight = htgt.ent || los(map, f.x, f.y, htgt.x, htgt.y, 6);
     for (let s = 0; s < 4; s++) {
       if (!f.rk[s] || f.cd[s] > 0 || rnd() > D.skillP) continue;
       if (botWants(m, f, KITS[f.id].skills[s], s, htgt, hd, sight, hpf, nearH)) { b.cast = s; b.te = htgt; break; }
     }
-    if (b.cast === undefined && f.scd[1] <= 0 && htgt.hp < htgt.maxhp * .3 && hd > 260 && hd < 440 && sight && rnd() < D.skillP) { f.aimX = (htgt.x - f.x) / hd; f.aimY = (htgt.y - f.y) / hd; f.inp.casts.push(5); }
+    if (b.cast === undefined && !htgt.ent && f.scd[1] <= 0 && htgt.hp < htgt.maxhp * .3 && hd > 260 && hd < 440 && sight && rnd() < D.skillP) { f.aimX = (htgt.x - f.x) / hd; f.aimY = (htgt.y - f.y) / hd; f.inp.casts.push(5); }
   }
   if (b.cast === undefined && nearAll >= 3 && f.sil <= 0) for (let s = 0; s < 3; s++) { const sk = KITS[f.id].skills[s]; if (f.rk[s] && f.cd[s] <= 0 && sk.t === "circle" && !sk.at && sk.dmg && rnd() < D.skillP + .2) { b.cast = s; break; } }
   if (hpf < .35 && nearE.length && f.scd[0] <= 0) f.inp.casts.push(4);
 }
 
 function setAuto(m, f, v) { if (f.aram) f.autoLearn = !!v; }
-const api = {setAuto, learn, buy, sell, startRecall, ITEMS, MT, GROW, TWR, NEX_HP, NEX_RAD, xpNeed, autoLearn, AW, AH, LX, S, MW, MH, R, MAPS, KITS, MODES, DIFF, ITEM_KINDS, blocked, los, createMatch, step, cast, makeBot, hurt, pack, unpack, fastForward, buildResult, pts, tryMove, respawn, navNext};
+const api = {setAuto, learn, buy, sell, startRecall, ITEMS, MT, GROW, TWR, CORE_HP, CORE_RAD, CAMP, CAMP_BUF, LANE_X, LHW, OT, BOSS_AT, xpNeed, autoLearn, AW, AH, S, MW, MH, R, MAPS, KITS, MODES, DIFF, ITEM_KINDS, blocked, los, createMatch, step, cast, makeBot, hurt, pack, unpack, fastForward, buildResult, pts, tryMove, respawn, navNext};
 if (typeof module !== "undefined" && module.exports) module.exports = api;
 root.BrawlCore = api;
 })(typeof window !== "undefined" ? window : globalThis);
