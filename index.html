@@ -33735,7 +33735,17 @@ dgr.noteKill = function (c, id) { if (!c) return; c.kills = (c.kills | 0) + 1; i
 /* ======================= 층 · 몹 · 보스 ======================= */
 const PHASE = ["입구", "초입", "초입", "중반", "중반", "중반", "깊은 곳", "깊은 곳", "보스 앞", "보스방"];
 const _fi = {};
+/* 지하던전(2026-11-10): 1001~1003 = 지하 1~3층. 몹 표는 100·150·200층, 보스는 3마리(층 순서대로 b01~b09) */
+const UG_BOSS = [["b01", "b02", "b03"], ["b04", "b05", "b06"], ["b07", "b08", "b09"]], UG_EQ = [100, 150, 200];
+const UG_NAME = [["지하 1층 · 잊혀진 지하 창고", "불 꺼진 지하 창고. 몹이 끊임없이 몰려오고 보스가 3마리예요 — 100레벨 3인 파티용 사냥터"],
+  ["지하 2층 · 멈춘 기계의 심장부", "멈춘 줄 알았던 기계가 다시 돌아가요. 몹이 더 빨리 나오고 보스가 3마리예요 — 150레벨 3인 파티용"],
+  ["지하 3층 · 정전의 심연", "번개 치는 어둠 속에 몹이 가득해요. 보스 3마리 — 200레벨 3인 파티용"]];
+function ugInfo(n) {
+  if (_fi[n]) return _fi[n]; const i = n - 1000, eq = UG_EQ[i - 1], b = dgr.floorInfo(eq), bossId = UG_BOSS[i - 1][0], bd = dgr.mobDef(bossId);
+  return _fi[n] = Object.assign({}, b, {floor: n, name: UG_NAME[i - 1][0], mood: UG_NAME[i - 1][1], bossId, bossName: bd.n, bossMain: true, isBoss: true, ug: i, ugBosses: UG_BOSS[i - 1], eqFloor: eq, recLv: eq, pos: 10, themeShort: "지하", theme: "지하던전"});
+}
 dgr.floorInfo = function (n) {
+  n = Math.round(n) || 1; if (n > 1000 && n <= 1003) return ugInfo(n);
   n = int(n, 1, 200, 1); if (_fi[n]) return _fi[n];
   const th = Math.floor((n - 1) / 10) % W.THEMES.length, T = W.THEMES[th], k = ((n - 1) % 10) + 1, main = k === 10;
   const bossId = main ? T.boss : T.boss + ":" + k, bd = dgr.mobDef(bossId);
@@ -34809,6 +34819,11 @@ const pick = (r, arr) => arr[Math.floor(r() * arr.length)];
 const shuffle = (r, arr) => { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); const t = arr[i]; arr[i] = arr[j]; arr[j] = t; } return arr; };
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 const seedOf = n => (Math.imul(n | 0, 2654435761) ^ 0x5bd1e995) >>> 0;
+/* ===== 지하던전(2026-11-10): 층 번호 1001~1003 = 지하 1~3층. 몹·보스 표는 일반 100·150·200층(50층 단위)을 기준으로 한다 ===== */
+const UG = {base: 1000, n: 3, eq: [100, 150, 200], look: [3, 6, 8]};
+const isUg = n => n > UG.base && n <= UG.base + UG.n;
+const ugIdx = n => isUg(n) ? n - UG.base : 0;
+const effFloor = n => isUg(n) ? UG.eq[n - UG.base - 1] : n;
 
 /* ---------- 격자 ---------- */
 function mkGrid(W, H) {
@@ -35044,7 +35059,7 @@ function symmetrize(g) {
 
 /* ---------- 층 사양: 층 번호만으로 정해지는 순수 함수 ---------- */
 function spec(n) {
-  n = clamp(Math.round(n) || 1, 1, 200);
+  n = Math.round(n) || 1; if (isUg(n)) return specUg(n); n = clamp(n, 1, 200);
   const r = mulberry32(seedOf(n) ^ 0xA5A5A5A5), d = Math.floor((n - 1) / 10), k = (n - 1) % 10, q = .35 + .65 * (k / 9);
   const S = {n, d, k, gen: "tpl", tpl: "L34", fx: false, fy: false, rot: 0, mods: {}, flags: {}, cw: 2, W: 80, H: 62, style: "", boss: k === 9 ? "major" : "minor", tags: []};
   const wp = (arr) => { const tot = arr.reduce((s, a) => s + a[1], 0); let x = r() * tot; for (const a of arr) { x -= a[1]; if (x <= 0) return a[0]; } return arr[0][0]; };
@@ -35090,6 +35105,15 @@ function spec(n) {
   }
   if (S.gen === "maze") { S.cw = k >= 5 ? 2 : 2; S.nx = Math.round(14 + d * .6 + q * 5); S.ny = Math.round(10 + d * .4 + q * 4); }
   if (S.gen !== "tpl") S.tpl = null; S.big = big; S.tags = describeTags(S); return S;
+}
+function specUg(n) {   // 지하던전: 크고 트인 사냥터(동굴·넓은 방), 보스방은 큰 보스 규격
+  const i = n - UG.base, d = UG.look[i - 1];
+  const S = {n, d, k: 9, gen: "cave", tpl: null, fx: false, fy: false, rot: 0, mods: {}, flags: {}, cw: 2, W: 92 + 4 * i, H: 68 + 3 * i, style: "", boss: "major", tags: [], big: 3, ug: i, loops: 3};
+  const M = S.mods, F = S.flags;
+  if (i === 1) { S.gen = "cave"; S.style = "dark"; M.poison = 3; M.pit = 2; F.fog = true; }
+  else if (i === 2) { S.gen = "bsp"; S.cw = 2; S.minLeaf = 15; S.style = "metal"; S.kinds = ["storage", "hall", "office", "pantry"]; M.shut = 3; M.conv = 3; M.spike = 2; M.pit = 2; M.merge = 2; F.sparks = true; S.loops = 4; }
+  else { S.gen = "cave"; S.style = "storm"; M.poison = 2; M.pit = 3; M.spike = 2; F.dark = 380; F.storm = true; F.rain = true; }
+  S.tags = describeTags(S); return S;
 }
 function describeTags(S) {
   const t = [], M = S.mods, F = S.flags;
@@ -35330,8 +35354,12 @@ function finalize(g, sp, rng, prot) {
   /* 마을 소품 자리(1층): 홀 안 상점·제작대·스킬 교관 */
   let town = null; if (tr && sp.n === 1) town = {rect: tr, shop: {x: tr.x + 5, y: tr.y + 4}, craft: {x: tr.x + tr.w - 6, y: tr.y + 4}, trainer: {x: tr.x + (tr.w >> 1), y: tr.y + tr.h - 4}};
   const portal = {x: bc.x, y: bc.y};
+  /* 서브 보스 자리 2곳(선택 전투): 시작점에서 어느 정도 떨어진 몹 자리 중 서로 가장 먼 두 곳 */
+  const sub = []; { const D0 = dist[bc.y * W + bc.x] > 0 ? dist[bc.y * W + bc.x] : 60;
+    const c2 = spawn.filter(i => { const z = g.zone[i], rm = z ? g.rooms[z - 1] : null; return !(rm && (rm.town || rm.boss)) && dist[i] > Math.max(14, D0 * .2) && dist[i] < Math.max(20, D0 * .95); });
+    if (c2.length) { const a = c2[Math.floor(rng() * c2.length)]; sub.push({x: a % W, y: (a / W) | 0}); let bd2 = -1, b2 = null; for (const i of c2) { const x = i % W, y = (i / W) | 0, dd = Math.abs(x - sub[0].x) + Math.abs(y - sub[0].y); if (dd > bd2) { bd2 = dd; b2 = {x, y}; } } if (b2 && bd2 > 8) sub.push(b2); } }
   const M = {n: sp.n, spec: sp, W, H, T: TILE, type: g.type, sf: g.sf, vis: g.vis, zone: g.zone, rooms: g.rooms, labels: g.labels, start: g.start, startRoom: g.startRoom, bossRoom: g.bossRoom, boss: {room: g.bossRoom, rect: {x: boss.x, y: boss.y, w: boss.w, h: boss.h}, c: bc, doors: boss.doors.slice(), kind: sp.boss},
-    portal, chests, spawn, groups, town, townRect: tr, shut: g.shut || [], dyn: new Uint8Array(W * H), look: sp.d % 10, flags: Object.assign({}, sp.flags), style: sp.style, tags: sp.tags, dist, prot};
+    portal, sub, chests, spawn, groups, town, townRect: tr, shut: g.shut || [], dyn: new Uint8Array(W * H), look: sp.d % 10, flags: Object.assign({}, sp.flags), style: sp.style, tags: sp.tags, dist, prot};
   return M;
 }
 
@@ -35359,7 +35387,7 @@ function ascii(M, step) {   // 시험용 글자 그림
   step = step || 1; const C = {0: ".", 1: "#", 2: "d", 3: "o", 4: "s", 5: "~", 6: "G", 7: "S", 8: "p"}, SFC = {1: "x", 2: "^", 3: "i", 4: "m", 5: ">", 6: "v", 7: "<", 8: "A"}; let out = "";
   for (let y = 0; y < M.H; y += step) { let line = ""; for (let x = 0; x < M.W; x += step) { const i = y * M.W + x; let c = C[M.type[i]]; if (M.type[i] === T.FLOOR && M.sf[i]) c = SFC[M.sf[i]]; if (x === M.start.x && y === M.start.y) c = "@"; if (x === M.boss.c.x && y === M.boss.c.y) c = "B"; line += c; } out += line + "\n"; } return out;
 }
-return {TILE, T, SF, V, SOLID, BLOCK, DECADE_NAMES, gen, spec, describe, check, hash, ascii, solidI, blockI, bfsDist, mulberry32, tplL3, tplL4, tplL34, transformGrid};
+return {UG, isUg, ugIdx, effFloor, TILE, T, SF, V, SOLID, BLOCK, DECADE_NAMES, gen, spec, describe, check, hash, ascii, solidI, blockI, bfsDist, mulberry32, tplL3, tplL4, tplL34, transformGrid};
 })();
 
 /* dungeon_core.js — 던전 인 라운드비: 게임 시뮬레이션(DOM 없음). 고정 스텝 step(G, dt, inp) 으로 한 판을 굴린다. node 에서도 그대로 돈다(봇 시험).
@@ -35391,6 +35419,30 @@ const DCFG = {
   rw: n => 1 / (1 + .32 * (2.8 + 1.2 * Math.min(1, Math.max(0, (n - 3) / 57)) - 1)) * .9   // 몹 1마리 보상 배율(경험치·골드·드랍률): 밀도가 높을수록 마리당 보상은 줄인다
 };
 const SOLIDt = dgnMap.SOLID, BLOCKt = dgnMap.BLOCK;
+/* ===== 지하던전(2026-11-10) — 숫자는 전부 여기서 고친다 =====
+   · 층 번호 1001~1003 = 지하 1~3층. 몹·보스·보상 표는 일반 100·150·200층(50층 단위) 기준(`eff(n)`)이고 아래 배율로 난이도를 맞춘다.
+   · 지하 1층은 100레벨부터 입장(100층 보스를 깬 뒤 포털이 열림). 지하 2·3층은 앞 층 보스방을 깨면 열림(char.ext.ug = 깬 지하 층).
+   · 일반 층보다 몹이 많고(dens) 다시 나오는 시간이 짧다(resp). 보스방 보스 3마리, 층마다 서브 보스 2마리(선택 전투).
+   · 목표: 100레벨 3인 파티 → 지하 1층, 150레벨 → 지하 2층, 200레벨 → 지하 3층을 클리어할 수 있다(test_ug.js 로 확인). */
+const UGM = dgnMap.UG, isUg = dgnMap.isUg, ugIdx = dgnMap.ugIdx, eff = dgnMap.effFloor;
+const UGT = {lv: 100, unlock: 101, dens: 1.5, near: 1.4, resp: .5, agg: 16, subResp: 240,
+  mob: [{hp: .55, atk: .8}, {hp: .42, atk: .56}, {hp: .24, atk: .34}],       /* 일반 몹: 100·150·200층 몹표 대비 체력·공격 배율 (3인 파티 시뮬로 맞춤) */
+  boss: [{hp: .4, atk: .8}, {hp: .09, atk: .22}, {hp: .03, atk: .08}],       /* 보스 3마리 각각의 배율 */
+  xp: [2.2, 1.6, 2.4]};                                                       /* 경험치 배율: 같은 레벨의 일반 층 대비 약 3배 */
+const SUBT = {size: 1.9, atk: 2, xp: 8, frac: .3};   /* 서브 보스: 그 층 보스 체력의 30% · 몹 공격 ×2 · 크기 ×1.9 · 경험치 ×8 */
+const ugUnlocked = c => openMax(c) >= UGT.unlock;
+function ugIsOpen(c, n) { const i = ugIdx(n); if (!ugUnlocked(c) || (c.lv | 0) < UGT.lv) return false; return i <= 1 || (((c.ext && c.ext.ug) | 0) >= i - 1); }
+function ugLockMsg(c, n) { const i = ugIdx(n); if (!ugUnlocked(c)) return "지하던전은 100층 보스를 깨야 열려요."; if ((c.lv | 0) < UGT.lv) return "지하던전은 100레벨부터 들어갈 수 있어요 (지금 Lv " + (c.lv | 0) + ")."; return "지하 " + (i - 1) + "층의 보스방을 먼저 깨야 열려요."; }
+const hasNext = n => isUg(n) ? ugIdx(n) < UGM.n : n < 200;
+const nextTo = n => isUg(n) ? (ugIdx(n) < UGM.n ? n + 1 : 1) : (n < 200 ? n + 1 : 1);
+const labelOf = t => t === 1 ? "마을로" : isUg(t) ? "지하 " + ugIdx(t) + "층으로" : t + "층으로";
+const ugCount = (M, pm) => Math.min(MAX_MOBS - 25, Math.round(initCount(M, 100, pm) * UGT.dens));
+const mulHp = (G, o) => { const f = G.floor; if (isUg(f)) { const t = (o.boss ? UGT.boss : UGT.mob)[ugIdx(f) - 1]; return t.hp; } return (f >= 111 && !o.boss ? 1.45 : 1) * deepHp(f, o.boss); };
+const mulAtk = (G, o) => { const f = G.floor; if (isUg(f)) return (o.boss ? UGT.boss : UGT.mob)[ugIdx(f) - 1].atk; return (f >= 111 && !o.boss ? 1.55 : 1) * deepAtk(f, o.boss); };
+const mulXp = G => { const f = G.floor; return isUg(f) ? UGT.xp[ugIdx(f) - 1] : rwDeep(f); };
+const bossList = G => G.bosses && G.bosses.length ? G.bosses : (G.boss ? [G.boss] : []);
+const bossAlive = G => bossList(G).some(b => !b.dead);
+const bossMore = (G, m) => bossList(G).some(o => o !== m && !o.dead);
 const adiff = (a, b) => { let d = a - b; while (d > PI) d -= TAU; while (d < -PI) d += TAU; return d; };
 const nz = (v, d) => (v == null || isNaN(v)) ? d : v;
 const mulN = v => !v ? 1 : v > 8 ? v / 100 : v;
@@ -35399,7 +35451,7 @@ const frac = v => !v ? 0 : v > 1.5 ? v / 100 : v;     // 쿨감·흡혈: 0.2 = 2
 
 /* ================= 층 열림(floorsOpen) — 숫자 · 배열 · 객체 어느 모양이든 ================= */
 function openMax(c) { const f = c.floorsOpen; if (typeof f === "number") return Math.max(1, f); if (Array.isArray(f)) { let m = 1; for (const x of f) if (x > m) m = x; return m; } if (f && typeof f === "object") { let m = 1; for (const k in f) if (f[k] && +k > m) m = +k; return m; } return 1; }
-function isOpen(c, n) { const d = D(); if (d && d.isOpen) { try { return !!d.isOpen(c, n); } catch (e) {} } if (n <= 1) return true; const f = c.floorsOpen; if (typeof f === "number") return n <= f; if (Array.isArray(f)) return f.includes(n); if (f && typeof f === "object") return !!f[n]; return false; }
+function isOpen(c, n) { if (isUg(n)) return ugIsOpen(c, n); const d = D(); if (d && d.isOpen) { try { return !!d.isOpen(c, n); } catch (e) {} } if (n <= 1) return true; const f = c.floorsOpen; if (typeof f === "number") return n <= f; if (Array.isArray(f)) return f.includes(n); if (f && typeof f === "object") return !!f[n]; return false; }
 function openFloor(c, n) { const d = D(); if (d && d.openFloor) { try { d.openFloor(c, n); return; } catch (e) {} } const f = c.floorsOpen; if (typeof f === "number" || f == null) c.floorsOpen = Math.max(typeof f === "number" ? f : 1, n); else if (Array.isArray(f)) { if (!f.includes(n)) f.push(n); } else if (typeof f === "object") f[n] = 1; }
 
 /* ================= 6차(온라인): 다중 영웅 =================
@@ -35580,10 +35632,10 @@ function weightedDef(G, pred) {
 }
 function tilePos(M, i) { return {x: (i % M.W + .5) * TILE, y: ((i / M.W) | 0) * TILE + TILE / 2}; }
 function enterFloor(G, n, how) {
-  n = cl(Math.round(n) || 1, 1, 200); const d = D(), prevFloor = G.floor; if (G.cur !== G.hs[0]) bind(G, G.hs[0]); const c = G.char;
+  n = Math.round(n) || 1; n = isUg(n) ? n : cl(n, 1, 200); const d = D(), prevFloor = G.floor; if (G.cur !== G.hs[0]) bind(G, G.hs[0]); const c = G.char;
   G.floor = n; G.ropeView = []; G.ropePull = false; G.M = dgnMap.gen(n); const M = G.M; try { G.info = d.floorInfo(n) || {}; } catch (e) { G.info = {}; } G.info.mobPool = G.info.mobPool || [];
   G.mobs.length = G.pj.length = G.ep.length = G.zones.length = G.allies.length = G.drops.length = G.chests.length = G.portals.length = G.npcs.length = G.beams.length = G.orbits.length = G.shocks.length = G.fx.length = G.texts.length = G.slashes.length = G.bolts.length = G.later.length = 0;
-  G.boss = null; G.bs = {state: "idle", t: 0}; G.cine = null; G.near = null; G.spT = 4; G.over = null; G.horde = null; G.hordeT = HORDE.first + rand() * 20; G.combo = 0; G.comboT = -9; G.hasPsn = false; for (let i = 0; i < M.sf.length; i++) if (M.sf[i] === SF.POISON) { G.hasPsn = true; break; } G.rq = []; G.rw = DCFG.rw(n); G.nAgg = 0; G.spNearT = -99; G.ask = null; G.bossDownT = -99; G.runT = 0; G.stormT = 3 + rand() * 2; G.hazT = 0; G.bossWait = null; G.ropes = []; G.wipe = 0; G.travel = null;
+  G.boss = null; G.bosses = []; G.subQ = []; G.bs = {state: "idle", t: 0}; G.cine = null; G.near = null; G.spT = 4; G.over = null; G.horde = null; G.hordeT = HORDE.first + rand() * 20; G.combo = 0; G.comboT = -9; G.hasPsn = false; for (let i = 0; i < M.sf.length; i++) if (M.sf[i] === SF.POISON) { G.hasPsn = true; break; } G.rq = []; G.rw = DCFG.rw(eff(n)); G.nAgg = 0; G.spNearT = -99; G.ask = null; G.bossDownT = -99; G.runT = 0; G.stormT = 3 + rand() * 2; G.hazT = 0; G.bossWait = null; G.ropes = []; G.wipe = 0; G.travel = null;
   if (M.townRect) { M.mobBlock = new Uint8Array(M.W * M.H); const r = M.townRect; for (let y = r.y - 1; y <= r.y + r.h; y++) for (let x = r.x - 1; x <= r.x + r.w; x++) if (x >= 0 && y >= 0 && x < M.W && y < M.H) M.mobBlock[y * M.W + x] = 1; }
   const sp = tilePos(M, M.start.y * M.W + M.start.x);
   for (const hh of G.hs) {   // 6차: 파티 전원이 시작점에 선다(쓰러져 있던 영웅은 30% 체력으로 일어난다)
@@ -35598,9 +35650,10 @@ function enterFloor(G, n, how) {
   G.fl = {n, kills: 0, t0: G.playT};   /* QA-C: floorBest 는 K2 뜻(보스를 잡은 최고 층) — 들어가기만 해서는 올리지 않는다(저장 불러올 때 다음 층이 공짜로 열리는 버그) */
   for (const hh of G.hs) { const P0 = G.P, f0 = G.flow; G.P = hh.P; G.flow = hh.flow; updateFlow(G, true); G.P = P0; G.flow = f0; } reveal(G); rebuildGrid(G);
   /* 몹 군집 · 상자 · 마을 · 보스 · 포털 */
-  spawnInitial(G); spawnChests(G); setupPortals(G); placeArrival(G, how, prevFloor); spreadHeroes(G); reveal(G); if (M.town) setupTown(G);
+  spawnInitial(G); spawnSubs(G); spawnChests(G); setupPortals(G); placeArrival(G, how, prevFloor); spreadHeroes(G); reveal(G); if (M.town) setupTown(G);
   if (how === "bossdoor") { const sp0 = bossDoorSpot(G); if (sp0) { tpHero(G, G.hs[0], sp0.x, sp0.y); spreadHeroes(G); reveal(G); } }
   if (G.evt && G.evt.floor === n && G.hs.length === 1) spawnEventMob(G);
+  ugNotice(G, c, "enter");
   emit(G, "floor", {n, how: how || "", name: G.info.name || (n + "층"), mood: G.info.mood || "", tags: M.tags, decade: M.look, h: 0, party: G.hs.length});
   emit(G, "save", {why: "floor", h: 0});
   return G;
@@ -35618,10 +35671,11 @@ function reveal(G) { const M = G.M, W = M.W, r = 9; for (const h of G.hs) { cons
 function setupPortals(G) {
   const M = G.M, n = G.floor, c = G.char, st = M.start;
   const mk = (tx, ty, to, kind, label, o) => G.portals.push(Object.assign({x: (tx + .5) * TILE, y: (ty + .5) * TILE, to, kind, label, cool: true, t: 0, id: ++G.uid}, o || {}));
-  if (n > 1) { let ty = st.y + 2; if (ty >= M.H - 1 || dgnMap.solidI(M, ty * M.W + st.x)) ty = st.y - 2; mk(st.x, ty, n - 1, "down", (n - 1) + "층으로", {start: true}); }
+  if (n > 1) { let ty = st.y + 2; if (ty >= M.H - 1 || dgnMap.solidI(M, ty * M.W + st.x)) ty = st.y - 2; const dn = isUg(n) ? (ugIdx(n) > 1 ? n - 1 : 1) : n - 1; mk(st.x, ty, dn, "down", labelOf(dn), {start: true}); }
+  if (n === 1 && ugUnlocked(c)) { for (const [dx, dy] of [[-3, 0], [3, 0], [0, -3], [0, 3], [-4, 2], [4, 2]]) { const tx = st.x + dx, ty = st.y + dy; if (tx > 0 && ty > 0 && tx < M.W - 1 && ty < M.H - 1 && !dgnMap.solidI(M, ty * M.W + tx)) { mk(tx, ty, 1001, "up", "🕳 지하던전 입구", {ug: true}); break; } } }
   if (G.cleared) {
-    mk(M.portal.x, M.portal.y, n < 200 ? n + 1 : 1, "up", n < 200 ? (n + 1) + "층으로" : "마을로", {boss: true}); addAltar(G); G.bs = {state: "cleared", t: 0};
-    if (n < 200 && isOpen(c, n + 1)) { let tx = st.x + 2; if (dgnMap.solidI(M, st.y * M.W + tx)) tx = st.x - 2; mk(tx, st.y, n + 1, "up", (n + 1) + "층으로", {start: true}); }
+    mk(M.portal.x, M.portal.y, nextTo(n), "up", labelOf(nextTo(n)), {boss: true}); addAltar(G); G.bs = {state: "cleared", t: 0};
+    if (hasNext(n) && isOpen(c, n + 1)) { let tx = st.x + 2; if (dgnMap.solidI(M, st.y * M.W + tx)) tx = st.x - 2; mk(tx, st.y, n + 1, "up", labelOf(n + 1), {start: true}); }
   }
 }
 /* 5차: 층에 도착하면 시작 포탈(이전 층·다음 층)에서 4칸 넘게 떨어진 자리에 놓는다 — 도착하자마자 이전 층 포탈을 밟는 사고 방지. 도착한 포탈은 잠깐(2.5초) 작동하지 않는다 */
@@ -35660,7 +35714,7 @@ function pickSpot(G, minD, maxD) {   // 몹 자리 후보 14곳 중 플레이어
   return best;
 }
 function spawnInitial(G) {
-  const M = G.M, groups = M.groups; if (!groups.length) return; const pm = (G.pmul && G.pmul.cnt) || 1; let target = initCount(M, G.floor, pm); G.initMobs = target; G.nearMin = cl(Math.round(target / DCFG.nearDiv), DCFG.nearLo, DCFG.nearHi * pm); let guard = 0;
+  const M = G.M, groups = M.groups; if (!groups.length) return; const pm = (G.pmul && G.pmul.cnt) || 1; let target = isUg(G.floor) ? ugCount(M, pm) : initCount(M, G.floor, pm); G.initMobs = target; G.nearMin = cl(Math.round(target / DCFG.nearDiv), DCFG.nearLo, DCFG.nearHi * pm); if (isUg(G.floor)) G.nearMin = Math.round(G.nearMin * UGT.near); let guard = 0;
   while (target > 0 && guard++ < 700) {
     let best = null, bs = 1e9; for (let t = 0; t < 5; t++) { const p = tilePos(M, pickOf(pickGroup(M).tiles)), sc = crowd(G, p.x, p.y, 170); if (sc < bs) { bs = sc; best = p; if (!sc) break; } }
     const n = spawnPack(G, best.x, best.y, false, {maxN: target}); target -= Math.max(1, n);
@@ -35688,19 +35742,36 @@ function spawnPack(G, x, y, outOfView, o) {
 }
 const mobSize = def => { const s = def.size == null ? 1 : def.size; return s > 6 ? s / 14 : s; };
 function spawnMob(G, def, x, y, o) {
-  o = o || {}; const d = D(); let st; try { st = o.boss ? d.bossStats(def.id, G.floor, o.partySize || G.partySize || 1) : d.mobStats(def, G.floor); } catch (e) { st = null; } if (!st) st = {hp: 30, atk: 5, def: 0, spd: 1, xp: 5, gold: 2};
-  const sz = mobSize(def) * (o.sizeMul || 1) * (o.elite ? 1.3 : 1), r = 14 * sz, pmx = (o.boss || o.evt || !G.pmul) ? null : G.pmul, hpMul = (G.floor >= 111 && !o.boss ? 1.45 : 1) * deepHp(G.floor, o.boss) * (o.hpMul || 1) * (o.elite ? 2.6 : 1) * (pmx ? pmx.hp : 1), atkMul = (G.floor >= 111 && !o.boss ? 1.55 : 1) * deepAtk(G.floor, o.boss) * (o.atkMul || 1) * (o.elite ? 1.4 : 1) * (pmx ? pmx.atk : 1);
-  const rwK = (o.boss || o.evt) ? 1 : (G.rw > 0 ? G.rw : 1), sp = st.spd == null ? 1 : st.spd, m = {id: ++G.uid, def, name: o.name || def.name || "몹", ai: o.ai || def.ai || "chase", x, y, px: x, py: y, vx: 0, vy: 0, kx: 0, ky: 0, r, cr: Math.min(r, o.boss ? 40 : 18), hp: Math.max(1, st.hp * hpMul), hpMax: Math.max(1, st.hp * hpMul), atk: st.atk * atkMul, mdef: st.def || 0, spd: (sp > 8 ? sp : MOB_SPD * sp) * (o.spdMul || 1) * spdDeep(G.floor),
-    xp: (st.xp || 0) * (o.elite ? 3 : 1) * (o.xpMul || 1) * rwK * rwDeep(G.floor), gold: (st.gold || 0) * (o.elite ? 3 : 1) * rwK * rwDeep(G.floor), tier: def.tier || 1, elite: !!o.elite, aff: "", age: rand() * 3, cd: rand() * 1.2, flash: 0, stunT: 0, slowT: 0, slowF: 0, burn: null, state: "idle", stT: 0, agg: false, wt: rand() * 2, wdx: 0, wdy: 0, awake: false, los: true, losT: 0, home: {x, y}, face: 1, fly: !!def.fly, dead: false, tele: null, lunge: 0, aggroR: (def.ai === "ranged" ? 470 : 360) + (o.elite ? 120 : 0), boss: null, evt: !!o.evt, noLoot: false, kbR: o.boss ? .1 : 1, pat: null};
+  o = o || {}; const d = D(); let st; try { st = o.boss ? d.bossStats(def.id, eff(G.floor), o.partySize || G.partySize || 1) : d.mobStats(def, eff(G.floor)); } catch (e) { st = null; } if (!st) st = {hp: 30, atk: 5, def: 0, spd: 1, xp: 5, gold: 2};
+  const sz = mobSize(def) * (o.sizeMul || 1) * (o.elite ? 1.3 : 1), r = 14 * sz, pmx = (o.boss || o.evt || !G.pmul) ? null : G.pmul, hpMul = mulHp(G, o) * (o.hpMul || 1) * (o.elite ? 2.6 : 1) * (pmx ? pmx.hp : 1), atkMul = mulAtk(G, o) * (o.atkMul || 1) * (o.elite ? 1.4 : 1) * (pmx ? pmx.atk : 1);
+  const rwK = (o.boss || o.evt) ? 1 : (G.rw > 0 ? G.rw : 1), sp = st.spd == null ? 1 : st.spd, m = {id: ++G.uid, def, name: o.name || def.name || "몹", ai: o.ai || def.ai || "chase", x, y, px: x, py: y, vx: 0, vy: 0, kx: 0, ky: 0, r, cr: Math.min(r, o.boss ? 40 : 18), hp: Math.max(1, st.hp * hpMul), hpMax: Math.max(1, st.hp * hpMul), atk: st.atk * atkMul, mdef: st.def || 0, spd: (sp > 8 ? sp : MOB_SPD * sp) * (o.spdMul || 1) * (isUg(G.floor) ? 1 : spdDeep(G.floor)),
+    xp: (st.xp || 0) * (o.elite ? 3 : 1) * (o.xpMul || 1) * rwK * mulXp(G), gold: (st.gold || 0) * (o.elite ? 3 : 1) * rwK * (isUg(G.floor) ? 1 : rwDeep(G.floor)), tier: def.tier || 1, elite: !!o.elite, aff: "", age: rand() * 3, cd: rand() * 1.2, flash: 0, stunT: 0, slowT: 0, slowF: 0, burn: null, state: "idle", stT: 0, agg: false, wt: rand() * 2, wdx: 0, wdy: 0, awake: false, los: true, losT: 0, home: {x, y}, face: 1, fly: !!def.fly, dead: false, tele: null, lunge: 0, aggroR: (def.ai === "ranged" ? 470 : 360) + (o.elite ? 120 : 0), boss: null, evt: !!o.evt, noLoot: false, kbR: o.boss ? .1 : 1, pat: null};
   m.dmgDef = Object.assign({}, def, {def: m.mdef, hp: m.hpMax}); if (m.elite) { m.aff = pickOf(["swift", "steel", "blast"]); if (m.aff === "swift") m.spd *= 1.3; if (m.aff === "steel") { m.hp *= 1.4; m.hpMax *= 1.4; } m.name = AFF_N[m.aff] + " " + m.name; }
   G.mobs.push(m); return m;
 }
 const AFF_N = {swift: "[신속]", steel: "[강철]", blast: "[폭발]"};
 function spawnChests(G) { const M = G.M; for (const c of M.chests) G.chests.push({x: (c.x + .5) * TILE, y: (c.y + .5) * TILE, open: false, t: 0, id: ++G.uid, tier: 0, rich: false}); }
+/* ===== 서브 보스(2026-11-10): 층마다 2마리, 잡아도 다음 층 진행과 무관한 선택 전투. 같은 층에 머물면 일정 시간 뒤 다시 나온다 ===== */
+function spawnSub(G, i) {
+  const M = G.M, s = M.sub && M.sub[i], pool = G.info.mobPool || [], d = D(); if (!s || !pool.length) return null;
+  let def = null; try { def = d.mobDef(pool[Math.max(0, pool.length - 1 - i)] || pool[0]); } catch (e) {} if (!def) return null;
+  const p = tilePos(M, s.y * M.W + s.x), m = spawnMob(G, def, p.x, p.y, {sizeMul: SUBT.size, atkMul: SUBT.atk, xpMul: SUBT.xp, sub: i + 1, name: "서브보스 " + (def.name || "몹")});
+  if (m) { let bh = 0; try { bh = d.bossStats(G.info.bossId, eff(G.floor), G.hs.length || 1).hp * mulHp(G, {boss: true}); } catch (e) {} if (bh > 0) m.hp = m.hpMax = Math.max(m.hpMax, bh * SUBT.frac); m.sub = i + 1; m.agg = false; m.aggroR = 460; m.noLoot = false; } return m;
+}
+function spawnSubs(G) { const M = G.M; if (!M || !M.sub || G.hs.length < 1) return; for (let i = 0; i < M.sub.length; i++) spawnSub(G, i); }
+function updateSubs(G, dt) {
+  const q = G.subQ; if (!q || !q.length || G.bs.state === "intro" || G.bs.state === "fight") return;
+  for (let k = q.length - 1; k >= 0; k--) { const e = q[k]; if (G.t < e.t) continue; const s = G.M.sub && G.M.sub[e.i]; if (!s) { q.splice(k, 1); continue; }
+    const p = tilePos(G.M, s.y * G.M.W + s.x); if (dmin(G, p.x, p.y) < 700 || G.mobs.length >= MAX_MOBS - 12) { e.t = G.t + 8; continue; } q.splice(k, 1); spawnSub(G, e.i); }
+}
+function ugNotice(G, c, why) {   // 지하던전 안내(한 번): 100층 보스를 깬 직후 · 이미 깬 캐릭터는 다음 층 입장 때
+  if (G.cur && G.cur !== G.hs[0]) return; if (!ugUnlocked(c)) return; c.ext = c.ext || {}; if (c.ext.ugSeen) return; c.ext.ugSeen = 1;
+  emit(G, "ug", {kind: "open", lv: c.lv | 0, why, ok: (c.lv | 0) >= UGT.lv}); emit(G, "save", {why: "ug"});
+}
 function spawnEventMob(G) {
   if (!G.evt || G.evt.mobId && G.mobs.some(m => m.id === G.evt.mobId && !m.dead)) return; const M = G.M, pool = G.info.mobPool, d = D(); const def = d.mobDef(pool[pool.length - 1] || pool[0]); if (!def) return;
   const far = M.spawn.length ? M.spawn.filter((_, i) => i % 7 === 0) : []; let best = null, bd = -1; for (const ti of far) { const p = tilePos(M, ti), dd = hyp(p.x - G.P.x, p.y - G.P.y); if (dd > bd) { bd = dd; best = p; } } if (!best) return;
-  const m = spawnMob(G, def, best.x, best.y, {evt: true, sizeMul: 1.6, hpMul: 6, atkMul: 1.3, xpMul: 6, name: "이벤트 " + (def.name || "몹")}); if (m) { m.agg = false; m.aggroR = 520; G.evt.mobId = m.id; m.evt = true; }
+  const m = spawnMob(G, def, best.x, best.y, {evt: true, sizeMul: 2.7, hpMul: 6, atkMul: 1.3, xpMul: 6, name: "이벤트 " + (def.name || "몹")}); if (m) { m.agg = false; m.aggroR = 520; G.evt.mobId = m.id; m.evt = true; }
 }
 
 /* ================= 이벤트 몹 스케줄(순수 함수: 노드로 시험) ================= */
@@ -36015,24 +36086,24 @@ function hitMob(G, m, mul, o) {
 }
 function killMob(G, m) {
   if (m.dead) return; m.dead = true; m.hp = 0; G.kills++; G.runKills++; G.fl.kills++; const d = D();
-  if (!m.boss && !m.evt && !m.by && !m.hd) G.rq.push(G.t + DCFG.respMin + rand() * (DCFG.respMax - DCFG.respMin));   /* 4차: 처치마다 부활 대기표 한 장 */
+  if (!m.boss && !m.evt && !m.by && !m.hd && !m.sub) G.rq.push(G.t + (DCFG.respMin + rand() * (DCFG.respMax - DCFG.respMin)) * (isUg(G.floor) ? UGT.resp : 1));   /* 4차: 처치마다 부활 대기표 한 장 */
   fxP(G, m.x, m.y, m.def && m.def.art && m.def.art.color || "#fff", m.boss ? 30 : 11, 190, .5, m.boss ? 5 : 3, {g: 160}); fxRing(G, m.x, m.y, 4, m.r * 2, .3, "#ffffff", 3); sfx(G, m.boss ? "dgBossDie" : "dgKill");
   if (m.aff === "blast") { const z = {own: "e", kind: "circle", x: m.x, y: m.y, r: 90, t: 0, delay: .55, dur: 0, atk: m.atk * .8, col: "#ff5f3a", fired: false, tele: true}; G.zones.push(z); }
-  if (m.boss) { G.ep.length = 0; G.zones = G.zones.filter(z => z.own === "p"); G.shocks.length = 0; for (const o of G.mobs) if (o.by === m.id && !o.dead) { o.dead = true; o.hp = 0; fxP(G, o.x, o.y, "#fff", 5, 100, .3, 3); } }
+  if (m.boss) { if (!bossMore(G, m)) { G.ep.length = 0; G.zones = G.zones.filter(z => z.own === "p"); G.shocks.length = 0; } for (const o of G.mobs) if (o.by === m.id && !o.dead) { o.dead = true; o.hp = 0; fxP(G, o.x, o.y, "#fff", 5, 100, .3, 3); } }
   if (m.ai === "bomber" && m.noLoot) return;
   /* 경험치는 주변 파티원과 공유한다. 일반 전리품은 막타 영웅에게, 보스 전리품은 참가자에게 같은 꾸러미를 준다. */
   const hs = G.hs, lh = hs[m.lh | 0] || hs[0]; let el = [];
   if (m.participants) el = hs.filter(h => m.participants.has(h)); else if (hs.length === 1) el = [hs[0]]; else { for (const h of hs) { if (isDead(G, h) && h !== lh) continue; if (h === lh || hyp(h.P.x - m.x, h.P.y - m.y) < PARTY_R) el.push(h); } if (!el.length) el = [lh]; }
   const n = el.length, share = n > 1 ? (1 + .1 * (n - 1)) / Math.pow(n, .75) : 1;   /* 파티 보상 몫: 참여 보너스 +10%/명을 더하고 인원^0.75 로 나눈다 → 파티가 몹을 훨씬 빨리 잡는 만큼 마리당 몫이 줄어 영웅 1인당 속도가 솔로의 약 1.1~1.5배(test_party_balance.js) */
   { const dtc = G.t - G.comboT; G.combo = dtc < 2.5 ? G.combo + 1 : 1; G.comboT = G.t; if (G.combo > G.comboMax) G.comboMax = G.combo; if (G.combo === 10 || G.combo === 25 || G.combo === 50 || G.combo === 100 || G.combo === 200) emit(G, "combo", {n: G.combo, g: 1}); }   /* 5차: 처치 연쇄 — 2.5초 안에 이어서 잡으면 경험치 +0.5%/연쇄(최대 +25%) (파티 공통) */
-  const src = m.evt ? "event" : m.boss ? "boss" : m.elite ? "elite" : "mob";
+  const src = m.evt || m.sub ? "event" : m.boss ? "boss" : m.elite ? "elite" : "mob";
   let bossDrops = [];
   if (m.boss) {
-    try { bossDrops = d.rollDrop(G.floor, "boss", m.tier, {bias: m.def?.bias}) || []; } catch (e) {}
+    try { bossDrops = d.rollDrop(eff(G.floor), "boss", m.tier, {bias: m.def?.bias}) || []; } catch (e) {}
     if (m.gold > 0 && !bossDrops.some(x => x?.gold)) bossDrops.push({gold: m.gold});
   }
   for (const h of el) withHero(G, h, () => {
-    const c = G.char; let xpv = m.xp; try { if (d.xpGain) xpv = d.xpGain(c, m.xp, G.floor); if (d.noteKill && m.def) d.noteKill(c, m.def.id); } catch (e) {}   /* QA-C: 쉬운 층 경험치 감소·경험치 증가 능력치·도감 */
+    const c = G.char; let xpv = m.xp; try { if (d.xpGain) xpv = d.xpGain(c, m.xp, eff(G.floor)); if (d.noteKill && m.def) d.noteKill(c, m.def.id); } catch (e) {}   /* QA-C: 쉬운 층 경험치 감소·경험치 증가 능력치·도감 */
     if (!m.boss && !m.evt) xpv *= 1 + Math.min(.25, G.combo * .005); xpv *= share;
     gainXp(G, xpv); if (xpv > 0) fxText(G, G.P.x, G.P.y - 52, "+" + Math.round(xpv) + " XP", "#9fc5ff", false, {small: true, out: "#0a1a3a"});
     if (m.boss) {
@@ -36040,10 +36111,11 @@ function killMob(G, m) {
       return;
     }
     if (h !== lh) return;
-    let drops = []; const rwSkip = (src === "mob" || src === "elite") && G.rw < 1, pk = (rwSkip ? G.rw : 1); if (!(pk < 1 && rand() > pk)) { try { drops = d.rollDrop(G.floor, src, m.tier, {char: c, bias: m.def && m.def.bias}) || []; } catch (e) {} } const gk = (rwSkip ? G.rw : 1); if (gk < 1) for (const x of drops) if (x && x.gold) x.gold = Math.max(1, Math.round(x.gold * gk)); if (m.gold > 0 && !drops.some(x => x && x.gold)) drops.push({gold: Math.max(1, Math.round(m.gold * gk))});
+    let drops = []; const rwSkip = (src === "mob" || src === "elite") && G.rw < 1, pk = (rwSkip ? G.rw : 1); if (!(pk < 1 && rand() > pk)) { try { drops = d.rollDrop(eff(G.floor), src, m.tier, {char: c, bias: m.def && m.def.bias}) || []; } catch (e) {} } const gk = (rwSkip ? G.rw : 1); if (gk < 1) for (const x of drops) if (x && x.gold) x.gold = Math.max(1, Math.round(x.gold * gk)); if (m.gold > 0 && !drops.some(x => x && x.gold)) drops.push({gold: Math.max(1, Math.round(m.gold * gk))});
     for (const dr of drops) spawnDrop(G, m.x + (rand() - .5) * 24, m.y + (rand() - .5) * 24, dr, m.boss ? 1.5 : 1, h.idx);
   });
-  if (m.boss) bossDefeated(G, m);
+  if (m.boss) { if (bossMore(G, m)) { G.boss = bossList(G).find(o => !o.dead) || G.boss; emit(G, "toast", {text: "보스 한 마리를 처치했어요! 남은 보스 " + bossList(G).filter(o => !o.dead).length + "마리", kind: "good", h: 0}); } else bossDefeated(G, m); }
+  if (m.sub) { G.subQ.push({t: G.t + UGT.subResp, i: m.sub - 1}); emit(G, "toast", {text: "서브 보스를 처치했어요! 보상이 떨어졌어요.", kind: "good", h: lh.idx}); for (let i = 0; i < 1; i++) { let more = []; try { more = d.rollDrop(eff(G.floor), "event", m.tier, {char: lh.char, bias: m.def && m.def.bias}) || []; } catch (e) {} for (const dr of more) spawnDrop(G, m.x + (rand() - .5) * 60, m.y + (rand() - .5) * 60, dr, 1.4, lh.idx); } }
   if (m.evt) { G.ev.push({t: "evt", kind: "done", floor: G.floor, h: 0}); G.evt = null; G.evtCd = evtNextDelay(); emit(G, "toast", {text: "이벤트 몹을 처치했어요! 특별 보상이 떨어졌어요.", kind: "good", h: 0}); for (let i = 0; i < 2; i++) { let more = []; try { more = d.rollDrop(G.floor, "event", m.tier, {char: lh.char, bias: m.def && m.def.bias}) || []; } catch (e) {} for (const dr of more) spawnDrop(G, m.x + (rand() - .5) * 60, m.y + (rand() - .5) * 60, dr, 1.4, lh.idx); } emit(G, "save", {why: "evt", h: lh.idx}); }
 }
 
@@ -36280,7 +36352,7 @@ function mobUpdate(G, m, dt) {
   if (m.kx || m.ky) { moveBody(G.M, m, m.kx * dt, m.ky * dt, m.cr, m.fly, true); const k = Math.pow(.002, dt); m.kx *= k; m.ky *= k; if (Math.abs(m.kx) + Math.abs(m.ky) < 8) m.kx = m.ky = 0; }
   if (m.stunT > 0) { m.stunT -= dt; m.vx *= .8; m.vy *= .8; return; }
   const slow = m.slowT > 0 ? 1 - m.slowF : 1; if (m.slowT > 0) m.slowT -= dt; const spd = m.spd * slow;
-  if (!m.agg) { if (d < m.aggroR && G.nAgg < DCFG.aggCap + (G.horde ? 24 : 0) && (d < 170 || los(G.M, m.x, m.y, P.x, P.y))) { m.agg = true; G.nAgg++; } else { m.wt -= dt; if (m.wt <= 0) { m.wt = 1.5 + rand() * 3; const a = rand() * TAU; m.wdx = Math.cos(a) * (rand() < .5 ? 0 : 1); m.wdy = Math.sin(a) * (rand() < .5 ? 0 : 1); } mobVel(G, m, m.wdx * spd * .3, m.wdy * spd * .3, dt); if (hyp(m.x - m.home.x, m.y - m.home.y) > 120) { m.wdx = (m.home.x - m.x) / 200; m.wdy = (m.home.y - m.y) / 200; } return; } }
+  if (!m.agg) { if (d < m.aggroR && G.nAgg < DCFG.aggCap + (G.horde ? 24 : 0) + (isUg(G.floor) ? UGT.agg : 0) && (d < 170 || los(G.M, m.x, m.y, P.x, P.y))) { m.agg = true; G.nAgg++; } else { m.wt -= dt; if (m.wt <= 0) { m.wt = 1.5 + rand() * 3; const a = rand() * TAU; m.wdx = Math.cos(a) * (rand() < .5 ? 0 : 1); m.wdy = Math.sin(a) * (rand() < .5 ? 0 : 1); } mobVel(G, m, m.wdx * spd * .3, m.wdy * spd * .3, dt); if (hyp(m.x - m.home.x, m.y - m.home.y) > 120) { m.wdx = (m.home.x - m.x) / 200; m.wdy = (m.home.y - m.y) / 200; } return; } }
   else if (d > 1000 && !m.evt && !m.hd) { m.agg = false; return; }
   (AI[m.ai] || AI.chase)(G, m, dt, d, spd); separate(G, m, dt);
 }
@@ -36315,29 +36387,30 @@ function updateHazards(G, dt) { hazardsWorld(G, dt); hazardsHero(G, dt); }
 /* A13-11: 이 층을 '깬 상태'인가. 혼자: 기록(x.clr). 파티: **전원**이 깼을 때만 — 방장만 깬 층에 못 깬 손님이 있으면 보스가 나와야 한다
    (예전엔 방장 기록만 봐서 '41층 바로가기'만 떠 있고 보스가 안 나왔다. 못 깬 손님은 보스를 잡아야 다음 층이 열린다). 못 깬 사람이 늦게 합류한 경우는 제단(보스 다시 부르기)으로 깬다. */
 function partyCleared(G, n) {
+  if (isUg(n)) return G.hs.every((h, i) => (i === 0 && G.x.clr.includes(n)) || ((((h.char && h.char.ext && h.char.ext.ug) | 0)) >= ugIdx(n)));
   if (G.hs.length < 2) return G.x.clr.includes(n);
   return G.hs.every((h, i) => (i === 0 && G.x.clr.includes(n)) || ((h.char && h.char.floorBest) | 0) >= n);
 }
 /* A13-11 방어: ① 보스 상태(intro/fight)인데 보스가 없다 → 대기로 되돌려 다시 생성 ② 보스를 잡기 전에 '다음 층 바로가기'(boss 포탈)가 떠 있다 → 치운다. 1초에 한 번만 검사 */
 function bossGuard(G) {
-  const M = G.M; if (!M || !M.boss || Math.floor(G.t) === G._bgT) return; G._bgT = Math.floor(G.t); const st = G.bs.state, alive = G.boss && !G.boss.dead;
+  const M = G.M; if (!M || !M.boss || Math.floor(G.t) === G._bgT) return; G._bgT = Math.floor(G.t); const st = G.bs.state, alive = bossAlive(G);
   const participants = G.boss?.participants;
   if (alive && participants && G.hs.some(h => !participants.has(h) && !isDead(G, h)) &&
       !G.hs.some(h => participants.has(h) && !isDead(G, h))) {
     const boss = G.boss;
-    G.mobs = G.mobs.filter(m => m !== boss && m.by !== boss.id);
+    G.mobs = G.mobs.filter(m => m !== boss && !bossList(G).includes(m) && m.by !== boss.id); G.bosses = [];
     G.boss = null; G.bs = {state: "idle", t: 0}; G.cine = null;
     G.mobsHold = false; G.bossWait = null;
     for (const door of M.boss.doors) M.dyn[door] = 0;
     G.ep.length = 0; G.shocks.length = 0; G.zones = G.zones.filter(z => z.own === "p");
     return;
   }
-  if ((st === "intro" || st === "fight") && !alive) { console.error("[dgn] 보스 상태(" + st + ")인데 보스가 없다 → 재생성", G.floor, G.hs.length); G.bs = {state: "idle", t: 0}; G.cine = null; G.mobsHold = false; G.bossWait = null; G.boss = null; for (const i of M.boss.doors) M.dyn[i] = 0; }
+  if ((st === "intro" || st === "fight") && !alive) { console.error("[dgn] 보스 상태(" + st + ")인데 보스가 없다 → 재생성", G.floor, G.hs.length); G.bs = {state: "idle", t: 0}; G.cine = null; G.mobsHold = false; G.bossWait = null; G.boss = null; G.bosses = []; for (const i of M.boss.doors) M.dyn[i] = 0; }
   /* 2026-11-09 방어: 보스방이 빈 방으로 굳지 않게 - (1) 대기인데 보스가 살아 있음(생성 도중 오류) (2) 싸움이 아닌데 문이 닫혀 있음 (3) 깬 상태인데 제단/포털이 없음 */
-  if (st === "idle" && alive) { console.error("[dgn] 대기 상태인데 보스가 있다 -> 치움", G.floor); const b = G.boss; G.mobs = G.mobs.filter(o => o !== b && o.by !== b.id); G.boss = null; G.cine = null; G.mobsHold = false; }
+  if (st === "idle" && alive) { console.error("[dgn] 대기 상태인데 보스가 있다 -> 치움", G.floor); const b = G.boss; G.mobs = G.mobs.filter(o => o !== b && !bossList(G).includes(o) && o.by !== b.id); G.boss = null; G.bosses = []; G.cine = null; G.mobsHold = false; }
   if (st === "idle" || st === "cleared") for (const i of M.boss.doors) if (M.dyn[i]) M.dyn[i] = 0;
   if (st === "idle" && G.mobsHold && !G.boss) G.mobsHold = false;
-  if (st === "cleared") { if (!G.altar) addAltar(G); if (!G.portals.some(q => q.boss)) { const p = M.portal, n = G.floor; G.portals.push({x: (p.x + .5) * TILE, y: (p.y + .5) * TILE, to: n < 200 ? n + 1 : 1, kind: "up", label: n < 200 ? n + 1 + "층으로" : "마을로", cool: true, t: 0, id: ++G.uid, boss: true}); } }
+  if (st === "cleared") { if (!G.altar) addAltar(G); if (!G.portals.some(q => q.boss)) { const p = M.portal, n = G.floor; G.portals.push({x: (p.x + .5) * TILE, y: (p.y + .5) * TILE, to: nextTo(n), kind: "up", label: labelOf(nextTo(n)), cool: true, t: 0, id: ++G.uid, boss: true}); } }
   if (st !== "cleared" && G.portals.some(p => p.boss)) { console.error("[dgn] 보스 전인데 다음 층 포탈이 떠 있다 → 치움", G.floor); G.portals = G.portals.filter(p => !p.boss); }
 }
 function bossRoomHeroes(G) {
@@ -36411,11 +36484,20 @@ function startBoss(G) {
   G.bossWait = null;
   const sizeMul = (M.boss.kind === "major" || def.size > 6) ? 1 : .55 + .45 * ((G.floor - 1) % 10) / 9;   /* QA-C: K2 크기는 이미 px(변주 보스도 층마다 커짐) — 또 줄이지 않는다 */
   let m = null;
-  try { m = spawnMob(G, def, bx, by, {boss: true, partySize: participants.length, sizeMul: sizeMul * (def.size > 2 ? 1 : 1.6)}); if (m) { m.agg = true; m.ai = "boss"; m.kbR = 0; m.alpha = 0; m.inv = 99; G.boss = m; m.participants = new Set(participants); dgnBoss.init(G, m); if (n > 150) { m.name = (n > 175 ? "심연 " : "각성 ") + m.name; if (m.boss) m.boss.name = m.name; } } }
+  try { m = spawnMob(G, def, bx, by, {boss: true, partySize: participants.length, sizeMul: sizeMul * (def.size > 2 ? 1 : 1.6)}); if (m) { m.agg = true; m.ai = "boss"; m.kbR = 0; m.alpha = 0; m.inv = 99; G.boss = m; G.bosses = [m]; m.participants = new Set(participants); m.ugv = isUg(n) ? 1 : 0; dgnBoss.init(G, m); if (isUg(n)) startUgExtras(G, participants, bx, by, sizeMul); if (n > 150 && !isUg(n)) { m.name = (n > 175 ? "심연 " : "각성 ") + m.name; if (m.boss) m.boss.name = m.name; } } }
   catch (e) { console.error("[dgn] 보스 생성 실패", G.floor, e); if (m) { m.dead = true; m.hp = 0; G.mobs = G.mobs.filter(o => o !== m); } G.boss = null; m = null; }
   if (!m) { for (const i of M.boss.doors) M.dyn[i] = 0; G.bs = {state: "idle", t: 0}; G.cine = null; G.mobsHold = false; emit(G, "toast", {text: "보스를 불러오지 못했어요. [보스 재도전]을 눌러 주세요.", kind: "warn", h: 0}); return; }
   G.bs = {state: "intro", t: 0}; G.cine = {t: 0, dur: 2.6, tx: bx, ty: by}; G.mobsHold = true;
   emit(G, "boss", {kind: "intro", name: m.name, floor: n, major: M.boss.kind === "major", decade: M.look}); sfx(G, "dgBossIntro");
+}
+function startUgExtras(G, participants, bx, by, sizeMul) {   // 지하던전: 보스방에 보스 3마리(같은 방, 좌우로 벌려 세움)
+  const d = D(), ids = (G.info && G.info.ugBosses) || [], M = G.M;
+  for (let j = 1; j < ids.length; j++) {
+    let df = null; try { df = d.mobDef(ids[j]); } catch (e) {} if (!df) continue;
+    let x = bx + (j === 1 ? -170 : 170), y = by + (j === 1 ? -40 : 40); if (boxSolid(M, x, y, 30, false, false)) { x = bx; y = by + (j === 1 ? -120 : 120); }
+    let m2 = null; try { m2 = spawnMob(G, df, x, y, {boss: true, partySize: participants.length, sizeMul: sizeMul * (df.size > 2 ? 1 : 1.6)}); } catch (e) { console.error("[dgn] 지하 보스 생성 실패", e); }
+    if (m2) { m2.agg = true; m2.ai = "boss"; m2.kbR = 0; m2.alpha = 0; m2.inv = 99; m2.participants = new Set(participants); m2.ugv = j + 1; dgnBoss.init(G, m2); G.bosses.push(m2); }
+  }
 }
 function bossDefeated(G, m) {
   if (G.cur !== G.hs[0]) bind(G, G.hs[0]);
@@ -36425,19 +36507,20 @@ function bossDefeated(G, m) {
   for (const i of M.boss.doors) M.dyn[i] = 0;
   sfx(G, "dgDoor");
   for (const h of participants) withHero(G, h, () => {
-    const cc = h.char, first = n > (cc.floorBest | 0);
-    try { const dd = D(); if (dd && dd.clearFloor) dd.clearFloor(cc, n); else cc.floorBest = Math.max(n, cc.floorBest | 0); }
+    const cc = h.char, ugi = ugIdx(n); let first = ugi ? (((cc.ext && cc.ext.ug) | 0) < ugi) : n > (cc.floorBest | 0); if (ugi) { cc.ext = cc.ext || {}; if (first) cc.ext.ug = ugi; }
+    if (!ugi) try { const dd = D(); if (dd && dd.clearFloor) dd.clearFloor(cc, n); else cc.floorBest = Math.max(n, cc.floorBest | 0); }
     catch (e) { cc.floorBest = Math.max(n, cc.floorBest | 0); }
-    if (n < 200) openFloor(cc, n + 1);
+    if (n < 200 && !ugi) openFloor(cc, n + 1);
+    if (n === 100 && h.idx === 0) ugNotice(G, cc, "clear");
     if (h.idx === 0) {
       if (!G.x.clr.includes(n)) G.x.clr.push(n);
       G.x.best[n] = Math.round(G.playT - G.fl.t0);
     }
-    emit(G, "boss", {kind: "down", name: m.name, floor: n, major: M.boss.kind === "major", first, last: n >= 200, personal: true});
+    emit(G, "boss", {kind: "down", name: m.name, floor: n, major: M.boss.kind === "major", first, last: ugi ? ugi >= UGM.n : n >= 200, personal: true, ug: ugi});
     emit(G, "save", {why: "boss"});
   });
   const p = M.portal;
-  if (!G.portals.some(q => q.boss)) G.portals.push({x: (p.x + .5) * TILE, y: (p.y + .5) * TILE, to: n < 200 ? n + 1 : 1, kind: "up", label: n < 200 ? n + 1 + "층으로" : "마을로", cool: true, t: 0, id: ++G.uid, boss: true});
+  if (!G.portals.some(q => q.boss)) G.portals.push({x: (p.x + .5) * TILE, y: (p.y + .5) * TILE, to: nextTo(n), kind: "up", label: labelOf(nextTo(n)), cool: true, t: 0, id: ++G.uid, boss: true});
   addAltar(G);
   for (let i = 0; i < (M.boss.kind === "major" ? 3 : 1); i++) {
     const a = (i / 3) * TAU + 1;
@@ -36540,7 +36623,7 @@ function travel(G, n, how) {
   const forward = how === "party-next" && G.party && n > G.floor;
   const cleared = how === "cleared-next" && clearedNextPortal(G)?.to === n;
   const lk = cleared ? "" : G.hs.length > 1 && !forward ? partyLock(G, n) : (!isOpen(G.char, n) && n !== 1 ? "나" : "");
-  if (lk) { emit(G, "toast", {text: lk === "나" ? "아직 열리지 않은 층이에요." : lk + " 님은 아직 " + n + "층이 열리지 않았어요. 파티는 모두에게 열린 층까지만 갈 수 있어요.", kind: "warn", h: 0}); return false; }
+  if (lk) { emit(G, "toast", {text: lk === "나" ? (isUg(n) ? ugLockMsg(G.char, n) : "아직 열리지 않은 층이에요.") : lk + " 님은 아직 " + n + "층이 열리지 않았어요. 파티는 모두에게 열린 층까지만 갈 수 있어요.", kind: "warn", h: 0}); return false; }
   /* 5차: 이전 층으로 돌아가는 포탈은 확인 창을 거친다(UI 가 travelAnswer 로 답한다). 시험 봇(autoTravel)은 바로 */
   if (how === "portal" && n < G.floor && !G.autoTravel) { if (!G.ask) { G.ask = {to: n, from: G.floor}; emit(G, "travelAsk", {to: n, from: G.floor}); } return false; }
   if (how === "portalok" || forward || cleared) how = "portal";
@@ -36596,7 +36679,7 @@ function hordeSpawn(G, def, n, elite) {   // 걸을 수 있는 몹 자리 중 �
 }
 function startHorde(G, elite) { G.horde = {st: "warn", t: HORDE.warn, wave: 0, elite: !!elite, n: 0}; emit(G, "horde", {kind: "warn", elite: !!elite}); sfx(G, "dgWarn"); }
 function updateHorde(G, dt) {
-  if (allDead(G) || G.bs.state === "intro" || G.bs.state === "fight" || G.floor < HORDE.minFloor) return; const h = G.horde, d = D();
+  if (allDead(G) || G.bs.state === "intro" || G.bs.state === "fight" || G.floor < HORDE.minFloor || isUg(G.floor)) return; const h = G.horde, d = D();
   if (!h) { G.hordeT -= dt; if (G.hordeT <= 0) { if (G.mobs.length > MAX_MOBS - 60) { G.hordeT = 12; return; } startHorde(G, G.floor >= 5 && rand() < HORDE.eliteP); } return; }
   if (h.st === "warn") { h.t -= dt; if (h.t <= 0) { h.st = "waves"; h.t = 0; } return; }
   if (h.st === "waves") {
@@ -36624,7 +36707,7 @@ function spawnWave(G, near, maxN) {   // 시야 밖(플레이어에서 640px 이
 function updateSpawns(G, dt) {
   if (G.bs.state === "intro" || G.bs.state === "fight" || G.over) return; G.spT -= dt; if (G.spT > 0) return; G.spT = 1;
   const M = G.M; if (!M.groups.length) return;
-  let alive = 0, near = 0; for (const m of G.mobs) { if (m.dead || m.boss || m.evt || m.by || m.hd) continue; alive++; if (dmin(G, m.x, m.y) < DCFG.nearR) near++; }
+  let alive = 0, near = 0; for (const m of G.mobs) { if (m.dead || m.boss || m.evt || m.by || m.hd || m.sub) continue; alive++; if (dmin(G, m.x, m.y) < DCFG.nearR) near++; }
   if (alive >= G.initMobs * (G.loadScale || 1) || G.mobs.length >= MAX_MOBS - 12) return;
   const rq = G.rq; let due = 0, late = 0; for (const t of rq) if (t <= G.t) { due++; if (G.t - t > 4) late++; }
   let made = 0;
@@ -36644,7 +36727,7 @@ function step(G, dt, inp) {   // inp = 영웅 0 의 입력. 손님 영웅은 h.i
     return;
   }
   G.t += dt; G.runT += dt;
-  if (G.cine) { G.cine.t += dt; if (G.cine.t >= G.cine.dur) { G.cine = null; G.bs.state = "fight"; if (G.boss) { G.boss.inv = 0; G.boss.alpha = 1; } emit(G, "boss", {kind: "fight"}); } else if (G.boss) { G.boss.alpha = Math.min(1, G.cine.t / 1.5); } }
+  if (G.cine) { G.cine.t += dt; if (G.cine.t >= G.cine.dur) { G.cine = null; G.bs.state = "fight"; for (const bb of bossList(G)) { bb.inv = 0; bb.alpha = 1; } emit(G, "boss", {kind: "fight"}); } else { for (const bb of bossList(G)) bb.alpha = Math.min(1, G.cine.t / 1.5); } }
   if (!G.cine) G.playT += dt;
   rebuildGrid(G);
   for (const h of hs) {   // 영웅별 갱신(쓰러진 영웅은 건너뜀)
@@ -36664,7 +36747,7 @@ function step(G, dt, inp) {   // inp = 영웅 0 의 입력. 손님 영웅은 h.i
   bossGuard(G);
   updateRopes(G, dt);
   if (G.bs.state === "idle") bossTrigger(G);
-  if (!G.cine) { updateSpawns(G, dt); updateHorde(G, dt); updateEvent(G, dt); }
+  if (!G.cine) { updateSpawns(G, dt); updateHorde(G, dt); updateEvent(G, dt); updateSubs(G, dt); }
   if (Math.floor(G.t * 4) !== Math.floor((G.t - dt) * 4)) reveal(G);
   updateFx(G, dt);
   for (let i = 1; i < hs.length; i++) { const q = hs[i].inp; if (q) { q.cast = Array(8).fill(false); q.interact = false; q.potion = false; q.dash = false; } }   // 손님의 한 번짜리 입력(스킬·상호작용·물약·대시)은 한 번만 쓴다
@@ -36679,7 +36762,7 @@ function updateFx(G, dt) {
 
 /* ================= 저장 문자열(엔진 몫) ================= */
 function packExtra(G) { const x = G.x; return {v: 1, clr: x.clr.slice(0, 200), evt: G.evt ? {floor: G.evt.floor} : null, evtCd: Math.round(G.evtCd), best: x.best, rank: x.rank || 0, last: x.last | 0, end: x.end | 0}; }
-function unpackExtra(G, e) { if (!e || typeof e !== "object") return; G.x.end = e.end | 0; if (Array.isArray(e.clr)) G.x.clr = e.clr.filter(n => n >= 1 && n <= 200); if (e.evt && e.evt.floor >= 1 && e.evt.floor <= 200 && isOpen(G.char, e.evt.floor)) { G.evt = {floor: e.evt.floor, born: G.playT, mobId: 0}; } if (e.evtCd > 0) G.evtCd = e.evtCd; if (e.best && typeof e.best === "object") G.x.best = e.best; if (e.rank) G.x.rank = e.rank; if (e.last >= 1 && e.last <= 200) G.x.last = e.last; }
+function unpackExtra(G, e) { if (!e || typeof e !== "object") return; G.x.end = e.end | 0; if (Array.isArray(e.clr)) G.x.clr = e.clr.filter(n => (n >= 1 && n <= 200) || isUg(n)); if (e.evt && e.evt.floor >= 1 && e.evt.floor <= 200 && isOpen(G.char, e.evt.floor)) { G.evt = {floor: e.evt.floor, born: G.playT, mobId: 0}; } if (e.evtCd > 0) G.evtCd = e.evtCd; if (e.best && typeof e.best === "object") G.x.best = e.best; if (e.rank) G.x.rank = e.rank; if (e.last >= 1 && e.last <= 200) G.x.last = e.last; }
 function wrapSave(G, rev) { if (G.cur !== G.hs[0]) bind(G, G.hs[0]); const d = D(); let s = ""; try { s = d.save(G.char); } catch (e) { s = ""; } return JSON.stringify({v: 1, k: G.char.k, c: s, e: packExtra(G), rev: rev | 0}); }
 function unwrapSave(str) { const d = D(); if (typeof str !== "string" || !str) return null; try { if (str.charAt(0) === "{") { const o = JSON.parse(str); if (o && o.v === 1 && typeof o.c === "string") { const ch = d.load(o.c); if (ch) return {char: ch, extra: o.e || null, rev: o.rev | 0}; return null; } } } catch (e) {} const ch = d.load(str); return ch ? {char: ch, extra: null, rev: 0} : null; }
 
@@ -36744,7 +36827,7 @@ function botInput(G) {
 
 const randHero = G => { const al = aliveHeroes(G); return al.length ? al[(rand() * al.length) | 0] : G.hs[0]; };
 const H = {randHero, aliveHeroes, isDead, bind, withHero, rayLen, beamLen, beamEnd, inView, D, shotE, hurtPlayer, spawnMob, fxP, fxRing, fxText, shakeIt, boxSolid, moveBody, los, blockedAt, tilePos, tileOf, nearestMob, emit, sfx, hitMob, killMob, adiff, ELEM, mobSize, MAX_MOBS, bossDefeated, unstick, weightedDef};
-return {heroMove, nearest, setupTown, openFloor, updateFx, bind, withHero, addHero, removeHero, reviveHero, allDead, aliveHeroes, isDead, dmin, partyLock, setPartyMul, ackDrop, reveal, collect, mkFlow, newP, MAX_HEROES, HF, REVIVE_AUTO, REVIVE_HOLD, REVIVE_R, spreadHeroes,
+return {UGT, SUBT, isUg, ugIdx, eff, ugUnlocked, ugIsOpen, ugLockMsg, bossList, spawnSubs, heroMove, nearest, setupTown, openFloor, updateFx, bind, withHero, addHero, removeHero, reviveHero, allDead, aliveHeroes, isDead, dmin, partyLock, setPartyMul, ackDrop, reveal, collect, mkFlow, newP, MAX_HEROES, HF, REVIVE_AUTO, REVIVE_HOLD, REVIVE_R, spreadHeroes,
   forceHero, HORDE, startHorde, updateHorde, setPartySize: (G, n) => { G.partySize = cl(n | 0 || 1, 1, 8); setPartyMul(G); return G.partySize; }, DASH, startDodge, travelAnswer, placeArrival, rayLen, beamLen, DCFG, initCount, skMeta, create, enterFloor, step, respawn, refreshStats, usePotion, potionCount, interact, travel, clearedNextPortal, nextFloorNow, followDirection, botInput, wrapSave, unwrapSave, packExtra, unpackExtra, openMax, isOpen, openFloor, evtNextDelay, evtPickFloor, updateEvent, EVT_MIN, EVT_MAX, EVT_EXPIRE, spikeState, healPlayer, basicOf, hitMob, rarOf, H, X, TILE, PLAYER_R, mobSize, altarRematch, openChest, gainXp, spawnPack, spawnMob, startBoss, bossChoice, ropeFollow, gotoBossDoor, gotoPortal, bossRetry, followHero, tpHero, tileOf, nearestMob, SPIKE_PER};
 })();
 
@@ -36772,14 +36855,14 @@ const BOSS_PATTERNS = ["fan", "ring", "spiral", "slam", "charge", "rain", "beam"
 const PHASE_TXT = ["", "", "2단계 — 화가 났어요!", "3단계 — 폭주!"];
 
 function init(G, m) {
-  const d = Math.min(9, G.M.look), k = (G.floor - 1) % 10, major = k === 9, des = DES[d], lite = major ? 1 : .55 + .45 * k / 9, rng = dgnMap.mulberry32(G.floor * 977 + 13);
+  const ugv = m.ugv | 0, d = ugv ? ((dgnMap.ugIdx(G.floor) - 1) * 3 + ugv - 1) % 10 : Math.min(9, G.M.look), k = ugv ? 9 : (G.floor - 1) % 10, major = k === 9, des = DES[d], lite = major ? 1 : .55 + .45 * k / 9, rng = dgnMap.mulberry32(G.floor * 977 + 13 + ugv * 131);
   const signature = [...new Set([...des.pats, des.p2, des.p3])];
   const rest = BOSS_PATTERNS.filter(name => !signature.includes(name));
   for (let i = rest.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1));
     [rest[i], rest[j]] = [rest[j], rest[i]];
   }
-  const pressure = Math.max(0, (G.floor - 10) / 140);
+  const pressure = Math.max(0, (dgnMap.effFloor(G.floor) - 10) / 140);
   m.boss = {des:d, k, major, lite, pats:signature.concat(rest), cursor:0, pressure, sty:{...des.sty},
     pat:null, idle:1.2, phase:1, rage:1, hitT:0, armor:0, drift:rand()*TAU, hue:(G.floor*37)%360, name:m.name, adds:0, last:""};
   m.cr = Math.min(m.cr, 38); m.kbR = 0; m.fly = false;
@@ -37111,6 +37194,7 @@ function drawMob(g, m, t, ix, iy, ppx, ppy) {
   if (m.alpha != null && m.alpha < 1) g.globalAlpha = Math.max(.05, m.alpha);
   const bob = m.fly ? Math.sin(t * 5 + m.id) * 4 - r * .35 : Math.abs(Math.sin(t * 7 + m.id)) * -2.5; g.translate(0, bob); if (m.face < 0) g.scale(-1, 1); g.scale(lunge, 2 - lunge);
   if (m.elite) { g.strokeStyle = "#ffd23c"; g.lineWidth = 4; g.setLineDash([7, 5]); g.lineDashOffset = -t * 20; g.beginPath(); g.arc(0, 0, r * 1.4, 0, TAU); g.stroke(); g.setLineDash([]); }
+  if (m.sub) { g.strokeStyle = "#7fe9ff"; g.lineWidth = 5; g.beginPath(); g.arc(0, 0, r * 1.35 + Math.sin(t * 5) * 2, 0, TAU); g.stroke(); g.strokeStyle = "#ff4fb8"; g.lineWidth = 3; g.setLineDash([9, 6]); g.lineDashOffset = t * 24; g.beginPath(); g.arc(0, 0, r * 1.55, 0, TAU); g.stroke(); g.setLineDash([]); }
   if (m.evt) { g.strokeStyle = `hsl(${(t * 120) % 360},95%,62%)`; g.lineWidth = 5; g.beginPath(); g.arc(0, 0, r * 1.5 + Math.sin(t * 6) * 3, 0, TAU); g.stroke(); g.strokeStyle = INK; g.lineWidth = 1.5; g.beginPath(); g.arc(0, 0, r * 1.5 + Math.sin(t * 6) * 3 + 3, 0, TAU); g.stroke(); }
   const im = mobImg(m.def, r);
   if (im) { const P = r * 2.62; if (hit) g.filter = "brightness(2.6) saturate(.4)"; g.drawImage(im, -P / 2, -P * .548, P, P); if (hit) g.filter = "none"; }
@@ -37123,9 +37207,9 @@ function drawMob(g, m, t, ix, iy, ppx, ppy) {
 }
 /* 체력바: 맞은 몹만. 엘리트는 이름 */
 function drawMobBar(g, m, ix, iy) {
-  if (m.boss || (m.hp >= m.hpMax && !m.elite && !m.evt)) return; const w = Math.max(30, m.r * 1.9), x = ix - w / 2, y = iy - m.r * (m.elite ? 2.0 : 1.5) - 8, f = Math.max(0, m.hp / m.hpMax);
+  if (m.boss || (m.hp >= m.hpMax && !m.elite && !m.evt && !m.sub)) return; const w = Math.max(30, m.r * 1.9), x = ix - w / 2, y = iy - m.r * (m.elite ? 2.0 : 1.5) - 8, f = Math.max(0, m.hp / m.hpMax);
   g.fillStyle = INK; g.fillRect(x - 2, y - 2, w + 4, 8); g.fillStyle = "#4a2e3a"; g.fillRect(x, y, w, 4); g.fillStyle = m.evt ? "#ffd23c" : m.elite ? "#ffb347" : "#ff6b6b"; g.fillRect(x, y, w * f, 4);
-  if (m.elite || m.evt) { g.font = "700 12px 'IBM Plex Sans KR',sans-serif"; g.textAlign = "center"; g.lineWidth = 3; g.strokeStyle = INK; g.strokeText(m.name, ix, y - 5); g.fillStyle = m.evt ? "#ffe9a0" : "#fff"; g.fillText(m.name, ix, y - 5); }
+  if (m.elite || m.evt || m.sub) { g.font = "700 12px 'IBM Plex Sans KR',sans-serif"; g.textAlign = "center"; g.lineWidth = 3; g.strokeStyle = INK; g.strokeText(m.name, ix, y - 5); g.fillStyle = m.evt ? "#ffe9a0" : "#fff"; g.fillText(m.name, ix, y - 5); }
 }
 /* 경고(예고) 모양: 빗금 + 점선 테두리 — 색에만 기대지 않는다 */
 let stripe = null;
@@ -37193,7 +37277,7 @@ function drawChest(g, c, t, ix, iy) {
   g.restore();
 }
 function drawPortal(g, p, t, ix, iy, big) {
-  g.save(); g.translate(ix, iy); const c = p.kind === "down" ? "#8fc0ff" : "#ffe27a", c2 = p.kind === "down" ? "#4a78d8" : "#ff9a3d", R = big ? 40 : 30;
+  g.save(); g.translate(ix, iy); const c = p.ug ? "#d6b3ff" : p.kind === "down" ? "#8fc0ff" : "#ffe27a", c2 = p.ug ? "#6a2bd1" : p.kind === "down" ? "#4a78d8" : "#ff9a3d", R = p.ug ? 46 : big ? 40 : 30;
   g.fillStyle = "rgba(0,0,0,.25)"; g.beginPath(); g.ellipse(0, R * .5, R, R * .35, 0, 0, TAU); g.fill();
   const gr = g.createRadialGradient(0, 0, 4, 0, 0, R); gr.addColorStop(0, "#ffffff"); gr.addColorStop(.45, c); gr.addColorStop(1, c2); g.globalAlpha = .9; g.fillStyle = gr; g.beginPath(); g.ellipse(0, 0, R * .8, R, 0, 0, TAU); g.fill(); g.globalAlpha = 1; g.strokeStyle = INK; g.lineWidth = 4; g.beginPath(); g.ellipse(0, 0, R * .8, R, 0, 0, TAU); g.stroke();
   g.strokeStyle = "#ffffff"; g.lineWidth = 3; for (let k = 0; k < 3; k++) { g.beginPath(); g.ellipse(0, 0, R * .8 * (.3 + k * .22), R * (.3 + k * .22), t * (k % 2 ? 1 : -1) * 1.5, 0, Math.PI * 1.2); g.stroke(); }
@@ -37483,7 +37567,7 @@ function build() {
     </div>
   </div>
   <div class="dgn-fade" id="dgn-fade"></div>
-  <div class="dgn-ov" id="dgn-sel" hidden></div><div class="dgn-ov" id="dgn-fls" hidden></div><div class="dgn-ov" id="dgn-pau" hidden></div><div class="dgn-ov" id="dgn-mapov" hidden></div><div class="dgn-ov" id="dgn-dead" hidden></div><div class="dgn-ov" id="dgn-ask" hidden></div><div class="dgn-ov" id="dgn-tk" hidden></div><div class="dgn-ov" id="dgn-alt" hidden></div><div class="dgn-ov" id="dgn-rst" hidden></div><div class="dgn-ov" id="dgn-conf" hidden></div>`;
+  <div class="dgn-ov" id="dgn-ugo" hidden></div><div class="dgn-ov" id="dgn-sel" hidden></div><div class="dgn-ov" id="dgn-fls" hidden></div><div class="dgn-ov" id="dgn-pau" hidden></div><div class="dgn-ov" id="dgn-mapov" hidden></div><div class="dgn-ov" id="dgn-dead" hidden></div><div class="dgn-ov" id="dgn-ask" hidden></div><div class="dgn-ov" id="dgn-tk" hidden></div><div class="dgn-ov" id="dgn-alt" hidden></div><div class="dgn-ov" id="dgn-rst" hidden></div><div class="dgn-ov" id="dgn-conf" hidden></div>`;
   $("#app").appendChild(sec);
   V.root = sec; V.cv = $("#dgn-cv"); V.ctx = V.cv.getContext("2d"); V.mm = $("#dgn-mm"); V.mmx = V.mm.getContext("2d");
   const coarse = (() => { try { return matchMedia("(pointer:coarse)").matches || (matchMedia("(any-pointer:coarse)").matches && !matchMedia("(any-pointer:fine)").matches); } catch (e) { return false; } })();
@@ -37890,7 +37974,7 @@ function hud(dt) {
   /* 상호작용 */
   const nr = G.near, use = $("#dgn-use"), altHold = !!nr && nr.kind === "altar" && G.t - (G.bossDownT == null ? -99 : G.bossDownT) < 1.5; const key = (nr ? nr.kind + ":" + nr.label : "") + (altHold ? ":hold" : ""); if (key !== V.nearKey) { V.nearKey = key; use.hidden = !nr || !!V.ui || altHold; use.classList.toggle("alt", !!nr && nr.kind === "altar"); if (nr) $("#dgn-use-t").textContent = nr.label; }   /* 5차: 제단(보스 다시 부르기)은 작은 보조 단추, 보스를 잡은 뒤 1.5초는 숨김 */
   /* 보스 바 */
-  const bossBox = $("#dgn-boss"); const b = G.boss && !G.boss.dead ? G.boss : null; if (b) { bossBox.hidden = false; $("#dgn-bhp").style.transform = `scaleX(${cl(b.hp / b.hpMax, 0, 1)})`; setT("dgn-bsp", `${Math.max(0, Math.ceil(b.hp))} / ${Math.round(b.hpMax)}`); setT("dgn-bn", b.name + (b.boss && b.boss.phase > 1 ? "  · " + b.boss.phase + "단계" : "")); } else bossBox.hidden = true;
+  const bossBox = $("#dgn-boss"); const bl = core.bossList(G).filter(o => !o.dead), b = bl.length ? (G.boss && !G.boss.dead ? G.boss : bl[0]) : null; if (b) { const sh = bl.reduce((s, o) => s + o.hp, 0), sm = bl.reduce((s, o) => s + o.hpMax, 0); bossBox.hidden = false; $("#dgn-bhp").style.transform = `scaleX(${cl((bl.length > 1 ? sh / sm : b.hp / b.hpMax), 0, 1)})`; setT("dgn-bsp", bl.length > 1 ? `보스 ${bl.length}마리 · ${Math.max(0, Math.ceil(sh))} / ${Math.round(sm)}` : `${Math.max(0, Math.ceil(b.hp))} / ${Math.round(b.hpMax)}`); setT("dgn-bn", b.name + (b.boss && b.boss.phase > 1 ? "  · " + b.boss.phase + "단계" : "")); } else bossBox.hidden = true;
   /* 이벤트 알림 */
   const evt = $("#dgn-evt"); if (G.evt) { evt.hidden = V.ui === "death"; const here = G.evt.floor === G.floor; setT("dgn-evt-t", here ? "이벤트 몹이 이 층에 있어요!" : `이벤트 몹 · ${G.evt.floor}층`); evt.querySelector("button").hidden = here; } else evt.hidden = true;
   mmUpdate(); mmDraw(V.mm, {cx: G.P.x / TILE, cy: G.P.y / TILE, tiles: 40, clamp: false}); setT("dgn-bh", bossHintText(G));
@@ -38109,7 +38193,7 @@ function buildInput() {
 }
 
 /* ================= 겹침 창 · 메뉴 ================= */
-const OVS = {select: "dgn-sel", floors: "dgn-fls", pause: "dgn-pau", map: "dgn-mapov", death: "dgn-dead", ask: "dgn-ask", tk: "dgn-tk", alt: "dgn-alt", rst: "dgn-rst"};
+const OVS = {ugo: "dgn-ugo", select: "dgn-sel", floors: "dgn-fls", pause: "dgn-pau", map: "dgn-mapov", death: "dgn-dead", ask: "dgn-ask", tk: "dgn-tk", alt: "dgn-alt", rst: "dgn-rst"};
 function openOv(name) { for (const k in OVS) $("#" + OVS[k]).hidden = k !== name; V.ui = name; if (name) { V.keys = {}; V.atk = false; V.atkKey = false; V.joy.x = V.joy.y = 0; $("#dgn-use").hidden = true; V.nearKey = ""; } }
 function closeOv() { openOv(null); V.last = performance.now(); }
 function onEsc() {
@@ -38238,19 +38322,29 @@ function openReset(k, step, src) { rstClear(); V.rst = {k, step: step || 1, src}
 const roleOf = i => { try { const role = D()?.knight(i)?.role; if (role) return role; const x = typeof knx !== "undefined" && knx && knx.knights && knx.knights.info && knx.knights.info(i); if (x && x.role) return x.role; } catch (e) {} return kn(i).r || ""; };
 /* 층 선택 */
 function renderFloors(dec, sel) {
-  const G = V.G, c = G.char, ov = $("#dgn-fls"), open = core.openMax(c); dec = dec == null ? Math.floor((G.floor - 1) / 10) : dec; sel = sel || G.floor; V._fdec = dec; V._fsel = sel;
+  const G = V.G, c = G.char, ov = $("#dgn-fls"), open = core.openMax(c); dec = dec == null ? (G.floor > 1000 ? 20 : Math.floor((G.floor - 1) / 10)) : dec; sel = sel || G.floor; V._fdec = dec; V._fsel = sel;
   const tabs = []; for (let d = 0; d < 20; d++) { const lo = d * 10 + 1; tabs.push(`<button class="${d === dec ? "on" : ""}" data-act="dgn-ftab" data-d="${d}">${lo}~${lo + 9}${lo <= open && open < lo + 10 ? " ●" : ""}</button>`); }
-  const cells = []; for (let i = 1; i <= 10; i++) {
-    const n = dec * 10 + i, lk = V.net && V.net.role === "host" ? core.partyLock(G, n) : "", isOp = core.isOpen(c, n) && !lk, clr = G.x.clr.includes(n), cur = n === G.floor, evt = G.evt && G.evt.floor === n, boss = n % 10 === 0, tm = G.x.best[n];
-    cells.push(`<button class="dgn-fc ${isOp ? "" : "lock"} ${clr ? "clear" : ""} ${cur ? "cur" : ""} ${evt ? "evt" : ""} ${boss ? "boss" : ""} ${n === sel ? "sel" : ""}" data-act="dgn-fpick" data-f="${n}" aria-label="${n}층 ${isOp ? "열림" : "잠김"}${clr ? " 클리어" : ""}${evt ? " 이벤트 중" : ""}"><b>${n}</b><i>${!isOp ? (lk ? "파티원 잠김" : "잠김") : clr ? "클리어 ✓" : cur ? "여기" : "열림"}</i>${clr && tm ? `<i>${Math.floor(tm / 60)}:${String(tm % 60).padStart(2, "0")}</i>` : ""}</button>`);
+  tabs.push(`<button class="${dec === 20 ? "on" : ""}" data-act="dgn-ftab" data-d="20">🕳 지하${core.ugUnlocked(c) ? "" : " 🔒"}</button>`);
+  const cells = []; for (let i = 1; i <= (dec === 20 ? 3 : 10); i++) {
+    const n = dec === 20 ? 1000 + i : dec * 10 + i, lk = V.net && V.net.role === "host" ? core.partyLock(G, n) : "", isOp = core.isOpen(c, n) && !lk, clr = G.x.clr.includes(n), cur = n === G.floor, evt = G.evt && G.evt.floor === n, boss = n % 10 === 0 || n > 1000, tm = G.x.best[n];
+    cells.push(`<button class="dgn-fc ${isOp ? "" : "lock"} ${clr ? "clear" : ""} ${cur ? "cur" : ""} ${evt ? "evt" : ""} ${boss ? "boss" : ""} ${n === sel ? "sel" : ""}" data-act="dgn-fpick" data-f="${n}" aria-label="${n > 1000 ? "지하 " + (n - 1000) : n}층 ${isOp ? "열림" : "잠김"}${clr ? " 클리어" : ""}${evt ? " 이벤트 중" : ""}"><b>${n > 1000 ? "지하 " + (n - 1000) : n}</b><i>${!isOp ? (lk ? "파티원 잠김" : "잠김") : clr ? "클리어 ✓" : cur ? "여기" : "열림"}</i>${clr && tm ? `<i>${Math.floor(tm / 60)}:${String(tm % 60).padStart(2, "0")}</i>` : ""}</button>`);
   }
   let fi = {}; try { fi = D().floorInfo(sel) || {}; } catch (e) {} const ds = dgnMap.describe(sel), selLock = V.net && V.net.role === "host" ? core.partyLock(G, sel) : "", isOp = core.isOpen(c, sel) && !selLock, evt = G.evt && G.evt.floor === sel;
   const roster = V.net?.roster || [];
   const progress = roster.length ? `<div class="dgn-tags" aria-label="파티원 최고 클리어 층">${roster.map(row => `<i>${esc(row[1])} · ${row[9] > 0 ? row[9] + "층 클리어" : "클리어 기록 없음"}</i>`).join("")}</div>` : "";
   ov.innerHTML = `<div class="dgn-card" role="dialog" aria-modal="true" aria-label="층 선택"><h2>층 선택</h2><p class="sub">${V.net ? "<b>파티</b> — 파티원 모두에게 열린 층까지만 갈 수 있어요" + (V.net.role === "host" && V.net.roster ? " · 준비 " + (V.net.roster.filter(r => r[0] !== 0 && r[6]).length) + "/" + Math.max(0, V.net.roster.length - 1) + "명" : "") + " · " : ""}최고 클리어 <b class="num">${c.floorBest | 0}</b>층 · 열린 층 <b class="num">${open}</b>층 · 보스를 잡으면 다음 층이 열려요${G.evt ? ` · <b style="color:#ffd23c">⚡ ${G.evt.floor}층 이벤트 몹</b>` : ""}</p>
     ${progress}<div class="dgn-ftabs" role="tablist">${tabs.join("")}</div><div class="dgn-fg">${cells.join("")}</div>
-    <div class="dgn-fd"><b>${esc(fi.name || sel + "층")}</b>${sel > 150 ? `<div style="color:#ff9a7a;font-weight:800">⚠ 150층 이후는 3인 파티 권장 — 솔로로는 매우 어려워요</div>` : ""}<div>${esc(fi.mood || dgnMap.DECADE_NAMES[ds.decade % dgnMap.DECADE_NAMES.length])}</div><div class="dgn-tags">${ds.tags.map(t => `<i>${esc(t)}</i>`).join("") || `<i>평범한 구조</i>`}${sel % 10 === 0 ? `<i>★ 큰 보스</i>` : `<i>보스</i>`}${evt ? `<i>⚡ 이벤트 몹</i>` : ""}</div></div>
-    <div class="dgn-row"><button class="dgn-big gold" data-act="dgn-fgo" ${isOp && V.net?.role !== "guest" ? "" : "disabled"}>${sel === G.floor ? "이 층 다시 시작" : sel + "층으로 이동"}</button><button class="dgn-big" data-act="dgn-fgob" ${isOp && V.net?.role !== "guest" ? "" : "disabled"}>${sel === G.floor ? "보스방 앞으로" : sel + "층 보스방 앞으로"}</button><button class="dgn-big ghost" data-act="dgn-close">닫기</button><button class="dgn-btn dgn-exitb" data-act="dgn-ask">나가기</button></div></div>`;
+    <div class="dgn-fd"><b>${esc(fi.name || sel + "층")}</b>${sel > 1000 ? `<div style="color:#7fe9ff;font-weight:800">🕳 지하던전 — 권장 Lv ${[100, 150, 200][sel - 1001]} · 3인 파티 · 보스 3마리 · 서브 보스 2마리${isOp ? "" : " · " + core.ugLockMsg(c, sel)}</div>` : sel > 150 ? `<div style="color:#ff9a7a;font-weight:800">⚠ 150층 이후는 3인 파티 권장 — 솔로로는 매우 어려워요</div>` : ""}<div>${esc(fi.mood || dgnMap.DECADE_NAMES[ds.decade % dgnMap.DECADE_NAMES.length])}</div><div class="dgn-tags">${ds.tags.map(t => `<i>${esc(t)}</i>`).join("") || `<i>평범한 구조</i>`}${sel > 1000 ? `<i>★ 보스 3마리</i><i>서브 보스 2</i>` : sel % 10 === 0 ? `<i>★ 큰 보스</i><i>서브 보스 2</i>` : `<i>보스</i><i>서브 보스 2</i>`}${evt ? `<i>⚡ 이벤트 몹</i>` : ""}</div></div>
+    <div class="dgn-row"><button class="dgn-big gold" data-act="dgn-fgo" ${isOp && V.net?.role !== "guest" ? "" : "disabled"}>${sel === G.floor ? "이 층 다시 시작" : (sel > 1000 ? "지하 " + (sel - 1000) : sel) + "층으로 이동"}</button><button class="dgn-big" data-act="dgn-fgob" ${isOp && V.net?.role !== "guest" ? "" : "disabled"}>${sel === G.floor ? "보스방 앞으로" : (sel > 1000 ? "지하 " + (sel - 1000) : sel) + "층 보스방 앞으로"}</button><button class="dgn-big ghost" data-act="dgn-close">닫기</button><button class="dgn-btn dgn-exitb" data-act="dgn-ask">나가기</button></div></div>`;
+}
+function openUgNotice(e) {   // 지하던전이 열렸어요 — 어디서·어떻게 들어가는지 한 번 자세히 알려 준다
+  const ov = $("#dgn-ugo"); if (!ov) return; banner("🕳 지하던전이 열렸어요!", "1층 마을의 보라색 '지하던전 입구' 포털로 들어가요", ["지하 1~3층", "보스 3마리"], "evt", 6000);
+  ov.innerHTML = `<div class="dgn-card" role="dialog" aria-modal="true" aria-label="지하던전 열림"><h2>🕳 지하던전이 열렸어요!</h2>
+    <p class="sub">100층 보스를 처치해서 새 사냥터가 열렸어요. <b>층이 막혔을 때 레벨을 올리기 좋은 곳</b>이에요.</p>
+    <div class="dgn-fd"><b>들어가는 방법</b><div>① 1층 마을 한가운데에 생긴 <b style="color:#c9a6ff">보라색 '지하던전 입구' 포털</b> 위에 서요.</div><div>② 또는 <b>Tab</b>(층 선택) → 맨 오른쪽 <b>'🕳 지하' 탭</b>에서 바로 이동해요.</div></div>
+    <div class="dgn-fd"><b>알아 두세요</b><div>• <b>지하 1층은 100레벨부터</b> 들어갈 수 있어요${e.ok ? "" : ` (지금 Lv ${e.lv} — 조금만 더 올려요)`}.</div><div>• 지하 1층(권장 Lv 100) → 지하 2층(Lv 150) → 지하 3층(Lv 200). 앞 층의 <b>보스방을 깨면 다음 지하 층</b>이 열려요.</div><div>• 일반 층보다 <b>몹이 더 많고 더 빨리 다시 나와요.</b> 보스방에는 <b>보스가 3마리</b>예요. 3인 파티를 권장해요.</div><div>• 각 층의 <b>서브 보스 2마리</b>는 안 잡아도 되는 선택 전투예요(잡으면 좋은 보상).</div></div>
+    <div class="dgn-row"><button class="dgn-big gold" data-act="dgn-ugfloors">지하 층 선택 열기</button><button class="dgn-big ghost" data-act="dgn-ugok">알겠어요</button></div></div>`;
+  openOv("ugo"); dgSfx("dgEvent");
 }
 function openFloors() { const G = V.G; if (!G || G.over || V.tr) return; if (D() && D().ui && D().ui.isOpen && D().ui.isOpen()) D().ui.close(); renderFloors(); openOv("floors"); sfxUi(); }
 function openBigMap() {
@@ -38312,6 +38406,7 @@ function handleEv(e) {
       else if (e.kind === "phase") { banner(e.text, null, null, "boss", 1800); }
       else if (e.kind === "down") { autoQueue("clear"); if (e.last && G && !G.x.end) { G.x.end = 1; try { const dd = D(), cc = G.char; dd.addMat(cc, "essence", 30); dd.addMat(cc, "crystal", 30); cc.gold = Math.min(1e12, (cc.gold | 0) + 2000000); note("🎉 200층 정복 기념 보상: 공실의 정수 30 · 야근 결정 30 · 골드 200만", "good", null, 6000); saveNow("ending"); } catch (er) {} } banner(e.last ? "200층 정복!" : "보스 처치!", e.last ? "라운드비의 모든 층을 올랐어요. 축하해요!" : `${e.floor + 1}층으로 가는 포털이 열렸어요`, null, "", 4200); stat("clear"); gameEnd(!!e.last); if (e.first) grantRp(true, e.floor, G.playT); saveNow("boss", true); rankSubmit(true); renderFloorsIfOpen(); }
       break;
+    case "ug": if (e.kind === "open") openUgNotice(e); break;
     case "evt":
       if (e.kind === "start") { dgSfx("dgEvent"); const el = $("#dgn-evt"); el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop"); banner("이벤트 몹이 " + e.floor + "층에 출현했습니다!", "눌러서 바로 이동할 수 있어요. 처치하면 특별한 보상이 나와요.", null, "evt", 5200); note(`⚡ 이벤트 몹 · ${e.floor}층 (상단 알림에서 이동)`, "warn", null, 6000); }
       else if (e.kind === "gone") note("이벤트 몹이 사라졌어요.", ""); renderFloorsIfOpen(); break;
@@ -38430,8 +38525,10 @@ Object.assign(A, {
   "dgn-pause": () => { if (V.ui) closeOv(); else openPause(); },
   "dgn-menu": b => { const tab = b.dataset.tab; closeOv(); openMenu(tab); },
   "dgn-floors": () => { openFloors(); }, "dgn-map": () => { if (V.ui === "map") closeOv(); else openBigMap(); },
-  "dgn-ftab": b => renderFloors(+b.dataset.d, (+b.dataset.d) * 10 + 1),
-  "dgn-fpick": b => { const f = +b.dataset.f; if (!core.isOpen(V.G.char, f)) { note("아직 열리지 않은 층이에요. 아래층의 보스를 먼저 잡아요.", "warn"); return; } renderFloors(Math.floor((f - 1) / 10), f); dgSfx("dgUi"); },
+  "dgn-ugok": () => closeOv(),
+  "dgn-ugfloors": () => { const G = V.G; if (!G || G.over || V.tr) { closeOv(); return; } closeOv(); renderFloors(20, 1001); openOv("floors"); sfxUi(); },
+  "dgn-ftab": b => renderFloors(+b.dataset.d, +b.dataset.d === 20 ? 1001 : (+b.dataset.d) * 10 + 1),
+  "dgn-fpick": b => { const f = +b.dataset.f; if (!core.isOpen(V.G.char, f)) { note(f > 1000 ? core.ugLockMsg(V.G.char, f) : "아직 열리지 않은 층이에요. 아래층의 보스를 먼저 잡아요.", "warn"); if (f > 1000) renderFloors(20, f); return; } renderFloors(f > 1000 ? 20 : Math.floor((f - 1) / 10), f); dgSfx("dgUi"); },
   "dgn-next-now": () => {
     const G = V.G;
     if (!G || V.tr || G.over || !core.clearedNextPortal(G)) return;
@@ -38793,7 +38890,7 @@ function sendSnap(S, g) {
   if (bufOf(S, g.net) > 64 * 1024) { g.skip = (g.skip | 0) + 1; return; }   // 길이 막혀 있으면 이번엔 건너뛴다(rbxLag 선례) — 이벤트는 큐에 남아 다음에 간다
   const G = S.G, P = g.P, v = g.view || {hw: 420, hh: 280}, mg = S.hz < 10 ? 40 : 140, hw = v.hw + mg, hh = v.hh + mg, dict = mkDict(), id = dict.id, M = G.M; if (!M) return;
   const near = (x, y, m) => Math.abs(x - P.x) < hw + m && Math.abs(y - P.y) < hh + m;
-  const defs = (G.info && G.info.mobPool || []).concat([G.info && G.info.bossId || ""]); const dno = d => { const i = defs.indexOf(d && d.id); return i < 0 ? 0 : i; };
+  const defs = (G.info && G.info.mobPool || []).concat([G.info && G.info.bossId || ""]).concat(G.info && G.info.ugBosses ? G.info.ugBosses.slice(1) : []); const dno = d => { const i = defs.indexOf(d && d.id); return i < 0 ? 0 : i; };
   const sn = {t: "s", q: ++S.q, sp: V.spd, T: Math.round(G.t * 1000) / 1000, F: G.floor, C: G.combo | 0};
   sn.H = G.hs.map(h => { const p = h.P, st = stOf(G, h), dead = overOf(G, h) === "dead"; return [h.idx, r1(p.x), r1(p.y), r1(p.vx), r1(p.vy), r1(p.ang * 100), (dead ? 1 : 0) | (p.dash ? 2 : 0) | (p.inv > 0 ? 4 : 0) | (p.stun > 0 ? 8 : 0) | (p.hit > 0 ? 16 : 0) | (h.forced ? 32 : 0) | (p.face < 0 ? 64 : 0) | (p.shield > 0 ? 128 : 0), r1(h.char.hp), r1(st ? st.hpMax : 100), r1(p.shield || 0), h.char.lv | 0, h.char.k | 0, r1((p.swing || 0) * 100), r1((dead ? h.reviveP || 0 : 0) * 100), p.motion ? [p.motion.kind,r2(p.motion.angle),p.motion.color,r2(p.motion.left),p.motion.length,p.motion.variant] : 0]; });
   for (const h of G.hs) if (h.forced) h.forced = 0;
@@ -38802,6 +38899,7 @@ function sendSnap(S, g) {
   if (ms.length > 90) { ms.sort((a, b) => (a.x - P.x) * (a.x - P.x) + (a.y - P.y) * (a.y - P.y) - ((b.x - P.x) * (b.x - P.x) + (b.y - P.y) * (b.y - P.y))); ms.length = 90; }
   sn.M = ms.map(m => { const fl = (m.face < 0 ? 1 : 0) | (m.flash > 0 ? 2 : 0) | (m.lunge > 0 ? 4 : 0) | (m.stunT > 0 ? 8 : 0) | (m.slowT > 0 ? 16 : 0) | (m.burn ? 32 : 0) | (m.elite ? 64 : 0) | (m.evt ? 128 : 0) | (m.fly ? 256 : 0) | ((m.aff === "swift" ? 1 : m.aff === "steel" ? 2 : m.aff === "blast" ? 3 : 0) << 9) | (m.hd ? 2048 : 0); const a = [m.id, r1(m.x), r1(m.y), Math.max(1, Math.ceil(100 * m.hp / m.hpMax)), fl, dno(m.def), r1(m.r)]; if ((m.alpha != null && m.alpha < 1) || m.tele) { a.push(m.alpha != null && m.alpha < 1 ? r1(m.alpha * 100) : 100); if (m.tele) a.push(teleOf(m.tele, m, id)); } return a; });
   const bm = G.boss && !G.boss.dead ? G.boss : null; if (bm) { const B = bm.boss || {}; sn.B = [bm.id, r1(bm.x), r1(bm.y), r1(bm.hp), r1(bm.hpMax), r1(bm.r), dno(bm.def), bm.alpha != null ? r1(bm.alpha * 100) : 100, bm.face < 0 ? 1 : 0, bm.flash > 0 || B.hitT > 0 ? 1 : 0, B.phase | 0, B.des | 0, B.hue | 0, B.major ? 1 : 0, B.k | 0, bm.name, bm.tele ? teleOf(bm.tele, bm, id) : 0, bm.inv > 0 && bm.inv < 50 ? 1 : 0, B.pat ? [B.pat.name,r2(B.pat.elapsed)] : 0]; }
+  if (bm && core.bossList(G).length > 1) { sn.Bx = []; for (const b2 of core.bossList(G)) { if (b2 === bm || b2.dead) continue; const B2 = b2.boss || {}; sn.Bx.push([b2.id, r1(b2.x), r1(b2.y), r1(b2.hp), r1(b2.hpMax), r1(b2.r), dno(b2.def), b2.alpha != null ? r1(b2.alpha * 100) : 100, b2.face < 0 ? 1 : 0, b2.flash > 0 || B2.hitT > 0 ? 1 : 0, B2.phase | 0, B2.des | 0, B2.hue | 0, B2.major ? 1 : 0, B2.k | 0, b2.name, b2.tele ? teleOf(b2.tele, b2, id) : 0, b2.inv > 0 && b2.inv < 50 ? 1 : 0, B2.pat ? [B2.pat.name, r2(B2.pat.elapsed)] : 0]); } }
   sn.E = []; for (const b of G.ep) { if (sn.E.length >= 80) break; if (near(b.x, b.y, 30)) sn.E.push([r1(b.x), r1(b.y), r1(b.vx), r1(b.vy), r1(b.r), id(b.col), id(b.shape), b.spin ? r1(b.ang * 100) : 0, b.delay > 0 ? 1 : 0]); }
   sn.J = []; for (const b of G.pj) { if (sn.J.length >= 60) break; if (near(b.x, b.y, 30)) sn.J.push([r1(b.x), r1(b.y), r1(b.vx), r1(b.vy), r1(b.r), id(b.col), id(b.shape), b.h | 0]); }
   sn.Z = []; for (const z of G.zones) { if (sn.Z.length >= 30) break; if (!near(z.x, z.y, z.r || 120)) continue; if (z.own === "p") sn.Z.push([2, r1(z.x), r1(z.y), r1(z.r), r2(z.t), r2(z.delay), r2(z.dur), id(z.col)]); else if (!z.fired) sn.Z.push([z.kind === "line" ? 1 : 0, r1(z.x), r1(z.y), z.kind === "line" ? r2(z.ang) : r1(z.r), z.kind === "line" ? r1(z.len) : 0, z.kind === "line" ? r1(z.w) : 0, r2(z.t), r2(z.delay), id(z.col || "#ff4d6d"), z.lightning ? 1 : 0]); }
@@ -38946,12 +39044,17 @@ function applySnap(S, sn) {
     const f = a[4]; m.tx = a[1]; m.ty = a[2]; m.hp = a[3]; m.hpMax = 100; m.r = m.cr = a[6]; m.face = f & 1 ? -1 : 1; m.flash = f & 2 ? .1 : 0; m.lunge = f & 4 ? .12 : 0; m.stunT = f & 8 ? 1 : 0; m.slowT = f & 16 ? 1 : 0; m.burn = f & 32 ? {} : null; m.elite = !!(f & 64); m.evt = !!(f & 128); m.fly = !!(f & 256); const ai = (f >> 9) & 3; m.aff = ["", "swift", "steel", "blast"][ai]; m.hd = !!(f & 2048);
     m.name = (m.elite && ai ? AFFN[ai] + " " : "") + (m.def.name || "몹"); m.alpha = a.length > 7 ? a[7] / 100 : null; m.tele = a.length > 8 && a[8] ? telePack(a[8]) : null;
   }
-  for (const [id, m] of S.mobs) if (!mseen.has(id) && !(sn.B && sn.B[0] === id)) S.mobs.delete(id);
+  const bxIds = new Set((sn.Bx || []).map(b => b[0])); for (const [id, m] of S.mobs) if (!mseen.has(id) && !(sn.B && sn.B[0] === id) && !bxIds.has(id)) S.mobs.delete(id);
   if (sn.B) { const b = sn.B, id = b[0]; let m = S.mobs.get(id); const df = safe(() => d.mobDef(defsOf[b[6]]), null) || {name: b[15], art: {}};
     if (!m) { m = {id, def: df, x: b[1], y: b[2], px: b[1], py: b[2], tx: b[1], ty: b[2], vx: 0, vy: 0, dead: false, boss: {}, state: "idle", age: 0, flash: 0, lunge: 0}; S.mobs.set(id, m); }
     m.tx = b[1]; m.ty = b[2]; m.hp = b[3]; m.hpMax = b[4]; m.r = m.cr = b[5]; m.alpha = b[7] / 100; m.face = b[8] ? -1 : 1; m.flash = b[9] ? .1 : 0; m.name = b[15]; m.inv = b[17] ? 1 : 0; m.tele = b[16] ? telePack(b[16]) : null; m.def = df;
     Object.assign(m.boss, {phase: b[10], des: b[11], hue: b[12], major: !!b[13], k: b[14], hitT: b[9] ? .1 : 0, pat: b[18] ? {name:b[18][0],elapsed:b[18][1]} : null}); G.boss = m; mseen.add(id); S.sawBoss = G.floor; }
   else { if (G.boss) S.mobs.delete(G.boss.id); G.boss = null; }
+  G.bosses = G.boss ? [G.boss] : [];
+  for (const b of sn.Bx || []) { const id = b[0]; let m = S.mobs.get(id); const df = safe(() => d.mobDef(defsOf[b[6]]), null) || {name: b[15], art: {}};
+    if (!m) { m = {id, def: df, x: b[1], y: b[2], px: b[1], py: b[2], tx: b[1], ty: b[2], vx: 0, vy: 0, dead: false, boss: {}, state: "idle", age: 0, flash: 0, lunge: 0}; S.mobs.set(id, m); }
+    m.tx = b[1]; m.ty = b[2]; m.hp = b[3]; m.hpMax = b[4]; m.r = m.cr = b[5]; m.alpha = b[7] / 100; m.face = b[8] ? -1 : 1; m.flash = b[9] ? .1 : 0; m.name = b[15]; m.inv = b[17] ? 1 : 0; m.tele = b[16] ? telePack(b[16]) : null; m.def = df;
+    Object.assign(m.boss, {phase: b[10], des: b[11], hue: b[12], major: !!b[13], k: b[14], hitT: b[9] ? .1 : 0, pat: b[18] ? {name: b[18][0], elapsed: b[18][1]} : null}); G.bosses.push(m); mseen.add(id); }
   G.mobs = [...S.mobs.values()];
   /* 탄·구역·빔·궤도·동료·충격파 */
   G.ep = sn.E.map(a => ({x: a[0], y: a[1], px: a[0], py: a[1], vx: a[2], vy: a[3], r: a[4], col: col(a[5]), shape: col(a[6]), spin: a[7] ? 1 : 0, ang: a[7] ? a[7] / 100 : Math.atan2(a[3], a[2]), delay: 0, orbit: a[8] ? {} : null}));
@@ -39004,15 +39107,15 @@ function guestEvent(S, e) {
   }
 }
 function guestBossDown(S, e) {   // 같이 있던 층의 보스를 잡았다 → 내 기록에 반영(내가 열 수 있는 층에서만; 보스를 '봤어야' 한다)
-  const G = S.G, c = G.char, n = e.floor | 0, d = D(); if (n < 1 || n > 200) return;
+  const G = S.G, c = G.char, n = e.floor | 0, d = D(); if (n < 1 || (n > 200 && !dgnMap.isUg(n))) return;
   if (!core.isOpen(c, n) || !(e.personal && G.floor === n || S.sawBoss === n)) { e.first = false; return; }
-  const first = n > (c.floorBest | 0) && !G.x.best[n]; if (!G.x.clr.includes(n)) G.x.clr.push(n); G.x.best[n] = Math.round(G.playT - G.fl.t0);
-  safe(() => { if (d.clearFloor) d.clearFloor(c, n); else if (n > (c.floorBest | 0)) c.floorBest = n; }); if (n < 200) core.openFloor(c, n + 1); e.first = first; G.cleared = true;
+  const ugi = dgnMap.ugIdx(n), first = ugi ? (((c.ext && c.ext.ug) | 0) < ugi && !G.x.best[n]) : n > (c.floorBest | 0) && !G.x.best[n]; if (!G.x.clr.includes(n)) G.x.clr.push(n); G.x.best[n] = Math.round(G.playT - G.fl.t0);
+  if (ugi) { c.ext = c.ext || {}; if (((c.ext.ug) | 0) < ugi) c.ext.ug = ugi; } else { safe(() => { if (d.clearFloor) d.clearFloor(c, n); else if (n > (c.floorBest | 0)) c.floorBest = n; }); if (n < 200) core.openFloor(c, n + 1); } e.first = first; G.cleared = true;
 }
 function mirrorEnter(S, n, e) {   // 손님 화면에서 층 바꾸기: 맵은 층 번호로 결정되고, 몹·탄은 스냅샷이 채운다
-  const G = S.G, d = D(); n = cl(n | 0 || 1, 1, 200);
+  const G = S.G, d = D(); n = n | 0 || 1; n = dgnMap.isUg(n) ? n : cl(n, 1, 200);
   G.floor = n; G.ropeView = []; G.ropePull = false; G.M = dgnMap.gen(n); const M = G.M; try { G.info = d.floorInfo(n) || {}; } catch (er) { G.info = {}; } G.info.mobPool = G.info.mobPool || [];
-  if (e && e.defs) S.defs = e.defs; else S.defs = (G.info.mobPool || []).concat([G.info.bossId || ""]);
+  if (e && e.defs) S.defs = e.defs; else S.defs = (G.info.mobPool || []).concat([G.info.bossId || ""]).concat(G.info.ugBosses ? G.info.ugBosses.slice(1) : []);
   G.mobs = []; G.pj = []; G.ep = []; G.zones = []; G.allies = []; G.drops = []; G.chests = []; G.portals = []; G.npcs = []; G.beams = []; G.orbits = []; G.shocks = []; G.fx = []; G.texts = []; G.slashes = []; G.bolts = []; G.later = [];
   S.mobs = new Map(); S.others = new Map(); G.others = []; G.boss = null; G.bs = {state: "idle", t: 0}; G.cine = null; G.near = null; G.ask = null; G.over = null; G.horde = null; G.combo = 0; G.explored = new Uint8Array(M.W * M.H); G.cleared = G.x.clr.includes(n); G.fullSight = n <= (G.char.floorBest | 0) || !!G.cleared; if (G.fullSight) G.explored.fill(1); G.fl = {n, kills: 0, t0: G.playT}; G.runT = 0;
   if (M.town) core.setupTown(G);
