@@ -914,6 +914,8 @@ const CAMP = [   // 중립 캠프: 처치하면 골드·경험치·개인 강화
   {n:"서류 거인", hp:4200, dmg:70, rng:110, rate:1.7, spd:90, rad:46, gold:260, xp:300, aggro:300}];
 const CAMP_BUF = ["커피 활력(체력 회복)", "의자 질주(이동 속도)", "스테이플러 분노(공격력)"];
 const TWR = {hp:950, dmg:90, rng:420, rate:1.15, rad:36}, CORE_HP = 1500, CORE_RAD = 58;
+/* 병정 웨이브(2026-11-10: 병사가 너무 적고 포탑이 안 부서진다는 피드백): 길마다 5마리(근접 3 + 원거리 2, 3번째 웨이브마다 대포 +1)가 18초마다. 병사가 포탑 사격을 나눠 맞아야 영웅이 포탑을 깰 수 있다. STRUCT_HERO = 영웅이 포탑·코어에 주는 피해 배율 */
+const WAVE = {every:18, types:[0, 0, 0, 1, 1]}, STRUCT_HERO = .9;
 const ITEMS = [
   {n:"단검", d:"기본공격 피해 +20%", cost:400, ad:.2, ic:"sword"},
   {n:"마법 지팡이", d:"스킬 피해 +20%", cost:450, ap:.2, ic:"staff"},
@@ -1066,7 +1068,7 @@ function hurtEnt(m, src, dst, amt, o) {
     if (src.bot) a *= src.bot.dmgMul;
     a *= o.basic ? (src.adM || 1) : (src.apM || 1);
     if (m.tb[src.team] > 0) a *= 1.25;
-    if (struct) a *= .7 * otm(m);
+    if (struct) a *= STRUCT_HERO * otm(m);
   } else if (struct && src && src.kind === "soldier") a *= otm(m);
   a = Math.max(1, a);
   dst.hp -= a; dst.flash = .12;
@@ -1118,7 +1120,7 @@ function hpLead(m) {   // 시간 종료: 남은 방어탑·코어 체력 합이 
   return s[0] === s[1] ? (m.score[0] >= m.score[1] ? 0 : 1) : s[0] > s[1] ? 0 : 1;
 }
 function spawnWave(m, team) {
-  const dirF = team ? 1 : -1, y0 = team ? 330 : 1870, types = [0, 0, 1];
+  const dirF = team ? 1 : -1, y0 = team ? 330 : 1870, types = WAVE.types.slice();
   if (m.wave % 3 === 0) types.push(2);
   const sc = (1 + .045 * m.wave) * (m.ot ? 1.4 : 1) * (m.tb[team] > 0 ? 1.25 : 1);
   for (let L = 0; L < 4; L++) types.forEach((mt, j) => {
@@ -1197,7 +1199,7 @@ function towerStep(m, b, dt) {
 }
 function aramPre(m, dt) {
   m.wt -= dt;
-  if (m.wt <= 0) { m.wt = 24; m.wave++; spawnWave(m, 0); spawnWave(m, 1); emit(m, "wave", m.wave); }
+  if (m.wt <= 0) { m.wt = WAVE.every; m.wave++; spawnWave(m, 0); spawnWave(m, 1); emit(m, "wave", m.wave); }
   if (!m.ot && m.t >= OT) { m.ot = true; ann(m, "ot", -1, -1); }
   m.tb[0] = Math.max(0, m.tb[0] - dt); m.tb[1] = Math.max(0, m.tb[1] - dt);
   for (let t = 0; t < 2; t++) { const B = m.bld.slice(t * 5, t * 5 + 5); B[4].locked = !m.ot && B.filter(x => x.kind === "tower" && !x.alive).length < 2; }
