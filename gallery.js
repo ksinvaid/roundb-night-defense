@@ -1,5 +1,6 @@
 /* 팬아트 갤러리 + 댓글 (2026-11-10) — 전체 화면 오버레이. 다른 모드 코드는 건드리지 않고, 이 파일 하나와 gallery.css 만으로 동작해요.
-   - 작품: 정적 gallery/items.json + gallery/img/ (tools/add_gallery_item.py 로 추가). 사용자 글은 전부 textContent 로만 출력해요(XSS 방지).
+   - 작품: 정적 gallery/items.json + gallery/img/ (tools/add_gallery_item.py 로 추가)와, 운영자가 화면에서 올린 Firestore galleryItems 를 합쳐서 보여요.
+     운영자 도구(추가·수정·삭제·숨김·순서)는 gallery-admin.js 에 따로 있고 운영자 버튼을 눌렀을 때만 내려받아요. 사용자 글은 전부 textContent 로만 출력해요(XSS 방지).
    - 댓글: Firestore 컬렉션 galleryComments (itemId = 작품 id · nick · text · ts). 게시판과 같은 REST 방식 — 읽기는 공개, 쓰기는 익명 로그인 토큰,
      운영자 삭제는 게시판의 운영자 모드(brdMasterOn)가 켜져 있으면 그 토큰을 그대로 써요. 규칙: docs/gallery-firestore-rules.md
    - 딥링크: #gallery (목록) · #gallery/<id> (작품). 뒤로가기·Esc 로 닫혀요. */
@@ -11,7 +12,8 @@
   const COOL = 30000, LS_KEY = "roundb.gallery.v1", PAGE = 30;
   const FB = (() => { try { if (typeof CC_FB !== "undefined" && CC_FB && CC_FB.pid && CC_FB.key) return CC_FB; } catch (e) {} return {key: "AIzaSyBjZkuzEClkdheaA3jtbvyI7TiJ4Yl4JKs", pid: "roundb-games"}; })();   // 웹 앱 설정값은 공개돼도 되는 값 — 접근은 보안 규칙이 막아요
   const DOCS = "projects/" + FB.pid + "/databases/(default)/documents", API = "https://firestore.googleapis.com/v1/" + DOCS;
-  const S = {items: null, itemsErr: false, itemsBusy: false, open: false, view: "", id: "", T: {}, ui: {}, lb: false, wantClose: false, scroll: 0, ret: null, root: null};
+  const FS_COL = "galleryItems", DATA_OK = /^data:image\/jpeg;base64,[A-Za-z0-9+\/=]+$/;
+  const S = {stat: null, itemsErr: false, itemsBusy: false, fs: [], fsState: "idle", fsAt: 0, t0: 0, all: null, big: {}, bigErr: {}, open: false, view: "", id: "", T: {}, ui: {}, layer: null, lbOpen: false, wantClose: false, scroll: 0, ret: null, root: null, ad: null, adP: null, opAsk: false, opWas: false, detOk: false};
 
   /* ---------- 작은 도우미 ---------- */
   const lsGet = () => { try { const j = JSON.parse(localStorage.getItem(LS_KEY) || "null"); return j && typeof j === "object" ? j : {}; } catch (e) { return {}; } };
@@ -50,14 +52,72 @@
     }
     return out.map((v, i) => [v, i]).sort((a, b) => (b[0].date > a[0].date ? 1 : b[0].date < a[0].date ? -1 : b[1] - a[1])).map(a => a[0]);   // 새 그림이 앞(같은 날은 나중에 건 것이 앞)
   }
-  async function loadItems(force) {
-    if (S.itemsBusy || (S.items && !force)) return; S.itemsBusy = true; S.itemsErr = false;
-    try { const r = await fetch("gallery/items.json", {cache: "no-cache"}); if (!r.ok) throw new Error("http " + r.status); S.items = cleanItems(await r.json()); }
+  /* 운영자가 올린 작품(Firestore galleryItems): 문서 하나 = 메타 + 썸네일(data URL ≤ 40KB) + 큰 그림(data URL).
+     목록은 select 로 큰 그림을 뺀 필드만 읽고(읽기 용량 절약), 큰 그림은 작품을 열 때 한 건만 읽어요.
+     thumb 이 없는 문서 = '기본 작품 덮어쓰기'(숨김·순서·글 고치기). 규칙: docs/gallery-firestore-rules.md */
+  const FS_FIELDS = ["title", "artist", "source", "kind", "date", "desc", "note", "order", "hidden", "thumb"];
+  const fieldOut = v => v && ("stringValue" in v ? v.stringValue : "integerValue" in v ? Number(v.integerValue) : "booleanValue" in v ? v.booleanValue : null);
+  function fsDoc(d) {
+    const id = String(d && d.name || "").split("/").pop(); if (!/^[a-z0-9-]{1,40}$/.test(id)) return null;
+    const src = d.fields || {}, f = {}; for (const k of FS_FIELDS) if (src[k]) f[k] = fieldOut(src[k]);
+    const o = {id, full: typeof f.thumb === "string" && f.thumb.length <= 40000 && DATA_OK.test(f.thumb)};
+    for (const [k, n] of [["title", LIM.title], ["source", LIM.source], ["desc", LIM.desc], ["note", LIM.note]]) if (typeof f[k] === "string") o[k] = str(f[k], n);
+    if (typeof f.artist === "string") o.artist = str(f.artist, LIM.artist) || "익명";
+    if (f.kind === "human" || f.kind === "ai") o.kind = f.kind;
+    if (typeof f.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(f.date)) o.date = f.date;
+    if (Number.isFinite(f.order)) o.order = f.order; if (typeof f.hidden === "boolean") o.hidden = f.hidden;
+    if (o.full) o.thumb = f.thumb;
+    return o;
+  }
+  function mergeAll() {   // 정적 작품 + Firestore 작품 → 표시 순서(order 작은 것이 앞, 같으면 날짜 새것이 앞)
+    if (!S.stat) { S.all = null; return; }
+    const m = new Map();
+    S.stat.forEach((x, i) => m.set(x.id, Object.assign({}, x, {src: "static", order: null, hidden: false, ov: false, eff: i * 10})));   // 기본 순서 = items.json 의 날짜순
+    for (const d of S.fs) {
+      if (d.full) { const o = d.order == null ? 0 : d.order; m.set(d.id, {id: d.id, title: d.title || "제목 없음", artist: d.artist || "익명", source: d.source || "", kind: d.kind || "human", date: d.date || "", desc: d.desc || "", note: d.note || "", thumb: d.thumb, img: S.big[d.id] || null, src: "fs", ov: false, order: o, hidden: !!d.hidden, eff: o}); continue; }
+      const t = m.get(d.id); if (!t) continue;
+      for (const k of ["title", "artist", "source", "kind", "date", "desc", "note"]) if (d[k] !== undefined && (k !== "title" || d[k])) t[k] = d[k];
+      if (d.order != null) { t.order = d.order; t.eff = d.order; } if (d.hidden != null) t.hidden = d.hidden; t.ov = true;
+    }
+    S.all = [...m.values()].sort((a, b) => a.eff - b.eff || (b.date > a.date ? 1 : b.date < a.date ? -1 : 0) || (a.id < b.id ? -1 : 1));
+  }
+  const items = () => S.all ? (masterTok() ? S.all : S.all.filter(x => !x.hidden)) : null;   // 숨긴 작품은 운영자에게만 보여요
+  const byId = id => (items() || []).find(x => x.id === id) || null;
+  const gridReady = () => !!S.stat && (S.fsState !== "busy" && S.fsState !== "idle" || Date.now() - S.t0 > 2500);   // 운영자 작품이 늦게 와서 격자가 뒤늦게 바뀌지 않게 잠깐 기다려요
+  function refreshView() {
+    if (!S.open) return;
+    if (S.view === "list") fillGrid(); else if (S.view === "detail" && (!S.detOk || !byId(S.id))) render(true);
+  }
+  async function loadStatic() {
+    if (S.itemsBusy || S.stat) return; S.itemsBusy = true; S.itemsErr = false;
+    try { const r = await fetch("gallery/items.json", {cache: "no-cache"}); if (!r.ok) throw new Error("http " + r.status); S.stat = cleanItems(await r.json()); mergeAll(); }
     catch (e) { S.itemsErr = true; }
     finally { S.itemsBusy = false; }
-    if (S.open) { if (S.view === "list") fillGrid(); else render(true); }
+    refreshView();
   }
-  const byId = id => (S.items || []).find(x => x.id === id) || null;
+  async function loadFs(force) {
+    if (S.fsState === "busy" || (!force && S.fsState !== "idle" && Date.now() - S.fsAt < 180000)) return; S.fsState = "busy";
+    const r = await net("POST", ":runQuery", {structuredQuery: {from: [{collectionId: FS_COL}], select: {fields: FS_FIELDS.map(fieldPath => ({fieldPath}))}, limit: 100}});
+    S.fsAt = Date.now();
+    if (r.s === 200 && Array.isArray(r.j)) { S.fs = r.j.filter(x => x && x.document).map(x => fsDoc(x.document)).filter(Boolean); S.fsState = "ok"; }
+    else S.fsState = r.s === 403 || r.s === 401 ? "closed" : "err";   // closed = 규칙이 아직 안 열렸어요 → 정적 작품만 보여요
+    mergeAll(); refreshView();
+  }
+  function loadItems(force) {
+    if (force) { S.stat = null; S.fsState = "idle"; S.itemsErr = false; }
+    S.t0 = Date.now(); setTimeout(refreshView, 2600); loadStatic(); loadFs(!!force);
+  }
+  async function loadBig(it) {   // 큰 그림은 작품을 열 때 한 건만 읽어요
+    if (!it || it.src !== "fs" || it.img || S.big[it.id] || S.bigErr[it.id]) return;
+    const r = await net("GET", "/" + FS_COL + "/" + encodeURIComponent(it.id) + "?mask.fieldPaths=img"), v = r.s === 200 && r.j && r.j.fields && r.j.fields.img && r.j.fields.img.stringValue;
+    if (typeof v === "string" && v.length <= 800000 && DATA_OK.test(v)) { S.big[it.id] = v; mergeAll(); } else S.bigErr[it.id] = true;
+    if (S.open && S.view === "detail" && S.id === it.id) paintFig();
+  }
+  function paintFig() {
+    const it = byId(S.id), im = S.body && S.body.querySelector(".gl-figbtn img"), cap = S.body && S.body.querySelector(".gl-fighint"); if (!it) return;
+    if (im && it.img && im.getAttribute("src") !== it.img) im.src = it.img;
+    if (cap) cap.textContent = S.bigErr[it.id] ? "큰 그림을 불러오지 못해 작은 그림만 보여요" : it.src === "fs" && !it.img ? "큰 그림을 불러오는 중…" : "그림을 누르면 크게 볼 수 있어요";
+  }
 
   /* ---------- 서버(Firestore REST) ---------- */
   async function net(method, path, body, tok) {
@@ -195,19 +255,46 @@
     if (S.root) return S.root;
     const back = h("button", {type: "button", class: "gl-btn", "data-back": "1", hidden: true, text: "← 갤러리", onclick: goBack});
     const close = h("button", {type: "button", class: "gl-btn", "data-close": "1", "aria-label": "갤러리 닫기", text: "✕ 닫기", onclick: closeAll});
+    const op = h("button", {type: "button", class: "gl-btn gl-opbtn", "data-op": "1", onclick: opClick});
     const body = h("main", {class: "gl-body", tabindex: "-1"});
     const lbImg = h("img", {alt: "", onclick: () => lbToggle()}), lbBox = h("div", {class: "gl-lb-box", onclick: ev => { if (ev.target === lbBox) closeLb(); }}, lbImg);
     const lb = h("div", {class: "gl-lb", role: "dialog", "aria-modal": "true", "aria-label": "그림 크게 보기", hidden: true},
       h("div", {class: "gl-lb-top"}, h("span", {text: "그림을 누르면 원래 크기로 커져요 · Esc 로 닫기"}), h("button", {type: "button", class: "gl-btn", "data-lbx": "1", text: "✕ 닫기", onclick: closeLb})), lbBox);
     const root = h("section", {class: "gl", id: "gl-root", role: "dialog", "aria-modal": "true", "aria-label": "팬아트 갤러리", tabindex: "-1", hidden: true},
-      h("header", {class: "gl-head"}, back, h("h2", {text: "🖼 팬아트 갤러리"}), close), body, lb);
+      h("header", {class: "gl-head"}, back, h("h2", {text: "🖼 팬아트 갤러리"}), op, close), body, lb);
     for (const ev of ["keydown", "keyup", "keypress"]) root.addEventListener(ev, e => e.stopPropagation());   // 입력 중 키가 로비(WASD)나 게임 단축키로 새지 않게
-    D.body.append(root); Object.assign(S, {root, body, back, lb, lbImg});
+    D.body.append(root); Object.assign(S, {root, body, back, lb, lbImg, op}); paintHead();
     return root;
   }
-  function openLb(it) { S.lbImg.src = it.img; S.lbImg.alt = it.title + " — " + it.artist; S.lb.classList.remove("zoom"); S.lb.hidden = false; S.lbOpen = true; S.lb.querySelector("[data-lbx]").focus(); }
-  function closeLb() { if (!S.lbOpen) return; S.lb.hidden = true; S.lbOpen = false; S.lbImg.removeAttribute("src"); const b = S.body.querySelector(".gl-figbtn"); if (b) b.focus(); }
+  function paintHead() {   // 운영자 버튼: 로그인 전 '🔧 운영자' / 로그인 중 '🔧 로그아웃'
+    if (!S.op) return; const on = !!masterTok();
+    S.op.replaceChildren(h("span", {"aria-hidden": "true", text: "🔧"}), h("span", {class: "gl-op-t", text: on ? " 로그아웃" : " 운영자"}));
+    S.op.setAttribute("aria-label", on ? "운영자 모드 끄기(로그아웃)" : "운영자 모드(로그인)"); S.op.classList.toggle("on", on);
+  }
+  function loadAdmin() {   // 운영자 도구는 운영자 버튼을 눌렀을 때(또는 이미 운영자 모드일 때)만 내려받아요
+    if (S.ad) return Promise.resolve(S.ad);
+    if (!S.adP) {
+      S.adP = new Promise((res, rej) => { const sc = D.createElement("script"); sc.src = "gallery-admin.js?v=ga1"; sc.onload = () => S.ad ? res(S.ad) : rej(new Error("admin")); sc.onerror = () => rej(new Error("load")); D.head.append(sc); });
+      S.adP.catch(() => { S.adP = null; });
+    }
+    return S.adP;
+  }
+  function opClick() {
+    try { if (typeof ccSdk === "function" && !masterTok()) ccSdk().catch(() => {}); } catch (e) {}   // 구글 로그인 도구를 미리 받아 둬요(로그인 버튼을 누르는 순간 바로 창이 열려야 팝업이 안 막혀요)
+    loadAdmin().then(a => a.headClick(), () => notify("운영자 도구를 불러오지 못했어요. 잠시 뒤 다시 눌러 주세요"));
+  }
+  function opbar() {
+    if (masterTok()) { if (S.ad) return S.ad.bar(); loadAdmin().then(() => render(true), () => {}); return null; }
+    return S.ad && S.opAsk ? S.ad.loginPanel() : null;
+  }
+  function openLb(it) {
+    S.lbImg.src = it.img || it.thumb; S.lbImg.alt = it.title + " — " + it.artist; S.lb.classList.remove("zoom"); S.lb.hidden = false; S.lbOpen = true; S.layer = {el: S.lb, close: closeLb, force: closeLbNow};
+    S.lb.querySelector("[data-lbx]").focus(); if (it.src === "fs" && !it.img) loadBig(it).then(() => { const x = byId(it.id); if (S.lbOpen && x && x.img) S.lbImg.src = x.img; });
+  }
+  function closeLbNow() { if (S.lbOpen) { S.lb.hidden = true; S.lbOpen = false; S.lbImg.removeAttribute("src"); } }
+  function closeLb() { if (!S.lbOpen) return; if (S.layer && S.layer.el === S.lb) S.layer = null; closeLbNow(); const b = S.body.querySelector(".gl-figbtn"); if (b) b.focus(); }
   function lbToggle() { S.lb.classList.toggle("zoom"); }
+  function closeLayerNow() { const l = S.layer; S.layer = null; if (l) { try { l.force(); } catch (e) {} } else closeLbNow(); }
 
   const badge = k => h("span", {class: "gl-badge " + k}, k === "ai" ? "🤖 AI" : "✋ 사람");
   function imgEl(src, alt, eager) {
@@ -218,43 +305,49 @@
   function card(it) {
     const line = h("span", {class: "gl-line1"}, h("b", {text: it.artist}), it.note ? " · " : "", it.note ? h("span", {text: it.note}) : null);   // 필명 · 한 줄(말줄임)
     return h("a", {class: "gl-card", href: "#gallery/" + it.id, "data-id": it.id, onclick: ev => { if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.button) return; ev.preventDefault(); go("#gallery/" + it.id); }},
-      h("span", {class: "gl-thumb"}, imgEl(it.thumb, it.title + " — " + it.artist + "의 그림"), badge(it.kind)),
+      h("span", {class: "gl-thumb"}, imgEl(it.thumb, it.title + " — " + it.artist + "의 그림"), badge(it.kind), it.hidden ? h("span", {class: "gl-hidtag", text: "🚫 숨김"}) : null),
       h("span", {class: "gl-cap"}, h("b", {class: "gl-ti", text: it.title}), line, it.date ? h("span", {class: "gl-date", text: dateTxt(it.date)}) : null));
   }
-  function mbar() { return masterTok() ? h("p", {class: "gl-mbar", text: "운영자 모드가 켜져 있어요 — 댓글 옆에 [삭제] 버튼이 보여요."}) : null; }
+  function cardWrap(it) {   // 운영자 모드에서는 카드 아래에 수정·숨김·순서 버튼이 붙어요
+    const tools = S.ad && masterTok() && S.ad.cardTools ? S.ad.cardTools(it) : null;
+    return h("div", {class: "gl-cw" + (it.hidden ? " gl-hid" : "")}, card(it), tools);
+  }
   function viewList() {
     const b = S.body; b.replaceChildren(); S.ui = {};
     const wrap = h("div", {class: "gl-wrap"});
-    wrap.append(...[mbar(), h("div", {class: "gl-sec-h"}, h("h3", {text: "🖼 작품"}), h("span", {text: S.items ? "총 " + S.items.length + "점" : ""}))].filter(Boolean));
+    wrap.append(...[opbar(), h("div", {class: "gl-sec-h"}, h("h3", {text: "🖼 작품"}), h("span", {text: gridReady() && items() ? "총 " + items().length + "점" : ""}))].filter(Boolean));
     S.gridHost = h("div"); S.countEl = wrap.querySelector(".gl-sec-h span"); wrap.append(S.gridHost); fillGrid();
     wrap.append(h("div", {class: "gl-foot"}, h("p", {text: "기사단 원작 그림은 AI로 만든 캐릭터입니다. 팬아트는 '✋ 사람'(손으로 그린 그림)과 '🤖 AI'(AI가 만든 그림)로 구분해 걸어요."}), h("p", {text: "댓글에는 링크와 개인정보(전화번호·이메일 등)를 적을 수 없어요. 계정은 @이름처럼 글자로만 적어 주세요. 운영자가 지울 수 있어요."})));
     b.append(wrap); S.back.hidden = true; S.view = "list";
   }
   function fillGrid() {   // 작품 목록이 늦게 도착하면 격자만 채워요
-    const g = S.gridHost; if (!g) return; g.replaceChildren(); if (S.countEl) S.countEl.textContent = S.items ? "총 " + S.items.length + "점" : "";
-    if (!S.items) g.append(S.itemsErr ? h("div", {class: "gl-state", role: "alert"}, h("p", {text: "작품 목록을 불러오지 못했어요."}), h("p", {}, h("button", {type: "button", class: "gl-btn", text: "다시 불러오기", onclick: () => loadItems(true)}))) : h("p", {class: "gl-state", role: "status", text: "불러오는 중…"}));
-    else g.append(h("div", {class: "gl-grid"}, S.items.map(card), h("div", {class: "gl-empty"}, h("p", {}, h("b", {"aria-hidden": "true", text: "+"}), "여기에 네 그림이 걸려", h("br"), "— 저퀄 환영,", h("br"), "쓰레드로 보내줘"))));
+    const g = S.gridHost; if (!g) return; g.replaceChildren(); const list = gridReady() ? items() : null; if (S.countEl) S.countEl.textContent = list ? "총 " + list.length + "점" : "";
+    if (!list) g.append(S.itemsErr ? h("div", {class: "gl-state", role: "alert"}, h("p", {text: "작품 목록을 불러오지 못했어요."}), h("p", {}, h("button", {type: "button", class: "gl-btn", text: "다시 불러오기", onclick: () => loadItems(true)}))) : h("p", {class: "gl-state", role: "status", text: "불러오는 중…"}));
+    else g.append(h("div", {class: "gl-grid"}, list.map(cardWrap), h("div", {class: "gl-empty"}, h("p", {}, h("b", {"aria-hidden": "true", text: "+"}), "여기에 네 그림이 걸려", h("br"), "— 저퀄 환영,", h("br"), "쓰레드로 보내줘"))));
   }
   function viewDetail(id) {
     const b = S.body; b.replaceChildren(); S.ui = {};
-    const it = byId(id), wrap = h("div", {class: "gl-wrap"}); S.back.hidden = false; S.view = "detail"; S.id = id;
+    const it = byId(id), wrap = h("div", {class: "gl-wrap"}); S.back.hidden = false; S.view = "detail"; S.id = id; S.detOk = !!it;
     if (!it) {
-      wrap.append(h("div", {class: "gl-state", role: S.items ? "alert" : "status"}, h("p", {text: S.items ? "찾을 수 없는 작품이에요. 내려갔거나 주소가 틀렸을 수 있어요." : S.itemsErr ? "작품 목록을 불러오지 못했어요." : "불러오는 중…"}),
-        S.items || S.itemsErr ? h("p", {}, h("button", {type: "button", class: "gl-btn", text: S.items ? "갤러리 보기" : "다시 불러오기", onclick: () => S.items ? goBack() : loadItems(true)})) : null));
+      const wait = !S.itemsErr && (!S.stat || S.fsState === "busy" || S.fsState === "idle"), ready = !!S.all && !wait;   // 운영자 작품이 아직 오는 중이면 '없음'이라고 하지 않고 기다려요
+      wrap.append(...[opbar(), h("div", {class: "gl-state", role: ready ? "alert" : "status"}, h("p", {text: ready ? "찾을 수 없는 작품이에요. 내려갔거나 주소가 틀렸을 수 있어요." : S.itemsErr ? "작품 목록을 불러오지 못했어요." : "불러오는 중…"}),
+        ready || S.itemsErr ? h("p", {}, h("button", {type: "button", class: "gl-btn", text: ready ? "갤러리 보기" : "다시 불러오기", onclick: () => ready ? goBack() : loadItems(true)})) : null)].filter(Boolean));
       b.append(wrap); return;
     }
-    const i = S.items.indexOf(it), prev = S.items[i - 1], next = S.items[i + 1];
+    const list = items(), i = list.indexOf(it), prev = list[i - 1], next = list[i + 1];
     const fig = h("figure", {class: "gl-fig"}, h("button", {type: "button", class: "gl-figbtn", "aria-label": "그림 크게 보기: " + it.title, onclick: () => openLb(it)}, imgEl(it.img, it.title + " — " + it.artist + "의 그림", true)),
-      h("figcaption", {class: "gl-fighint", text: "그림을 누르면 크게 볼 수 있어요"}));
+      h("figcaption", {class: "gl-fighint", text: it.src === "fs" && !it.img ? "큰 그림을 불러오는 중…" : "그림을 누르면 크게 볼 수 있어요"}));
     const meta = h("dl", {class: "gl-meta"}, h("dt", {text: "필명"}), h("dd", {text: it.artist}), it.source ? [h("dt", {text: "출처"}), h("dd", {text: it.source})] : null,
       it.date ? [h("dt", {text: "날짜"}), h("dd", {text: dateTxt(it.date)})] : null);
-    const info = h("div", {class: "gl-info"}, h("div", {}, badge(it.kind)), h("h2", {text: it.title}), meta,
+    const tools = S.ad && masterTok() && S.ad.detailTools ? S.ad.detailTools(it) : null;
+    const info = h("div", {class: "gl-info"}, h("div", {class: "gl-badges"}, badge(it.kind), it.hidden ? h("span", {class: "gl-hidtag gl-hidtag-in", text: "🚫 숨김 — 운영자에게만 보여요"}) : null), h("h2", {text: it.title}), tools, meta,
       it.desc ? h("p", {class: "gl-desc", text: it.desc}) : null,
       it.note ? h("blockquote", {class: "gl-note"}, h("h3", {text: "작가의 한마디"}), h("p", {text: it.note})) : null,
       h("p", {class: "gl-ainote", text: "기사단 원작 그림은 AI로 만든 캐릭터입니다."}),
       h("div", {class: "gl-nav"}, prev ? h("button", {type: "button", class: "gl-btn", text: "← 이전 작품", onclick: () => go("#gallery/" + prev.id, true)}) : null, next ? h("button", {type: "button", class: "gl-btn", text: "다음 작품 →", onclick: () => go("#gallery/" + next.id, true)}) : null));
     const thread = h("section", {class: "gl-thread", "aria-labelledby": "gl-cm-h"}, h("h3", {id: "gl-cm-h", text: "💬 댓글"}), threadUI(it.id, {ph: "이 그림에 대한 한마디를 남겨 주세요", empty: "아직 댓글이 없어요. 첫 댓글을 남겨 보세요!"}));
-    wrap.append(...[mbar(), h("div", {class: "gl-detail"}, fig, info, thread)].filter(Boolean)); b.append(wrap);
+    wrap.append(...[opbar(), h("div", {class: "gl-detail"}, fig, info, thread)].filter(Boolean)); b.append(wrap);
+    if (it.src === "fs" && !it.img) loadBig(it);
   }
   function render(keep) {
     if (!S.open) return;
@@ -278,7 +371,7 @@
     try { history.replaceState({gl: Math.max(1, depth()), deep: isDeep()}, "", "#gallery"); } catch (e) { location.hash = "#gallery"; } route();
   }
   function closeAll() {
-    if (S.lbOpen) { closeLb(); return; }
+    if (S.layer) { S.layer.close(); return; }
     const steps = depth() - (isDeep() ? 1 : 0);
     if (steps > 0) { S.wantClose = true; history.go(-steps); } else { strip(); route(); }
   }
@@ -291,28 +384,29 @@
   }
   function show(id) {
     ensureRoot();
-    if (!S.open) { S.open = true; S.ret = D.activeElement; S.root.hidden = false; D.body.classList.add("gl-open"); S.view = ""; }
+    if (!S.open) { S.open = true; S.ret = D.activeElement; S.root.hidden = false; D.body.classList.add("gl-open"); S.view = ""; S.opWas = !!masterTok(); paintHead(); S.tick = setInterval(tick, 15000); }
     const want = id ? "detail" : "list";
     if (S.view === "list" && want === "detail") S.scroll = S.body.scrollTop;
     if (S.view !== want || (want === "detail" && S.id !== id)) {
-      closeLbNow(); S.id = id; S.view = want; render();
+      closeLayerNow(); S.id = id; S.view = want; render();
       S.body.scrollTop = want === "list" ? S.scroll : 0; S.root.focus({preventScroll: true});
     }
-    if (!S.items && !S.itemsBusy && !S.itemsErr) loadItems();
-    else if (S.items === null && S.itemsErr && S.view) { /* 오류 화면 유지 */ }
+    if (!S.stat && !S.itemsBusy && !S.itemsErr) loadItems(); else if (S.stat) loadFs(false);   // 다시 열 때 3분이 지났으면 운영자 작품 목록을 새로 읽어요
   }
-  function closeLbNow() { if (S.lbOpen) { S.lb.hidden = true; S.lbOpen = false; S.lbImg.removeAttribute("src"); } }
+  function tick() {   // 운영자 로그인이 끝나면(약 50분) 편집 버튼을 거둬요
+    const on = !!masterTok(); if (on !== S.opWas) { S.opWas = on; paintHead(); render(true); }
+  }
   function hide() {
-    if (!S.open) return; closeLbNow(); S.open = false; S.view = ""; S.root.hidden = true; D.body.classList.remove("gl-open"); S.ui = {};
+    if (!S.open) return; closeLayerNow(); clearInterval(S.tick); S.open = false; S.view = ""; S.root.hidden = true; D.body.classList.remove("gl-open"); S.ui = {};
     const r = S.ret; S.ret = null; try { if (r && r.focus && D.contains(r)) r.focus({preventScroll: true}); } catch (e) {}
   }
   function open(id) { if (S.open) { if (id) go("#gallery/" + id); return; } if (!parseHash()) go(id ? "#gallery/" + id : "#gallery"); else route(); }
 
   D.addEventListener("keydown", e => {
     if (!S.open) return;
-    if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); if (S.lbOpen) closeLb(); else if (S.view === "detail") goBack(); else closeAll(); return; }
+    if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); if (S.layer) S.layer.close(); else if (S.view === "detail") goBack(); else closeAll(); return; }
     if (e.key === "Tab") {   // 화면 밖으로 포커스가 나가지 않게 가둬요
-      const scope = S.lbOpen ? S.lb : S.root, f = [...scope.querySelectorAll("a[href],button:not([disabled]):not([hidden]),input:not([disabled]),textarea:not([disabled])")].filter(x => x.offsetParent !== null || x === D.activeElement);
+      const scope = S.layer ? S.layer.el : S.root, f = [...scope.querySelectorAll("a[href],button:not([disabled]):not([hidden]),input:not([disabled]),textarea:not([disabled]),select:not([disabled])")].filter(x => x.offsetParent !== null || x === D.activeElement);
       if (!f.length) { e.preventDefault(); return; }
       const first = f[0], last = f[f.length - 1], a = D.activeElement;
       if (!scope.contains(a)) { e.preventDefault(); first.focus(); } else if (e.shiftKey && a === first) { e.preventDefault(); last.focus(); } else if (!e.shiftKey && a === last) { e.preventDefault(); first.focus(); }
@@ -332,7 +426,9 @@
       icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18v14H3z"/><path d="M12 15.5s-3-1.8-3-3.9a1.7 1.7 0 0 1 3-1 1.7 1.7 0 0 1 3 1c0 2.1-3 3.9-3 3.9z"/></svg>'});
   } catch (e) {}
 
-  window.roundbGallery = {open, close: closeAll, openItem: id => open(String(id || "")), get state() { return {open: S.open, view: S.view, id: S.id, items: S.items && S.items.length, threads: Object.keys(S.T)}; },
-    _t: {genId, cleanItems, hasLink, checkComment, cooldownLeft, parseHash, S, loadItems}};
+  window.roundbGallery = {open, close: closeAll, openItem: id => open(String(id || "")), get state() { const l = items(); return {open: S.open, view: S.view, id: S.id, items: l && l.length, fs: S.fsState, op: !!masterTok(), threads: Object.keys(S.T)}; },
+    _setAdmin: a => { S.ad = a; },   // gallery-admin.js 가 자기를 등록해요
+    _core: {S, h, net, DOCS, FB, LIM, str, notify, sfx, masterTok, render, mergeAll, loadFs, loadItems, items, byId, goBack, paintHead, fsDoc, DATA_OK, FS_COL, closeLayerNow, th, loadBig},
+    _t: {genId, cleanItems, hasLink, checkComment, cooldownLeft, parseHash, S, loadItems, fsDoc, mergeAll}};
   if (parseHash()) { const go0 = () => { try { route(); } catch (e) { console.error("gallery route", e); } }; if (D.readyState === "loading") D.addEventListener("DOMContentLoaded", go0); else go0(); }   // 쓰레드 링크로 바로 열기
 })();

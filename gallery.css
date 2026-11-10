@@ -150,3 +150,31 @@ textarea.gl-in { min-height: 76px; resize: vertical; line-height: 1.45; }
 }
 @media (pointer: coarse) { .gl-btn.gl-small { min-height: 44px; } }
 @media (prefers-reduced-motion: reduce) { .gl-card, .gl-btn { transition: none; } .gl-card:hover { transform: none; } }
+
+/* 운영자 모드 (gallery-admin.js) — 운영자가 아니면 아래 요소들은 만들어지지 않아요 */
+.gl-opbtn { padding: 8px 12px; }
+.gl-opbtn.on { background: var(--gl-gold); color: #2a1a00; }
+.gl-cw { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.gl-cw .gl-card { flex: 1 1 auto; }
+.gl-cw.gl-hid .gl-card { opacity: .6; border-style: dashed; }   /* 숨긴 작품: 흐리게 + 점선 테두리 + '🚫 숨김' 글자 */
+.gl-hidtag { position: absolute; right: 8px; top: 8px; padding: 2px 9px; font-size: 12px; font-weight: 800; line-height: 1.5; white-space: nowrap; background: #0b0e1d; color: var(--gl-gold); border: 2px dashed var(--gl-gold); border-radius: 4px; }
+.gl-hidtag-in { position: static; display: inline-block; }
+.gl-badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.gl-op { display: flex; flex-wrap: wrap; gap: 6px; }
+.gl-op .gl-btn { min-width: 44px; }
+.gl-armed { background: var(--gl-gold) !important; color: #2a1a00 !important; }   /* '정말 삭제' 확인 중 */
+.gl-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.gl-opbar, .gl-opask { display: grid; gap: 8px; margin-bottom: 16px; padding: 12px 14px; background: var(--gl-card); border: 3px solid var(--gl-gold); border-radius: 16px; }
+.gl-opask h3, .gl-opt { color: var(--gl-gold); font-weight: 800; }
+.gl-ed { position: fixed; inset: 0; z-index: 4; display: flex; justify-content: center; align-items: flex-start; padding: 12px; overflow-y: auto; background: rgba(5, 7, 18, .93); color-scheme: dark; }
+.gl-ed-box { width: min(560px, 100%); margin: 8px 0 40px; padding: 14px; background: var(--gl-card); border: 3px solid var(--gl-ink); border-radius: 16px; box-shadow: 0 4px 0 var(--gl-ink), 0 0 0 1px var(--gl-line); }
+.gl-ed-box h3 { margin-bottom: 10px; }
+.gl-ed-form { gap: 12px; }
+.gl-ed-prevbox { display: grid; gap: 6px; justify-items: start; }
+.gl-ed-prev { max-width: 100%; max-height: 220px; object-fit: contain; background: #0f1330; border: 2px solid var(--gl-line); border-radius: 10px; }
+.gl-ed-prev[hidden] { display: none; }
+.gl-fset { display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 0; padding: 6px 12px; border: 2px solid var(--gl-line); border-radius: 12px; }
+.gl-fset legend { padding: 0 6px; font-size: 13px; color: var(--gl-dim); }
+.gl-rad, .gl-chk { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; cursor: pointer; }
+.gl input[type="radio"], .gl input[type="checkbox"] { width: 22px; height: 22px; margin: 0; accent-color: var(--gl-gold); }
+@media (max-width: 480px) { .gl-op-t { display: none; } .gl-opbtn { padding: 8px 12px; } }
