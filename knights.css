@@ -5,6 +5,8 @@ body.kn-open { overflow: hidden; }
 .kn {
   --kn-bg: #0b0e1d; --kn-bg2: #12162b; --kn-card: #181e3b; --kn-card2: #1f2750; --kn-line: #3b4685;
   --kn-ink: #14141c; --kn-cream: #faf6ee; --kn-dim: #b4bbdc; --kn-gold: #f6c453; --kn-blue: #8ab9ff;
+  /* 팬아트 갤러리의 댓글 묶음(gallery.js 의 commentThread, gl-* 클래스)을 그대로 쓰므로 같은 변수 이름을 이 화면에도 둬요 */
+  --gl-bg: #0b0e1d; --gl-bg2: #12162b; --gl-card: #181e3b; --gl-card2: #1f2750; --gl-line: #3b4685; --gl-ink: #14141c; --gl-cream: #faf6ee; --gl-dim: #b4bbdc; --gl-gold: #f6c453; --gl-blue: #8ab9ff;
   position: fixed; inset: 0; z-index: 2147483050; display: flex; flex-direction: column;
   background: var(--kn-bg); color: var(--kn-cream); font-size: 15px; line-height: 1.55;
   font-family: inherit; overscroll-behavior: contain;
@@ -12,7 +14,7 @@ body.kn-open { overflow: hidden; }
 .kn[hidden] { display: none; }
 .kn *, .kn *::before, .kn *::after { box-sizing: border-box; }
 .kn:focus { outline: none; }
-.kn button, .kn input { font: inherit; color: inherit; }
+.kn button, .kn input, .kn textarea { font: inherit; color: inherit; }
 .kn :focus-visible { outline: 3px solid var(--kn-gold); outline-offset: 2px; }
 .kn h2, .kn h3, .kn p, .kn ul, .kn ol, .kn dl, .kn dd, .kn blockquote, .kn figure { margin: 0; }
 
@@ -64,16 +66,22 @@ body.kn-open { overflow: hidden; }
 .kn-broken { display: grid; place-items: center; height: 100%; min-height: 60px; padding: 8px; font-size: 12px; color: var(--kn-dim); text-align: center; }
 
 /* 상세 */
-.kn-detail { display: grid; gap: 16px; }
+.kn-wrap-d { max-width: 1280px; }
+.kn-detail { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 16px 20px; align-items: start; }
 .kn-fig { position: relative; }
 .kn-figbtn { display: block; width: 100%; padding: 0; background: #0b0e1d; border: 3px solid var(--kn-ink); border-radius: 16px; box-shadow: 0 4px 0 var(--kn-ink), 0 0 0 1px var(--kn-line); overflow: hidden; cursor: zoom-in; }
-.kn-figbtn img { display: block; width: 100%; height: auto; aspect-ratio: 1200 / 816; object-fit: contain; }
+.kn-figbtn img { display: block; width: 100%; height: auto; aspect-ratio: 1520 / 1889; object-fit: contain; }
 .kn-fighint { margin-top: 8px; font-size: 13px; color: var(--kn-dim); text-align: center; }
-.kn-poses { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px 10px; font-size: 13px; color: var(--kn-dim); }
-.kn-poses li { display: flex; align-items: flex-start; gap: 6px; min-width: 0; overflow-wrap: anywhere; }
-.kn-poses b { flex: none; display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--kn-gold); color: #2a1a00; font-size: 12px; line-height: 1; }
-.kn-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; align-items: start; }
-.kn-colA, .kn-colB { display: grid; gap: 12px; min-width: 0; }
+.kn-sheetinfo { list-style: none; padding: 0; display: grid; gap: 6px; margin-top: 10px; font-size: 14px; }
+.kn-sheetinfo li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 10px; align-items: baseline; padding: 6px 10px; background: var(--kn-card); border: 2px solid var(--kn-line); border-radius: 10px; overflow-wrap: anywhere; }
+.kn-sheetinfo b { color: var(--kn-gold); white-space: nowrap; }
+.kn-sheetinfo span { color: var(--kn-cream); }
+.kn-colL, .kn-colR { display: grid; gap: 12px; min-width: 0; align-content: start; }
+.kn-thread { grid-column: 1 / -1; padding: 14px; background: var(--kn-card); border: 3px solid var(--kn-ink); border-radius: 16px; box-shadow: 0 4px 0 var(--kn-ink); display: grid; gap: 10px; min-width: 0; scroll-margin-top: 8px; }
+.kn-thread > h3 { font-size: 18px; }
+.kn-mbar { padding: 7px 12px; border: 2px solid var(--kn-gold); border-radius: 10px; font-size: 13px; color: var(--kn-gold); }
+.kn-mbar::before { content: "★ "; }
+.kn-foot-s { margin-top: 0; }
 .kn-info { display: grid; gap: 12px; padding: 14px; background: var(--kn-card); border: 3px solid var(--kn-ink); border-radius: 16px; box-shadow: 0 4px 0 var(--kn-ink); min-width: 0; }
 .kn-title { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .kn-face-s { flex: none; width: 64px; border: 3px solid var(--kn-ink); border-radius: 50%; box-shadow: 0 0 0 2px var(--kn-line); }
@@ -114,13 +122,12 @@ body.kn-open { overflow: hidden; }
 .kn-lb-box { flex: 1 1 auto; min-height: 0; overflow: auto; display: grid; place-items: center; padding: 6px; -webkit-overflow-scrolling: touch; }
 .kn-lb-box img { display: block; max-width: 100%; max-height: 100%; object-fit: contain; cursor: zoom-in; }
 .kn-lb.zoom .kn-lb-box { place-items: start; }
-.kn-lb.zoom .kn-lb-box img { max-width: none; max-height: none; width: 1200px; cursor: zoom-out; }
+.kn-lb.zoom .kn-lb-box img { max-width: none; max-height: none; width: auto; cursor: zoom-out; }
 
 /* 태블릿·폰 */
 @media (max-width: 900px) {
   .kn-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .kn-cols { grid-template-columns: minmax(0, 1fr); }
-  .kn-poses { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kn-detail { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 640px) {
   .kn-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
