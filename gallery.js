@@ -198,7 +198,7 @@
     const text = h("textarea", {class: "gl-in", maxlength: max, rows: 3, placeholder: o.ph, id: "gl-t-" + key});
     const msg = h("p", {class: "gl-msg", role: "status", "aria-live": "polite"});
     const send = h("button", {type: "submit", class: "gl-btn gl-primary", text: "댓글 남기기"});
-    const closed = h("p", {class: "gl-closed", hidden: true, text: "댓글은 곧 열려요. 지금은 그림만 둘러볼 수 있어요."}), list = h("div"), more = h("div", {class: "gl-more"});
+    const closed = h("p", {class: "gl-closed", hidden: true, text: o.closedText || "댓글은 곧 열려요. 지금은 그림만 둘러볼 수 있어요."}), list = h("div"), more = h("div", {class: "gl-more"});
     let busy = false, arm = "";
     const say = (m, warn) => { msg.textContent = m || ""; msg.className = "gl-msg" + (warn ? " gl-warn" : ""); };
     text.addEventListener("input", () => { cnt.textContent = text.value.length + "/" + max; });
@@ -428,6 +428,7 @@
 
   window.roundbGallery = {open, close: closeAll, openItem: id => open(String(id || "")), get state() { const l = items(); return {open: S.open, view: S.view, id: S.id, items: l && l.length, fs: S.fsState, op: !!masterTok(), threads: Object.keys(S.T)}; },
     _setAdmin: a => { S.ad = a; },   // gallery-admin.js 가 자기를 등록해요
+    commentThread: (key, o) => threadUI(String(key), o || {}),   // 기사단 소개(knights.js)가 같은 댓글 묶음(같은 컬렉션·같은 규칙)을 가져다 써요: key 는 [a-z0-9-]{1,40}
     _core: {S, h, net, DOCS, FB, LIM, str, notify, sfx, masterTok, render, mergeAll, loadFs, loadItems, items, byId, goBack, paintHead, fsDoc, DATA_OK, FS_COL, closeLayerNow, th, loadBig},
     _t: {genId, cleanItems, hasLink, checkComment, cooldownLeft, parseHash, S, loadItems, fsDoc, mergeAll}};
   if (parseHash()) { const go0 = () => { try { route(); } catch (e) { console.error("gallery route", e); } }; if (D.readyState === "loading") D.addEventListener("DOMContentLoaded", go0); else go0(); }   // 쓰레드 링크로 바로 열기
