@@ -28087,6 +28087,34 @@ function snFlakeStep(dt) {
     }
   }
 }
+/* ── 화면 가장자리 눈(2026-11-10): 두 칸 바깥 여백(양옆 빈 곳)에도 눈이 내린다. 화면 좌표 눈송이 — 칸 안쪽은 칸이 덮으니 여백 쪽에만 만든다(쌓이는 눈·삽은 마당 안에서만) ── */
+const SNM = {n: 96, x: null, y: null, v: null, ph: null, big: null, cw: 0, ch: 0};
+function snMarginX() {
+  const a = P["3f"], b = P["4f"], x0 = Math.min(a.x, b.x), x1 = Math.max(a.x + a.w, b.x + b.w), L = Math.max(0, x0), Rr = Math.max(0, S.cw - x1), tot = L + Rr;
+  if (tot < 24) return Math.random() * S.cw; const r = Math.random() * tot; return r < L ? r : x1 + (r - L);
+}
+function snMarginInit() {
+  const n = SNM.n; SNM.x = new Float32Array(n); SNM.y = new Float32Array(n); SNM.v = new Float32Array(n); SNM.ph = new Float32Array(n); SNM.big = new Uint8Array(n);
+  for (let i = 0; i < n; i++) { SNM.x[i] = snMarginX(); SNM.y[i] = Math.random() * S.ch; SNM.v[i] = rnd(.55, 1.1); SNM.ph[i] = rnd(0, 6.28); SNM.big[i] = Math.random() < .3 ? 1 : 0; }
+  SNM.cw = S.cw; SNM.ch = S.ch;
+}
+function snMarginStep(dt) {
+  if (reducedMotion() || !SN.on) return; if (!SNM.x || SNM.cw !== S.cw || SNM.ch !== S.ch) snMarginInit();
+  const n = Math.max(8, Math.floor(SNM.n * SN.q));
+  for (let i = 0; i < n; i++) { SNM.y[i] += SNM.v[i] * 46 * dt; SNM.x[i] += Math.sin(S.t * 1.2 + SNM.ph[i]) * 12 * dt; if (SNM.y[i] > S.ch + 4) { SNM.y[i] = -4; SNM.x[i] = snMarginX(); } }
+}
+function snMarginDraw() {
+  if (!SN.on) return;
+  try {
+    if (!SNM.x || SNM.cw !== S.cw || SNM.ch !== S.ch) snMarginInit();
+    const n = reducedMotion() ? Math.min(30, SNM.n) : Math.max(8, Math.floor(SNM.n * SN.q)), r1 = 1.7, r2 = 2.9, ou = .9;
+    g.save(); g.setTransform(S.dpr, 0, 0, S.dpr, 0, 0); g.fillStyle = "rgba(60,85,135,.38)"; g.beginPath();
+    for (let i = 0; i < n; i++) { const r = (SNM.big[i] ? r2 : r1) + ou; g.moveTo(SNM.x[i] + r, SNM.y[i]); g.arc(SNM.x[i], SNM.y[i], r, 0, 6.2832); }
+    g.fill(); g.fillStyle = "#fff"; g.beginPath();
+    for (let i = 0; i < n; i++) { const r = SNM.big[i] ? r2 : r1; g.moveTo(SNM.x[i] + r, SNM.y[i]); g.arc(SNM.x[i], SNM.y[i], r, 0, 6.2832); }
+    g.fill(); g.restore();
+  } catch (e) { SN.on = SN.on; }
+}
 function snPuffStep(dt) {
   const rm = reducedMotion();
   for (const e of ents) {
@@ -28236,7 +28264,7 @@ function snTick(dt) {
   const now = performance.now(), raw = SN.last ? Math.min(.2, (now - SN.last) / 1000) : .016; SN.last = now;
   SN.ft += (raw - SN.ft) * .05; SN.qT += raw;
   if (SN.qT > 2) { SN.qT = 0; if (SN.ft > .026) SN.q = Math.max(.25, SN.q * .8); else if (SN.ft < .019 && SN.q < 1) SN.q = Math.min(1, SN.q * 1.15); }   // 느려지면 눈송이를 줄인다
-  snAccum(dt); snFlush(); snFlakeStep(dt); snPuffStep(dt); snJobPick(dt);
+  snAccum(dt); snFlush(); snFlakeStep(dt); snMarginStep(dt); snPuffStep(dt); snJobPick(dt);
 }
 /* ── 기사단 NPC 눈 치우기: 입구 포털 → 마당 → 거치대에서 삽 집기 → 쌓인 띠를 굽이굽이 → 반납 → 포털로 복귀(원래 행동으로). 한 번에 최대 2명, 40~120초 간격 ── */
 function snPlan(e) {   // 눈이 많이 쌓인 띠를 골라 서너 줄 왕복 경로를 만든다(거치대에서 첫 줄까지 가는 길 포함)
@@ -28358,6 +28386,7 @@ function render() {
   if (!g) return; const dpr = S.dpr;
   g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, S.cw, S.ch);
   if (!ensureBg()) return;
+  snMarginDraw();
   for (const fl of FLOORS) drawPane(fl);
 }
 
