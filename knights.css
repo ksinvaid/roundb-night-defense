@@ -1,0 +1,141 @@
+/* 기사단 소개 — knights.js 가 만드는 전체 화면 오버레이 (2026-11-10). 팬아트 갤러리(gallery.css)와 같은 어두운 남색 판에 맞춘 색이에요.
+   색약 안전: 구분은 글자·모양·밝기로 하고(최애는 '⭐ 내 최애' 글자 + 테두리 두께), 붉은색·초록색 짝은 쓰지 않아요. */
+body.kn-open { overflow: hidden; }
+
+.kn {
+  --kn-bg: #0b0e1d; --kn-bg2: #12162b; --kn-card: #181e3b; --kn-card2: #1f2750; --kn-line: #3b4685;
+  --kn-ink: #14141c; --kn-cream: #faf6ee; --kn-dim: #b4bbdc; --kn-gold: #f6c453; --kn-blue: #8ab9ff;
+  position: fixed; inset: 0; z-index: 2147483050; display: flex; flex-direction: column;
+  background: var(--kn-bg); color: var(--kn-cream); font-size: 15px; line-height: 1.55;
+  font-family: inherit; overscroll-behavior: contain;
+}
+.kn[hidden] { display: none; }
+.kn *, .kn *::before, .kn *::after { box-sizing: border-box; }
+.kn:focus { outline: none; }
+.kn button, .kn input { font: inherit; color: inherit; }
+.kn :focus-visible { outline: 3px solid var(--kn-gold); outline-offset: 2px; }
+.kn h2, .kn h3, .kn p, .kn ul, .kn ol, .kn dl, .kn dd, .kn blockquote, .kn figure { margin: 0; }
+
+/* 위 막대 */
+.kn-head {
+  flex: none; display: flex; align-items: center; gap: 8px; padding: 8px 12px; min-height: 58px;
+  background: var(--kn-bg2); border-bottom: 3px solid var(--kn-ink); box-shadow: 0 2px 0 var(--kn-line);
+}
+.kn-head h2 { flex: 1; min-width: 0; font-size: 19px; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kn-btn {
+  appearance: none; min-height: 44px; min-width: 44px; padding: 8px 14px; cursor: pointer; white-space: nowrap;
+  background: var(--kn-card2); border: 2px solid var(--kn-ink); border-radius: 12px; box-shadow: 0 3px 0 var(--kn-ink);
+  font-weight: 700; font-size: 15px; color: var(--kn-cream);
+}
+.kn-btn:hover { filter: brightness(1.15); }
+.kn-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--kn-ink); }
+.kn-btn.kn-primary { background: var(--kn-gold); color: #2a1a00; }
+.kn-btn.kn-on { background: #0b0e1d; color: var(--kn-gold); border-color: var(--kn-gold); }   /* 최애로 골라 둔 상태: 어두운 칸 + 금색 테두리 + 글자("내 최애예요") */
+.kn-btn.kn-small { min-height: 40px; padding: 4px 12px; font-size: 14px; box-shadow: 0 2px 0 var(--kn-ink); }
+
+.kn-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 14px 14px 40px; }
+.kn-wrap { max-width: 1100px; margin: 0 auto; }
+
+/* 머리글 */
+.kn-intro { padding: 14px 16px; margin-bottom: 14px; background: var(--kn-card); border: 3px solid var(--kn-ink); border-radius: 16px; box-shadow: 0 4px 0 var(--kn-ink), 0 0 0 1px var(--kn-line); display: grid; gap: 6px; }
+.kn-intro h3 { font-size: 21px; line-height: 1.3; color: var(--kn-gold); }
+.kn-intro p { overflow-wrap: anywhere; }
+.kn-hint { font-size: 13px; color: var(--kn-dim); }
+.kn-favbar { margin: 0 0 12px; padding: 7px 12px; border: 2px solid var(--kn-gold); border-radius: 10px; font-size: 14px; }
+.kn-favbar a { color: var(--kn-gold); font-weight: 800; }
+
+/* 기사 카드 격자 */
+.kn-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; }
+.kn-card {
+  display: flex; flex-direction: column; min-width: 0; text-decoration: none; color: inherit;
+  background: var(--kn-card); border: 3px solid var(--kn-ink); border-radius: 16px; overflow: hidden;
+  box-shadow: 0 4px 0 var(--kn-ink), 0 0 0 1px var(--kn-line); transition: transform .12s, box-shadow .12s;
+}
+.kn-card:hover { transform: translateY(-3px); box-shadow: 0 7px 0 var(--kn-ink), 0 0 0 1px var(--kn-gold); }
+.kn-card.is-fav { border-color: var(--kn-gold); box-shadow: 0 4px 0 var(--kn-ink), 0 0 0 3px var(--kn-gold); }
+.kn-face { position: relative; display: block; aspect-ratio: 1 / 1; background: #0f1330; overflow: hidden; }
+.kn-face img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.kn-no { position: absolute; left: 8px; top: 8px; padding: 1px 8px; font-size: 12px; font-weight: 800; background: #0b0e1d; color: var(--kn-blue); border: 2px solid var(--kn-blue); border-radius: 4px; }
+.kn-fav { position: absolute; right: 6px; top: 6px; display: inline-flex; align-items: center; padding: 1px 8px; font-size: 12px; font-weight: 800; line-height: 1.5; white-space: nowrap; background: var(--kn-gold); color: #2a1a00; border: 2px solid #14141c; border-radius: 99px; }
+.kn-cap { display: grid; gap: 2px; padding: 9px 11px 12px; min-width: 0; }
+.kn-nm { font-size: 18px; line-height: 1.25; }
+.kn-sub { font-size: 13px; color: var(--kn-gold); }
+.kn-sum { font-size: 13px; line-height: 1.4; color: var(--kn-dim); overflow-wrap: anywhere; }
+.kn-broken { display: grid; place-items: center; height: 100%; min-height: 60px; padding: 8px; font-size: 12px; color: var(--kn-dim); text-align: center; }
+
+/* 상세 */
+.kn-detail { display: grid; gap: 16px; }
+.kn-fig { position: relative; }
+.kn-figbtn { display: block; width: 100%; padding: 0; background: #0b0e1d; border: 3px solid var(--kn-ink); border-radius: 16px; box-shadow: 0 4px 0 var(--kn-ink), 0 0 0 1px var(--kn-line); overflow: hidden; cursor: zoom-in; }
+.kn-figbtn img { display: block; width: 100%; height: auto; aspect-ratio: 1200 / 816; object-fit: contain; }
+.kn-fighint { margin-top: 8px; font-size: 13px; color: var(--kn-dim); text-align: center; }
+.kn-poses { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px 10px; font-size: 13px; color: var(--kn-dim); }
+.kn-poses li { display: flex; align-items: flex-start; gap: 6px; min-width: 0; overflow-wrap: anywhere; }
+.kn-poses b { flex: none; display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--kn-gold); color: #2a1a00; font-size: 12px; line-height: 1; }
+.kn-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+.kn-colA, .kn-colB { display: grid; gap: 12px; min-width: 0; }
+.kn-info { display: grid; gap: 12px; padding: 14px; background: var(--kn-card); border: 3px solid var(--kn-ink); border-radius: 16px; box-shadow: 0 4px 0 var(--kn-ink); min-width: 0; }
+.kn-title { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.kn-face-s { flex: none; width: 64px; border: 3px solid var(--kn-ink); border-radius: 50%; box-shadow: 0 0 0 2px var(--kn-line); }
+.kn-tt { flex: 1; min-width: 0; }
+.kn-tt h2 { font-size: 26px; line-height: 1.2; }
+.kn-en { font-size: 13px; color: var(--kn-gold); }
+.kn-title .kn-fav { position: static; flex: none; }
+.kn-quote { padding: 10px 14px; background: var(--kn-card2); border: 2px solid var(--kn-line); border-left: 6px solid var(--kn-gold); border-radius: 12px; }
+.kn-quote h3 { font-size: 13px; color: var(--kn-gold); margin-bottom: 2px; }
+.kn-quote p { font-size: 17px; font-weight: 700; overflow-wrap: anywhere; }
+.kn-meta { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 5px 12px; font-size: 14px; }
+.kn-meta dt { color: var(--kn-dim); white-space: nowrap; }
+.kn-meta dd { overflow-wrap: anywhere; }
+.kn-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.kn-chip { display: inline-flex; align-items: center; padding: 1px 10px; font-size: 13px; font-weight: 700; background: #0b0e1d; color: var(--kn-blue); border: 2px solid var(--kn-blue); border-radius: 4px; }
+.kn-chip i { font-style: normal; margin-right: 2px; }
+.kn-chem { display: grid; gap: 6px; justify-items: start; padding: 10px 12px; border: 2px dashed var(--kn-line); border-radius: 12px; }
+.kn-chem h3 { font-size: 15px; }
+.kn-chem p { overflow-wrap: anywhere; }
+.kn-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+.kn-msg { min-height: 20px; font-size: 13px; color: var(--kn-dim); overflow-wrap: anywhere; }
+.kn-msg.kn-warn { color: var(--kn-gold); }
+.kn-msg.kn-warn::before { content: "⚠ "; }
+.kn-tmi { padding: 14px 16px; background: var(--kn-card2); border: 3px solid var(--kn-ink); border-radius: 16px; box-shadow: 0 4px 0 var(--kn-ink), 0 0 0 1px var(--kn-line); }
+.kn-tmi h3 { font-size: 18px; margin-bottom: 8px; color: var(--kn-gold); }
+.kn-tmi ul { list-style: none; padding: 0; display: grid; gap: 10px; counter-reset: tmi; }
+.kn-tmi li { position: relative; padding-left: 34px; overflow-wrap: anywhere; counter-increment: tmi; }
+.kn-tmi li::before { content: counter(tmi); position: absolute; left: 0; top: 1px; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: #0b0e1d; color: var(--kn-gold); border: 2px solid var(--kn-gold); font-size: 13px; font-weight: 800; line-height: 1; }
+.kn-nav { display: flex; gap: 8px; justify-content: space-between; flex-wrap: wrap; }
+.kn-nav .kn-btn { flex: 1 1 0; min-width: 96px; }
+.kn-foot { margin-top: 18px; font-size: 13px; color: var(--kn-dim); display: grid; gap: 4px; }
+.kn-state { padding: 28px 12px; text-align: center; color: var(--kn-dim); }
+
+/* 크게 보기 */
+.kn-lb { position: fixed; inset: 0; z-index: 3; display: flex; flex-direction: column; background: rgba(5, 7, 18, .96); }
+.kn-lb[hidden] { display: none; }
+.kn-lb-top { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; font-size: 13px; color: var(--kn-dim); }
+.kn-lb-box { flex: 1 1 auto; min-height: 0; overflow: auto; display: grid; place-items: center; padding: 6px; -webkit-overflow-scrolling: touch; }
+.kn-lb-box img { display: block; max-width: 100%; max-height: 100%; object-fit: contain; cursor: zoom-in; }
+.kn-lb.zoom .kn-lb-box { place-items: start; }
+.kn-lb.zoom .kn-lb-box img { max-width: none; max-height: none; width: 1200px; cursor: zoom-out; }
+
+/* 태블릿·폰 */
+@media (max-width: 900px) {
+  .kn-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .kn-cols { grid-template-columns: minmax(0, 1fr); }
+  .kn-poses { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .kn-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .kn-body { padding: 10px 10px 40px; }
+  .kn-head h2 { font-size: 16px; }
+  .kn-btn { padding: 8px 10px; }
+  .kn-card { border-radius: 13px; }
+  .kn-cap { padding: 7px 9px 10px; }
+  .kn-nm { font-size: 16px; }
+  .kn-intro h3 { font-size: 18px; }
+  .kn-tt h2 { font-size: 22px; }
+  .kn-face-s { width: 52px; }
+  .kn-title { flex-wrap: wrap; }
+  .kn-info, .kn-tmi { padding: 11px; }
+  .kn-nav .kn-btn { min-width: 0; padding: 8px 6px; }
+}
+@media (pointer: coarse) { .kn-btn.kn-small { min-height: 44px; } }
+@media (prefers-reduced-motion: reduce) { .kn-card, .kn-btn { transition: none; } .kn-card:hover { transform: none; } }
