@@ -27640,6 +27640,7 @@ function update(dt) {
 function layoutPanes() {
   const a = FL["3f"], b = FL["4f"], gap = S.cw < 520 ? 10 : 18, pad = S.cw < 520 ? 4 : 8;
   const AW = Math.max(100, S.cw - S.rw - pad * 2), AH = Math.max(100, S.ch - pad * 2);
+  try { if (SN.on) snFit(AW, AH, gap); } catch (e) { console.error("snow fit", e); }
   const sh = Math.min((AW - gap) / (a.dvw + b.dvw), AH / Math.max(a.dvh, b.dvh)), sv = Math.min(AW / Math.max(a.dvw, b.dvw), (AH - gap) / (a.dvh + b.dvh));
   const lay = sh >= sv ? "h" : "v", s = Math.min(.9, Math.max(.05, lay === "h" ? sh : sv));
   S.lay = lay; S.s = s; S.chh = Math.max(CH, MINCH / s); S.cpt = s < .43;
@@ -27940,6 +27941,7 @@ const SNK = "roundb.snow.v1";
 const SNC = 5;                 // 눈 격자 한 칸(배치도 px) — 낮은 해상도 한 장(층마다)
 const SW = 28;                 // 삽이 치우는 폭
 const MARG = {l: 76, r: 76, t: 80, b: 60};   // 마당 폭(건물 바깥쪽으로 더하는 만큼)
+const SNX = {"3f": {l: 0, r: 0}, "4f": {l: 0, r: 0}};   // 2026-11-10: 화면이 가로로 넓어 양옆이 남으면 3F 왼쪽·4F 오른쪽 마당을 그만큼 더 늘려 화면 가장자리까지 채운다(snFit)
 const XOFF = {"3f": 0, "4f": 947};
 const STRIPE = [.07, .22, .09, .26, .08, .2];   // 삽 끌린 줄무늬(옆 방향 6줄, 0=완전히 맨바닥 · 1=쌓인 눈)
 const SN = {season: false, on: false, ready: false, d: {}, fk: {}, puffs: [], q: 1, ft: .016, last: 0, qT: 0, accI: 0, accT: 0, jobT: 26, btnT: 0};
@@ -27995,7 +27997,7 @@ function snPortalOn(m, p) { return hypot(m.x - p.x, m.y - p.y) < yPR(p) * .85; }
 function snDisplay(on) {
   for (const k of FLOORS) {
     const f = FL[k], o = OUTER[k];
-    f.dv = on ? [o[0] - MARG.l, o[1] - MARG.t, o[2] + MARG.r, o[3] + MARG.b] : f.view.slice(); f.dvw = f.dv[2] - f.dv[0]; f.dvh = f.dv[3] - f.dv[1];
+    f.dv = on ? [o[0] - MARG.l - SNX[k].l, o[1] - MARG.t, o[2] + MARG.r + SNX[k].r, o[3] + MARG.b] : f.view.slice(); f.dvw = f.dv[2] - f.dv[0]; f.dvh = f.dv[3] - f.dv[1];
     BG[k] = null; P[k].bgs = null; P[k].bgSig = "";
   }
   if (planReady) for (const k of FLOORS) BG[k] = renderBg(k);
@@ -28067,11 +28069,25 @@ function snAccum(dt) {   // 시간이 지나면 다시 쌓인다: 약 7분에 �
   snDirty(s, 0, j0, cw - 1, j1);
 }
 
+/* ── 마당 넓히기(2026-11-10): 가로로 넓은 화면은 높이에 맞춘 두 칸 양옆이 비는데, 그 폭만큼 3F 왼쪽·4F 오른쪽 마당을 더 늘려 눈이 쌓이는 마당·삽·눈송이가 화면 가장자리까지 가게 한다.
+   칸 크기(배율)는 그대로다(높이에 맞춘 값 그대로 폭만 채운다). 세로 배치·좁은 화면은 늘리지 않는다. ── */
+function snFit(AW, AH, gap) {
+  const a = FL["3f"], b = FL["4f"], oa = OUTER["3f"], ob = OUTER["4f"], w3 = (oa[2] - oa[0]) + MARG.l + MARG.r, w4 = (ob[2] - ob[0]) + MARG.l + MARG.r, h = Math.max(a.dvh, b.dvh);
+  const s = Math.min(.9, AH / h), sh = (AW - gap) / (w3 + w4), sv = Math.min(AW / Math.max(w3, w4), (AH - gap) / (a.dvh + b.dvh));
+  let e = 0; if (AW > 560 && sh > s && s >= sv) e = Math.min(520, ((AW - gap) / s - (w3 + w4)) / 2);
+  e = Math.max(0, Math.round(e / 8) * 8); if (e === SNX["3f"].l && e === SNX["4f"].r) return;
+  SNX["3f"].l = e; SNX["4f"].r = e;
+  for (const k of FLOORS) { const f = FL[k], o = OUTER[k]; f.dv = [o[0] - MARG.l - SNX[k].l, o[1] - MARG.t, o[2] + MARG.r + SNX[k].r, o[3] + MARG.b]; f.dvw = f.dv[2] - f.dv[0]; f.dvh = f.dv[3] - f.dv[1]; BG[k] = null; P[k].bgs = null; P[k].bgSig = ""; }
+  if (planReady) for (const k of FLOORS) BG[k] = renderBg(k);
+  for (const k of FLOORS) SN.d[k] = snMake(k);
+  snFlakes();
+}
+function snFlakeN(k) { const f = FL[k], o = OUTER[k], base = ((o[2] - o[0]) + MARG.l + MARG.r) * ((o[3] - o[1]) + MARG.t + MARG.b); return Math.max(76, Math.min(150, Math.round(76 * f.dvw * f.dvh / base))); }
 /* ── 내리는 눈송이(마당 띠에만) · 입김 ── */
 function snBands(fl) { const d = FL[fl].dv, o = OUTER[fl]; return [[d[0], d[1], d[2], o[1]], [d[0], o[3], d[2], d[3]], [d[0], o[1], o[0], o[3]], [o[2], o[1], d[2], o[3]]]; }
 function snFlakes() {
   for (const k of FLOORS) {
-    const bs = snBands(k), ar = bs.map(b => (b[2] - b[0]) * (b[3] - b[1])), tot = ar[0] + ar[1] + ar[2] + ar[3], N = 76;
+    const bs = snBands(k), ar = bs.map(b => (b[2] - b[0]) * (b[3] - b[1])), tot = ar[0] + ar[1] + ar[2] + ar[3], N = snFlakeN(k);
     const F = {n: N, x: new Float32Array(N), y: new Float32Array(N), v: new Float32Array(N), ph: new Float32Array(N), big: new Uint8Array(N), b: new Uint8Array(N), bs};
     for (let i = 0; i < N; i++) { let r = Math.random() * tot, bi = 0; while (bi < 3 && r > ar[bi]) { r -= ar[bi]; bi++; } const b = bs[bi]; F.b[i] = bi; F.x[i] = rnd(b[0], b[2]); F.y[i] = rnd(b[1], b[3]); F.v[i] = rnd(.55, 1.1); F.ph[i] = rnd(0, 6.28); F.big[i] = Math.random() < .3 ? 1 : 0; }
     SN.fk[k] = F;
@@ -28104,7 +28120,7 @@ function snMarginStep(dt) {
   for (let i = 0; i < n; i++) { SNM.y[i] += SNM.v[i] * 46 * dt; SNM.x[i] += Math.sin(S.t * 1.2 + SNM.ph[i]) * 12 * dt; if (SNM.y[i] > S.ch + 4) { SNM.y[i] = -4; SNM.x[i] = snMarginX(); } }
 }
 function snMarginDraw() {
-  if (!SN.on) return;
+  if (!SN.on) return; { const a = P["3f"], b = P["4f"]; if (Math.max(0, Math.min(a.x, b.x)) + Math.max(0, S.cw - Math.max(a.x + a.w, b.x + b.w)) < 24) return; }
   try {
     if (!SNM.x || SNM.cw !== S.cw || SNM.ch !== S.ch) snMarginInit();
     const n = reducedMotion() ? Math.min(30, SNM.n) : Math.max(8, Math.floor(SNM.n * SN.q)), r1 = 1.7, r2 = 2.9, ou = .9;
@@ -28243,7 +28259,7 @@ function snWarp(m, goOut) { const p = goOut ? FL[m.fl].yq : FL[m.fl].yp; return 
 function snSetOn(on) {
   on = !!on; if (on === SN.on) return;
   if (on) { SN.on = true; snDisplay(true); for (const k of FLOORS) if (!SN.d[k]) SN.d[k] = snMake(k); snFlakes(); }
-  else { SN.on = false; for (const e of ents) if (e.job || e.out || e.shovel) snDrop(e); SN.puffs.length = 0; snDisplay(false); }
+  else { SN.on = false; SNX["3f"].l = 0; SNX["4f"].r = 0; for (const e of ents) if (e.job || e.out || e.shovel) snDrop(e); SN.puffs.length = 0; snDisplay(false); }
   snBtn();
 }
 function snToggle() { snSetOn(!SN.on); try { localStorage.setItem(SNK, SN.on ? "1" : "0"); } catch (e) {} try { toast(SN.on ? "❄ 겨울 마당을 켰어요" : "겨울 마당을 껐어요"); } catch (e) {} }
