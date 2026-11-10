@@ -39,7 +39,6 @@ MAX_LONG = 1200      # 큰 그림의 긴 변(px)
 THUMB_LONG = 480     # 썸네일의 긴 변(px)
 LIM = {"title": 40, "artist": 20, "source": 40, "desc": 200, "note": 80}   # gallery.js 의 화면 표시 한도와 같아야 해요
 ID_RE = re.compile(r"^[a-z0-9-]{1,40}$")                                    # 댓글 보안 규칙(itemId)과도 같아야 해요
-RESERVED = {"wall"}                                                         # wall = 갤러리 맨 위 '모두의 한 줄' 이 쓰는 번호
 
 
 def die(msg, code=1):
@@ -182,8 +181,8 @@ def main():
         die("--date 는 2026-11-10 모양이어야 해요")
     items = load_items()
     item_id = a.id or next_id(items, date)
-    if not ID_RE.match(item_id) or item_id in RESERVED:
-        die("--id 는 영문 소문자·숫자·-(하이픈)만, 40자까지예요 ('wall' 은 쓸 수 없어요)")
+    if not ID_RE.match(item_id):
+        die("--id 는 영문 소문자·숫자·-(하이픈)만, 40자까지예요")
     if any(x.get("id") == item_id for x in items):
         die("이미 있는 id 예요: " + item_id + "  (다른 --id 를 쓰거나 --remove 로 먼저 내려 주세요)")
 

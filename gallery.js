@@ -1,14 +1,14 @@
 /* 팬아트 갤러리 + 댓글 (2026-11-10) — 전체 화면 오버레이. 다른 모드 코드는 건드리지 않고, 이 파일 하나와 gallery.css 만으로 동작해요.
    - 작품: 정적 gallery/items.json + gallery/img/ (tools/add_gallery_item.py 로 추가). 사용자 글은 전부 textContent 로만 출력해요(XSS 방지).
-   - 댓글·'모두의 한 줄': Firestore 컬렉션 galleryComments (itemId·nick·text·ts). 게시판과 같은 REST 방식 — 읽기는 공개, 쓰기는 익명 로그인 토큰,
+   - 댓글: Firestore 컬렉션 galleryComments (itemId = 작품 id · nick · text · ts). 게시판과 같은 REST 방식 — 읽기는 공개, 쓰기는 익명 로그인 토큰,
      운영자 삭제는 게시판의 운영자 모드(brdMasterOn)가 켜져 있으면 그 토큰을 그대로 써요. 규칙: docs/gallery-firestore-rules.md
    - 딥링크: #gallery (목록) · #gallery/<id> (작품). 뒤로가기·Esc 로 닫혀요. */
 (() => {
   "use strict";
   if (window.roundbGallery) return;
-  const D = document, WALL = "wall", COL = "galleryComments";
-  const LIM = {nick: 12, text: 200, wall: 100, note: 80, title: 40, artist: 20, source: 40, desc: 200};
-  const COOL = 30000, LS_KEY = "roundb.gallery.v1", PAGE = {wall: 10, item: 30};
+  const D = document, COL = "galleryComments";
+  const LIM = {nick: 12, text: 200, note: 80, title: 40, artist: 20, source: 40, desc: 200};
+  const COOL = 30000, LS_KEY = "roundb.gallery.v1", PAGE = 30;
   const FB = (() => { try { if (typeof CC_FB !== "undefined" && CC_FB && CC_FB.pid && CC_FB.key) return CC_FB; } catch (e) {} return {key: "AIzaSyBjZkuzEClkdheaA3jtbvyI7TiJ4Yl4JKs", pid: "roundb-games"}; })();   // 웹 앱 설정값은 공개돼도 되는 값 — 접근은 보안 규칙이 막아요
   const DOCS = "projects/" + FB.pid + "/databases/(default)/documents", API = "https://firestore.googleapis.com/v1/" + DOCS;
   const S = {items: null, itemsErr: false, itemsBusy: false, open: false, view: "", id: "", T: {}, ui: {}, lb: false, wantClose: false, scroll: 0, ret: null, root: null};
@@ -44,7 +44,7 @@
     const seen = new Set(), out = [];
     for (const x of j) {
       if (!x || typeof x !== "object") continue;
-      const id = typeof x.id === "string" && /^[a-z0-9-]{1,40}$/.test(x.id) && x.id !== WALL ? x.id : ""; if (!id || seen.has(id) || !imgOk(x.img)) continue; seen.add(id);
+      const id = typeof x.id === "string" && /^[a-z0-9-]{1,40}$/.test(x.id) ? x.id : ""; if (!id || seen.has(id) || !imgOk(x.img)) continue; seen.add(id);
       out.push({id, title: str(x.title, LIM.title) || "제목 없음", artist: str(x.artist, LIM.artist) || "익명", source: str(x.source, LIM.source), kind: x.kind === "ai" ? "ai" : "human",
         date: /^\d{4}-\d{2}-\d{2}$/.test(x.date || "") ? x.date : "", img: x.img, thumb: imgOk(x.thumb) ? x.thumb : x.img, desc: str(x.desc, LIM.desc), note: str(x.note, LIM.note)});
     }
@@ -79,7 +79,7 @@
   const th = key => S.T[key] || (S.T[key] = {rows: [], last: "", end: false, busy: false, err: "", closed: false, loaded: false});
   async function loadThread(key, more) {
     const t = th(key); if (t.busy) return; t.busy = true; t.err = ""; t.at = Date.now(); paint(key);
-    const n = key === WALL ? PAGE.wall : PAGE.item;
+    const n = PAGE;
     const q = {from: [{collectionId: COL}], where: {fieldFilter: {field: {fieldPath: "itemId"}, op: "EQUAL", value: {stringValue: key}}}, orderBy: [{field: {fieldPath: "__name__"}, direction: "ASCENDING"}], limit: n};
     if (more && t.last) q.startAt = {values: [{referenceValue: t.last}], before: false};
     const r = await net("POST", ":runQuery", {structuredQuery: q});
@@ -95,16 +95,16 @@
 
   /* 글 검사 — 게시판(문의·게임평)과 같은 기준의 1차 검사예요. 링크·길이는 서버 규칙도 막아요 */
   const BAD = ["시발", "씨발", "ㅅㅂ", "ㅆㅂ", "병신", "ㅂㅅ", "개새끼", "좆", "지랄", "ㅈㄹ", "염병", "미친놈", "미친년", "썅", "fuck", "shit"];
-  /* 링크 막기(공개 입력 전부: 닉네임·한 줄·댓글): http(s)://, www., 흔한 도메인 꼴(abc.com · bit.ly …)과 단축 주소를 찾아요. @계정이름 처럼 글자로 적는 건 괜찮아요.
+  /* 링크 막기(공개 입력 전부: 닉네임·댓글): http(s)://, www., 흔한 도메인 꼴(abc.com · bit.ly …)과 단축 주소를 찾아요. @계정이름 처럼 글자로 적는 건 괜찮아요.
      서버 규칙(docs/gallery-firestore-rules.md 의 noUrl)도 같은 목록으로 막아요 — 목록을 고치면 두 군데를 함께 고쳐 주세요. */
   const TLD = "com|net|org|kr|co|me|io|ly|gl|to|cc|tv|xyz|app|dev|info|biz|link|site|shop|store|online|ai|gg|jp|cn|us|uk|de|fr|do|vc|im|so|sh|fm|page|top|club|live|blog|be|la|gd|gy|ws|ms";
   const RE_URL = new RegExp("https?:|www[.]|:[/][/]|[a-z0-9][.](?:" + TLD + ")(?![a-z0-9])", "i");
   const hasLink = s => RE_URL.test(s) || RE_URL.test(s.replace(/[\s\u200b-\u200d\ufeff]+/g, ""));   // 띄어 써서 피하는 경우(abc . com)도 거절
   const RE_MAIL = /[\w.+-]+@[\w-]+\.[\w.-]+/, RE_RRN = /\d{6}\s?-\s?[1-4]\d{6}/;
   const RE_PHONE = /(?:^|\D)(?:\+?82[-.\s]?)?(?:0?1[016789][-.\s]?\d{3,4}[-.\s]?\d{4}|0[2-6]\d?[-.\s]?\d{3,4}[-.\s]?\d{4})(?!\d)/;
-  function checkComment(key, nick, text) {
-    const max = key === WALL ? LIM.wall : LIM.text, all = nick + "\n" + text, flat = all.toLowerCase().replace(/[\s._\-~*!?,]+/g, "");
-    if (!text) return key === WALL ? "한 줄을 적어 주세요." : "댓글을 적어 주세요.";
+  function checkComment(nick, text) {
+    const max = LIM.text, all = nick + "\n" + text, flat = all.toLowerCase().replace(/[\s._\-~*!?,]+/g, "");
+    if (!text) return "댓글을 적어 주세요.";
     if (text.length > max) return max + "자까지 쓸 수 있어요.";
     if (nick === "운영자") return "'운영자' 이름은 쓸 수 없어요.";
     if (hasLink(all)) return "링크는 올릴 수 없어요. 계정 이름만 적어 주세요 (예: @이름).";
@@ -129,15 +129,15 @@
   }
   const masterTok = () => { try { if (typeof brdMasterOn === "function" && brdMasterOn() && BRD.master && BRD.master.tok) return BRD.master.tok; } catch (e) {} return ""; };   // 게시판 '운영자 모드'가 켜져 있으면 삭제 버튼이 보여요
 
-  /* ---------- 댓글/한 줄 묶음(입력 + 목록) ---------- */
+  /* ---------- 댓글 묶음(입력 + 목록) ---------- */
   function threadUI(key, o) {
-    const wall = key === WALL, max = wall ? LIM.wall : LIM.text, t = th(key), st = lsGet();
+    const max = LIM.text, t = th(key), st = lsGet();
     let nickDefault = st.nick; if (typeof nickDefault !== "string") { try { nickDefault = typeof SAVE !== "undefined" && SAVE && typeof SAVE.nick === "string" ? SAVE.nick : ""; } catch (e) { nickDefault = ""; } }
     const nick = h("input", {class: "gl-in", type: "text", maxlength: LIM.nick, autocomplete: "off", placeholder: "비우면 '익명'", id: "gl-n-" + key}); nick.value = String(nickDefault || "").slice(0, LIM.nick);
     const cnt = h("em", {text: "0/" + max, style: "font-style:normal"});
-    const text = wall ? h("input", {class: "gl-in", type: "text", maxlength: max, autocomplete: "off", placeholder: o.ph, id: "gl-t-" + key}) : h("textarea", {class: "gl-in", maxlength: max, rows: 3, placeholder: o.ph, id: "gl-t-" + key});
+    const text = h("textarea", {class: "gl-in", maxlength: max, rows: 3, placeholder: o.ph, id: "gl-t-" + key});
     const msg = h("p", {class: "gl-msg", role: "status", "aria-live": "polite"});
-    const send = h("button", {type: "submit", class: "gl-btn gl-primary", text: wall ? "한 줄 남기기" : "댓글 남기기"});
+    const send = h("button", {type: "submit", class: "gl-btn gl-primary", text: "댓글 남기기"});
     const closed = h("p", {class: "gl-closed", hidden: true, text: "댓글은 곧 열려요. 지금은 그림만 둘러볼 수 있어요."}), list = h("div"), more = h("div", {class: "gl-more"});
     let busy = false, arm = "";
     const say = (m, warn) => { msg.textContent = m || ""; msg.className = "gl-msg" + (warn ? " gl-warn" : ""); };
@@ -145,18 +145,18 @@
     const form = h("form", {class: "gl-form", novalidate: true, onsubmit: async ev => {
       ev.preventDefault(); if (busy) return;
       const n = str(nick.value, LIM.nick) || "익명", tx = text.value.replace(/\r/g, "").replace(/[ \t]*\n[ \t]*/g, " ").trim();
-      const bad = checkComment(key, n, tx); if (bad) { say(bad, true); return; }
+      const bad = checkComment(n, tx); if (bad) { say(bad, true); return; }
       const left = cooldownLeft(); if (left > 0) { say("잠깐만요! " + Math.ceil(left / 1000) + "초 뒤에 다시 남길 수 있어요.", true); return; }
       busy = true; send.setAttribute("aria-disabled", "true"); say("남기는 중…");
       const r = await sendComment(key, n, tx); busy = false; send.removeAttribute("aria-disabled");
       if (r.row) {
         lsSet({nick: n === "익명" && !nick.value.trim() ? "" : n, last: Date.now()}); t.rows.unshift(r.row); t.closed = false; text.value = ""; cnt.textContent = "0/" + max;
-        say(wall ? "한 줄을 남겼어요. 고마워요!" : "댓글을 남겼어요. 고마워요!"); sfx("up"); paint(key);
+        say("댓글을 남겼어요. 고마워요!"); sfx("up"); paint(key);
       } else say(r.err === "closed" || r.err === "auth" ? "댓글은 곧 열려요. 조금만 기다려 주세요!" : r.err === "net" ? "인터넷 연결을 확인해 주세요." : r.err === "busy" ? "요청이 몰렸어요. 잠시 뒤 다시 눌러 주세요." : "지금은 남기지 못했어요. 잠시 뒤 다시 눌러 주세요.", true);
     }},
       h("div", {class: "gl-form-row"},
         h("label", {class: "gl-fld", for: "gl-n-" + key}, h("span", {}, "닉네임 (" + LIM.nick + "자까지)"), nick),
-        h("label", {class: "gl-fld", for: "gl-t-" + key}, h("span", {}, wall ? "하고 싶은 말 한 줄" : "댓글", cnt), text),
+        h("label", {class: "gl-fld", for: "gl-t-" + key}, h("span", {}, "댓글", cnt), text),
         send),
       msg);
     const el = h("div", {"data-thread": key}, closed, form, list, more);
@@ -225,20 +225,15 @@
   function viewList() {
     const b = S.body; b.replaceChildren(); S.ui = {};
     const wrap = h("div", {class: "gl-wrap"});
-    wrap.append(...[mbar(),
-      h("section", {class: "gl-wall", "aria-labelledby": "gl-wall-h"}, h("div", {class: "gl-sec-h"}, h("h3", {id: "gl-wall-h", text: "💬 모두의 한 줄"}),
-          h("button", {type: "button", class: "gl-btn gl-small", text: "작품 보기 ↓", onclick: () => { const c = S.gridHost && S.gridHost.querySelector(".gl-card"); if (S.gridHost) S.gridHost.scrollIntoView({block: "start", behavior: "smooth"}); if (c) c.focus({preventScroll: true}); }})),
-        h("p", {class: "gl-sub gl-dim", text: "그림을 못 그려도 괜찮아요. 하고 싶은 말을 한 줄만 남겨 주세요."}),
-        threadUI(WALL, {ph: "예) 오늘도 라운드비에서 힘내요!", empty: "아직 한 줄이 없어요. 첫 한 줄을 남겨 주세요!"})),
-      h("div", {class: "gl-sec-h"}, h("h3", {text: "🖼 작품"}), h("span", {text: S.items ? "총 " + S.items.length + "점" : ""}))].filter(Boolean));
+    wrap.append(...[mbar(), h("div", {class: "gl-sec-h"}, h("h3", {text: "🖼 작품"}), h("span", {text: S.items ? "총 " + S.items.length + "점" : ""}))].filter(Boolean));
     S.gridHost = h("div"); S.countEl = wrap.querySelector(".gl-sec-h span"); wrap.append(S.gridHost); fillGrid();
-    wrap.append(h("div", {class: "gl-foot"}, h("p", {text: "기사단 원작 그림은 AI로 만든 캐릭터입니다. 팬아트는 '✋ 사람'(손으로 그린 그림)과 '🤖 AI'(AI가 만든 그림)로 구분해 걸어요."}), h("p", {text: "댓글·한 줄에는 링크와 개인정보(전화번호·이메일 등)를 적을 수 없어요. 계정은 @이름처럼 글자로만 적어 주세요. 운영자가 지울 수 있어요."})));
+    wrap.append(h("div", {class: "gl-foot"}, h("p", {text: "기사단 원작 그림은 AI로 만든 캐릭터입니다. 팬아트는 '✋ 사람'(손으로 그린 그림)과 '🤖 AI'(AI가 만든 그림)로 구분해 걸어요."}), h("p", {text: "댓글에는 링크와 개인정보(전화번호·이메일 등)를 적을 수 없어요. 계정은 @이름처럼 글자로만 적어 주세요. 운영자가 지울 수 있어요."})));
     b.append(wrap); S.back.hidden = true; S.view = "list";
   }
-  function fillGrid() {   // 작품 목록이 늦게 도착해도 위의 '한 줄' 입력은 그대로 두고 격자만 채워요
+  function fillGrid() {   // 작품 목록이 늦게 도착하면 격자만 채워요
     const g = S.gridHost; if (!g) return; g.replaceChildren(); if (S.countEl) S.countEl.textContent = S.items ? "총 " + S.items.length + "점" : "";
     if (!S.items) g.append(S.itemsErr ? h("div", {class: "gl-state", role: "alert"}, h("p", {text: "작품 목록을 불러오지 못했어요."}), h("p", {}, h("button", {type: "button", class: "gl-btn", text: "다시 불러오기", onclick: () => loadItems(true)}))) : h("p", {class: "gl-state", role: "status", text: "불러오는 중…"}));
-    else g.append(h("div", {class: "gl-grid"}, S.items.map(card), h("div", {class: "gl-empty"}, h("p", {}, h("b", {"aria-hidden": "true", text: "+"}), "여기에 네 그림이 걸려", h("br"), "쓰레드로 보내줘"))));
+    else g.append(h("div", {class: "gl-grid"}, S.items.map(card), h("div", {class: "gl-empty"}, h("p", {}, h("b", {"aria-hidden": "true", text: "+"}), "여기에 네 그림이 걸려", h("br"), "— 저퀄 환영,", h("br"), "쓰레드로 보내줘"))));
   }
   function viewDetail(id) {
     const b = S.body; b.replaceChildren(); S.ui = {};
@@ -333,7 +328,7 @@
   /* ---------- 로비·게임 목록에 붙이기 ---------- */
   try {
     const k = window.knx;
-    if (k && k.games && k.games.register) k.games.register({id: "fanart", name: "팬아트 갤러리", tag: "사람들이 그려 준 기사단 그림 · 댓글 · 모두의 한 줄", kind: "life", open: () => open(),
+    if (k && k.games && k.games.register) k.games.register({id: "fanart", name: "팬아트 갤러리", tag: "사람들이 그려 준 기사단 그림 · 댓글", kind: "life", open: () => open(),
       icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18v14H3z"/><path d="M12 15.5s-3-1.8-3-3.9a1.7 1.7 0 0 1 3-1 1.7 1.7 0 0 1 3 1c0 2.1-3 3.9-3 3.9z"/></svg>'});
   } catch (e) {}
 

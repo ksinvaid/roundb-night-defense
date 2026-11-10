@@ -40,15 +40,10 @@ body.gl-open { overflow: hidden; }
 .gl-dim { color: var(--gl-dim); }
 .gl-small-t { font-size: 13px; }
 
-/* 모두의 한 줄 */
-.gl-wall { background: var(--gl-card); border: 3px solid var(--gl-ink); border-radius: 16px; box-shadow: 0 4px 0 var(--gl-ink); padding: 14px; margin-bottom: 22px; }
-.gl-wall > .gl-sub { margin: 2px 0 10px; }
-.gl-wall .gl-sec-h { margin: 0 0 4px; align-items: center; }
-.gl-wall .gl-cm { padding: 6px 12px 7px; }
 .gl-sec-h { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin: 4px 0 12px; }
 .gl-sec-h span { font-size: 13px; color: var(--gl-dim); }
 
-/* 댓글/한 줄 입력 */
+/* 댓글 입력 */
 .gl-form { display: grid; gap: 8px; margin: 0 0 12px; }
 .gl-form-row { display: grid; grid-template-columns: minmax(0, 150px) minmax(0, 1fr) auto; gap: 8px; align-items: end; }
 .gl-fld { display: grid; gap: 3px; min-width: 0; }
@@ -151,7 +146,7 @@ textarea.gl-in { min-height: 76px; resize: vertical; line-height: 1.45; }
   .gl-form-row { grid-template-columns: minmax(0, 1fr) auto; }
   .gl-form-row .gl-fld:first-child { grid-column: 1 / -1; }
   .gl-info h2 { font-size: 20px; }
-  .gl-wall, .gl-thread { padding: 11px; }
+  .gl-thread { padding: 11px; }
 }
 @media (pointer: coarse) { .gl-btn.gl-small { min-height: 44px; } }
 @media (prefers-reduced-motion: reduce) { .gl-card, .gl-btn { transition: none; } .gl-card:hover { transform: none; } }
