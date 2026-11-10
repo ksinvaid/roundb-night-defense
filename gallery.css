@@ -1,0 +1,157 @@
+/* 팬아트 갤러리 + 댓글 — gallery.js 가 만드는 전체 화면 오버레이 (2026-11-10)
+   색은 색약 안전: 구분은 글자·모양·밝기로 하고(사람=밝은 알약 / AI=어두운 테두리 칸), 붉은색·초록색 짝은 쓰지 않아요. */
+body.gl-open { overflow: hidden; }
+.gl-lobby-btn { min-height: 38px; }
+
+.gl {
+  --gl-bg: #0b0e1d; --gl-bg2: #12162b; --gl-card: #181e3b; --gl-card2: #1f2750; --gl-line: #3b4685;
+  --gl-ink: #14141c; --gl-cream: #faf6ee; --gl-dim: #b4bbdc; --gl-gold: #f6c453; --gl-blue: #8ab9ff;
+  position: fixed; inset: 0; z-index: 2147483050; display: flex; flex-direction: column;
+  background: var(--gl-bg); color: var(--gl-cream); font-size: 15px; line-height: 1.55;
+  font-family: inherit; overscroll-behavior: contain;
+}
+.gl[hidden] { display: none; }
+.gl *, .gl *::before, .gl *::after { box-sizing: border-box; }
+.gl:focus { outline: none; }
+.gl button, .gl input, .gl textarea { font: inherit; color: inherit; }
+.gl :focus-visible { outline: 3px solid var(--gl-gold); outline-offset: 2px; }
+
+/* 위 막대 */
+.gl-head {
+  flex: none; display: flex; align-items: center; gap: 8px; padding: 8px 12px; min-height: 58px;
+  background: var(--gl-bg2); border-bottom: 3px solid var(--gl-ink); box-shadow: 0 2px 0 var(--gl-line);
+}
+.gl-head h2 { flex: 1; min-width: 0; margin: 0; font-size: 19px; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gl-btn {
+  appearance: none; min-height: 44px; min-width: 44px; padding: 8px 14px; cursor: pointer; white-space: nowrap;
+  background: var(--gl-card2); border: 2px solid var(--gl-ink); border-radius: 12px; box-shadow: 0 3px 0 var(--gl-ink);
+  font-weight: 700; font-size: 15px; color: var(--gl-cream);
+}
+.gl-btn:hover { filter: brightness(1.15); }
+.gl-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--gl-ink); }
+.gl-btn[aria-disabled="true"], .gl-btn:disabled { opacity: .55; cursor: not-allowed; filter: none; }
+.gl-btn.gl-primary { background: var(--gl-gold); color: #2a1a00; }
+.gl-btn.gl-small { min-height: 36px; padding: 4px 10px; font-size: 13px; box-shadow: 0 2px 0 var(--gl-ink); }
+
+.gl-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 14px 14px 40px; }
+.gl-wrap { max-width: 1100px; margin: 0 auto; }
+.gl h3 { margin: 0; font-size: 17px; line-height: 1.3; }
+.gl p { margin: 0; }
+.gl-dim { color: var(--gl-dim); }
+.gl-small-t { font-size: 13px; }
+
+/* 모두의 한 줄 */
+.gl-wall { background: var(--gl-card); border: 3px solid var(--gl-ink); border-radius: 16px; box-shadow: 0 4px 0 var(--gl-ink); padding: 14px; margin-bottom: 22px; }
+.gl-wall > .gl-sub { margin: 2px 0 10px; }
+.gl-wall .gl-sec-h { margin: 0 0 4px; align-items: center; }
+.gl-wall .gl-cm { padding: 6px 12px 7px; }
+.gl-sec-h { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin: 4px 0 12px; }
+.gl-sec-h span { font-size: 13px; color: var(--gl-dim); }
+
+/* 댓글/한 줄 입력 */
+.gl-form { display: grid; gap: 8px; margin: 0 0 12px; }
+.gl-form-row { display: grid; grid-template-columns: minmax(0, 150px) minmax(0, 1fr) auto; gap: 8px; align-items: end; }
+.gl-fld { display: grid; gap: 3px; min-width: 0; }
+.gl-fld > span { font-size: 13px; color: var(--gl-dim); display: flex; justify-content: space-between; gap: 6px; }
+.gl-in {
+  width: 100%; min-height: 44px; padding: 8px 10px; background: #0f1330; color: var(--gl-cream);
+  border: 2px solid var(--gl-line); border-radius: 10px; font-size: 16px;   /* 16px = 아이폰이 확대하지 않게 */
+}
+textarea.gl-in { min-height: 76px; resize: vertical; line-height: 1.45; }
+.gl-in::placeholder { color: #7e87b4; }
+.gl-in:disabled { opacity: .6; }
+.gl-msg { min-height: 20px; font-size: 14px; color: var(--gl-dim); }
+.gl-msg.gl-warn { color: var(--gl-gold); }
+.gl-msg.gl-warn::before { content: "⚠ "; }
+.gl-closed { padding: 10px 12px; margin: 0 0 10px; background: #0f1330; border: 2px dashed var(--gl-line); border-radius: 12px; color: var(--gl-cream); }
+.gl-closed::before { content: "💬 "; }
+
+.gl-cms { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.gl-cm { padding: 9px 12px; background: #0f1330; border: 2px solid var(--gl-line); border-radius: 12px; }
+.gl-cm-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; color: var(--gl-dim); }
+.gl-cm-n { color: var(--gl-cream); font-size: 14px; }
+.gl-cm-t { margin-top: 3px; white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; }
+.gl-cm .gl-btn { margin-left: auto; }
+.gl-more { display: flex; justify-content: center; margin-top: 10px; }
+
+/* 작품 격자 */
+.gl-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.gl-card {
+  display: flex; flex-direction: column; min-width: 0; text-decoration: none; color: inherit;
+  background: var(--gl-card); border: 3px solid var(--gl-ink); border-radius: 16px; overflow: hidden;
+  box-shadow: 0 4px 0 var(--gl-ink), 0 0 0 1px var(--gl-line); transition: transform .12s, box-shadow .12s;
+}
+.gl-card:hover { transform: translateY(-3px); box-shadow: 0 7px 0 var(--gl-ink), 0 0 0 1px var(--gl-gold); }
+.gl-thumb { position: relative; display: block; aspect-ratio: 1 / 1; background: #0f1330; overflow: hidden; }
+.gl-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.gl-thumb .gl-badge { position: absolute; left: 8px; top: 8px; }
+.gl-cap { display: grid; gap: 2px; padding: 9px 11px 11px; min-width: 0; }
+.gl-ti { font-size: 15px; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gl-line1 { font-size: 13px; color: var(--gl-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gl-line1 b { color: var(--gl-cream); font-weight: 700; }
+.gl-date { font-size: 12px; color: #8d95c2; }
+.gl-empty {
+  display: grid; place-items: center; text-align: center; padding: 18px 12px; min-height: 160px;
+  border: 3px dashed var(--gl-line); border-radius: 16px; color: var(--gl-dim); background: transparent; font-size: 14px; line-height: 1.5;
+}
+.gl-empty b { display: block; font-size: 22px; margin-bottom: 4px; color: var(--gl-gold); }
+.gl-broken { display: grid; place-items: center; height: 100%; padding: 8px; font-size: 12px; color: var(--gl-dim); text-align: center; }
+
+/* 배지: 사람 = 밝은 알약, AI = 어두운 네모 + 테두리 (색이 아니라 글자·모양·밝기로 구분) */
+.gl-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 9px; font-size: 12px; font-weight: 800; line-height: 1.5; white-space: nowrap; }
+.gl-badge.human { background: var(--gl-cream); color: #14141c; border: 2px solid #14141c; border-radius: 99px; }
+.gl-badge.ai { background: #0b0e1d; color: var(--gl-blue); border: 2px solid var(--gl-blue); border-radius: 4px; }
+
+/* 작품 상세 */
+.gl-detail { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.gl-fig { margin: 0; position: relative; }
+.gl-figbtn { display: block; width: 100%; padding: 0; background: #0f1330; border: 3px solid var(--gl-ink); border-radius: 16px; box-shadow: 0 4px 0 var(--gl-ink), 0 0 0 1px var(--gl-line); overflow: hidden; cursor: zoom-in; }
+.gl-figbtn img { display: block; width: 100%; height: auto; max-height: 76vh; object-fit: contain; }
+.gl-fighint { margin-top: 8px; font-size: 13px; color: var(--gl-dim); text-align: center; }
+.gl-info { display: grid; gap: 12px; min-width: 0; }
+.gl-info h2 { margin: 0; font-size: 24px; line-height: 1.3; overflow-wrap: anywhere; }
+.gl-meta { display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; margin: 0; font-size: 14px; }
+.gl-meta dt { color: var(--gl-dim); }
+.gl-meta dd { margin: 0; overflow-wrap: anywhere; }
+.gl-desc { white-space: pre-wrap; overflow-wrap: anywhere; }
+.gl-note { margin: 0; padding: 10px 14px; background: var(--gl-card2); border: 2px solid var(--gl-line); border-left: 6px solid var(--gl-gold); border-radius: 12px; }
+.gl-note h3 { font-size: 13px; color: var(--gl-gold); margin-bottom: 2px; }
+.gl-note p { overflow-wrap: anywhere; }
+.gl-ainote { font-size: 13px; color: var(--gl-dim); padding: 8px 12px; border: 2px dashed var(--gl-line); border-radius: 12px; }
+.gl-nav { display: flex; gap: 8px; flex-wrap: wrap; }
+.gl-thread { grid-column: 1 / -1; margin-top: 4px; padding: 14px; background: var(--gl-card); border: 3px solid var(--gl-ink); border-radius: 16px; box-shadow: 0 4px 0 var(--gl-ink); }
+.gl-thread > h3 { margin-bottom: 10px; }
+.gl-foot { margin-top: 22px; font-size: 13px; color: var(--gl-dim); display: grid; gap: 4px; }
+.gl-state { padding: 28px 12px; text-align: center; color: var(--gl-dim); }
+.gl-mbar { margin-bottom: 10px; padding: 7px 12px; border: 2px solid var(--gl-gold); border-radius: 10px; font-size: 13px; color: var(--gl-gold); }
+.gl-mbar::before { content: "★ "; }
+
+/* 크게 보기 */
+.gl-lb { position: fixed; inset: 0; z-index: 3; display: flex; flex-direction: column; background: rgba(5, 7, 18, .96); }
+.gl-lb[hidden] { display: none; }
+.gl-lb-top { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; font-size: 13px; color: var(--gl-dim); }
+.gl-lb-box { flex: 1 1 auto; min-height: 0; overflow: auto; display: grid; place-items: center; padding: 6px; -webkit-overflow-scrolling: touch; }
+.gl-lb-box img { display: block; max-width: 100%; max-height: 100%; object-fit: contain; cursor: zoom-in; }
+.gl-lb.zoom .gl-lb-box { place-items: start; }
+.gl-lb.zoom .gl-lb-box img { max-width: none; max-height: none; width: auto; cursor: zoom-out; }
+
+/* 폰 */
+@media (max-width: 900px) {
+  .gl-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .gl-detail { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 640px) {
+  .gl-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .gl-body { padding: 10px 10px 40px; }
+  .gl-head h2 { font-size: 16px; }
+  .gl-btn { padding: 8px 10px; }
+  .gl-btn.gl-small { min-height: 44px; }
+  .gl-card { border-radius: 13px; }
+  .gl-cap { padding: 7px 9px 9px; }
+  .gl-form-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .gl-form-row .gl-fld:first-child { grid-column: 1 / -1; }
+  .gl-info h2 { font-size: 20px; }
+  .gl-wall, .gl-thread { padding: 11px; }
+}
+@media (pointer: coarse) { .gl-btn.gl-small { min-height: 44px; } }
+@media (prefers-reduced-motion: reduce) { .gl-card, .gl-btn { transition: none; } .gl-card:hover { transform: none; } }

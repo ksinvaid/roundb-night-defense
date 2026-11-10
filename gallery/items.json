@@ -1,0 +1,26 @@
+[
+  {
+    "id": "ai-sample-final",
+    "title": "코드 드로잉 연습 샘플 · 마감본",
+    "artist": "Claude(코드 드로잉)",
+    "source": "",
+    "kind": "ai",
+    "date": "2026-11-10",
+    "img": "gallery/img/ai-sample-final.jpg",
+    "thumb": "gallery/img/ai-sample-final_t.jpg",
+    "desc": "코드로 그린 연습 샘플",
+    "note": "코드로 그려 봤는데 원작이랑 너무 달라서 미안"
+  },
+  {
+    "id": "ai-sample-steps",
+    "title": "코드 드로잉 연습 샘플 · 4단계",
+    "artist": "Claude(코드 드로잉)",
+    "source": "",
+    "kind": "ai",
+    "date": "2026-11-10",
+    "img": "gallery/img/ai-sample-steps.jpg",
+    "thumb": "gallery/img/ai-sample-steps_t.jpg",
+    "desc": "코드로 그린 연습 샘플",
+    "note": "밑그림에서 마감까지 4단계로 그려 봤어요"
+  }
+]
