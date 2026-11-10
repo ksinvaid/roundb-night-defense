@@ -35672,7 +35672,7 @@ function setupPortals(G) {
   const M = G.M, n = G.floor, c = G.char, st = M.start;
   const mk = (tx, ty, to, kind, label, o) => G.portals.push(Object.assign({x: (tx + .5) * TILE, y: (ty + .5) * TILE, to, kind, label, cool: true, t: 0, id: ++G.uid}, o || {}));
   if (n > 1) { let ty = st.y + 2; if (ty >= M.H - 1 || dgnMap.solidI(M, ty * M.W + st.x)) ty = st.y - 2; const dn = isUg(n) ? (ugIdx(n) > 1 ? n - 1 : 1) : n - 1; mk(st.x, ty, dn, "down", labelOf(dn), {start: true}); }
-  if (n === 1 && ugUnlocked(c)) { for (const [dx, dy] of [[-3, 0], [3, 0], [0, -3], [0, 3], [-4, 2], [4, 2]]) { const tx = st.x + dx, ty = st.y + dy; if (tx > 0 && ty > 0 && tx < M.W - 1 && ty < M.H - 1 && !dgnMap.solidI(M, ty * M.W + tx)) { mk(tx, ty, 1001, "up", "🕳 지하던전 입구", {ug: true}); break; } } }
+  if (n === 1 && ugUnlocked(c)) { for (const [dx, dy] of [[-3, 0], [3, 0], [0, -3], [0, 3], [-4, 2], [4, 2]]) { const tx = st.x + dx, ty = st.y + dy; if (tx > 0 && ty > 0 && tx < M.W - 1 && ty < M.H - 1 && !dgnMap.solidI(M, ty * M.W + tx)) { mk(tx, ty, 1001, "up", (c.lv | 0) >= UGT.lv ? "🕳 지하던전 입구" : "🕳 지하던전 입구 (Lv100부터)", {ug: true}); break; } } }
   if (G.cleared) {
     mk(M.portal.x, M.portal.y, nextTo(n), "up", labelOf(nextTo(n)), {boss: true}); addAltar(G); G.bs = {state: "cleared", t: 0};
     if (hasNext(n) && isOpen(c, n + 1)) { let tx = st.x + 2; if (dgnMap.solidI(M, st.y * M.W + tx)) tx = st.x - 2; mk(tx, st.y, n + 1, "up", labelOf(n + 1), {start: true}); }
@@ -38327,14 +38327,14 @@ function renderFloors(dec, sel) {
   tabs.push(`<button class="${dec === 20 ? "on" : ""}" data-act="dgn-ftab" data-d="20">🕳 지하${core.ugUnlocked(c) ? "" : " 🔒"}</button>`);
   const cells = []; for (let i = 1; i <= (dec === 20 ? 3 : 10); i++) {
     const n = dec === 20 ? 1000 + i : dec * 10 + i, lk = V.net && V.net.role === "host" ? core.partyLock(G, n) : "", isOp = core.isOpen(c, n) && !lk, clr = G.x.clr.includes(n), cur = n === G.floor, evt = G.evt && G.evt.floor === n, boss = n % 10 === 0 || n > 1000, tm = G.x.best[n];
-    cells.push(`<button class="dgn-fc ${isOp ? "" : "lock"} ${clr ? "clear" : ""} ${cur ? "cur" : ""} ${evt ? "evt" : ""} ${boss ? "boss" : ""} ${n === sel ? "sel" : ""}" data-act="dgn-fpick" data-f="${n}" aria-label="${n > 1000 ? "지하 " + (n - 1000) : n}층 ${isOp ? "열림" : "잠김"}${clr ? " 클리어" : ""}${evt ? " 이벤트 중" : ""}"><b>${n > 1000 ? "지하 " + (n - 1000) : n}</b><i>${!isOp ? (lk ? "파티원 잠김" : "잠김") : clr ? "클리어 ✓" : cur ? "여기" : "열림"}</i>${clr && tm ? `<i>${Math.floor(tm / 60)}:${String(tm % 60).padStart(2, "0")}</i>` : ""}</button>`);
+    cells.push(`<button class="dgn-fc ${isOp ? "" : "lock"} ${clr ? "clear" : ""} ${cur ? "cur" : ""} ${evt ? "evt" : ""} ${boss ? "boss" : ""} ${n === sel ? "sel" : ""}" data-act="dgn-fpick" data-f="${n}" aria-label="${n > 1000 ? "지하 " + (n - 1000) : n}층 ${isOp ? "열림" : "잠김"}${clr ? " 클리어" : ""}${evt ? " 이벤트 중" : ""}"><b>${n > 1000 ? "지하 " + (n - 1000) : n}</b><i>${!isOp ? (lk ? "파티원 잠김" : n > 1000 && (c.lv | 0) < 100 ? "Lv100 필요" : "잠김") : clr ? "클리어 ✓" : cur ? "여기" : "열림"}</i>${clr && tm ? `<i>${Math.floor(tm / 60)}:${String(tm % 60).padStart(2, "0")}</i>` : ""}</button>`);
   }
   let fi = {}; try { fi = D().floorInfo(sel) || {}; } catch (e) {} const ds = dgnMap.describe(sel), selLock = V.net && V.net.role === "host" ? core.partyLock(G, sel) : "", isOp = core.isOpen(c, sel) && !selLock, evt = G.evt && G.evt.floor === sel;
   const roster = V.net?.roster || [];
   const progress = roster.length ? `<div class="dgn-tags" aria-label="파티원 최고 클리어 층">${roster.map(row => `<i>${esc(row[1])} · ${row[9] > 0 ? row[9] + "층 클리어" : "클리어 기록 없음"}</i>`).join("")}</div>` : "";
   ov.innerHTML = `<div class="dgn-card" role="dialog" aria-modal="true" aria-label="층 선택"><h2>층 선택</h2><p class="sub">${V.net ? "<b>파티</b> — 파티원 모두에게 열린 층까지만 갈 수 있어요" + (V.net.role === "host" && V.net.roster ? " · 준비 " + (V.net.roster.filter(r => r[0] !== 0 && r[6]).length) + "/" + Math.max(0, V.net.roster.length - 1) + "명" : "") + " · " : ""}최고 클리어 <b class="num">${c.floorBest | 0}</b>층 · 열린 층 <b class="num">${open}</b>층 · 보스를 잡으면 다음 층이 열려요${G.evt ? ` · <b style="color:#ffd23c">⚡ ${G.evt.floor}층 이벤트 몹</b>` : ""}</p>
     ${progress}<div class="dgn-ftabs" role="tablist">${tabs.join("")}</div><div class="dgn-fg">${cells.join("")}</div>
-    <div class="dgn-fd"><b>${esc(fi.name || sel + "층")}</b>${sel > 1000 ? `<div style="color:#7fe9ff;font-weight:800">🕳 지하던전 — 권장 Lv ${[100, 150, 200][sel - 1001]} · 3인 파티 · 보스 3마리 · 서브 보스 2마리${isOp ? "" : " · " + core.ugLockMsg(c, sel)}</div>` : sel > 150 ? `<div style="color:#ff9a7a;font-weight:800">⚠ 150층 이후는 3인 파티 권장 — 솔로로는 매우 어려워요</div>` : ""}<div>${esc(fi.mood || dgnMap.DECADE_NAMES[ds.decade % dgnMap.DECADE_NAMES.length])}</div><div class="dgn-tags">${ds.tags.map(t => `<i>${esc(t)}</i>`).join("") || `<i>평범한 구조</i>`}${sel > 1000 ? `<i>★ 보스 3마리</i><i>서브 보스 2</i>` : sel % 10 === 0 ? `<i>★ 큰 보스</i><i>서브 보스 2</i>` : `<i>보스</i><i>서브 보스 2</i>`}${evt ? `<i>⚡ 이벤트 몹</i>` : ""}</div></div>
+    <div class="dgn-fd"><b>${esc(fi.name || sel + "층")}</b>${sel > 1000 ? `<div style="color:#7fe9ff;font-weight:800">🕳 지하던전 — 권장 Lv ${[100, 150, 200][sel - 1001]} · 3인 파티 · 보스 3마리 · 서브 보스 2마리${isOp ? "" : " · " + (selLock ? selLock + " 님이 조건(100층 클리어 + Lv100)을 못 채웠어요" : core.ugLockMsg(c, sel))}</div>` : sel > 150 ? `<div style="color:#ff9a7a;font-weight:800">⚠ 150층 이후는 3인 파티 권장 — 솔로로는 매우 어려워요</div>` : ""}<div>${esc(fi.mood || dgnMap.DECADE_NAMES[ds.decade % dgnMap.DECADE_NAMES.length])}</div><div class="dgn-tags">${ds.tags.map(t => `<i>${esc(t)}</i>`).join("") || `<i>평범한 구조</i>`}${sel > 1000 ? `<i>★ 보스 3마리</i><i>서브 보스 2</i>` : sel % 10 === 0 ? `<i>★ 큰 보스</i><i>서브 보스 2</i>` : `<i>보스</i><i>서브 보스 2</i>`}${evt ? `<i>⚡ 이벤트 몹</i>` : ""}</div></div>
     <div class="dgn-row"><button class="dgn-big gold" data-act="dgn-fgo" ${isOp && V.net?.role !== "guest" ? "" : "disabled"}>${sel === G.floor ? "이 층 다시 시작" : (sel > 1000 ? "지하 " + (sel - 1000) : sel) + "층으로 이동"}</button><button class="dgn-big" data-act="dgn-fgob" ${isOp && V.net?.role !== "guest" ? "" : "disabled"}>${sel === G.floor ? "보스방 앞으로" : (sel > 1000 ? "지하 " + (sel - 1000) : sel) + "층 보스방 앞으로"}</button><button class="dgn-big ghost" data-act="dgn-close">닫기</button><button class="dgn-btn dgn-exitb" data-act="dgn-ask">나가기</button></div></div>`;
 }
 function openUgNotice(e) {   // 지하던전이 열렸어요 — 어디서·어떻게 들어가는지 한 번 자세히 알려 준다
@@ -38367,8 +38367,8 @@ function travelTick(dt) {
 function onFloor(e) {
   autoQueue("floor");
   const G = V.G; V.chunks.clear(); buildMinimap(); V.cam.x = G.P.x; V.cam.y = G.P.y; V.nearKey = ""; V.flick = 0; const small = e.how === "respawn";
-  banner(e.name || e.n + "층", e.mood, e.tags, "", 3600); note(`${e.n}층`, "info"); renderFloorsIfOpen();
-  if (G.floor > (V.bestSeen | 0)) { V.bestSeen = G.floor; rankSubmit(false); }
+  banner(e.name || e.n + "층", e.mood, e.tags, "", 3600); note(e.n > 1000 ? "지하 " + (e.n - 1000) + "층" : `${e.n}층`, "info"); renderFloorsIfOpen();
+  if (G.floor <= 1000 && G.floor > (V.bestSeen | 0)) { V.bestSeen = G.floor; rankSubmit(false); }
   if (!V.sess.played) { V.sess.played = true; stat("play"); }
   if (e.how === "portal" || e.how === "select" || e.how === "bossdoor") saveNow("floor");
 }
