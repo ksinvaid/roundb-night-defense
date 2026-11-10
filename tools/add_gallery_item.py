@@ -11,8 +11,6 @@ gallery/items.json 맨 뒤에 항목을 더합니다. 화면에는 새로 건 �
   python tools/add_gallery_item.py "C:/받은그림/아린.png" --title "아린 기사 그림" \
       --artist "별빛토끼" --kind human --source "쓰레드 @starbunny" \
       --note "아린이 제일 좋아서 그렸어요!" --desc "아린이 화살을 쏘는 장면이에요"
-  python tools/add_gallery_item.py "C:/받은그림/지유.jpg" --title "지유 기사" --artist "달빛" --kind human \
-      --link "https://www.threads.net/@moonlight_ji"      # 작가 계정 주소 1개(https 만, 운영자가 확인한 것만)
   python tools/add_gallery_item.py --list              # 걸린 그림 목록
   python tools/add_gallery_item.py --remove 20261110-01   # 내리기(이미지 파일도 같이 지움)
 
@@ -25,7 +23,6 @@ import json
 import re
 import sys
 from pathlib import Path
-from urllib.parse import urlsplit
 
 try:
     sys.stdout.reconfigure(encoding="utf-8")
@@ -67,25 +64,6 @@ def save_items(items):
     tmp = ITEMS.with_suffix(".json.tmp")
     tmp.write_text(json.dumps(items, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
     tmp.replace(ITEMS)
-
-
-def clean_link(value):
-    """작가 계정 주소: https 만. javascript:·http:·아이디/비밀번호가 붙은 주소·공백이 든 주소는 거부."""
-    v = (value or "").strip()
-    if not v:
-        return ""
-    if len(v) > 200 or any(c.isspace() or c in "<>\"'\\" for c in v):
-        die("--link 주소가 너무 길거나 쓸 수 없는 글자가 들어 있어요 (200자까지)")
-    if not re.match(r"^https://", v, re.I):
-        die("--link 는 https:// 로 시작하는 주소만 쓸 수 있어요 (javascript:, http:, 주소 없이 계정 이름만은 안 돼요)")
-    try:
-        u = urlsplit(v)
-        host = u.hostname or ""
-    except ValueError:
-        die("--link 주소를 읽을 수 없어요")
-    if u.scheme.lower() != "https" or u.username or u.password or "." not in host:
-        die("--link 는 https://도메인/경로 모양이어야 해요 (아이디·비밀번호가 붙은 주소 불가)")
-    return u.geturl()
 
 
 def clip(name, value, limit):
@@ -181,7 +159,6 @@ def main():
     ap.add_argument("--kind", choices=["human", "ai"], help="human = 사람이 그림, ai = AI 가 만듦 (필수)")
     ap.add_argument("--source", default="", help="출처 예: 쓰레드 아이디 (40자, 선택)")
     ap.add_argument("--desc", default="", help="설명 (200자, 선택)")
-    ap.add_argument("--link", default="", help="작가 계정 주소 1개 (https 만, 선택 — 상세 화면에 '작가 계정' 링크로 보여요)")
     ap.add_argument("--note", default="", help="작가의 한마디 한 줄 (80자, 선택 — 넘으면 경고하고 자름)")
     ap.add_argument("--date", default="", help="날짜 YYYY-MM-DD (비우면 오늘)")
     ap.add_argument("--id", default="", help="그림 번호(영문 소문자·숫자·-, 비우면 날짜-번호 자동)")
@@ -222,9 +199,6 @@ def main():
         "desc": clip("설명", a.desc, LIM["desc"]),
         "note": clip("작가의 한마디", a.note, LIM["note"]),
     }
-    link = clean_link(a.link)
-    if link:
-        item["link"] = link
     item["img"], item["thumb"] = make_images(src, item_id, a.dry_run)
     items.append(item)
     if a.dry_run:

@@ -39,13 +39,6 @@
   }
 
   /* ---------- 작품 목록 ---------- */
-  function cleanLink(v) {   // 작가 계정 주소: https 만(javascript:·http:·아이디/비번 붙은 주소 거부)
-    if (typeof v !== "string" || v.length > 200 || /[\s<>"'\\]/.test(v) || !/^https:\/\//i.test(v)) return "";
-    try { const u = new URL(v); if (u.protocol !== "https:" || u.username || u.password || u.hostname.indexOf(".") < 1) return ""; return u.href; } catch (e) { return ""; }
-  }
-  function linkLabel(href) {   // 보이는 글자는 도메인+경로 앞부분만 짧게
-    try { const u = new URL(href); let t = u.hostname.replace(/^www\./, "") + u.pathname.replace(/\/+$/, ""); try { t = decodeURIComponent(t); } catch (e) {} return t.length > 32 ? t.slice(0, 31) + "…" : t; } catch (e) { return "링크"; }
-  }
   function cleanItems(j) {
     if (!Array.isArray(j)) return [];
     const seen = new Set(), out = [];
@@ -53,7 +46,7 @@
       if (!x || typeof x !== "object") continue;
       const id = typeof x.id === "string" && /^[a-z0-9-]{1,40}$/.test(x.id) && x.id !== WALL ? x.id : ""; if (!id || seen.has(id) || !imgOk(x.img)) continue; seen.add(id);
       out.push({id, title: str(x.title, LIM.title) || "제목 없음", artist: str(x.artist, LIM.artist) || "익명", source: str(x.source, LIM.source), kind: x.kind === "ai" ? "ai" : "human",
-        date: /^\d{4}-\d{2}-\d{2}$/.test(x.date || "") ? x.date : "", img: x.img, thumb: imgOk(x.thumb) ? x.thumb : x.img, desc: str(x.desc, LIM.desc), note: str(x.note, LIM.note), link: cleanLink(x.link)});
+        date: /^\d{4}-\d{2}-\d{2}$/.test(x.date || "") ? x.date : "", img: x.img, thumb: imgOk(x.thumb) ? x.thumb : x.img, desc: str(x.desc, LIM.desc), note: str(x.note, LIM.note)});
     }
     return out.map((v, i) => [v, i]).sort((a, b) => (b[0].date > a[0].date ? 1 : b[0].date < a[0].date ? -1 : b[1] - a[1])).map(a => a[0]);   // 새 그림이 앞(같은 날은 나중에 건 것이 앞)
   }
@@ -259,7 +252,7 @@
     const fig = h("figure", {class: "gl-fig"}, h("button", {type: "button", class: "gl-figbtn", "aria-label": "그림 크게 보기: " + it.title, onclick: () => openLb(it)}, imgEl(it.img, it.title + " — " + it.artist + "의 그림", true)),
       h("figcaption", {class: "gl-fighint", text: "그림을 누르면 크게 볼 수 있어요"}));
     const meta = h("dl", {class: "gl-meta"}, h("dt", {text: "필명"}), h("dd", {text: it.artist}), it.source ? [h("dt", {text: "출처"}), h("dd", {text: it.source})] : null,
-      it.link ? [h("dt", {text: "작가 계정"}), h("dd", {}, h("a", {href: it.link, target: "_blank", rel: "noopener noreferrer nofollow ugc", text: linkLabel(it.link), "aria-label": "작가 계정 열기(새 창): " + linkLabel(it.link)}))] : null, it.date ? [h("dt", {text: "날짜"}), h("dd", {text: dateTxt(it.date)})] : null);
+      it.date ? [h("dt", {text: "날짜"}), h("dd", {text: dateTxt(it.date)})] : null);
     const info = h("div", {class: "gl-info"}, h("div", {}, badge(it.kind)), h("h2", {text: it.title}), meta,
       it.desc ? h("p", {class: "gl-desc", text: it.desc}) : null,
       it.note ? h("blockquote", {class: "gl-note"}, h("h3", {text: "작가의 한마디"}), h("p", {text: it.note})) : null,
@@ -345,6 +338,6 @@
   } catch (e) {}
 
   window.roundbGallery = {open, close: closeAll, openItem: id => open(String(id || "")), get state() { return {open: S.open, view: S.view, id: S.id, items: S.items && S.items.length, threads: Object.keys(S.T)}; },
-    _t: {genId, cleanItems, cleanLink, linkLabel, hasLink, checkComment, cooldownLeft, parseHash, S, loadItems}};
+    _t: {genId, cleanItems, hasLink, checkComment, cooldownLeft, parseHash, S, loadItems}};
   if (parseHash()) { const go0 = () => { try { route(); } catch (e) { console.error("gallery route", e); } }; if (D.readyState === "loading") D.addEventListener("DOMContentLoaded", go0); else go0(); }   // 쓰레드 링크로 바로 열기
 })();
