@@ -41327,6 +41327,7 @@ const kx = () => window.knx || null;
 const svgI = d => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="' + d + '"/></svg>';
 const IC_LINK = svgI("M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3A4 4 0 0 0 11 18.7l1-1");
 const IC_CHAT = svgI("M4 5h16v11H10l-4 4v-4H4z");
+const IC_QR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v.01M14 21h.01M17.5 21H21v-3.5"/></svg>';
 const IC_BAR = '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3A4 4 0 0 0 11 18.7l1-1"/></svg>';
 
 /* ───────── 주소 ───────── */
@@ -41369,7 +41370,16 @@ const copyShare = id => IT[id] ? copyOut(textOf(id), "공유 문구를 복사했
 const copyAll = () => copyOut(allText(), "홍보 링크 3개를 복사했어요");
 
 /* ───────── 화면에 붙이는 버튼 ───────── */
-const shareHTML = id => '<span class="pm-share" data-pm-id="' + id + '"><button type="button" class="btn btn-sm btn-gold" data-act="pm-copy" data-id="' + id + '" aria-label="' + E(IT[id].name) + ' 링크 복사">' + IC_LINK + '링크 복사</button><button type="button" class="btn btn-sm" data-act="pm-copy-text" data-id="' + id + '" aria-label="' + E(IT[id].name) + ' 공유 문구 복사">' + IC_CHAT + '공유 문구</button></span>';
+/* QR 코드 팝업(2026-11-11): 모든 홍보 화면의 '링크 복사' 옆에 QR코드 버튼. 팝업은 qr-share.js(RbQR) — 인쇄용 고정 주소(운영 주소)로 만든다 */
+const SEATS_URL = "https://roundb-seat-board-hyunwoo.roundb-metaverse.workers.dev/share", META_URL = "https://roundb-metaverse.roundb-metaverse.workers.dev/";
+const QR_TITLE = {intro: "라운드비 소개", gallery: "공간 둘러보기", road: "로드뷰 투어", lunch: "오늘 뭐 먹지?", tour: "3D 투어", seats: "4층 좌석 현황"};
+function qrOf(id) {
+  if (id === "tour") return {title: QR_TITLE.tour, sub: "층을 골라 QR을 찍어요", items: [{label: "3층", url: META_URL + "?floor=3"}, {label: "4층", url: META_URL}]};
+  if (id === "seats") return {title: QR_TITLE.seats, items: [{label: "", url: SEATS_URL}]};
+  const it = IT[id]; return {title: QR_TITLE[id] || it.name, items: [{label: "", url: it.url || (D.live + it.slug + "/")}]};
+}
+function openQR(id) { try { if (window.RbQR) { window.RbQR.open(qrOf(id)); return; } } catch (e) { fail("qr", e); } if (id === "seats") copyOut(SEATS_URL, "주소를 복사했어요"); else if (IT[id]) copyLink(id); }
+const shareHTML = id => '<span class="pm-share" data-pm-id="' + id + '"><button type="button" class="btn btn-sm btn-gold" data-act="pm-copy" data-id="' + id + '" aria-label="' + E(IT[id].name) + ' 링크 복사">' + IC_LINK + '링크 복사</button><button type="button" class="btn btn-sm" data-act="pm-qr" data-id="' + id + '" aria-label="' + E(IT[id].name) + ' QR코드">' + IC_QR + 'QR코드</button><button type="button" class="btn btn-sm" data-act="pm-copy-text" data-id="' + id + '" aria-label="' + E(IT[id].name) + ' 공유 문구 복사">' + IC_CHAT + '공유 문구</button></span>';
 function decorateViews() {   // 오늘 뭐 먹지 · 공간 둘러보기 머리줄
   for (const id of ["lunch", "gallery"]) {
     const row = q$("#scr-" + id + " .sel-head .row"); if (!row || row.querySelector(".pm-share")) continue;
@@ -41395,12 +41405,17 @@ function decorateLinksModal() {
 /* 로비 생활 카드(담당 A7)의 빈 자리 — 카드에 data-life="lunch|gallery|road", 안에 빈 .lb-life-extra 가 있으면 작은 버튼을 붙인다. 없으면 아무것도 안 한다 */
 function fillLobbyExtras() {
   for (const card of qa$("[data-life]")) {
-    const id = card.getAttribute("data-life"); if (!IT[id]) continue;
-    const slot = card.querySelector(".lb-life-extra"); if (!slot || slot.querySelector(".pm-mini")) continue;
-    const b = document.createElement("button"); b.type = "button"; b.className = "pm-mini"; b.dataset.id = id; b.setAttribute("aria-label", IT[id].name + " 링크 복사"); b.innerHTML = IC_LINK + '<span class="pm-t">링크 복사</span>'; b.title = IT[id].name + " 링크 복사";
-    b.addEventListener("click", e => { e.stopPropagation(); e.preventDefault(); copyLink(id); });
-    for (const ev of ["pointerdown", "pointerup", "mousedown", "touchstart", "keydown", "keyup", "dblclick"]) b.addEventListener(ev, e => e.stopPropagation());   // 카드(문으로 걸어가기)가 같이 눌리지 않게
-    slot.appendChild(b);
+    const id = card.getAttribute("data-life"), seats = id === "seats"; if (!IT[id] && !seats) continue;
+    const slot = card.querySelector(".lb-life-extra"); if (!slot) continue;
+    const nm = seats ? QR_TITLE.seats : IT[id].name, stopAll = x => { for (const ev of ["pointerdown", "pointerup", "mousedown", "touchstart", "keydown", "keyup", "dblclick"]) x.addEventListener(ev, e => e.stopPropagation()); };   // 카드(문으로 걸어가기)가 같이 눌리지 않게
+    if (!slot.querySelector(".pm-lk1")) {
+      const b = document.createElement("button"); b.type = "button"; b.className = "pm-mini pm-lk1"; b.dataset.id = id; b.setAttribute("aria-label", nm + " 링크 복사"); b.innerHTML = IC_LINK + '<span class="pm-t">링크 복사</span>'; b.title = nm + " 링크 복사";
+      b.addEventListener("click", e => { e.stopPropagation(); e.preventDefault(); if (seats) copyOut(SEATS_URL, nm + " 링크를 복사했어요"); else copyLink(id); }); stopAll(b); slot.appendChild(b);
+    }
+    if (!slot.querySelector(".pm-qrb")) {
+      const q = document.createElement("button"); q.type = "button"; q.className = "pm-mini pm-qrb"; q.dataset.id = id; q.setAttribute("aria-label", nm + " QR코드"); q.innerHTML = IC_QR + '<span class="pm-t">QR</span>'; q.title = nm + " QR코드";
+      q.addEventListener("click", e => { e.stopPropagation(); e.preventDefault(); openQR(id); }); stopAll(q); slot.appendChild(q);
+    }
   }
 }
 /* 홍보 링크 3개 창(더보기 메뉴) */
@@ -41409,7 +41424,7 @@ function openLinks() {
   closeLinks();
   const o = document.createElement("div"); o.id = "pm-links"; o.className = "pm-ov";
   o.innerHTML = '<div class="pm-pn" role="dialog" aria-modal="true" aria-label="홍보 링크 복사"><b class="disp">홍보 링크 복사</b><p class="small dim">친구·손님에게 보내면 로그인 없이 바로 그 화면이 열려요. 카카오톡에 붙여넣으면 미리보기 카드가 떠요.</p><div class="pm-list">' +
-    IDS.map(id => '<div class="pm-item"><b>' + E(IT[id].name) + '</b><span class="small dim">' + E(IT[id].tag) + '</span><input type="text" readonly value="' + E(linkOf(id)) + '" aria-label="' + E(IT[id].name) + ' 주소" onfocus="this.select()"><div class="row"><button type="button" class="btn btn-sm btn-gold" data-act="pm-copy" data-id="' + id + '">' + IC_LINK + '링크 복사</button><button type="button" class="btn btn-sm" data-act="pm-copy-text" data-id="' + id + '">' + IC_CHAT + '공유 문구</button></div></div>').join("") +
+    IDS.map(id => '<div class="pm-item"><b>' + E(IT[id].name) + '</b><span class="small dim">' + E(IT[id].tag) + '</span><input type="text" readonly value="' + E(linkOf(id)) + '" aria-label="' + E(IT[id].name) + ' 주소" onfocus="this.select()"><div class="row"><button type="button" class="btn btn-sm btn-gold" data-act="pm-copy" data-id="' + id + '">' + IC_LINK + '링크 복사</button><button type="button" class="btn btn-sm" data-act="pm-qr" data-id="' + id + '">' + IC_QR + 'QR코드</button><button type="button" class="btn btn-sm" data-act="pm-copy-text" data-id="' + id + '">' + IC_CHAT + '공유 문구</button></div></div>').join("") +
     '</div><div class="row" style="justify-content:center"><button type="button" class="btn btn-gold" data-act="pm-copy-all">3개 한꺼번에 복사</button><button type="button" class="btn btn-ghost" data-act="pm-close">닫기</button></div></div>';
   document.body.appendChild(o);
   o.addEventListener("click", e => { if (e.target === o) closeLinks(); });
@@ -41429,14 +41444,14 @@ function buildHub() {
 function buildCta() {
   if (q$("#pm-cta")) return;
   const c = document.createElement("div"); c.id = "pm-cta"; c.className = "pm-cta"; c.hidden = true;
-  c.innerHTML = '<button type="button" class="btn btn-red btn-lg" data-act="pm-start"><span class="pm-lg">라운드비 나이츠&nbsp;</span>게임 해보기 ▶</button><button type="button" class="btn btn-gold" data-act="pm-copy" data-id="lunch">' + IC_LINK + '링크 복사</button>';
+  c.innerHTML = '<button type="button" class="btn btn-red btn-lg" data-act="pm-start"><span class="pm-lg">라운드비 나이츠&nbsp;</span>게임 해보기 ▶</button><button type="button" class="btn btn-gold" data-act="pm-copy" data-id="lunch">' + IC_LINK + '링크 복사</button><button type="button" class="btn" data-act="pm-qr" data-id="lunch">' + IC_QR + 'QR코드</button>';
   document.body.appendChild(c);
 }
 function curScreen() { const k = kx(); try { return (k && k.screens && k.screens.cur()) || (typeof UI !== "undefined" && UI.screen) || ""; } catch (e) { return ""; } }
 function syncCta() {
   const c = q$("#pm-cta"); if (!c) return;
   const cur = curScreen(), on = PM.on && (cur === "lunch" || cur === "gallery");
-  c.hidden = !on; const b = c.querySelector('[data-act="pm-copy"]'); if (b && on) b.dataset.id = cur;
+  c.hidden = !on; const b = c.querySelector('[data-act="pm-copy"]'), qb = c.querySelector('[data-act="pm-qr"]'); if (b && on) b.dataset.id = cur; if (qb && on) qb.dataset.id = cur;
   if (PM.on && IT[cur]) document.title = IT[cur].pageTitle; else if (PM.on) document.title = D.brand;
 }
 function promoOpen() {   // 사원증 온보딩·로비·시작 훅(채팅·로그인·서버 동기화)을 모두 건너뛰고 그 화면만 연다
@@ -41487,6 +41502,7 @@ if (PM.on) {
 /* ───────── 클릭 처리 · 장식 연결 ───────── */
 Object.assign(A, {
   "pm-copy": b => copyLink(b.dataset.id),
+  "pm-qr": b => openQR(b.dataset.id),
   "pm-copy-text": b => copyShare(b.dataset.id),
   "pm-copy-all": () => copyAll(),
   "pm-close": () => closeLinks(),
@@ -43156,6 +43172,7 @@ try { const kp = window.knx && knx.start && knx.start(); if (kp && kp.catch) kp.
 <link rel="stylesheet" href="brawl.css?v=blood-start">
 <link rel="stylesheet" href="brawl-arena.css?v=bw4">
 <link rel="stylesheet" href="server-rooms.css?v=1">
+<script src="qr-share.js?v=qr1"></script>
 <script src="server-rooms.js?v=tactics3"></script>
 <script src="arena-room.js?v=briefing2"></script>
 <script src="brawl-core.js?v=bw5"></script>

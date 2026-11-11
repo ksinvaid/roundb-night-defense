@@ -140,6 +140,8 @@ footer{padding:28px 0 96px;color:var(--mut);font-size:13px}
       <a class="btn pri" href="#space">공간 둘러보기</a>
       <a class="btn" style="background:#fff" href="https://pf.kakao.com/_guxfxlX" target="_blank" rel="noopener noreferrer">카카오톡으로 문의</a>
       <a class="btn" style="background:#fff" href="#way">오시는 길·주차</a>
+      <button class="btn" id="shL" type="button" style="background:#fff">링크 복사</button>
+      <button class="btn" id="shQ" type="button" style="background:#fff">QR코드</button>
     </div>
     <div class="facts">
       <div class="fact"><b>3F 라운지</b><span>약 40평 · 좌석 32석</span></div>
@@ -443,5 +445,9 @@ $("#pname").textContent="뽑기를 눌러 보세요";["#ptag","#pmenu","#pfood",
 $("#play").onclick=function(){$("#poster").innerHTML='<iframe src="https://www.youtube-nocookie.com/embed/zQr1TnnuXpA?autoplay=1&rel=0" title="라운드비 로드뷰 투어" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>'};
 })();
 </script>
+<script src="../qr-share.js?v=qr1"></script>
+<script>(function(){var U="https://ksinvaid.github.io/roundb-night-defense/intro/",L=document.getElementById("shL"),Q=document.getElementById("shQ");
+if(L)L.onclick=function(){var o=L.textContent,done=function(){L.textContent="복사했어요 ✓";setTimeout(function(){L.textContent=o},1600)};if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(U).then(done,function(){prompt("주소를 복사하세요",U)})}else{prompt("주소를 복사하세요",U)}};
+if(Q)Q.onclick=function(){if(window.RbQR)RbQR.open({title:"라운드비 소개",items:[{label:"",url:U}]});else prompt("주소를 복사하세요",U)};})();</script>
 </body>
 </html>
